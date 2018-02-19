@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -41,32 +43,11 @@ public class USSDCampaignController extends USSDBaseController {
         this.campaignBroker = campaignBroker;
     }
 
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.TAG_ME_URL)
-    @ResponseBody
-    public Request processTagMeRequest(@RequestParam(value = phoneNumber) String inputNumber,
-                                      @RequestParam String messageUid,
-                                      @RequestParam String parentMsgUid)  throws URISyntaxException{
-        User user = userManager.findByInputNumber(inputNumber);
-        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
-        updateMembership(user, message, campaignBroker.loadCampaignMessage(parentMsgUid, user.getUid()));
-        return menuBuilder(buildCampaignUSSDMenu(message));
-    }
-
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.JOIN_MASTER_GROUP_URL)
-    @ResponseBody
-    public Request processJoinMasterGroupRequest(@RequestParam(value = phoneNumber) String inputNumber,
-                                                 @RequestParam String messageUid)  throws URISyntaxException{
-        User user = userManager.findByInputNumber(inputNumber);
-        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
-        campaignBroker.addUserToCampaignMasterGroup(message.getCampaign().getUid(), user.getUid());
-        return menuBuilder(buildCampaignUSSDMenu(message));
-    }
-
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.SET_LANGUAGE_URL)
     @ResponseBody
     public Request userSetLanguageForCampaign(@RequestParam(value= phoneNumber) String inputNumber,
-                                      @RequestParam String campaignUid,
-                                      @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode) throws URISyntaxException {
+                                              @RequestParam String campaignUid,
+                                              @RequestParam(value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
         if(StringUtils.isEmpty(user.getLanguageCode())) {
@@ -74,17 +55,6 @@ public class USSDCampaignController extends USSDBaseController {
         }
         CampaignMessage campaignMessage = campaignBroker.getOpeningMessage(campaignUid, new Locale(languageCode), UserInterfaceType.USSD, null);
         return  menuBuilder(buildCampaignUSSDMenu(campaignMessage));
-    }
-
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.SIGN_PETITION_URL)
-    @ResponseBody
-    public Request processSignPetitionRequest(@RequestParam(value = phoneNumber) String inputNumber,
-                                              @RequestParam String messageUid) throws URISyntaxException{
-        User user = userManager.findByInputNumber(inputNumber);
-        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
-        // todo : actually sign the petition
-
-        return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.MORE_INFO_URL)
@@ -96,13 +66,115 @@ public class USSDCampaignController extends USSDBaseController {
         return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
+    @RequestMapping(value = campaignUrl + USSDCampaignUtil.JOIN_MASTER_GROUP_URL)
+    @ResponseBody
+    public Request processJoinMasterGroupRequest(@RequestParam(value = phoneNumber) String inputNumber,
+                                                 @RequestParam(required = false) String messageUid,
+                                                 @RequestParam(required = false) String campaignUid)  throws URISyntaxException{
+        User user = userManager.findByInputNumber(inputNumber);
+        Locale locale;
+        String promptStart;
+        if (campaignUid == null) {
+            CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+            campaignUid = message.getCampaign().getUid();
+            locale = message.getLocale();
+            promptStart = message.getMessage() + (StringUtils.isEmpty(message.getMessage()) ? "" : ". ");
+            log.info("prompt start: {}, message : {}", promptStart, message.getMessage());
+        } else {
+            promptStart = getMessage("campaign.joined.generic", user);
+            locale = user.getLocale();
+        }
+        Campaign campaign = campaignBroker.addUserToCampaignMasterGroup(campaignUid, user.getUid());
+        return menuBuilder(topicsOrFinalOptionsMenu(campaign, user, promptStart, locale));
+    }
+
+    @RequestMapping(value = campaignUrl + USSDCampaignUtil.SIGN_PETITION_URL)
+    @ResponseBody
+    public Request processSignPetitionRequest(@RequestParam(value = phoneNumber) String inputNumber,
+                                              @RequestParam String messageUid) throws URISyntaxException{
+        User user = userManager.findByInputNumber(inputNumber);
+        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+        campaignBroker.signPetition(message.getUid(), user.getUid(), UserInterfaceType.USSD);
+        final String promptStart = message.getMessage() + (StringUtils.isEmpty(message.getMessage()) ? "" : ". ");
+        return menuBuilder(joinGroupOrFinalOptionsMenu(message.getCampaign(), user, promptStart, message.getLocale()));
+    }
+
+    @RequestMapping(value = campaignUrl + USSDCampaignUtil.TAG_ME_URL)
+    @ResponseBody
+    public Request processTagMeRequest(@RequestParam(value = phoneNumber) String inputNumber,
+                                       @RequestParam String messageUid,
+                                       @RequestParam String parentMsgUid)  throws URISyntaxException{
+        User user = userManager.findByInputNumber(inputNumber);
+        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+        updateMembership(user, message, campaignBroker.loadCampaignMessage(parentMsgUid, user.getUid()));
+        return menuBuilder(buildCampaignUSSDMenu(message));
+    }
+
+    @RequestMapping(value = campaignUrl + "province")
+    public Request processProvinceRequest(@RequestParam(value = phoneNumber) String inputNumber,
+                                          @RequestParam String campaignUid,
+                                          @RequestParam Province province) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        userManager.updateUserProvince(user.getUid(), province);
+        Campaign campaign = campaignBroker.load(campaignUid);
+        return menuBuilder(processFinalOptionsMenu(campaign, user, "", user.getLocale()));
+    }
+
+    private USSDMenu joinGroupOrFinalOptionsMenu(Campaign campaign, User user, String promptStart, Locale locale) {
+        USSDMenu menu;
+        if (!campaignBroker.isUserInCampaignMasterGroup(campaign.getUid(), user.getUid())) {
+            final String prompt = promptStart + getMessage("campaign.join.generic", locale.getLanguage());
+            menu = new USSDMenu(prompt, optionsYesNo(user,
+                    campaignMenus + USSDCampaignUtil.JOIN_MASTER_GROUP_URL + "?campaignUid=" + campaign.getUid(),
+                    campaignMenus + USSDCampaignUtil.EXIT_URL + "?campaignUid=" + campaign.getUid()));
+        } else {
+            menu = processFinalOptionsMenu(campaign, user, promptStart, locale);
+        }
+        return menu;
+    }
+
+    private USSDMenu topicsOrFinalOptionsMenu(Campaign campaign, User user, String promptStart, Locale locale) {
+        USSDMenu menu;
+        if (!campaign.getJoinTopics().isEmpty()) {
+            final String prompt = promptStart + getMessage("campaign.choose.topic", locale.getLanguage());
+            final String urlPrefix = campaignMenus + USSDCampaignUtil.TAG_ME_URL + "?campaignUid=" + campaign.getUid();
+            menu = new USSDMenu(prompt);
+            campaign.getJoinTopics().forEach(topic -> menu.addMenuOption(urlPrefix + topic, topic));
+        } else {
+            menu = processFinalOptionsMenu(campaign, user, promptStart, locale);
+        }
+        return menu;
+    }
+
+    private USSDMenu processFinalOptionsMenu(Campaign campaign, User user, String promptStart, Locale locale) {
+        USSDMenu menu;
+        if (user.getProvince() == null) {
+            final String prompt = promptStart + getMessage("campaign.joined.province", user);
+            menu = new USSDMenu(prompt, provinceOptions(user, campaignMenus + "province?campaignUid="
+                    + campaign.getUid() + "&province="));
+        } else if (!user.hasName()) {
+            final String prompt = promptStart + getMessage("campaign.joined.name", user);
+            menu = new USSDMenu(prompt, campaignMenus + "/user/name?campaignUid=" + campaign.getUid());
+        } else if (campaign.isSharingEnabled()) {
+            menu = buildSharingMenu(campaign.getUid(), locale);
+        } else {
+            menu = genericPositiveExit(campaign.getUid(), locale);
+        }
+        return menu;
+    }
+
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.EXIT_URL)
     @ResponseBody
     public Request processExitRequest(@RequestParam(value = phoneNumber) String inputNumber,
-                                      @RequestParam String messageUid)  throws URISyntaxException{
+                                      @RequestParam(required = false) String messageUid,
+                                      @RequestParam(required = false) String campaignUid)  throws URISyntaxException{
         User user = userManager.findByInputNumber(inputNumber);
-        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
-        return menuBuilder(buildCampaignUSSDMenu(message));
+        if (campaignUid == null) {
+            CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+            return menuBuilder(buildCampaignUSSDMenu(message));
+        } else {
+            return menuBuilder(genericPositiveExit(campaignUid, user.getLocale()));
+        }
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.SHARE_URL)
@@ -114,7 +186,16 @@ public class USSDCampaignController extends USSDBaseController {
         return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
-    // todo : then, the actual share screen
+    @RequestMapping(value = campaignUrl + USSDCampaignUtil.SHARE_URL + "/do")
+    @ResponseBody
+    public Request shareDo(@RequestParam(value = phoneNumber) String inputNumber,
+                           @RequestParam(value = userInputParam) String userInput,
+                           @RequestParam String campaignUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        // todo: check number validity
+        campaignBroker.sendShareMessage(campaignUid, user.getUid(), userInput, "Hello please sign up");
+        return menuBuilder(genericPositiveExit(campaignUid, user.getLocale()));
+    }
 
     private USSDMenu buildCampaignUSSDMenu(CampaignMessage campaignMessage){
         String promptMessage = campaignMessage.getMessage();
@@ -128,6 +209,21 @@ public class USSDCampaignController extends USSDBaseController {
             linksMap.put(embeddedUrl, option);
         });
         return new USSDMenu(promptMessage,linksMap);
+    }
+
+    private USSDMenu buildSharingMenu(String campaignUid, Locale locale) {
+        List<CampaignMessage> campaignMessage = campaignBroker.findCampaignMessage(campaignUid,
+                CampaignActionType.SHARE_PROMPT, locale);
+        final String prompt = !campaignMessage.isEmpty() ? campaignMessage.get(0).getMessage() :
+                getMessage("campaign.share.generic", locale.getLanguage());
+        return new USSDMenu(prompt, campaignMenus + "share/do?campaignUid=" + campaignUid);
+    }
+
+    private USSDMenu genericPositiveExit(String campaignUid, Locale locale) {
+        List<CampaignMessage> campaignMessage = campaignBroker.findCampaignMessage(campaignUid,
+                CampaignActionType.EXIT_POSITIVE, locale);
+        return !campaignMessage.isEmpty() ? buildCampaignUSSDMenu(campaignMessage.get(0)) :
+                new USSDMenu(getMessage("campaign.exit_positive.generic", locale.getLanguage()));
     }
 
     private void updateMembership(User user, CampaignMessage thisMessage, CampaignMessage parentMessage) {

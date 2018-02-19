@@ -274,20 +274,16 @@ public class USSDHomeController extends USSDBaseController {
         return new USSDMenu(promptMessage,linksMap);
     }
 
-    private USSDMenu assembleCampaignResponseForSupportedLanguage(Campaign campaign, User user){
+    private USSDMenu assembleCampaignResponseForSupportedLanguage(Campaign campaign, User user) {
         Locale userLocale = (user.getLanguageCode() != null)? new Locale(user.getLanguageCode()):Locale.ENGLISH;
-        String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + USSDCampaignUtil.SET_LANGUAGE_URL;
-        String promptMessage = getMessage(optionKey,userLocale.getLanguage());
+        String promptMessage = getMessage("user.language.prompt", userLocale.getLanguage());
         Map<String, String> linksMap = new HashMap<>();
         Set<Locale> localeSet = campaignBroker.getCampaignLanguages(campaign.getUid());
         for(Locale locale : localeSet) {
-            String option = locale.getLanguage();
-            String url = USSDCampaignUtil.SET_LANGUAGE_URL +
-                    USSDCampaignUtil.CAMPAIGN_ID_PARAMETER +
-                    campaign.getCampaignCode() +
-                    USSDCampaignUtil.LANGUAGE_PARAMETER +
-                    locale.getLanguage();
-            linksMap.put(option, url);
+            String option = getMessage("language." + locale.getLanguage(), userLocale.getLanguage());
+            String url = "campaign/set-lang?campaignUid=" + campaign.getUid() +
+                    USSDCampaignUtil.LANG_SUFFIX + locale.getLanguage();
+            linksMap.put(url, option);
         }
         return new USSDMenu(promptMessage,linksMap);
     }

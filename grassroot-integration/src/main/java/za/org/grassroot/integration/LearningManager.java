@@ -108,7 +108,7 @@ public class LearningManager implements LearningService {
 
             @SuppressWarnings("unchecked")
             Map<String, Double> returnedTerms = restTemplate.getForObject(url, HashMap.class);
-            return returnedTerms;
+            return returnedTerms == null ? new HashMap<>() : returnedTerms;
         } catch (ResourceAccessException|HttpStatusCodeException e) {
             log.warn("Error calling learning service! Error: " + e.toString());
             return new HashMap<>();

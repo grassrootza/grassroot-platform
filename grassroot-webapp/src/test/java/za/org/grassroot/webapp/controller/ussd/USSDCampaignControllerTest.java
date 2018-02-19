@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.webapp.util.USSDCampaignUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
@@ -93,7 +94,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
                 .params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
-        response.andExpect(xpath("/request/headertext").string("English Sign petition Message"));
+        response.andExpect(xpath("/request/headertext").string("English Sign petition Message. Do you want to keep informed of updates?"));
     }
 
     @Test
@@ -110,20 +111,22 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void testProcessJoinMasterGroupRequest() throws Exception {
-        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, CampaignActionType.JOIN_MASTER_GROUP, "testing_123", Locale.ENGLISH, "English Join Master group Message",
+        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, CampaignActionType.JOIN_GROUP, "testing_123", Locale.ENGLISH, "English Join Master group Message",
                 UserInterfaceType.USSD, null);
+        testUser.setProvince(Province.ZA_GP);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
+        when(campaignBroker.addUserToCampaignMasterGroup(testCampaign.getUid(), testUser.getUid())).thenReturn(testCampaign);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.JOIN_MASTER_GROUP_URL)
                 .params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
-        response.andExpect(xpath("/request/headertext").string("English Join Master group Message"));
+        response.andExpect(xpath("/request/headertext").string("English Join Master group Message. What is your name?"));
     }
 
     @Test
     public void testProcessTagMeRequest() throws Exception {
-        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, CampaignActionType.JOIN_MASTER_GROUP, "testing_123", Locale.ENGLISH, "English Tag me Message",
+        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, CampaignActionType.JOIN_GROUP, "testing_123", Locale.ENGLISH, "English Tag me Message",
                 UserInterfaceType.USSD, null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
@@ -179,7 +182,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         CampaignMessageAction moreInfoAction = new CampaignMessageAction(null,englishMoreInfoMessage, CampaignActionType.MORE_INFO,testUser);
         CampaignMessageAction signPetitionAction = new CampaignMessageAction(null,englishSignPetitionMessage, CampaignActionType.SIGN_PETITION,testUser);
         CampaignMessageAction exitAction = new CampaignMessageAction(null,englishExitMessage, CampaignActionType.EXIT_NEGATIVE,testUser);
-        CampaignMessageAction joinGroupAction = new CampaignMessageAction(null,englishJoinMasterGroupMessage, CampaignActionType.JOIN_MASTER_GROUP,testUser);
+        CampaignMessageAction joinGroupAction = new CampaignMessageAction(null,englishJoinMasterGroupMessage, CampaignActionType.JOIN_GROUP,testUser);
         CampaignMessageAction tagMeAction = new CampaignMessageAction(null,englishTagMeMessage, CampaignActionType.TAG_ME,testUser);
         Set<CampaignMessageAction> campaignMessageActionSet = new HashSet<>();
         campaignMessageActionSet.add(moreInfoAction);

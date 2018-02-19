@@ -42,6 +42,7 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     public static String CONTACT_FIELD_TEMPALTE = "{__contact__}";
     public static String DATE_FIELD_TEMPLATE = "{__date__}";
     public static String PROVINCE_FIELD_TEMPLATE = "{__province__}";
+    public static String INBOUND_FIELD_TEMPLATE = "{__inbound__}";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

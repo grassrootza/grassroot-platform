@@ -83,7 +83,7 @@ public class CampaignManagerController extends BaseRestController {
     @ApiOperation(value = "Fetch a specific campaign", notes = "Fetches a campaign with basic info")
     public ResponseEntity fetchCampaign(HttpServletRequest request, @PathVariable String campaignUid) {
         try {
-            Campaign campaign = campaignBroker.load(getUserIdFromRequest(request), campaignUid);
+            Campaign campaign = campaignBroker.load(campaignUid);
             log.info("fetched a campaign: {}", campaign);
             return ResponseEntity.ok(CampaignWebUtil.createCampaignViewDTO(campaign));
         } catch (AccessDeniedException e) {

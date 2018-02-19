@@ -6,12 +6,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.*;
+import za.org.grassroot.core.domain.notification.CampaignSharingNotification;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -37,6 +41,9 @@ import java.util.stream.Collectors;
 public class CampaignBrokerImpl implements CampaignBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(CampaignBrokerImpl.class);
+
+    // use this a lot in campaign message handling
+    private static final String LOCALE_SEP = "___";
 
     private static final List<String> SYSTEM_CODES = Arrays.asList("123", "911");
 
@@ -66,18 +73,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Campaign load(String userUid, String campaignUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(campaignUid);
-
-        User user = userManager.load(userUid);
-        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-
-        if (!campaign.getCreatedByUser().equals(user)) {
-            permissionBroker.validateGroupPermission(user, campaign.getMasterGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        }
-
-        return campaign;
+    public Campaign load(String campaignUid) {
+        return campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
     }
 
     @Override
@@ -158,6 +155,63 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
+    public void signPetition(String campaignUid, String userUid, UserInterfaceType channel) {
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+        User user = userManager.load(userUid);
+
+        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_PETITION_SIGNED, campaign);
+        if (!StringUtils.isEmpty(campaign.getPetitionApi())) {
+            log.info("firing at the petition API!", campaign.getPetitionApi());
+        }
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(campaignLog);
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    @Async
+    @Override
+    @Transactional
+    public void sendShareMessage(String campaignUid, String sharingUserUid, String sharingNumber, String defaultTemplate) {
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+        User user = userManager.load(Objects.requireNonNull(sharingUserUid));
+
+        // todo: check against budget, also increase amount spent
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        User targetUser = userManager.loadOrCreateUser(sharingNumber);
+        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_SHARED, campaign);
+        campaignLog.setDescription(sharingNumber);
+        bundle.addLog(campaignLog);
+
+        // we default to english, because even if sharing user is in another language, the person receiving might not be
+        List<CampaignMessage> messages = findCampaignMessage(campaignUid, CampaignActionType.SHARE_SEND, Locale.ENGLISH);
+        final String msg = !messages.isEmpty() ? messages.get(0).getMessage() : defaultTemplate;
+        final String template = msg.replace(Broadcast.NAME_FIELD_TEMPLATE, "%1$s")
+                .replace(Broadcast.INBOUND_FIELD_TEMPLATE, "%2$s");
+
+        final String mergedMsg = String.format(template, user.getName(), "Dial *134*...");
+        CampaignSharingNotification sharingNotification = new CampaignSharingNotification(targetUser, mergedMsg, campaignLog);
+
+        log.info("alright, we're storing this notification: {}", sharingNotification);
+        bundle.addNotification(sharingNotification);
+        log.info("and here is the bundle: {}", bundle);
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isUserInCampaignMasterGroup(String campaignUid, String userUid) {
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+        User user = userManager.load(Objects.requireNonNull(userUid));
+
+        Group masterGroup = campaign.getMasterGroup();
+
+        return masterGroup.hasMember(user);
+    }
+
+    @Override
+    @Transactional
     public Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate, Instant endDate, List<String> campaignTags, CampaignType campaignType, String url){
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(masterGroupUid);
@@ -223,26 +277,30 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         validateUserCanModifyCampaign(user, campaign);
 
-        // step one: explode each of the message DTOs into their separate locale-based messages, mapped by incoming ID and lang
+        // step one: find and map all the existing messages, if they exist
+        Map<String, CampaignMessage> existingMessages = campaign.getCampaignMessages().stream()
+                .collect(Collectors.toMap(cm -> cm.getMessageGroupId() + LOCALE_SEP + cm.getLocale(), cm -> cm));
+        log.info("campaign already has: {}", existingMessages);
+
+        // step two: explode each of the message DTOs into their separate locale-based messages, mapped by incoming ID and lang
         Map<String, CampaignMessage> explodedMessages = new LinkedHashMap<>();
         campaignMessages.forEach(cm -> explodedMessages.putAll(cm.getMessages().stream().collect(Collectors.toMap(
-                    msg -> cm.getMessageId() + "___" + msg.getLanguage(),
-                    msg -> new CampaignMessage(user, campaign, cm.getLinkedActionType(), cm.getMessageId(), msg.getLanguage(), msg.getMessage(),
-                            cm.getChannel(), cm.getVariation())))));
+                    msg -> cm.getMessageId() + LOCALE_SEP + msg.getLanguage(),
+                    msg -> updateExistingOrCreateNew(user, campaign, cm, msg, existingMessages)))));
 
-        log.info("exploded message set: ", explodedMessages);
-
+        log.info("exploded message set: {}", explodedMessages);
+        log.info("campaign messages look like: {}", campaignMessages);
         Map<String, CampaignMessageDTO> mappedMessages = campaignMessages.stream().collect(Collectors.toMap(
                 CampaignMessageDTO::getMessageId, cm -> cm));
 
         // step two: go through each message, and wire up where to go next (better than earlier iterations, but can be cleaned)
         campaignMessages.forEach(cdto -> {
             cdto.getLanguages().forEach(lang -> {
-                CampaignMessage cm = explodedMessages.get(cdto.getMessageId() + "___" + lang);
+                CampaignMessage cm = explodedMessages.get(cdto.getMessageId() + LOCALE_SEP + lang);
                 log.info("wiring up message: {}", cm);
                 cdto.getNextMsgIds().forEach(nextMsgId -> {
-                    CampaignMessage nextMsg = explodedMessages.get(nextMsgId + "___" + lang);
-                    log.info("for next msg {}, found CM: {}", nextMsgId + "___" + lang, nextMsg);
+                    CampaignMessage nextMsg = explodedMessages.get(nextMsgId + LOCALE_SEP + lang);
+                    log.info("for next msg {}, found CM: {}", nextMsgId + LOCALE_SEP + lang, nextMsg);
                     cm.addNextMessage(nextMsg.getUid(), mappedMessages.get(nextMsgId).getLinkedActionType());
                 });
             });
@@ -258,6 +316,31 @@ public class CampaignBrokerImpl implements CampaignBroker {
         persistCampaignLog(campaignLog);
 
         return updatedCampaign;
+    }
+
+    @Override
+    public List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale) {
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+        return campaignMessageRepository.findAll(
+                CampaignMessageSpecifications.ofTypeForCampaign(campaign, linkedAction, locale)
+        );
+    }
+
+    private CampaignMessage updateExistingOrCreateNew(User user, Campaign campaign, CampaignMessageDTO cm,
+                                                      MessageLanguagePair msg, Map<String, CampaignMessage> existingMsgs) {
+        boolean newMessage = existingMsgs.isEmpty()
+                || !existingMsgs.containsKey(cm.getMessageId() + LOCALE_SEP + msg.getLanguage());
+        log.info("does message with this key: {}, exist? {}", cm.getMessageId(), !newMessage);
+
+        if (newMessage) {
+            return new CampaignMessage(user, campaign, cm.getLinkedActionType(), cm.getMessageId(),
+                    msg.getLanguage(), msg.getMessage(), cm.getChannel(), cm.getVariation());
+        } else {
+            CampaignMessage message = existingMsgs.get(cm.getMessageId() + LOCALE_SEP + msg.getLanguage());
+            message.setActionType(cm.getLinkedActionType());
+            message.setMessage(msg.getMessage());
+            return message;
+        }
     }
 
     @Override

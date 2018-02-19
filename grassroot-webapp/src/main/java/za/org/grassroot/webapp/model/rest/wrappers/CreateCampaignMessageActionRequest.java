@@ -16,7 +16,7 @@ public class CreateCampaignMessageActionRequest implements Serializable {
     private String campaignCode;
     @ApiModelProperty(value="message uid an action links to")
     private String messageUid;
-    @ApiModelProperty(value="type of action", allowableValues = "TAG_ME,JOIN_MASTER_GROUP,SIGN_PETITION,MORE_INFO,EXIT")
+    @ApiModelProperty(value="type of action", allowableValues = "TAG_ME,JOIN_GROUP,SIGN_PETITION,MORE_INFO,EXIT")
     private CampaignActionType action;
     @ApiModelProperty(value="uid of user creating action")
     private String userUid;

@@ -19,12 +19,21 @@ public final class CampaignMessageSpecifications {
                 .and(withUserInterfaceParams(locale, channel, variation));
     }
 
+    public static Specifications<CampaignMessage> ofTypeForCampaign(Campaign campaign, CampaignActionType actionType, Locale locale) {
+        return Specifications.where(activeForCampaign(campaign)).and(ofActionType(actionType))
+                .and(forLanguage(locale));
+    }
+
     private static Specification<CampaignMessage> activeForCampaign(Campaign campaign) {
         return (root, query, cb) -> cb.and(cb.equal(root.get("campaign"), campaign), cb.isTrue(root.get("active")));
     }
 
     private static Specification<CampaignMessage> ofActionType(CampaignActionType actionType) {
         return (root, query, cb) -> cb.equal(root.get("actionType"), actionType);
+    }
+
+    private static Specification<CampaignMessage> forLanguage(Locale locale) {
+        return (root, query, cb) -> cb.equal(root.get("locale"), locale);
     }
 
     private static Specification<CampaignMessage> withUserInterfaceParams(Locale locale, UserInterfaceType channel,

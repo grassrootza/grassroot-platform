@@ -13,4 +13,9 @@ public class MessageLanguagePair {
 
     private Locale language;
     private String message;
+
+    @Override
+    public String toString() {
+        return "message: " + language +  "='" + message + '\'';
+    }
 }

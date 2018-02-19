@@ -42,13 +42,13 @@ public class CampaignLog implements ActionLog {
     private Campaign campaign;
 
     @Column(name="description", nullable = true)
-    private String description;
+    @Setter private String description;
 
     @ManyToOne
     @JoinColumn(name = "broadcast_id")
     @Setter private Broadcast broadcast;
 
-    public CampaignLog() {
+    private CampaignLog() {
         // for JPA
     }
 

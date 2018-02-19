@@ -40,7 +40,7 @@ public class CampaignWebUtil {
                 campaign.getCreatedDateTime(),
                 campaign.getStartDateTime(),
                 campaign.getEndDateTime(),
-                campaign.getUrl(),
+                campaign.getLandingUrl(),
                 campaign.getCampaignCode(),
                 campaign.getTagList());
 
@@ -54,8 +54,6 @@ public class CampaignWebUtil {
             campaignDto.setCampaignMessages(groupCampaignMessages(campaign));
             log.info("campaign DTO message list: {}", campaign.getCampaignMessages());
         }
-
-        log.info("okay, here's a DTO: {}", campaignDto);
 
         return campaignDto;
     }

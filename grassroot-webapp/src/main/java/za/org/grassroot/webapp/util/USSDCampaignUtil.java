@@ -9,7 +9,8 @@ import java.util.Map;
 
 public class USSDCampaignUtil {
 
-    public static final String LANGUAGE_PARAMETER ="&lang=";
+    public static final String LANGUAGE_PARAMETER ="lang";
+    public static final String LANG_SUFFIX = "&lang=";
     public static final String CAMPAIGN_ID_PARAMETER ="&campaignUid=";
     public static final String CAMPAIGN_PREFIX ="campaign.";
     public static final String TAG_ME_URL = "tag-me";
@@ -27,11 +28,11 @@ public class USSDCampaignUtil {
     static {
         Map<CampaignActionType,String> urls = new HashMap<>();
         urls.put(CampaignActionType.TAG_ME, TAG_ME_URL);
-        urls.put(CampaignActionType.JOIN_MASTER_GROUP, JOIN_MASTER_GROUP_URL);
+        urls.put(CampaignActionType.JOIN_GROUP, JOIN_MASTER_GROUP_URL);
         urls.put(CampaignActionType.SIGN_PETITION, SIGN_PETITION_URL);
         urls.put(CampaignActionType.MORE_INFO,MORE_INFO_URL);
         urls.put(CampaignActionType.EXIT_NEGATIVE, EXIT_URL);
-        urls.put(CampaignActionType.SHARE, SHARE_URL);
+        urls.put(CampaignActionType.SHARE_PROMPT, SHARE_URL);
         campaignUrlMap = Collections.unmodifiableMap(urls);
     }
 

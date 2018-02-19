@@ -665,6 +665,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
+    public void updateUserProvince(String userUid, Province province) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        user.setProvince(province);
+    }
+
+    @Override
+    @Transactional
     public void updateAlertPreferences(String userUid, AlertPreference alertPreference) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertPreference);

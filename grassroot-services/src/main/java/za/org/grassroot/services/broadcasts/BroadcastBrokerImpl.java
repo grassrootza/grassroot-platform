@@ -113,7 +113,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .twitterAccount(twitterAccount);
 
         builder.campaignNamesUrls(campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"))
-                .stream().filter(Campaign::isActive).collect(Collectors.toMap(Campaign::getName, Campaign::getUrl)));
+                .stream().filter(Campaign::isActive).collect(Collectors.toMap(Campaign::getName, Campaign::getLandingUrl)));
 
         // or for campaign, extract somehow
         Group group = groupRepository.findOneByUid(groupUid);
