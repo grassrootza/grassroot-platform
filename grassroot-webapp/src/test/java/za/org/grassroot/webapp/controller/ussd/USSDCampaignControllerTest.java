@@ -12,11 +12,14 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.campaign.*;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.webapp.util.USSDCampaignUtil;
+import za.org.grassroot.webapp.util.USSDCampaignConstants;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.time.Instant;
@@ -24,7 +27,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -59,8 +62,8 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         testGroup = new Group("test group", testUser);
         testCampaign = createTestCampaign();
         params = new LinkedMultiValueMap<>();
-        params.add(USSDCampaignUtil.CAMPAIGN_ID_PARAMETER,testCode);
-        params.add(USSDCampaignUtil.LANGUAGE_PARAMETER,testLanguage);
+        params.add(USSDCampaignConstants.CAMPAIGN_ID_PARAMETER,testCode);
+        params.add(USSDCampaignConstants.LANGUAGE_PARAMETER,testLanguage);
         params.add(USSDUrlUtil.phoneNumber,testUserPhone);
     }
 
@@ -76,7 +79,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
                 UserInterfaceType.USSD, null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.MORE_INFO_URL)
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.MORE_INFO_URL)
                 .params(getParams(testMsg.getUid())));
         Assert.assertNotNull(response);
         response.andExpect(status().isOk());
@@ -90,7 +93,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
                 UserInterfaceType.USSD, null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.SIGN_PETITION_URL)
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.SIGN_PETITION_URL)
                 .params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
@@ -103,7 +106,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
                 UserInterfaceType.USSD, null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.EXIT_URL).params(getParams(testMsg.getUid()))).andExpect(status().isOk());
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.EXIT_URL).params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
         response.andExpect(xpath("/request/headertext").string("English Exit Message"));
@@ -117,7 +120,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
         when(campaignBroker.addUserToCampaignMasterGroup(testCampaign.getUid(), testUser.getUid())).thenReturn(testCampaign);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.JOIN_MASTER_GROUP_URL)
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.JOIN_MASTER_GROUP_URL)
                 .params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
@@ -132,7 +135,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
         MultiValueMap<String, String> params = getParams(testMsg.getUid());
         params.add("parentMsgUid", testMsg.getUid());
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.TAG_ME_URL)
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.TAG_ME_URL)
                 .params(params)).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
@@ -148,7 +151,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
                 UserInterfaceType.USSD, null)).thenReturn(testMsg);
         MultiValueMap<String, String> params = getParams("");
         params.add("campaignUid", testCampaign.getUid());
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.SET_LANGUAGE_URL)
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.SET_LANGUAGE_URL)
                 .params(params)).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
@@ -170,8 +173,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
         CampaignMessage englishMoreInfoMessage = new CampaignMessage(testUser, campaign, CampaignActionType.OPENING, "testing_123", Locale.ENGLISH, "English More info Message", UserInterfaceType.USSD, MessageVariationAssignment.EXPERIMENT);
         CampaignMessage englishSignPetitionAfterMoreReadingMoreInfoMessage = new CampaignMessage(testUser, campaign, CampaignActionType.OPENING, "testing_123", Locale.ENGLISH, "English Sign petition Message 2", UserInterfaceType.USSD, MessageVariationAssignment.EXPERIMENT);
-        CampaignMessageAction signPetitionActionAfterMoreInfo = new CampaignMessageAction(englishMoreInfoMessage,englishSignPetitionAfterMoreReadingMoreInfoMessage, CampaignActionType.SIGN_PETITION,testUser);
-        englishMoreInfoMessage.getCampaignMessageActionSet().add(signPetitionActionAfterMoreInfo);
+        englishMoreInfoMessage.addNextMessage(englishSignPetitionAfterMoreReadingMoreInfoMessage.getUid(), CampaignActionType.SIGN_PETITION);
 
         CampaignMessage englishSignPetitionMessage = new CampaignMessage(testUser, campaign, CampaignActionType.OPENING, "testing_123", Locale.ENGLISH, "English Sign petition Message", UserInterfaceType.USSD, MessageVariationAssignment.EXPERIMENT);
         CampaignMessage englishExitMessage = new CampaignMessage(testUser, campaign, CampaignActionType.OPENING, "testing_123", Locale.ENGLISH, "English Exit Message", UserInterfaceType.USSD, MessageVariationAssignment.EXPERIMENT);
@@ -179,18 +181,11 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         CampaignMessage englishTagMeMessage = new CampaignMessage(testUser, campaign, CampaignActionType.OPENING, "testing_123", Locale.ENGLISH, "English Tag me Message", UserInterfaceType.USSD, MessageVariationAssignment.EXPERIMENT);
 
         englishMessage.setUid(testMessageUid);//set to test one
-        CampaignMessageAction moreInfoAction = new CampaignMessageAction(null,englishMoreInfoMessage, CampaignActionType.MORE_INFO,testUser);
-        CampaignMessageAction signPetitionAction = new CampaignMessageAction(null,englishSignPetitionMessage, CampaignActionType.SIGN_PETITION,testUser);
-        CampaignMessageAction exitAction = new CampaignMessageAction(null,englishExitMessage, CampaignActionType.EXIT_NEGATIVE,testUser);
-        CampaignMessageAction joinGroupAction = new CampaignMessageAction(null,englishJoinMasterGroupMessage, CampaignActionType.JOIN_GROUP,testUser);
-        CampaignMessageAction tagMeAction = new CampaignMessageAction(null,englishTagMeMessage, CampaignActionType.TAG_ME,testUser);
-        Set<CampaignMessageAction> campaignMessageActionSet = new HashSet<>();
-        campaignMessageActionSet.add(moreInfoAction);
-        campaignMessageActionSet.add(signPetitionAction);
-        campaignMessageActionSet.add(exitAction);
-        campaignMessageActionSet.add(joinGroupAction);
-        campaignMessageActionSet.add(tagMeAction);
-        englishMessage.setCampaignMessageActionSet(campaignMessageActionSet);
+        englishMessage.addNextMessage(englishMoreInfoMessage.getUid(), CampaignActionType.MORE_INFO);
+        englishMessage.addNextMessage(englishSignPetitionMessage.getUid(), CampaignActionType.SIGN_PETITION);
+        englishMessage.addNextMessage(englishJoinMasterGroupMessage.getUid(), CampaignActionType.MORE_INFO);
+        englishMessage.addNextMessage(englishTagMeMessage.getUid(), CampaignActionType.TAG_ME);
+
         CampaignMessage germanMessage = new CampaignMessage(testUser, campaign, CampaignActionType.OPENING, "testing_123", Locale.GERMAN, "First Test German Message", UserInterfaceType.USSD, MessageVariationAssignment.EXPERIMENT);
         Set<CampaignMessage> campaignMessageSet = new HashSet<>();
         campaignMessageSet.add(englishMessage);

@@ -25,7 +25,7 @@ import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.util.USSDCampaignUtil;
+import za.org.grassroot.webapp.util.USSDCampaignConstants;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -262,11 +262,11 @@ public class USSDHomeController extends USSDBaseController {
         Map<String, String> linksMap = new HashMap<>();
         if (campaignMessage.getNextMessages() != null && !campaignMessage.getNextMessages().isEmpty()){
             for(Map.Entry<String, CampaignActionType> action : campaignMessage.getNextMessages().entrySet()){
-                String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + action.getValue().name().toLowerCase();
+                String optionKey = USSDCampaignConstants.CAMPAIGN_PREFIX + action.getValue().name().toLowerCase();
                 String option = getMessage(optionKey, userLocale.getLanguage());
                 StringBuilder url = new StringBuilder("campaign/");
-                url.append(USSDCampaignUtil.getCampaignUrlPrefixs().get(action.getValue())).append("?");
-                url.append(USSDCampaignUtil.MESSAGE_UID_PARAMETER).append(action.getKey());
+                url.append(USSDCampaignConstants.getCampaignUrlPrefixs().get(action.getValue())).append("?");
+                url.append(USSDCampaignConstants.MESSAGE_UID_PARAMETER).append(action.getKey());
                 log.info("adding url: {}", url.toString());
                 linksMap.put(url.toString(), option);
             }
@@ -282,7 +282,7 @@ public class USSDHomeController extends USSDBaseController {
         for(Locale locale : localeSet) {
             String option = getMessage("language." + locale.getLanguage(), userLocale.getLanguage());
             String url = "campaign/set-lang?campaignUid=" + campaign.getUid() +
-                    USSDCampaignUtil.LANG_SUFFIX + locale.getLanguage();
+                    USSDCampaignConstants.LANG_SUFFIX + locale.getLanguage();
             linksMap.put(url, option);
         }
         return new USSDMenu(promptMessage,linksMap);

@@ -14,7 +14,6 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -73,24 +72,10 @@ public class CampaignBrokerTest {
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getChannel(), UserInterfaceType.USSD);
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getLocale(), Locale.ENGLISH);
 
-        Campaign reUpdatedCampaign = campaignBroker.addActionToCampaignMessage(campaign.getUid(), updatedCampaign.getCampaignMessages().iterator().next().getUid(), CampaignActionType.JOIN_GROUP,"test action message",Locale.ENGLISH,MessageVariationAssignment.CONTROL,UserInterfaceType.USSD, testUser,null);
-        Assert.assertNotNull(reUpdatedCampaign);
-        Assert.assertNotNull(reUpdatedCampaign.getCampaignMessages().iterator().next().getCampaignMessageActionSet());
-        Assert.assertEquals(reUpdatedCampaign.getCampaignMessages().iterator().next().getCampaignMessageActionSet().size(), 1);
-        Assert.assertEquals(reUpdatedCampaign.getCampaignMessages().iterator().next().getCampaignMessageActionSet().iterator().next().getActionType(), CampaignActionType.JOIN_GROUP);
-
         Campaign linkedCampaign = campaignBroker.updateMasterGroup("234", testGroup.getUid(),testUser.getUid());
         Assert.assertNotNull(linkedCampaign);
         Assert.assertNotNull(linkedCampaign.getMasterGroup());
         Assert.assertEquals(linkedCampaign.getMasterGroup().getId(),testGroup.getId());
-
-        // todo: fix when this part of campaigns is also fixed up
-//        Campaign cam = campaignBroker.addUserToCampaignMasterGroup(reUpdatedCampaign.getUid(),"0605550000");
-//        Assert.assertNotNull(cam);
-//        Assert.assertNotNull(cam.getMasterGroup());
-//        Assert.assertNotNull(cam.getMasterGroup().getMembers());
-//        Assert.assertEquals(cam.getMasterGroup().getMembers().size(), 1);
-//        Assert.assertEquals(cam.getMasterGroup().getMembers().iterator().next().getPhoneNumber(),"27605550000");
     }
 
 }

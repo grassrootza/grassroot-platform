@@ -18,7 +18,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.util.USSDCampaignUtil;
+import za.org.grassroot.webapp.util.USSDCampaignConstants;
 
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -43,11 +43,11 @@ public class USSDCampaignController extends USSDBaseController {
         this.campaignBroker = campaignBroker;
     }
 
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.SET_LANGUAGE_URL)
+    @RequestMapping(value = campaignUrl + USSDCampaignConstants.SET_LANGUAGE_URL)
     @ResponseBody
     public Request userSetLanguageForCampaign(@RequestParam(value= phoneNumber) String inputNumber,
                                               @RequestParam String campaignUid,
-                                              @RequestParam(value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode) throws URISyntaxException {
+                                              @RequestParam(value = USSDCampaignConstants.LANGUAGE_PARAMETER) String languageCode) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
         if(StringUtils.isEmpty(user.getLanguageCode())) {
@@ -57,7 +57,7 @@ public class USSDCampaignController extends USSDBaseController {
         return  menuBuilder(buildCampaignUSSDMenu(campaignMessage));
     }
 
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.MORE_INFO_URL)
+    @RequestMapping(value = campaignUrl + USSDCampaignConstants.MORE_INFO_URL)
     @ResponseBody
     public Request processMoreInfoRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                           @RequestParam String messageUid)  throws URISyntaxException {
@@ -66,7 +66,7 @@ public class USSDCampaignController extends USSDBaseController {
         return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.JOIN_MASTER_GROUP_URL)
+    @RequestMapping(value = campaignUrl + USSDCampaignConstants.JOIN_MASTER_GROUP_URL)
     @ResponseBody
     public Request processJoinMasterGroupRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                                  @RequestParam(required = false) String messageUid,
@@ -88,7 +88,7 @@ public class USSDCampaignController extends USSDBaseController {
         return menuBuilder(topicsOrFinalOptionsMenu(campaign, user, promptStart, locale));
     }
 
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.SIGN_PETITION_URL)
+    @RequestMapping(value = campaignUrl + USSDCampaignConstants.SIGN_PETITION_URL)
     @ResponseBody
     public Request processSignPetitionRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                               @RequestParam String messageUid) throws URISyntaxException{
@@ -99,7 +99,7 @@ public class USSDCampaignController extends USSDBaseController {
         return menuBuilder(joinGroupOrFinalOptionsMenu(message.getCampaign(), user, promptStart, message.getLocale()));
     }
 
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.TAG_ME_URL)
+    @RequestMapping(value = campaignUrl + USSDCampaignConstants.TAG_ME_URL)
     @ResponseBody
     public Request processTagMeRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                        @RequestParam String messageUid,
@@ -125,8 +125,8 @@ public class USSDCampaignController extends USSDBaseController {
         if (!campaignBroker.isUserInCampaignMasterGroup(campaign.getUid(), user.getUid())) {
             final String prompt = promptStart + getMessage("campaign.join.generic", locale.getLanguage());
             menu = new USSDMenu(prompt, optionsYesNo(user,
-                    campaignMenus + USSDCampaignUtil.JOIN_MASTER_GROUP_URL + "?campaignUid=" + campaign.getUid(),
-                    campaignMenus + USSDCampaignUtil.EXIT_URL + "?campaignUid=" + campaign.getUid()));
+                    campaignMenus + USSDCampaignConstants.JOIN_MASTER_GROUP_URL + "?campaignUid=" + campaign.getUid(),
+                    campaignMenus + USSDCampaignConstants.EXIT_URL + "?campaignUid=" + campaign.getUid()));
         } else {
             menu = processFinalOptionsMenu(campaign, user, promptStart, locale);
         }
@@ -137,7 +137,7 @@ public class USSDCampaignController extends USSDBaseController {
         USSDMenu menu;
         if (!campaign.getJoinTopics().isEmpty()) {
             final String prompt = promptStart + getMessage("campaign.choose.topic", locale.getLanguage());
-            final String urlPrefix = campaignMenus + USSDCampaignUtil.TAG_ME_URL + "?campaignUid=" + campaign.getUid();
+            final String urlPrefix = campaignMenus + USSDCampaignConstants.TAG_ME_URL + "?campaignUid=" + campaign.getUid();
             menu = new USSDMenu(prompt);
             campaign.getJoinTopics().forEach(topic -> menu.addMenuOption(urlPrefix + topic, topic));
         } else {
@@ -163,7 +163,7 @@ public class USSDCampaignController extends USSDBaseController {
         return menu;
     }
 
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.EXIT_URL)
+    @RequestMapping(value = campaignUrl + USSDCampaignConstants.EXIT_URL)
     @ResponseBody
     public Request processExitRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam(required = false) String messageUid,
@@ -177,7 +177,7 @@ public class USSDCampaignController extends USSDBaseController {
         }
     }
 
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.SHARE_URL)
+    @RequestMapping(value = campaignUrl + USSDCampaignConstants.SHARE_URL)
     @ResponseBody
     public Request sharePrompt(@RequestParam(value = phoneNumber) String inputNumber,
                                @RequestParam String messageUid) throws URISyntaxException {
@@ -186,7 +186,7 @@ public class USSDCampaignController extends USSDBaseController {
         return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
-    @RequestMapping(value = campaignUrl + USSDCampaignUtil.SHARE_URL + "/do")
+    @RequestMapping(value = campaignUrl + USSDCampaignConstants.SHARE_URL + "/do")
     @ResponseBody
     public Request shareDo(@RequestParam(value = phoneNumber) String inputNumber,
                            @RequestParam(value = userInputParam) String userInput,
@@ -201,11 +201,11 @@ public class USSDCampaignController extends USSDBaseController {
         String promptMessage = campaignMessage.getMessage();
         Map<String, String> linksMap = new LinkedHashMap<>();
         campaignMessage.getNextMessages().forEach((msgUid, actionType) -> {
-            String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + actionType.name().toLowerCase();
+            String optionKey = USSDCampaignConstants.CAMPAIGN_PREFIX + actionType.name().toLowerCase();
             String option = getMessage(optionKey, campaignMessage.getLocale().getLanguage());
             String embeddedUrl = campaignMenus +
-                    USSDCampaignUtil.getCampaignUrlPrefixs().get(actionType) + "?" +
-                    USSDCampaignUtil.MESSAGE_UID_PARAMETER + msgUid;
+                    USSDCampaignConstants.getCampaignUrlPrefixs().get(actionType) + "?" +
+                    USSDCampaignConstants.MESSAGE_UID_PARAMETER + msgUid;
             linksMap.put(embeddedUrl, option);
         });
         return new USSDMenu(promptMessage,linksMap);

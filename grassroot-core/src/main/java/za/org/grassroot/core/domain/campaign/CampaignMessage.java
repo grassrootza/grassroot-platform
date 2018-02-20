@@ -78,12 +78,6 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Column(name = "locale")
     private Locale locale;
 
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "actionMessage")
-    private CampaignMessageAction parentAction;
-
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "parentCampaignMessage", orphanRemoval = true)
-    private Set<CampaignMessageAction> campaignMessageActionSet = new HashSet<>();
-
     @Column(name = "next_actions")
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] nextActions;
@@ -132,10 +126,6 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         this.tags = tags;
     }
 
-    public boolean matchesMessageAndLocale(Campaign campaign, final String message, Locale locale) {
-        return this.campaign.equals(campaign) && this.message.equals(message.trim()) && this.locale.equals(locale);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -181,17 +171,6 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         sb.append(", version=").append(version);
         sb.append('}');
         return sb.toString();
-    }
-
-    public Set<CampaignMessageAction> getCampaignMessageActionSet() {
-        if(campaignMessageActionSet == null){
-            campaignMessageActionSet = new HashSet<>();
-        }
-        return campaignMessageActionSet;
-    }
-
-    public void setCampaignMessageActionSet(Set<CampaignMessageAction> campaignMessageActionSet) {
-        this.campaignMessageActionSet = campaignMessageActionSet;
     }
 
 }

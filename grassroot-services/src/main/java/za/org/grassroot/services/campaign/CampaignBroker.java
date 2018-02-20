@@ -50,6 +50,4 @@ public interface CampaignBroker {
 
     Campaign updateMasterGroup(String campaignCode, String groupUid, String userUid);
 
-
-    Campaign addActionToCampaignMessage(String campaignUid, String parentMessageUid,CampaignActionType actionType, String actionMessage, Locale actionMessageLocale, MessageVariationAssignment actionMessageAssignment, UserInterfaceType interfaceType, User createUser, Set<String> actionMessageTags);
 }

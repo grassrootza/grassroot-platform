@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class USSDCampaignUtil {
+public class USSDCampaignConstants {
 
     public static final String LANGUAGE_PARAMETER ="lang";
     public static final String LANG_SUFFIX = "&lang=";

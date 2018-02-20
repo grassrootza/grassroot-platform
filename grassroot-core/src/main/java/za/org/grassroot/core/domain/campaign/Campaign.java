@@ -6,6 +6,7 @@ import org.hibernate.annotations.Type;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -137,6 +138,14 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         // then add the topics
         tags.addAll(joinTopics.stream().map(s -> JOIN_TOPIC_PREFIX + s).collect(Collectors.toSet()));
         setTags(tags);
+    }
+
+    public long countUsersInLogs(CampaignLogType logType) {
+        return getCampaignLogs().stream()
+                .filter(log -> logType.equals(log.getCampaignLogType()))
+                .map(log -> log.getUser().getId())
+                .distinct()
+                .count();
     }
 
 

@@ -25,7 +25,6 @@ import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
-import za.org.grassroot.services.exception.CampaignMessageNotFoundException;
 import za.org.grassroot.services.exception.CampaignNotFoundException;
 import za.org.grassroot.services.exception.GroupNotFoundException;
 import za.org.grassroot.services.group.GroupBroker;
@@ -395,46 +394,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         return campaign;
     }
 
-
-    @Override
-    @Transactional
-    public Campaign addActionToCampaignMessage(String campaignUid, String parentMessageUid,CampaignActionType actionType, String actionMessage, Locale actionMessageLocale, MessageVariationAssignment actionMessageAssignment, UserInterfaceType interfaceType, User createUser, Set<String> actionMessageTags){
-        Objects.requireNonNull(campaignUid);
-        Objects.requireNonNull(parentMessageUid);
-        Objects.requireNonNull(actionType);
-        Objects.requireNonNull(actionMessage);
-        Objects.requireNonNull(interfaceType);
-        Objects.requireNonNull(createUser);
-        Objects.requireNonNull(actionMessageLocale);
-
-        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-        if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
-            boolean messageFound = false;
-            for(CampaignMessage parentMessage : campaign.getCampaignMessages()) {
-                if (parentMessage.getUid().trim().equalsIgnoreCase(parentMessageUid.trim())) {
-                    CampaignMessage messageForAction = new CampaignMessage(createUser, campaign, CampaignActionType.OPENING, "testing_123", actionMessageLocale, actionMessage, interfaceType, actionMessageAssignment);
-                    if (actionMessageTags != null) {
-                        messageForAction.setTags(new ArrayList<>(actionMessageTags));
-                    }
-                    CampaignMessageAction action = new CampaignMessageAction(parentMessage, messageForAction, actionType, createUser);
-                    parentMessage.getCampaignMessageActionSet().add(action);
-                    messageFound = true;
-                    break;
-                }
-            }
-            if(!messageFound){
-                LOG.error("No Campaign message found for uid = {}" + parentMessageUid);
-                throw  new CampaignMessageNotFoundException(CAMPAIGN_MESSAGE_NOT_FOUND_CODE);
-            }
-            Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
-            CampaignLog campaignLog = new CampaignLog(createUser, CampaignLogType.CAMPAIGN_MESSAGE_ACTION_ADDED, campaign);
-            persistCampaignLog(campaignLog);
-            return updatedCampaign;
-        }
-        LOG.error("No Campaign found for code = {}" + campaignUid);
-        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
-
-    }
 
     private Campaign getCampaignByCampaignCode(String campaignCode){
         Objects.requireNonNull(campaignCode);
