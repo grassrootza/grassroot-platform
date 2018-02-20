@@ -74,8 +74,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Transactional(readOnly = true)
     public Set<GroupTimeChangedDTO> findNewlyChangedGroups(String userUid, Map<String, Long> excludedGroupsByTimeChanged) {
         User user = userRepository.findOneByUid(userUid);
-
-        // major todo: do all this through specifications instead of typed query, and consolidate to one query
         Specifications<Group> specifications = Specifications
                 .where(GroupSpecifications.isActive())
                 .and(GroupSpecifications.userIsMember(user));

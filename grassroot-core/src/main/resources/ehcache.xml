@@ -80,7 +80,7 @@
     <cache name="social_media_managed_pages"
            maxEntriesLocalHeap="2000"
            eternal="false"
-           timeToIdleSeconds="60">
+           timeToIdleSeconds="900">
     </cache>
 
 </ehcache>

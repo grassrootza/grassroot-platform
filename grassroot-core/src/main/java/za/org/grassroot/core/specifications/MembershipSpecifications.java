@@ -107,14 +107,19 @@ public class MembershipSpecifications {
             }
 
             if (!StringUtils.isEmpty(namePhoneOrEmail)) {
-                List<String> splitSearchTerms = Arrays.stream(namePhoneOrEmail.split(",")).map(String::trim).collect(Collectors.toList());
                 List<Predicate> nameSearchPredicates = new ArrayList<>();
-                for (String term: splitSearchTerms) {
-                    Predicate byName = cb.like(root.get(Membership_.user).get(User_.displayName), "%" + term + "%");
-                    Predicate byPhone = cb.like(root.get(Membership_.user).get(User_.phoneNumber), "%" + term + "%");
-                    Predicate byEmail = cb.like(root.get(Membership_.user).get(User_.emailAddress), "%" + term + "%");
-                    nameSearchPredicates.add(cb.or(byName, byEmail, byPhone));
-                }
+                Arrays.stream(namePhoneOrEmail.split(","))
+                        .map(term -> term.trim().toLowerCase())
+                        .filter(term -> !StringUtils.isEmpty(term))
+                        .forEach(term -> {
+                            Predicate byName = cb.like(cb.lower(root.get(Membership_.user).get(User_.displayName)),
+                                    "%" + term + "%");
+                            Predicate byPhone = cb.like(cb.lower(root.get(Membership_.user).get(User_.phoneNumber)),
+                                    "%" + term + "%");
+                            Predicate byEmail = cb.like(cb.lower(root.get(Membership_.user).get(User_.emailAddress)),
+                                    "%" + term + "%");
+                            nameSearchPredicates.add(cb.or(byName, byEmail, byPhone));
+                        });
                 restrictions.add(cb.or(nameSearchPredicates.toArray(new Predicate[0])));
             }
 
