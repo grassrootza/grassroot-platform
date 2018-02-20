@@ -27,16 +27,16 @@ public interface CampaignBroker {
     List<Campaign> getCampaignsCreatedByUser(String userUid);
     List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid);
 
-    Campaign getCampaignDetailsByCode(String campaignCode, String userUid, boolean storeLog);
+    Campaign getCampaignDetailsByCode(String campaignCode, String userUid, boolean storeLog, UserInterfaceType channel);
 
     Set<String> getActiveCampaignCodes();
     Set<String> getCampaignTags();
 
     void signPetition(String campaignUid, String userUid, UserInterfaceType channel);
-    void sendShareMessage(String campaignUid, String sharingUserUid, String sharingNumber, String defaultTemplate);
+    void sendShareMessage(String campaignUid, String sharingUserUid, String sharingNumber, String defaultTemplate, UserInterfaceType channel);
 
     boolean isUserInCampaignMasterGroup(String campaignUid, String userUid);
-    Campaign addUserToCampaignMasterGroup(String campaignUid, String userUid);
+    Campaign addUserToCampaignMasterGroup(String campaignUid, String userUid, UserInterfaceType channel);
 
     // modifying and adding
     Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate,
@@ -46,8 +46,12 @@ public interface CampaignBroker {
 
     Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages);
 
-    Campaign addCampaignTags(String campaignCode, List<String> tags);
+    Campaign updateMasterGroup(String campaignUid, String groupUid, String userUid);
 
-    Campaign updateMasterGroup(String campaignCode, String groupUid, String userUid);
+    void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid,
+                               Instant endDate, String landingUrl, String petitionApi);
+
+    // new code is in case the old one has been taken in the meantime
+    void reactivateCampaign(String userUid, String campaignUid, Instant newEndDate, String newCode);
 
 }

@@ -3,29 +3,28 @@ package za.org.grassroot.core.enums;
 
 public enum CampaignLogType {
 
-    CREATED_IN_DB("campaign created"),
-    CAMPAIGN_MESSAGES_SET("campaign messages set"),
-    CAMPAIGN_MESSAGE_ADDED("campaign message added"),
-    CAMPAIGN_TAG_ADDED("campaign tag added"),
-    CAMPAIGN_MESSAGE_ACTION_ADDED("campaign message action added"),
-    CAMPAIGN_LINKED_GROUP("campaign linked to master group"),
-    CAMPAIGN_NOT_FOUND("campaign not found"),
-    CAMPAIGN_FOUND("campaign found"),
-    CAMPAIGN_MESSAGE_FOUND("campaign message found"),
-    CAMPAIGN_MESSAGE_NOT_FOUND("campaign message not found"),
-    CAMPAIGN_USER_ADDED_TO_MASTER_GROUP("campaign user added to master group"),
-    CAMPAIGN_BROADCAST_SENT("send a broadcast to campaign"),
-    CAMPAIGN_SHARED("campaign shared by a user"),
-    CAMPAIGN_PETITION_SIGNED("user signed a campaign petition");
+    CREATED_IN_DB,
+    CAMPAIGN_MESSAGES_SET,
+    CAMPAIGN_MESSAGE_ADDED,
+    CAMPAIGN_TAG_ADDED,
+    CAMPAIGN_MESSAGE_ACTION_ADDED,
+    CAMPAIGN_LINKED_GROUP,
+    CAMPAIGN_NOT_FOUND,
+    CAMPAIGN_FOUND,
+    CAMPAIGN_MESSAGE_FOUND,
+    CAMPAIGN_MESSAGE_NOT_FOUND,
+    CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,
+    CAMPAIGN_BROADCAST_SENT,
+    CAMPAIGN_SHARED,
+    CAMPAIGN_PETITION_SIGNED,
 
-    private final String text;
+    CAMPAIGN_MODIFIED,
+    CAMPAIGN_NAME_CHANGED,
+    CAMPAIGN_DESC_CHANGED,
+    CAMPAIGN_IMG_CHANGED,
+    CAMPAIGN_END_CHANGED,
+    CAMPAIGN_URLS_CHANGED,
 
-    CampaignLogType(final String text) {
-        this.text = text;
-    }
+    CAMPAIGN_REACTIVATED;
 
-    @Override
-    public String toString() {
-        return text;
-    }
 }

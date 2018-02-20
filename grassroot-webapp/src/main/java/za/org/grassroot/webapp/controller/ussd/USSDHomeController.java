@@ -204,7 +204,7 @@ public class USSDHomeController extends USSDBaseController {
     }
 
     private USSDMenu getActiveCampaignForTrailingCode(String trailingDigits, User user){
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits, user.getUid(), true);
+        Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits, user.getUid(), true, UserInterfaceType.USSD);
         log.info("found a campaign? : {}", campaign);
         return (campaign != null) ? assembleCampaignMessageResponse(campaign,user):
                 welcomeMenu(getMessage(HOME, startMenu, promptKey + ".unknown.request", user), user);

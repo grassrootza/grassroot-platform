@@ -1,11 +1,10 @@
 package za.org.grassroot.services.util;
 
+import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheException;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.SafetyEvent;
@@ -20,13 +19,15 @@ import java.util.List;
 /**
  * Created by aakilomar on 11/2/15.
  */
-@Service
+@Service @Slf4j
 public class CacheUtilManager implements CacheUtilService {
 
-    private Logger log = LoggerFactory.getLogger(CacheUtilManager.class);
+    private final CacheManager cacheManager;
 
     @Autowired
-    CacheManager cacheManager;
+    public CacheUtilManager(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+    }
 
     @Override
     public void clearRsvpCacheForUser(String userUid) {

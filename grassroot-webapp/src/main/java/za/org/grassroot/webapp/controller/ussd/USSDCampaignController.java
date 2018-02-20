@@ -84,7 +84,7 @@ public class USSDCampaignController extends USSDBaseController {
             promptStart = getMessage("campaign.joined.generic", user);
             locale = user.getLocale();
         }
-        Campaign campaign = campaignBroker.addUserToCampaignMasterGroup(campaignUid, user.getUid());
+        Campaign campaign = campaignBroker.addUserToCampaignMasterGroup(campaignUid, user.getUid(), UserInterfaceType.USSD);
         return menuBuilder(topicsOrFinalOptionsMenu(campaign, user, promptStart, locale));
     }
 
@@ -193,7 +193,7 @@ public class USSDCampaignController extends USSDBaseController {
                            @RequestParam String campaignUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         // todo: check number validity
-        campaignBroker.sendShareMessage(campaignUid, user.getUid(), userInput, "Hello please sign up");
+        campaignBroker.sendShareMessage(campaignUid, user.getUid(), userInput, "Hello please sign up", UserInterfaceType.USSD);
         return menuBuilder(genericPositiveExit(campaignUid, user.getLocale()));
     }
 

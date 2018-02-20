@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.CampaignLogType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -33,6 +34,10 @@ public class CampaignLog implements ActionLog {
     @Column(name="campaign_log_type", nullable = false, length = 50)
     private CampaignLogType campaignLogType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name="user_interface_channel", length = 50)
+    private UserInterfaceType channel;
+
     @ManyToOne(optional = true)
     @JoinColumn(name="user_id")
     private User user;
@@ -52,31 +57,14 @@ public class CampaignLog implements ActionLog {
         // for JPA
     }
 
-    public CampaignLog(User user, CampaignLogType campaignLogType,Campaign campaign) {
+    public CampaignLog(User user, CampaignLogType campaignLogType, Campaign campaign, UserInterfaceType channel, String description) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.user = user;
         this.campaignLogType = Objects.requireNonNull(campaignLogType);
         this.campaign = Objects.requireNonNull(campaign);
+        this.channel = channel;
     }
-
-    public CampaignLog(User user, CampaignLogType campaignLogType,Campaign campaign, String searchValue) {
-        this.uid = UIDGenerator.generateId();
-        this.creationTime = Instant.now();
-        this.user = user;
-        this.campaignLogType = Objects.requireNonNull(campaignLogType);
-        this.campaign = campaign;
-        this.description = Objects.requireNonNull(searchValue);
-    }
-
-    public CampaignLog(User user, CampaignLogType campaignLogType, String searchValue) {
-        this.uid = UIDGenerator.generateId();
-        this.creationTime = Instant.now();
-        this.user = user;
-        this.campaignLogType = Objects.requireNonNull(campaignLogType);
-        this.description = Objects.requireNonNull(searchValue);
-    }
-
 
     @Override
     public int hashCode() {
@@ -91,7 +79,6 @@ public class CampaignLog implements ActionLog {
         final CampaignLog that = (CampaignLog) o;
 
         return getUid() != null ? getUid().equals(that.getUid()) : that.getUid() == null;
-
     }
 
     @Override

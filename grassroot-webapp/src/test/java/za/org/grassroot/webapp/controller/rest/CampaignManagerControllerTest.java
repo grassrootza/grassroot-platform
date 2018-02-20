@@ -10,8 +10,6 @@ import org.mockito.Mock;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
@@ -84,7 +82,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
 
     @Test
     public void testCreateCampaign() throws Exception{
-        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(null);
+        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false), UserInterfaceType.USSD)).thenReturn(null);
         when(campaignBroker.create(anyString(), anyString(),anyString(),anyString(), anyString(), any(Instant.class), any(Instant.class), anyList(),any(CampaignType.class),anyString())).thenReturn(testCampaign);
         when(campaignBroker.updateMasterGroup(anyString(),anyString(),anyString())).thenReturn(testCampaign);
 
@@ -94,18 +92,6 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         ResultActions response = mockMvc.perform(post("/api/campaign/manage/create").contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
         response.andExpect(status().isOk());
         Assert.assertNotNull(response);
-    }
-
-    @Test
-    public void testAddCampaignTag() throws Exception{
-        when(campaignBroker.addCampaignTags(anyString(),anyList())).thenReturn(testCampaign);
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("campaignCode","1234");
-        params.add("tag","testTag");
-        ResultActions response = mockMvc.perform(get("/api/campaign/manage/add/tag").params(params));
-        Assert.assertNotNull(response);
-        response.andExpect(status().isOk());
-
     }
 
     @Test

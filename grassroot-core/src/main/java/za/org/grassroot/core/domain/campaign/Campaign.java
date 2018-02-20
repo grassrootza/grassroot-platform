@@ -6,6 +6,8 @@ import org.hibernate.annotations.Type;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -42,7 +44,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @Column(name = "description", length = 512)
     private String description;
 
-    @Column(name = "code", nullable = false, length = 5)
+    @Column(name = "code", length = 5)
     private String campaignCode;
 
     @Column(name = "created_date_time", insertable = true, updatable = false)
@@ -61,6 +63,10 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @ManyToOne
     @JoinColumn(name = "ancestor_group_id", nullable = true)
     private Group masterGroup;
+
+    @ManyToOne
+    @JoinColumn(name = "account_uid", referencedColumnName = "uid")
+    private Account account;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign")
     private Set<CampaignMessage> campaignMessages = new HashSet<>();
@@ -90,6 +96,10 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     @Column(name = "sharing_spent")
     private long sharingSpent; // in cents, also can be calculated from notification count, but double checking (also as price per may alter)
+
+    @ManyToOne
+    @JoinColumn(name = "image_record_uid", referencedColumnName = "uid")
+    private MediaFileRecord campaignImage;
 
     public Campaign() {
         this.uid = UIDGenerator.generateId();

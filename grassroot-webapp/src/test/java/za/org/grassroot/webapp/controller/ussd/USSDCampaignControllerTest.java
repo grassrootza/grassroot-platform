@@ -119,7 +119,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         testUser.setProvince(Province.ZA_GP);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
-        when(campaignBroker.addUserToCampaignMasterGroup(testCampaign.getUid(), testUser.getUid())).thenReturn(testCampaign);
+        when(campaignBroker.addUserToCampaignMasterGroup(testCampaign.getUid(), testUser.getUid(), UserInterfaceType.USSD)).thenReturn(testCampaign);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.JOIN_MASTER_GROUP_URL)
                 .params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());

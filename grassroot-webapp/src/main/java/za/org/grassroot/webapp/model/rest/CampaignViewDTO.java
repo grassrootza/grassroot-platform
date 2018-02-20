@@ -40,6 +40,10 @@ public class CampaignViewDTO {
     private List<String> campaignTags;
     private List<CampaignMessageDTO> campaignMessages;
 
+    private boolean smsSharingEnabled;
+    private long smsSharingBudget;
+    private long smsSharingCost;
+
     private CampaignViewDTO(String campaignUid, String campaignName, String campaignDescription, CampaignType campaignType,
                            String createUserUid, String createUserName, Instant createdDateTime,
                            Instant campaignStartDate, Instant campaignEndDate, String campaignUrl, String campaignCode, List<String> campaignTags){
@@ -73,6 +77,10 @@ public class CampaignViewDTO {
 
         this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;
         this.masterGroupUid = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null;
+
+        this.smsSharingEnabled = campaign.isSharingEnabled();
+        this.smsSharingBudget = campaign.getSharingBudget();
+        this.smsSharingCost = campaign.getSharingSpent();
 
         long startTime = System.currentTimeMillis();
         this.totalEngaged = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_FOUND);

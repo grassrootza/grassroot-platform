@@ -72,7 +72,7 @@ public class CampaignBrokerTest {
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getChannel(), UserInterfaceType.USSD);
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getLocale(), Locale.ENGLISH);
 
-        Campaign linkedCampaign = campaignBroker.updateMasterGroup("234", testGroup.getUid(),testUser.getUid());
+        Campaign linkedCampaign = campaignBroker.updateMasterGroup(campaign.getUid(), testGroup.getUid(),testUser.getUid());
         Assert.assertNotNull(linkedCampaign);
         Assert.assertNotNull(linkedCampaign.getMasterGroup());
         Assert.assertEquals(linkedCampaign.getMasterGroup().getId(),testGroup.getId());
