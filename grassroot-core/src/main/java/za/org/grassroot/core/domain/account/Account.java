@@ -9,6 +9,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 
 @Entity
 @Table(name="paid_account")
-public class Account implements GrassrootEntity {
+public class Account implements GrassrootEntity, Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

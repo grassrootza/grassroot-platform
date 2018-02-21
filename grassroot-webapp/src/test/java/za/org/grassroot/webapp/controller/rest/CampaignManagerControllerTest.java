@@ -82,7 +82,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
 
     @Test
     public void testCreateCampaign() throws Exception{
-        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false), UserInterfaceType.USSD)).thenReturn(null);
+        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false), eq(UserInterfaceType.USSD))).thenReturn(null);
         when(campaignBroker.create(anyString(), anyString(),anyString(),anyString(), anyString(), any(Instant.class), any(Instant.class), anyList(),any(CampaignType.class),anyString())).thenReturn(testCampaign);
         when(campaignBroker.updateMasterGroup(anyString(),anyString(),anyString())).thenReturn(testCampaign);
 

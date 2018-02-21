@@ -14,6 +14,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.socialmedia.ManagedPagesResponse;
 import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
 
@@ -22,7 +23,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -70,8 +70,8 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
 
         Group group = groupRepository.findOneByUid(groupUid);
 
-        LocalDate startTime = getStartTime(year, month, group);
-        LocalDate endTime = getEndTime(year, month, startTime);
+        LocalDate startTime = DateTimeUtil.getStartTimeForEntityStats(year, month, group.getCreatedDateTime());
+        LocalDate endTime = DateTimeUtil.getEndTime(year, month, startTime);
 
         Instant startTimeInstant = startTime.atStartOfDay(Clock.systemDefaultZone().getZone()).toInstant();
         Instant endTimeInstant = endTime.atStartOfDay(Clock.systemDefaultZone().getZone()).toInstant();
@@ -133,43 +133,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
 
             cache.put(new Element(cacheKey, membersCountByMonth));
             return membersCountByMonth;
-
         }
-
-    }
-
-
-    private LocalDate getEndTime(@Nullable Integer year, @Nullable Integer month, LocalDate startTime) {
-
-        if (year != null && month != null) {
-            LocalDate endDay = startTime.plus(1, ChronoUnit.MONTHS);
-            LocalDate thisDay = LocalDate.now();
-            if (thisDay.isBefore(endDay)) {
-                endDay = LocalDate.of(thisDay.getYear(), thisDay.getMonthValue(), thisDay.getDayOfMonth()).plusDays(1);
-            }
-            return endDay;
-        } else if (year != null) {
-            LocalDate endMonth = startTime.plus(1, ChronoUnit.YEARS);
-            LocalDate thisMOnth = LocalDate.now();
-            thisMOnth = LocalDate.of(thisMOnth.getYear(), thisMOnth.getMonthValue(), 1);
-            if (thisMOnth.isBefore(endMonth))
-                endMonth = LocalDate.of(thisMOnth.getYear(), thisMOnth.getMonthValue(), 1).plusMonths(1);
-            return endMonth;
-        } else {
-            LocalDate today = LocalDate.now();
-            return LocalDate.of(today.getYear(), today.getMonth(), 1).plusMonths(1);
-        }
-    }
-
-    private LocalDate getStartTime(@Nullable Integer year, @Nullable Integer month, Group group) {
-
-        if (year != null && month != null)
-            return LocalDate.of(year, month, 1);
-
-        else if (year != null)
-            return LocalDate.of(year, 1, 1);
-        else
-            return group.getCreatedDateTime().atZone(Clock.systemDefaultZone().getZone()).toLocalDate();
 
     }
 

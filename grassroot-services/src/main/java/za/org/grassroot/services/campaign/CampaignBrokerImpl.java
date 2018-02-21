@@ -1,11 +1,16 @@
 package za.org.grassroot.services.campaign;
 
 import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.config.CacheConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +24,12 @@ import za.org.grassroot.core.domain.notification.CampaignSharingNotification;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.repository.CampaignLogRepository;
 import za.org.grassroot.core.repository.CampaignMessageRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
@@ -33,7 +40,11 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import javax.annotation.Nullable;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,24 +62,29 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     private final CampaignRepository campaignRepository;
     private final CampaignMessageRepository campaignMessageRepository;
+    private final CampaignLogRepository campaignLogRepository;
 
     private final GroupBroker groupBroker;
     private final UserManagementService userManager;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final PermissionBroker permissionBroker;
     private final MediaFileBroker mediaFileBroker;
+
+    private final CacheManager cacheManager;
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, GroupBroker groupBroker, UserManagementService userManagementService,
-                              LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, MediaFileBroker mediaFileBroker, ApplicationEventPublisher eventPublisher){
+    public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, CampaignLogRepository campaignLogRepository, GroupBroker groupBroker, UserManagementService userManagementService,
+                              LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, MediaFileBroker mediaFileBroker, CacheManager cacheManager, ApplicationEventPublisher eventPublisher){
         this.campaignRepository = campaignRepository;
         this.campaignMessageRepository = campaignMessageRepository;
+        this.campaignLogRepository = campaignLogRepository;
         this.groupBroker = groupBroker;
         this.userManager = userManagementService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.permissionBroker = permissionBroker;
         this.mediaFileBroker = mediaFileBroker;
+        this.cacheManager = cacheManager;
         this.eventPublisher = eventPublisher;
     }
 
@@ -150,7 +166,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Set<String> getCampaignTags() {
+    public Set<String> getActiveCampaignJoinTopics() {
         return campaignRepository.fetchAllActiveCampaignTags();
     }
 
@@ -428,17 +444,28 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
+    public void alterSmsSharingSettings(String userUid, String campaignUid, boolean smsEnabled, Long smsBudget, Set<CampaignMessage> sharingMessages) {
+
+    }
+
+    @Override
+    @Transactional
     public Campaign addUserToCampaignMasterGroup(String campaignUid, String userUid, UserInterfaceType channel){
         Objects.requireNonNull(campaignUid);
         Objects.requireNonNull(userUid);
         User user = userManager.load(userUid);
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         groupBroker.addMemberViaCampaign(user.getUid(),campaign.getMasterGroup().getUid(),campaign.getCampaignCode());
-        CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser(), CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP, campaign, channel, null);
+        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP, campaign, channel, null);
         persistCampaignLog(campaignLog);
         return campaign;
     }
 
+    @Override
+    @Transactional
+    public void changeCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessage> revisedMessages) {
+
+    }
 
     private Campaign getCampaignByCampaignCode(String campaignCode){
         Objects.requireNonNull(campaignCode);

@@ -84,10 +84,8 @@ public class CampaignLog implements ActionLog {
     @Override
     public String toString() {
         return "CampaignLog{" +
-                "id=" + id +
-                ", campaignLogType=" + campaignLogType +
-                ", userId=" + user.getUid() +
-                ", creationTime =" + creationTime +
+                "campaignLogType=" + campaignLogType +
+                ", user=" + user.getName() +
                 '}';
     }
 
