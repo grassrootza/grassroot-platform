@@ -17,6 +17,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.task.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.async.AsyncUserLogger;
@@ -147,7 +148,7 @@ public class GroupSearchController extends BaseController {
 				model.addAttribute("relatedTerms", relatedTerms);
 
 				List<Group> memberGroups = groupQueryBroker.searchUsersGroups(userUid, term, false);
-				List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
+				List<TaskFullDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
 				model.addAttribute("foundGroups", memberGroups);
 				model.addAttribute("foundTasks", memberTasks);
 

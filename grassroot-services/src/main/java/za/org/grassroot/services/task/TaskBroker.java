@@ -43,7 +43,7 @@ public interface TaskBroker {
 
     ChangedSinceData<TaskDTO> fetchUpcomingTasksAndCancelled(String userUid, Instant changedSince);
 
-    List<TaskDTO> searchForTasks(String userUid, String searchTerm);
+    List<TaskFullDTO> searchForTasks(String userUid, String searchTerm);
 
     /*
     Some new methods for new REST API

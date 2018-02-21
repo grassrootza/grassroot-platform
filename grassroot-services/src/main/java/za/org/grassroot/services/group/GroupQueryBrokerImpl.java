@@ -146,6 +146,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         List<Group> groups = restrictToGroupName ? groupRepository.findDiscoverableGroupsWithNameWithoutMember(user.getId(), tsQuery) :
                 groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember(user.getId(), tsQuery);
 
+        logger.info("Groups found {}",groups.size());
         Predicate<Group> locationPredicate = constructLocationPredicate(user, new HashSet<>(groups), locationFilter);
         return groups.stream()
                 .filter(Group::isActive)

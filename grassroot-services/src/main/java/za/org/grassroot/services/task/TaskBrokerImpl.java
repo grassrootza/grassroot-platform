@@ -290,7 +290,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Override
 	@Transactional(readOnly = true)
-	public List<TaskDTO> searchForTasks(String userUid, String searchTerm) {
+	public List<TaskFullDTO> searchForTasks(String userUid, String searchTerm) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(searchTerm);
 
@@ -303,14 +303,22 @@ public class TaskBrokerImpl implements TaskBroker {
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, false);
 
 		List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameSearchTerm(user.getId(), tsQuery);
-		Set<TaskDTO> taskDTOs = resolveEventTaskDtos(events, user, null);
+		//Set<TaskDTO> taskDTOs = resolveEventTaskDtos(events, user, null);
+
+        Set<TaskFullDTO> taskFullDtos = new HashSet<>();
+        events.forEach(event -> taskFullDtos.add(new TaskFullDTO(event,user, event.getCreatedDateTime(), getUserResponse(event, user))));
 
         List<Todo> todos = todoBroker.searchUserTodos(userUid, searchTerm);
-		Set<TaskDTO> todoTaskDTOs = resolveTodoTaskDtos(todos, user, null);
-		taskDTOs.addAll(todoTaskDTOs);
+        todos.forEach(todo -> taskFullDtos.add(new TaskFullDTO(todo,user,todo.getDeadlineTime(),getUserResponse(todo,user))));
+		//Set<TaskDTO> todoTaskDTOs = resolveTodoTaskDtos(todos, user, null);
+		//taskDTOs.addAll(todoTaskDTOs);
 
-		List<TaskDTO> tasks = new ArrayList<>(taskDTOs);
-		Collections.sort(tasks);
+		List<TaskFullDTO> tasks = new ArrayList<>(taskFullDtos);
+		//Collections.sort(tasks);
+        Collections.sort(tasks, (o1, o2) -> ComparisonChain.start()
+                .compare(o1.getDeadlineMillis(), o2.getDeadlineMillis())
+                .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
+                .result());
 		log.info("Searched for the term {} among all of user's tasks, took {} msecs", searchTerm, System.currentTimeMillis() - startTime);
 
 		return tasks;
