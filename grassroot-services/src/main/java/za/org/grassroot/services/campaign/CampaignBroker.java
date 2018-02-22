@@ -23,7 +23,9 @@ public interface CampaignBroker {
 
     // passing null to and of the last three will set them to defaults
     CampaignMessage getOpeningMessage(String campaignUid, Locale locale, UserInterfaceType interfaceType, MessageVariationAssignment variation);
+
     CampaignMessage loadCampaignMessage(String messageUid, String userUid);
+
     List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale);
 
     List<Campaign> getCampaignsCreatedByUser(String userUid);

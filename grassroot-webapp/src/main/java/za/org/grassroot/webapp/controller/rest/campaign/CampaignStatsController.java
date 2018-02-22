@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -28,13 +29,30 @@ public class CampaignStatsController extends BaseRestController {
         this.campaignStatsBroker = campaignStatsBroker;
     }
 
-    @RequestMapping(value = "/member-growth")
+    @RequestMapping(value = "/member-growth", method = RequestMethod.GET)
     @ApiOperation("Returns a map counting members joining master group via campaign, at time units (day if month parameter is provided, month otherwise)")
     public Map<String, Integer> getMemberGrowthStats(@RequestParam String campaignUid,
                                                      @RequestParam(required = false) Integer year,
                                                      @RequestParam(required = false) Integer month) {
-        campaignStatsBroker.getCampaignEngagementStats(campaignUid);
         return campaignStatsBroker.getCampaignMembershipStats(campaignUid, year, month);
+    }
+
+    @RequestMapping(value = "/conversion", method = RequestMethod.GET)
+    @ApiOperation("Returns a map of member conversion through various stages of funnel")
+    public Map<String, Long> getMemberConversion(@RequestParam String campaignUid) {
+        return campaignStatsBroker.getCampaignConversionStats(campaignUid);
+    }
+
+    @RequestMapping(value = "/channels", method = RequestMethod.GET)
+    @ApiOperation("Returns a map of engagement by channel")
+    public Map<String, Long> getChannelEngagement(@RequestParam String campaignUid) {
+        return campaignStatsBroker.getCampaignChannelStats(campaignUid);
+    }
+
+    @RequestMapping(value = "/provinces", method = RequestMethod.GET)
+    @ApiOperation("Returns a map of engagement by users' province (null province is converted to 'UNKNOWN'")
+    public Map<String, Long> getProvinceEngagement(@RequestParam String campaignUid) {
+        return campaignStatsBroker.getCampaignProvinceStats(campaignUid);
     }
 
 }

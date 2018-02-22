@@ -37,7 +37,8 @@ public class CampaignViewDTO {
     private Integer totalUsers;
     private long totalJoined;
     private long totalEngaged;
-    private List<String> campaignTags;
+
+    private List<String> topics;
     private List<CampaignMessageDTO> campaignMessages;
 
     private boolean smsSharingEnabled;
@@ -58,7 +59,7 @@ public class CampaignViewDTO {
         this.campaignEndDate = campaignEndDate;
         this.campaignUid = campaignUid;
         this.campaignUrl = campaignUrl;
-        this.campaignTags = campaignTags;
+        this.topics = campaignTags;
     }
 
     public CampaignViewDTO(Campaign campaign){
@@ -73,7 +74,7 @@ public class CampaignViewDTO {
                 campaign.getEndDateTime(),
                 campaign.getLandingUrl(),
                 campaign.getCampaignCode(),
-                campaign.getTagList());
+                campaign.getJoinTopics());
 
         this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;
         this.masterGroupUid = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null;

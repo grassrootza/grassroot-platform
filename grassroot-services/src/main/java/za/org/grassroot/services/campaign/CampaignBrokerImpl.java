@@ -1,16 +1,11 @@
 package za.org.grassroot.services.campaign;
 
 import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.config.CacheConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,12 +19,10 @@ import za.org.grassroot.core.domain.notification.CampaignSharingNotification;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.repository.CampaignLogRepository;
 import za.org.grassroot.core.repository.CampaignMessageRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
@@ -40,11 +33,7 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
-import javax.annotation.Nullable;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,7 +51,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     private final CampaignRepository campaignRepository;
     private final CampaignMessageRepository campaignMessageRepository;
-    private final CampaignLogRepository campaignLogRepository;
+    private final CampaignStatsBroker campaignStatsBroker;
 
     private final GroupBroker groupBroker;
     private final UserManagementService userManager;
@@ -70,21 +59,19 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private final PermissionBroker permissionBroker;
     private final MediaFileBroker mediaFileBroker;
 
-    private final CacheManager cacheManager;
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, CampaignLogRepository campaignLogRepository, GroupBroker groupBroker, UserManagementService userManagementService,
-                              LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, MediaFileBroker mediaFileBroker, CacheManager cacheManager, ApplicationEventPublisher eventPublisher){
+    public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, CampaignStatsBroker campaignStatsBroker, GroupBroker groupBroker, UserManagementService userManagementService,
+                              LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, MediaFileBroker mediaFileBroker, ApplicationEventPublisher eventPublisher){
         this.campaignRepository = campaignRepository;
         this.campaignMessageRepository = campaignMessageRepository;
-        this.campaignLogRepository = campaignLogRepository;
+        this.campaignStatsBroker = campaignStatsBroker;
         this.groupBroker = groupBroker;
         this.userManager = userManagementService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.permissionBroker = permissionBroker;
         this.mediaFileBroker = mediaFileBroker;
-        this.cacheManager = cacheManager;
         this.eventPublisher = eventPublisher;
     }
 
@@ -152,6 +139,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             Objects.requireNonNull(userUid);
             User user = userManager.load(userUid);
             persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_FOUND, campaign, channel, campaignCode));
+            campaignStatsBroker.clearCampaignStatsCache(campaign.getUid());
         }
         return campaign;
     }
@@ -183,6 +171,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(campaignLog);
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        campaignStatsBroker.clearCampaignStatsCache(campaignUid);
     }
 
     @Async
@@ -212,6 +201,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         log.info("and here is the bundle: {}", bundle);
 
         logsAndNotificationsBroker.storeBundle(bundle);
+        campaignStatsBroker.clearCampaignStatsCache(campaignUid);
     }
 
     @Override
@@ -219,9 +209,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     public boolean isUserInCampaignMasterGroup(String campaignUid, String userUid) {
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
         User user = userManager.load(Objects.requireNonNull(userUid));
-
         Group masterGroup = campaign.getMasterGroup();
-
         return masterGroup.hasMember(user);
     }
 
@@ -309,7 +297,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
                 CampaignMessageDTO::getMessageId, cm -> cm));
 
         // step two: go through each message, and wire up where to go next (better than earlier iterations, but can be cleaned)
-        campaignMessages.forEach(cdto -> {
+        campaignMessages.forEach(cdto ->
             cdto.getLanguages().forEach(lang -> {
                 CampaignMessage cm = explodedMessages.get(cdto.getMessageId() + LOCALE_SEP + lang);
                 log.info("wiring up message: {}", cm);
@@ -318,8 +306,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
                     log.info("for next msg {}, found CM: {}", nextMsgId + LOCALE_SEP + lang, nextMsg);
                     cm.addNextMessage(nextMsg.getUid(), mappedMessages.get(nextMsgId).getLinkedActionType());
                 });
-            });
-        });
+            })
+        );
 
         Set<CampaignMessage> messages = new HashSet<>(explodedMessages.values());
 
@@ -458,6 +446,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         groupBroker.addMemberViaCampaign(user.getUid(),campaign.getMasterGroup().getUid(),campaign.getCampaignCode());
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP, campaign, channel, null);
         persistCampaignLog(campaignLog);
+        campaignStatsBroker.clearCampaignStatsCache(campaignUid);
         return campaign;
     }
 

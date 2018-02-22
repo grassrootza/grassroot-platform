@@ -3,11 +3,14 @@ package za.org.grassroot.core.domain;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.hibernate.validator.constraints.Email;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.Province;
@@ -127,6 +130,10 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     // note: keep an eye on this in profiling, make sure it is super lazy (i.e., join table not hit at all), else drop on this side
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "administrators")
     private Set<Account> accountsAdministered = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @LazyCollection(LazyCollectionOption.EXTRA)
+    private Set<CampaignLog> campaignLogs;
 
     private User() {
         // for JPA

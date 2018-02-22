@@ -99,8 +99,12 @@ public class CampaignManagerController extends BaseRestController {
 
     private List<CampaignViewDTO> checkForCampaignsInCache(String userUid) {
         Cache cache = getOrSetUpCache("user_campaigns");
-        return cache != null && cache.isKeyInCache(userUid) ?
-                (List<CampaignViewDTO>) cache.get(userUid).getObjectValue() : null;
+        if (cache != null && cache.isKeyInCache(userUid)) {
+            Object cacheElement = cache.get(userUid).getObjectValue();
+            return cacheElement != null ? (List<CampaignViewDTO>) cacheElement : null;
+        } else {
+            return null;
+        }
     }
 
     private void cacheUserCampaigns(String userUid, List<CampaignViewDTO> campaigns) {

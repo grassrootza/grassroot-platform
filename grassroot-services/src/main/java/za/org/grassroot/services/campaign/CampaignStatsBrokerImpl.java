@@ -10,14 +10,19 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.enums.CampaignLogType;
+import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.CampaignLogRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.annotation.Nullable;
+import javax.persistence.criteria.Join;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -31,26 +36,52 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
     private static final DateTimeFormatter STATS_DAY_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter STATS_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
+    private static final String GROWTH_CACHE = "campaign_growth_stats";
+    private static final String CURRENT_CACHE = "campaign_current_stats";
+
     private final CampaignRepository campaignRepository;
     private final CampaignLogRepository campaignLogRepository;
+    private final UserRepository userRepository;
 
     private final CacheManager cacheManager;
 
-    @Autowired
-    public CampaignStatsBrokerImpl(CampaignRepository campaignRepository, CampaignLogRepository campaignLogRepository, CacheManager cacheManager) {
-        this.campaignRepository = campaignRepository;
-        this.campaignLogRepository = campaignLogRepository;
-        this.cacheManager = cacheManager;
-    }
+    // NB: sequence here must be in order of importance, i.e., later in sequence -> later in user journey
+    private static final List<CampaignLogType> ENGAGEMENT_LOG_TYPES = Arrays.asList(
+            CampaignLogType.CAMPAIGN_FOUND,
+            CampaignLogType.CAMPAIGN_EXITED_NEG,
+            CampaignLogType.CAMPAIGN_PETITION_SIGNED,
+            CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,
+            CampaignLogType.CAMPAIGN_SHARED
+    );
+
+    private static final Specification<CampaignLog> isEngagementLog = (root, query, cb) -> root.get("campaignLogType").in(ENGAGEMENT_LOG_TYPES);
 
     private static Specification<CampaignLog> forCampaign(Campaign campaign) {
         return (root, query, cb) -> cb.equal(root.get("campaign"), campaign);
     }
 
+    private static Specifications<CampaignLog> engagementLogsForCampaign(Campaign campaign) {
+        return Specifications.where(forCampaign(campaign)).and(isEngagementLog);
+    }
+
+    @Autowired
+    public CampaignStatsBrokerImpl(CampaignRepository campaignRepository, CampaignLogRepository campaignLogRepository, UserRepository userRepository, CacheManager cacheManager) {
+        this.campaignRepository = campaignRepository;
+        this.campaignLogRepository = campaignLogRepository;
+        this.userRepository = userRepository;
+        this.cacheManager = cacheManager;
+    }
+
+    @Override
+    public void clearCampaignStatsCache(String campaignUid) {
+        Cache staticCache = getStatsCache(CURRENT_CACHE);
+        staticCache.remove(campaignUid + "_engagement");
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Map<String, Integer> getCampaignMembershipStats(String campaignUid, Integer year, @Nullable Integer month) {
-        Cache cache = getStatsCache("campaign_growth_stats");
+        Cache cache = getStatsCache(GROWTH_CACHE);
 
         final String cacheKey = campaignUid + "-" + year + "-" + month;
         if (cache.isKeyInCache(cacheKey)) {
@@ -111,55 +142,87 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<String, Long> getCampaignEngagementStats(String campaignUid) {
-        Cache cache = getStatsCache("campaign_stats");
-        final String cacheKey = campaignUid + "_" + "engagement";
+    public Map<String, Long> getCampaignConversionStats(String campaignUid) {
+        Cache cache = getStatsCache(CURRENT_CACHE);
+        final String cacheKey = campaignUid + "_engagement";
         if (cache.isKeyInCache(cacheKey))
             return (Map<String, Long>) cache.get(cacheKey).getObjectValue();
-
-        List<CampaignLogType> sequenceOrder = Arrays.asList(
-                CampaignLogType.CAMPAIGN_FOUND,
-                CampaignLogType.CAMPAIGN_EXITED_NEG,
-                CampaignLogType.CAMPAIGN_PETITION_SIGNED,
-                CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,
-                CampaignLogType.CAMPAIGN_SHARED
-                );
 
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
 
         // step 1: get all engagement logs and sort them in ascending order of degree of engagement
-        Specification<CampaignLog> engagementLogs = (root, query, cb) -> root.get("campaignLogType").in(sequenceOrder);
-        List<CampaignLog> allEngagementLogs = campaignLogRepository.findAll(Specifications
-                .where(forCampaign(campaign)).and(engagementLogs));
-        allEngagementLogs.sort(Comparator.comparingInt(log -> sequenceOrder.indexOf(log.getCampaignLogType())));
+        List<CampaignLog> allEngagementLogs = campaignLogRepository.findAll(engagementLogsForCampaign(campaign));
+        allEngagementLogs.sort(Comparator.comparingInt(log -> ENGAGEMENT_LOG_TYPES.indexOf(log.getCampaignLogType())));
 
         // step 2: divide into a map, for each user, of their latest engagement status
         Map<Long, CampaignLogType> lastStageMap = new LinkedHashMap<>();
         allEngagementLogs.forEach(log -> lastStageMap.put(log.getUser().getId(), log.getCampaignLogType()));
         log.info("latest stage map: {}", lastStageMap);
 
-
         // step 3: count the number of users in a particular stage
         Map<String, Long> result = lastStageMap.entrySet().stream()
                 .collect(Collectors.groupingBy(entry -> entry.getValue().toString(), Collectors.counting()));
         log.info("okay and the collected map = {}", result);
 
+        cache.put(new Element(cacheKey, result));
         return result;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Map<String, Long> getCampaignChannelStats(String campaignUid) {
-        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-        Cache cache = getStatsCache("campaign_stats");
+        Cache cache = getStatsCache(CURRENT_CACHE);
+        final String cacheKey = campaignUid + "_channels";
+        if (cache.isKeyInCache(cacheKey))
+            return (Map<String, Long>) cache.get(cacheKey).getObjectValue();
 
-        return null;
+        // step 1: get all engagement logs
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        List<CampaignLog> engagementLogs = campaignLogRepository.findAll(engagementLogsForCampaign(campaign));
+
+        // step 2: strip out duplicate user-interface pairs (uses a slight redundancy but not seeing a more elegant way right now)
+        Map<String, UserInterfaceType> channelMap = new LinkedHashMap<>();
+        engagementLogs.stream()
+                .filter(log -> log.getChannel() != null)
+                .forEach(log -> {
+            final String key = log.getUser().getId() + "_" + log.getChannel();
+            channelMap.put(key, log.getChannel());
+        });
+
+        // step 3: count the number of interfaces
+        log.info("okay, channel map now looks like: {}", channelMap);
+        Map<String, Long> result = channelMap.entrySet().stream()
+                .collect(Collectors.groupingBy(entry -> entry.getValue().toString(), Collectors.counting()));
+
+        cache.put(new Element(cacheKey, result));
+        return result;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Map<String, Long> getCampaignProvinceStats(String campaignUid) {
-        return null;
+        Cache cache = getStatsCache(CURRENT_CACHE);
+        final String cacheKey = campaignUid + "_provinces";
+        if (cache.isKeyInCache(cacheKey))
+            return (Map<String, Long>) cache.get(cacheKey).getObjectValue();
+
+        // step 1: get all users that have engaged
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        Specification<User> engagedUsers = (root, query, cb) -> {
+            Join<User, CampaignLog> campaignLogs = root.join("campaignLogs");
+            query.distinct(true);
+            return cb.and(cb.equal(campaignLogs.get("campaign"), campaign),
+                    campaignLogs.get("campaignLogType").in(ENGAGEMENT_LOG_TYPES));
+        };
+
+        List<User> users = userRepository.findAll(engagedUsers);
+        Map<String, Long> result = users.stream().collect(
+                Collectors.groupingBy(user -> user.getProvince() == null ?
+                        "UNKNOWN" : user.getProvince().name(), Collectors.counting()));
+
+        cache.put(new Element(cacheKey, result));
+
+        return result;
     }
 
     private Cache getStatsCache(String cacheName) {
@@ -169,4 +232,5 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         }
         return cacheManager.getCache(cacheName);
     }
+
 }
