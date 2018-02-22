@@ -18,6 +18,7 @@ import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;
+import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -25,6 +26,10 @@ import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.task.TaskFetchController;
+import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
@@ -44,6 +49,7 @@ public class SearchController extends BaseRestController {
     private final GroupFetchBroker groupFetchBroker;
     private final EventBroker eventBroker;
     private final GeoLocationBroker geoLocationBroker;
+    private final GroupJoinRequestService groupJoinRequestService;
 
     @Autowired
     public SearchController(TaskBroker taskBroker,
@@ -51,6 +57,7 @@ public class SearchController extends BaseRestController {
                             GroupFetchBroker groupFetchBroker,
                             EventBroker eventBroker,
                             GeoLocationBroker geoLocationBroker,
+                            GroupJoinRequestService groupJoinRequestService,
                             JwtService jwtService,
                             UserManagementService userManagementService){
         super(jwtService, userManagementService);
@@ -59,6 +66,7 @@ public class SearchController extends BaseRestController {
         this.groupFetchBroker = groupFetchBroker;
         this.eventBroker = eventBroker;
         this.geoLocationBroker = geoLocationBroker;
+        this.groupJoinRequestService = groupJoinRequestService;
     }
 
     @Timed
@@ -147,6 +155,26 @@ public class SearchController extends BaseRestController {
         }
         else{
             return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
+        }
+    }
+
+    @Timed
+    @RequestMapping(value = "/join/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "User public meetings using search term")
+    public ResponseEntity<ResponseWrapper> askToJoinGroup(@PathVariable String groupUid,
+                                                          @RequestParam String requestorUid,
+                                                          @RequestParam String joinWord,
+                                                          HttpServletRequest request){
+        String loggedInUserUid = getUserIdFromRequest(request);
+        if(requestorUid.equals(loggedInUserUid)){
+            final String joinRequestUid = groupJoinRequestService.open(requestorUid,groupUid,joinWord);
+            final GroupJoinRequestDTO returnedRequest =
+                    new GroupJoinRequestDTO(groupJoinRequestService.loadRequest(joinRequestUid), getUserFromRequest(request));
+            ResponseEntity<ResponseWrapper> response =
+                    RestUtil.okayResponseWithData(RestMessage.GROUP_JOIN_REQUEST_SENT, Collections.singletonList(returnedRequest));
+            return response;
+        }else{
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
     }
 
