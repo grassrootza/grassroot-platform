@@ -160,7 +160,7 @@ public class SearchController extends BaseRestController {
 
     @Timed
     @RequestMapping(value = "/join/{groupUid}", method = RequestMethod.POST)
-    @ApiOperation(value = "User public meetings using search term")
+    @ApiOperation(value = "Sends a join requests and get a join uid")
     public ResponseEntity<ResponseWrapper> askToJoinGroup(@PathVariable String groupUid,
                                                           @RequestParam String requestorUid,
                                                           @RequestParam String joinWord,
