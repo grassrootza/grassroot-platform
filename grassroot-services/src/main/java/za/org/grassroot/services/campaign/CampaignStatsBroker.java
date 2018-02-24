@@ -1,7 +1,5 @@
 package za.org.grassroot.services.campaign;
 
-import za.org.grassroot.core.enums.Province;
-
 import javax.annotation.Nullable;
 import java.util.Map;
 
@@ -16,5 +14,7 @@ public interface CampaignStatsBroker {
     Map<String, Long> getCampaignChannelStats(String campaignUid);
 
     Map<String, Long> getCampaignProvinceStats(String campaignUid);
+
+    Map<String, Map<String, Integer>> getCampaignActivityCounts(String campaignUid, CampaignActivityStatsRequest request);
 
 }

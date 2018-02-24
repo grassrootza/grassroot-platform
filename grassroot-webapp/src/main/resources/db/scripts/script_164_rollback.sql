@@ -8,6 +8,12 @@ alter table campaign drop column sharing_spent;
 
 alter table campaign rename column landing_url to url;
 alter table campaign drop column petition_api;
+alter table campaign drop column petition_result_api;
+
+alter table campaign drop column account_uid;
+alter table campaign drop column image_record_uid;
+
+alter table campaign_log drop column user_interface_channel;
 
 alter table user_profile drop column whatsapp;
 

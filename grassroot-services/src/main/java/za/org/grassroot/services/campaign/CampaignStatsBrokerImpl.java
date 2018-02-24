@@ -6,6 +6,7 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.config.CacheConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
@@ -26,9 +27,14 @@ import javax.persistence.criteria.Join;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.time.temporal.ChronoUnit.DAYS;
 
 @Service @Slf4j
 public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
@@ -38,6 +44,9 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
 
     private static final String GROWTH_CACHE = "campaign_growth_stats";
     private static final String CURRENT_CACHE = "campaign_current_stats";
+
+    // for convenience
+    private static final ZoneId ZONE = Clock.systemDefaultZone().getZone();
 
     private final CampaignRepository campaignRepository;
     private final CampaignLogRepository campaignLogRepository;
@@ -102,13 +111,20 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         List<CampaignLog> matchingLogs = campaignLogRepository.findAll(Specifications
                 .where(forCampaign(campaign)).and(memberAdded).and(withinTime));
 
+        // strip out duplicates, so we have only the first entry
+        Map<Long, CampaignLog> lastStageMap = new LinkedHashMap<>();
+        matchingLogs.stream().filter(log -> !lastStageMap.containsKey(log.getUser().getId()))
+                .forEach(log -> lastStageMap.put(log.getUser().getId(), log));
+        log.info("latest stage map: {}", lastStageMap);
+
         int currentMemberCount = 0; // replace with count of group at start
 
+        List<CampaignLog> distinctLogs = new ArrayList<>(lastStageMap.values());
         Map<String, Integer> results = new LinkedHashMap<>();
 
         if (year != null && month != null) {
             // do it by day
-            Map<String, List<CampaignLog>> changes = matchingLogs.stream().collect(Collectors.groupingBy(
+            Map<String, List<CampaignLog>> changes = distinctLogs .stream().collect(Collectors.groupingBy(
                     cl -> STATS_DAY_FORMAT.format(cl.getCreationTime().atZone(Clock.systemDefaultZone().getZone()))));
             LocalDate currDay = startTime;
             while (currDay.isBefore(endTime)) {
@@ -121,8 +137,8 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
                 currDay = currDay.plusDays(1);
             }
         } else {
-            // do it by monthu
-            Map<String, List<CampaignLog>> changes = matchingLogs.stream().collect(Collectors.groupingBy(
+            // do it by months
+            Map<String, List<CampaignLog>> changes = distinctLogs .stream().collect(Collectors.groupingBy(
                     cl -> STATS_MONTH_FORMAT.format(cl.getCreationTime().atZone(Clock.systemDefaultZone().getZone()))));
             LocalDate currMonth = startTime;
             while (currMonth.getYear() < endTime.getYear() || currMonth.getMonthValue() < endTime.getMonthValue()) {
@@ -225,8 +241,75 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         return result;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Map<String, Integer>> getCampaignActivityCounts(String campaignUid, CampaignActivityStatsRequest request) {
+        Cache cache = getStatsCache(CURRENT_CACHE);
+        final String cacheKey = campaignUid + "_activity_" + request.getDatasetDivision() + "_" + request.getTimePeriod();
+        log.info("activity stats, cache key: {}", cacheKey);
+        if (cache.isKeyInCache(cacheKey))
+            return (Map<String, Map<String, Integer>>) cache.get(cacheKey).getObjectValue();
+
+        // step 1 : get engagement logs that need dividing up, depending on time period
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+
+        Instant startTime = request.getStartTime(campaign.getCreatedDateTime());
+        Instant endTime = request.getEndTime(campaign.getCreatedDateTime());
+
+        Specification<CampaignLog> withinPeriod = (root, query, cb) -> cb.between(root.get("creationTime"), startTime, endTime);
+        List<CampaignLog> allEngagementLogs = campaignLogRepository.findAll(engagementLogsForCampaign(campaign).and(withinPeriod),
+                new Sort(Sort.Direction.ASC, "creationTime"));
+
+        // step 2: as above, filter out user's duplicates in funnel
+        Map<Long, CampaignLog> lastStageMap = new LinkedHashMap<>();
+        allEngagementLogs.forEach(log -> lastStageMap.put(log.getUser().getId(), log));
+
+        // step 3: create a formatter for the time, for grouping the entities, depending on duration
+        long daysBetween = DAYS.between(startTime, endTime);
+        log.info("start time: {}, end time: {}, days between: {}", startTime, endTime, daysBetween);
+        DateTimeFormatter groupingFormatter = daysBetween > 31 ? DateTimeFormatter.ofPattern("MMM") :
+                daysBetween > 7 ? DateTimeFormatter.ofPattern("W") :  DateTimeFormatter.ofPattern("E");
+
+        List<String> timeKeys = Stream.iterate(LocalDate.from(startTime.atZone(ZONE)), date -> date.plusDays(1)).limit(daysBetween)
+                .map(groupingFormatter::format).distinct().collect(Collectors.toList());
+        log.info("alright, time keys = {}", timeKeys);
+
+        // step 4: divide up the data, into channels or provinces, grouped by the set above
+        Map<String, Map<String, Integer>> results = new HashMap<>();
+        List<CampaignLog> logs = new ArrayList<>(lastStageMap.values());
+
+        if (request.isByChannel()) {
+            Set<UserInterfaceType> channels = logs.stream().map(CampaignLog::getChannel).filter(Objects::nonNull).collect(Collectors.toSet());
+            channels.forEach(channel -> {
+                // step 5: group logs by formatted date string (note: may be a clever way to do this just in the stream,
+                // though preserving ordering is useful (more so than a little additional elegance in code)
+                results.put(channel.toString(), groupLogsByTime(logs, log -> channel.equals(log.getChannel()), groupingFormatter, timeKeys));
+            });
+        } else {
+            List<User> users = userRepository.findAll(lastStageMap.keySet());
+            List<Province> provinces = users.stream().map(User::getProvince).filter(Objects::nonNull).collect(Collectors.toList());
+            provinces.forEach(province -> {
+                // these user entities should be Hibernate-cached by this stage, but watch this query in any case
+                results.put(province.toString(), groupLogsByTime(logs, log -> province.equals(log.getUser().getProvince()), groupingFormatter, timeKeys));
+            });
+            results.put("UNKNOWN", groupLogsByTime(logs, log -> log.getUser().getProvince() == null, groupingFormatter, timeKeys));
+        }
+
+        cache.put(new Element(cacheKey, results));
+        return results;
+    }
+
+    private Map<String, Integer> groupLogsByTime(List<CampaignLog> logs, Predicate<CampaignLog> filter, DateTimeFormatter groupingFormatter, List<String> timeKeys) {
+        Map<String, Integer> timeUnitsCount = new LinkedHashMap<>();
+        Map<String, List<CampaignLog>> groupedLogs = logs.stream()
+                .filter(filter).collect(Collectors.groupingBy(log -> groupingFormatter.format(log.getCreationTime().atZone(ZONE))));
+        timeKeys.forEach(timeKey -> timeUnitsCount.put(timeKey, groupedLogs.containsKey(timeKey) ? groupedLogs.get(timeKey).size() : 0));
+        return timeUnitsCount;
+    }
+
     private Cache getStatsCache(String cacheName) {
         if (!cacheManager.cacheExists(cacheName)) {
+            // provides for, in effect, 500 campaigns being accessed almost simultaneously
             Cache statsCache = new Cache(new CacheConfiguration(cacheName, 2000).timeToIdleSeconds(900).eternal(false));
             cacheManager.addCacheIfAbsent(statsCache);
         }

@@ -2,12 +2,14 @@ package za.org.grassroot.webapp.controller.rest.campaign;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.services.campaign.CampaignActivityStatsRequest;
 import za.org.grassroot.services.campaign.CampaignStatsBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
@@ -17,7 +19,7 @@ import java.util.Map;
 
 @RestController
 @Grassroot2RestController
-@Api("/api/campaign/stats")
+@Api("/api/campaign/stats") @Slf4j
 @RequestMapping(value = "/api/campaign/stats")
 public class CampaignStatsController extends BaseRestController {
 
@@ -53,6 +55,16 @@ public class CampaignStatsController extends BaseRestController {
     @ApiOperation("Returns a map of engagement by users' province (null province is converted to 'UNKNOWN'")
     public Map<String, Long> getProvinceEngagement(@RequestParam String campaignUid) {
         return campaignStatsBroker.getCampaignProvinceStats(campaignUid);
+    }
+
+    @RequestMapping(value = "/activity", method = RequestMethod.GET)
+    @ApiOperation("Returns maps of activity by time unit, split by province or channel")
+    public Map<String, Map<String, Integer>> getActivityStatus(@RequestParam String campaignUid,
+                                                               @RequestParam String datasetDivision,
+                                                               @RequestParam String timePeriod) {
+        CampaignActivityStatsRequest statsRequest = new CampaignActivityStatsRequest(datasetDivision, timePeriod);
+        log.info("received an activity stats request: {}", statsRequest);
+        return campaignStatsBroker.getCampaignActivityCounts(campaignUid, statsRequest);
     }
 
 }

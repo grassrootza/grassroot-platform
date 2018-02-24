@@ -11,6 +11,7 @@ alter table campaign add column sharing_spent bigint default 0;
 
 alter table campaign rename column url to landing_url;
 alter table campaign add column petition_api text;
+alter table campaign add column petition_result_api text;
 
 alter table campaign add column account_uid varchar(50);
 alter table campaign ADD CONSTRAINT fk_campaign_account FOREIGN KEY (account_uid) REFERENCES paid_account(uid);

@@ -85,6 +85,9 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @Column(name = "petition_api")
     private String petitionApi;
 
+    @Column(name = "petition_result_api")
+    private String petitionResultApi;
+
     @OneToMany(mappedBy = "campaign")
     private Set<CampaignLog> campaignLogs = new HashSet<>();
 

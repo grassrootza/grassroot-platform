@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignType;
@@ -31,9 +32,13 @@ public class CampaignViewDTO {
     private Instant campaignStartDate;
     private Instant campaignEndDate;
     private CampaignType campaignType;
+
     private String campaignUrl;
+    private boolean petitionConnected;
+
     private String masterGroupUid;
     private String masterGroupName;
+
     private Integer totalUsers;
     private long totalJoined;
     private long totalEngaged;
@@ -78,6 +83,8 @@ public class CampaignViewDTO {
 
         this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;
         this.masterGroupUid = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null;
+
+        this.petitionConnected = !StringUtils.isEmpty(campaign.getPetitionApi()) && !StringUtils.isEmpty(campaign.getPetitionResultApi());
 
         this.smsSharingEnabled = campaign.isSharingEnabled();
         this.smsSharingBudget = campaign.getSharingBudget();

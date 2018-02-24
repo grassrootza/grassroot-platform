@@ -79,7 +79,7 @@ public class CampaignManagerController extends BaseRestController {
             Cache campaignCache = new Cache(cacheConfig);
             cacheManager.addCacheIfAbsent(campaignCache);
         }
-        return cacheManager.getCache("user_campaigns");
+        return cacheManager.getCache(cacheName);
     }
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)
