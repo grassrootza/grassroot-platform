@@ -59,7 +59,7 @@ public class CampaignStatsController extends BaseRestController {
 
     @RequestMapping(value = "/activity", method = RequestMethod.GET)
     @ApiOperation("Returns maps of activity by time unit, split by province or channel")
-    public Map<String, Map<String, Integer>> getActivityStatus(@RequestParam String campaignUid,
+    public Map<String, Object> getActivityStatus(@RequestParam String campaignUid,
                                                                @RequestParam String datasetDivision,
                                                                @RequestParam String timePeriod) {
         CampaignActivityStatsRequest statsRequest = new CampaignActivityStatsRequest(datasetDivision, timePeriod);

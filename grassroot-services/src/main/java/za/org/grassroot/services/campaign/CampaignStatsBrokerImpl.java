@@ -243,12 +243,12 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<String, Map<String, Integer>> getCampaignActivityCounts(String campaignUid, CampaignActivityStatsRequest request) {
+    public Map<String, Object> getCampaignActivityCounts(String campaignUid, CampaignActivityStatsRequest request) {
         Cache cache = getStatsCache(CURRENT_CACHE);
         final String cacheKey = campaignUid + "_activity_" + request.getDatasetDivision() + "_" + request.getTimePeriod();
         log.info("activity stats, cache key: {}", cacheKey);
         if (cache.isKeyInCache(cacheKey))
-            return (Map<String, Map<String, Integer>>) cache.get(cacheKey).getObjectValue();
+            return (Map<String, Object>) cache.get(cacheKey).getObjectValue();
 
         // step 1 : get engagement logs that need dividing up, depending on time period
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
@@ -275,9 +275,10 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         log.info("alright, time keys = {}", timeKeys);
 
         // step 4: divide up the data, into channels or provinces, grouped by the set above
-        Map<String, Map<String, Integer>> results = new HashMap<>();
-        List<CampaignLog> logs = new ArrayList<>(lastStageMap.values());
+        Map<String, Object> results = new HashMap<>();
+        results.put("TIME_UNITS", timeKeys);
 
+        List<CampaignLog> logs = new ArrayList<>(lastStageMap.values());
         if (request.isByChannel()) {
             Set<UserInterfaceType> channels = logs.stream().map(CampaignLog::getChannel).filter(Objects::nonNull).collect(Collectors.toSet());
             channels.forEach(channel -> {

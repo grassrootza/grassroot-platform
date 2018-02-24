@@ -40,6 +40,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequest;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.time.Instant;
@@ -55,6 +56,13 @@ public class CampaignManagerController extends BaseRestController {
     private final UserManagementService userManager;
     private final GroupBroker groupBroker;
     private final CacheManager cacheManager;
+
+    // we use three of these because we have access to different keys, and transforming one to another would require
+    // DB hits that would significantly decrease benefit of cache (esp when campaign entities get big on large campaigns)
+    // hence a little complexity in cache set up in exchange for simplicity later
+    private Cache userCampaignsCache;
+    private Cache groupCampaignsCache;
+    private Cache fullCampaignsCache;
 
     private MessageSource messageSource;
 
@@ -72,14 +80,14 @@ public class CampaignManagerController extends BaseRestController {
         this.messageSource = messageSource;
     }
 
-    private Cache getOrSetUpCache(String cacheName) {
-        if (!cacheManager.cacheExists(cacheName)) {
-            log.info("no user campaigns cache, create one");
-            CacheConfiguration cacheConfig = CAMPAIGN_CACHE_CONFIG.clone().name(cacheName);
-            Cache campaignCache = new Cache(cacheConfig);
-            cacheManager.addCacheIfAbsent(campaignCache);
-        }
-        return cacheManager.getCache(cacheName);
+    @PostConstruct
+    public void init() {
+        userCampaignsCache = new Cache(CAMPAIGN_CACHE_CONFIG.clone().name("user_campaigns"));
+        cacheManager.addCache(userCampaignsCache);
+        groupCampaignsCache = new Cache(CAMPAIGN_CACHE_CONFIG.clone().name("group_campaigns"));
+        cacheManager.addCache(groupCampaignsCache);
+        fullCampaignsCache = new Cache(CAMPAIGN_CACHE_CONFIG.clone().name("full_campaigns"));
+        cacheManager.addCache(fullCampaignsCache);
     }
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)
@@ -98,9 +106,8 @@ public class CampaignManagerController extends BaseRestController {
     }
 
     private List<CampaignViewDTO> checkForCampaignsInCache(String userUid) {
-        Cache cache = getOrSetUpCache("user_campaigns");
-        if (cache != null && cache.isKeyInCache(userUid)) {
-            Object cacheElement = cache.get(userUid).getObjectValue();
+        if (userCampaignsCache.isKeyInCache(userUid)) {
+            Object cacheElement = userCampaignsCache.get(userUid).getObjectValue();
             return cacheElement != null ? (List<CampaignViewDTO>) cacheElement : null;
         } else {
             return null;
@@ -108,10 +115,7 @@ public class CampaignManagerController extends BaseRestController {
     }
 
     private void cacheUserCampaigns(String userUid, List<CampaignViewDTO> campaigns) {
-        Cache cache = getOrSetUpCache("user_campaigns");
-        if (cache != null) {
-            cache.put(new Element(userUid, campaigns));
-        }
+        userCampaignsCache.put(new Element(userUid, campaigns));
     }
 
     @RequestMapping(value = "/list/group", method = RequestMethod.GET)
@@ -128,16 +132,12 @@ public class CampaignManagerController extends BaseRestController {
     }
 
     private List<CampaignViewDTO> checkForGroupCampaignsCache(String groupUid) {
-        Cache cache = getOrSetUpCache("group_campaigns");
-        return cache == null || !cache.isKeyInCache(groupUid) ? null :
-                (List<CampaignViewDTO>) cache.get(groupUid).getObjectValue();
+        return !groupCampaignsCache.isKeyInCache(groupUid) ? null :
+                (List<CampaignViewDTO>) groupCampaignsCache.get(groupUid).getObjectValue();
     }
 
     private void cacheGroupCampaigns(String groupUid, List<CampaignViewDTO> campaigns) {
-        Cache cache = getOrSetUpCache("group_campaigns");
-        if (cache != null) {
-            cache.put(new Element(groupUid, campaigns));
-        }
+        groupCampaignsCache.put(new Element(groupUid, campaigns));
     }
 
     @RequestMapping(value = "/fetch/{campaignUid}", method = RequestMethod.GET)
@@ -158,16 +158,12 @@ public class CampaignManagerController extends BaseRestController {
     }
 
     private CampaignViewDTO checkForCampaignInCache(String campaignUid, String userUid) {
-        Cache cache = getOrSetUpCache("full_campaigns");
-        return cache == null || !cache.isKeyInCache(campaignUid + userUid) ? null :
-                (CampaignViewDTO) cache.get(campaignUid + userUid).getObjectValue();
+        return !fullCampaignsCache.isKeyInCache(campaignUid + userUid) ? null :
+                (CampaignViewDTO) fullCampaignsCache.get(campaignUid + userUid).getObjectValue();
     }
 
     private void cacheCampaignFull(CampaignViewDTO campaign, String userUid) {
-        Cache cache = getOrSetUpCache("full_campaigns");
-        if (cache != null) {
-            cache.put(new Element(campaign.getCampaignUid() + userUid, campaign));
-        }
+        fullCampaignsCache.put(new Element(campaign.getCampaignUid() + userUid, campaign));
     }
 
     @RequestMapping(value = "/create" , method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)

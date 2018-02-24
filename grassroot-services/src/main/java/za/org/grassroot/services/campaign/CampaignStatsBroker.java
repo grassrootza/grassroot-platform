@@ -15,6 +15,6 @@ public interface CampaignStatsBroker {
 
     Map<String, Long> getCampaignProvinceStats(String campaignUid);
 
-    Map<String, Map<String, Integer>> getCampaignActivityCounts(String campaignUid, CampaignActivityStatsRequest request);
+    Map<String, Object> getCampaignActivityCounts(String campaignUid, CampaignActivityStatsRequest request);
 
 }
