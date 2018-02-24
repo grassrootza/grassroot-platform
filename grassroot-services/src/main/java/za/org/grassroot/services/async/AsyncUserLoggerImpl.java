@@ -29,22 +29,22 @@ import static za.org.grassroot.core.specifications.UserLogSpecifications.*;
 @Service @Slf4j
 public class AsyncUserLoggerImpl implements AsyncUserLogger {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final UserLogRepository userLogRepository;
+    private final CacheUtilService cacheUtilService;
 
     @Autowired
-    private UserLogRepository userLogRepository;
-
-    @Autowired
-    private CacheUtilService cacheUtilService;
+    public AsyncUserLoggerImpl(UserRepository userRepository, UserLogRepository userLogRepository, CacheUtilService cacheUtilService) {
+        this.userRepository = userRepository;
+        this.userLogRepository = userLogRepository;
+        this.cacheUtilService = cacheUtilService;
+    }
 
     @Async
     @Override
     @Transactional
     public void logUserLogin(String userUid, UserInterfaceType channel) {
         Objects.requireNonNull(userUid);
-        Objects.requireNonNull(channel);
-        UserLog userLog = new UserLog(userUid, UserLogType.USER_SESSION, "", channel);
         User user = userRepository.findOneByUid(userUid);
         if (UserInterfaceType.WEB.equals(channel) || UserInterfaceType.WEB_2.equals(channel)) {
             user.setHasWebProfile(true);
@@ -52,6 +52,7 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
             user.setHasAndroidProfile(true);
         }
         user.setHasInitiatedSession(true);
+        userLogRepository.save(new UserLog(userUid, UserLogType.USER_SESSION, "", channel));
     }
 
     @Async

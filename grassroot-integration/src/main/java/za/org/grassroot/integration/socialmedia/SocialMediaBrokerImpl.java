@@ -91,11 +91,23 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         return resultFromCache;
     }
 
+    private void addToCache(String userUid, String providerId, ManagedPagesResponse response) {
+        Cache cache = cacheManager.getCache("social_media_managed_pages");
+        String cacheKey = providerId + "-" + userUid;
+        cache.put(new Element(cacheKey, response));
+    }
+
+    private void clearCache(String userUid, String providerId) {
+        Cache cache = cacheManager.getCache("social_media_managed_pages");
+        String cacheKey = providerId + "-" + userUid;
+        cache.remove(cacheKey);
+    }
+
     private ManagedPagesResponse askService(String userUid, String providerId) {
         if (mockSocialMediaBroadcasts) {
             switch (providerId) {
                 case "facebook": return mockFbPages();
-                case "twitter": return mockTwitterAccount();
+//                case "twitter": return mockTwitterAccount();
                 default: return null;
             }
         } else {
@@ -103,7 +115,9 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
                 final URI uri = baseUri(userUid).path("/connect/status/pages/" + providerId).build().toUri();
                 log.debug("getting user's managed pages, URI = {}", uri.toString());
                 ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
-                return handleResponse(response, providerId);
+                ManagedPagesResponse processedResponse = handleResponse(response, providerId);
+                addToCache(userUid, providerId, processedResponse);
+                return processedResponse;
             } catch (RestClientException e) {
                 log.error("Error calling social media service! Exception header: {}", e.getMessage());
                 return new ManagedPagesResponse();
@@ -118,6 +132,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public String initiateFacebookConnection(String userUid) {
+        clearCache(userUid, "facebook");
         final URI uri = baseUri(userUid).path("/connect/facebook")
                 .queryParam("scope", "user_friends,user_posts,manage_pages,publish_pages,publish_actions")
                 .build().toUri();
@@ -127,6 +142,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public String initiateTwitterConnection(String userUid) {
+        clearCache(userUid, "twitter");
         final URI uri = baseUri(userUid).path("/connect/twitter")
                 .build().toUri();
         log.info("okay trying to connect to twitter, URI = {}", uri.toString());
@@ -135,6 +151,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public IntegrationListResponse removeIntegration(String userUid, String providerId) {
+        clearCache(userUid, providerId);
         final URI uri = baseUri(userUid).path("/connect/" + providerId).build().toUri();
         log.info("okay, removing account: {}", uri.toString());
         try {
@@ -150,6 +167,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public ManagedPagesResponse completeIntegrationConnect(String userUid, String providerId, MultiValueMap<String, String> paramsToPass) {
+        clearCache(userUid, providerId);
         final URI uri = baseUri(userUid).path("/connect/" + providerId)
                 .queryParams(paramsToPass)
                 .build().toUri();
@@ -157,7 +175,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             log.info("calling URI: {}", uri);
             ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), String.class);
             log.info("response: {}", response);
-            return getManagedFacebookPages(userUid);
+            return getManagedPages(userUid, providerId);
         } catch(RestClientException e) {
             log.error("error calling integration broker", e);
             return null;
@@ -187,6 +205,9 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             return getManagedPages(userUid, "twitter").getManagedPages().get(0);
         } catch (RestClientException e) {
             log.error("Error trying to check Twitter account: {}", e.getMessage());
+            return null;
+        } catch (NullPointerException|IndexOutOfBoundsException e) {
+            log.error("okay, no twitter page, returning null");
             return null;
         }
     }
