@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
+import za.org.grassroot.core.dto.group.PublicGroupDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -36,6 +37,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @Api("/api/search")
@@ -87,58 +89,37 @@ public class SearchController extends BaseRestController {
 
 
     @Timed
-    @RequestMapping(value = "/groups/{userUid}/{searchTerm}", method = RequestMethod.GET)
+    @RequestMapping(value = "/groups/private", method = RequestMethod.GET)
     @ApiOperation(value = "User groups using search term")
-    public ResponseEntity<List<GroupFullDTO>> searchForUserGroupsByTerm(@PathVariable String userUid,
-                                                                        @PathVariable String searchTerm,
+    public ResponseEntity<List<GroupFullDTO>> searchForUserGroupsByTerm(@RequestParam String searchTerm,
                                                                         HttpServletRequest request){
-        String loggedInUserUid = getUserIdFromRequest(request);
-        if(userUid.equals(loggedInUserUid)){
-            List<Group> groups = groupQueryBroker.searchUsersGroups(userUid,searchTerm,false);
+        List<Group> groups = groupQueryBroker.searchUsersGroups(getUserIdFromRequest(request),searchTerm,false);
 
-            List<GroupFullDTO> dtos = new ArrayList<>();
+        List<GroupFullDTO> dtos = groups.stream().map(group -> groupFetchBroker.fetchGroupFullInfo(group.getCreatedByUser().getUid(),group.getUid(),
+                false,false,false)).collect(Collectors.toList());
 
-            groups.forEach(group -> dtos.add(groupFetchBroker.fetchGroupFullInfo(group.getCreatedByUser().getUid(),group.getUid(),
-                    false,false,false)));
-
-            logger.info("Groups full..................",dtos);
-            return ResponseEntity.ok(dtos);
-        }else{
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
-        }
+        return ResponseEntity.ok(dtos);
     }
 
-    @Timed
-    @RequestMapping(value = "/publicGroups/{userUid}/{searchTerm}", method = RequestMethod.GET)
+    @RequestMapping(value = "/groups/public", method = RequestMethod.GET)
     @ApiOperation(value = "User public groups using search term")
-    public ResponseEntity<List<GroupFullDTO>> userPublicGroups(@PathVariable String userUid,
-                                                               @PathVariable String searchTerm,
-                                                               @RequestParam(value = "searchByLocation", required = false) boolean searchByLocation,
-                                                               HttpServletRequest request){
-
-        String loggedInUserUid = getUserIdFromRequest(request);
-        if(userUid.equals(loggedInUserUid)){
-            User user = getUserFromRequest(request);
-            GroupLocationFilter filter = null;
-            if (searchByLocation) {
-                PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid(), LocalDate.now());
-                logger.info("user location : " + lastUserLocation);
-                filter = lastUserLocation != null ? new GroupLocationFilter(lastUserLocation.getLocation(), 10, false) : null;
-            }
-
-            List<Group> groups = groupQueryBroker.findPublicGroups(userUid,searchTerm,filter,true);
-            List<GroupFullDTO> groupFullDTOS = new ArrayList<>();
-            if(groups != null){
-                groups.forEach(group -> groupFullDTOS.add(groupFetchBroker.fetchGroupFullInfo(group.getCreatedByUser().getUid(),group.getUid(),false,false,false)));
-            }
-            logger.info("Groups found..........",groupFullDTOS);
-            return ResponseEntity.ok(groupFullDTOS);
-        }else{
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
+    public ResponseEntity<List<PublicGroupDTO>> userPublicGroups(@RequestParam String searchTerm,
+                                                                 @RequestParam(value = "searchByLocation", required = false) boolean searchByLocation,
+                                                                 HttpServletRequest request){
+        GroupLocationFilter filter = null;
+        if (searchByLocation) {
+            PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(getUserIdFromRequest(request), LocalDate.now());
+            logger.info("user location : " + lastUserLocation);
+            filter = lastUserLocation != null ? new GroupLocationFilter(lastUserLocation.getLocation(), 10, false) : null;
         }
+
+        List<PublicGroupDTO> groupDTOs = groupQueryBroker.findPublicGroups(getUserIdFromRequest(request), searchTerm, filter, true)
+                .stream().map(PublicGroupDTO::new).collect(Collectors.toList());
+        logger.info("Groups found..........",groupDTOs);
+        return ResponseEntity.ok(groupDTOs);
     }
 
-    @Timed
+    // switch this to same pattern as I have done for groups
     @RequestMapping(value = "/publicMeetings/{userUid}/{searchTerm}", method = RequestMethod.GET)
     @ApiOperation(value = "User public meetings using search term")
     public ResponseEntity<List<TaskFullDTO>> userPublicMeetings(@PathVariable String userUid,
