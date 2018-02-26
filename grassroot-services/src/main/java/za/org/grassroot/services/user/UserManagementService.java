@@ -80,6 +80,8 @@ public interface UserManagementService {
 
     void updateUserLanguage(String userUid, Locale locale);
 
+    void updateUserProvince(String userUid, Province province);
+
     void updateAlertPreferences(String userUid, AlertPreference alertPreference);
 
     void setMessagingPreference(String userUid, DeliveryRoute preference);

@@ -10,8 +10,6 @@ import org.mockito.Mock;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
@@ -84,7 +82,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
 
     @Test
     public void testCreateCampaign() throws Exception{
-        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(null);
+        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false), eq(UserInterfaceType.USSD))).thenReturn(null);
         when(campaignBroker.create(anyString(), anyString(),anyString(),anyString(), anyString(), any(Instant.class), any(Instant.class), anyList(),any(CampaignType.class),anyString())).thenReturn(testCampaign);
         when(campaignBroker.updateMasterGroup(anyString(),anyString(),anyString())).thenReturn(testCampaign);
 
@@ -95,45 +93,6 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         response.andExpect(status().isOk());
         Assert.assertNotNull(response);
     }
-
-    @Test
-    public void testAddCampaignTag() throws Exception{
-        when(campaignBroker.addCampaignTags(anyString(),anyList())).thenReturn(testCampaign);
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("campaignCode","1234");
-        params.add("tag","testTag");
-        ResultActions response = mockMvc.perform(get("/api/campaign/manage/add/tag").params(params));
-        Assert.assertNotNull(response);
-        response.andExpect(status().isOk());
-
-    }
-
-    @Test
-    public void testAddCampaignMessage() throws Exception{
-        when(campaignBroker.addCampaignMessage(anyString(),anyString(),any(Locale.class),any(MessageVariationAssignment.class),any(UserInterfaceType.class),any(User.class),anyList())).thenReturn(testCampaign);
-        when(userManager.load(anyString())).thenReturn(testUser);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
-        String requestJson = mapper.writeValueAsString(createCampaignMessageRequest);
-        ResultActions response = mockMvc.perform(post("/api/campaign/manage/messages/add/" + testCampaign.getUid())
-                .contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
-        response.andExpect(status().isOk());
-        Assert.assertNotNull(response);
-    }
-
-    @Test
-    public void testAddMessageAction() throws Exception{
-        when(campaignBroker.addActionToCampaignMessage(anyString(),anyString(),any(CampaignActionType.class),anyString(),any(Locale.class),any(MessageVariationAssignment.class),any(UserInterfaceType.class),any(User.class),anySet())).thenReturn(testCampaign);
-        when(userManager.load(anyString())).thenReturn(testUser);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
-        String requestJson = mapper.writeValueAsString(createCampaignMessageActionRequest);
-        ResultActions response = mockMvc.perform(post("/api/campaign/manage/messages/action/add/" + testCampaign.getUid())
-                .contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
-        response.andExpect(status().isOk());
-        Assert.assertNotNull(response);
-    }
-
 
     private CreateCampaignRequest createTestWrapper(){
         CreateCampaignRequest wrapper = new CreateCampaignRequest();

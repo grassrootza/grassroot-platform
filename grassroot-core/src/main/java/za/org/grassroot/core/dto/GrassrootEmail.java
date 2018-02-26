@@ -1,6 +1,7 @@
-package za.org.grassroot.integration.messaging;
+package za.org.grassroot.core.dto;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.util.StringUtils;
 
@@ -9,18 +10,18 @@ import java.io.File;
 /**
  * Created by luke on 2016/10/24.
  */
-@Getter
+@Getter @Setter @NoArgsConstructor
 public class GrassrootEmail {
 
-    private final String from;
-    private final String address;
-    private final String subject;
-    private final String content;
-    private final String htmlContent;
+    private String from;
+    private String address;
+    private String subject;
+    private String content;
+    private String htmlContent;
 
-    @Setter private String fromAddress;
-    @Setter private File attachment;
-    @Setter private String attachmentName;
+    private String fromAddress;
+    private File attachment;
+    private String attachmentName;
 
     public static class EmailBuilder {
         private String address;
@@ -84,13 +85,21 @@ public class GrassrootEmail {
         }
     }
 
-    private GrassrootEmail(String from, String fromAddress, String address, String subject, String content, String htmlContent) {
+    public GrassrootEmail(String from, String fromAddress, String address, String subject, String content, String htmlContent) {
         this.from = from;
         this.fromAddress = fromAddress;
         this.address = address;
         this.subject = subject;
         this.content = content;
         this.htmlContent = htmlContent;
+    }
+
+    public GrassrootEmail copyIntoNew(String toAddress) {
+        GrassrootEmail email = new GrassrootEmail(this.getFrom(), this.getFromAddress(),
+                toAddress, this.getSubject(), this.getContent(), this.getHtmlContent());
+        email.setAttachment(this.getAttachment());
+        email.setAttachmentName(toAddress);
+        return email;
     }
 
     public boolean hasHtmlContent() { return !StringUtils.isEmpty(htmlContent); }

@@ -3,8 +3,7 @@ package za.org.grassroot.webapp.controller.rest.task;
 import com.codahale.metrics.annotation.Timed;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,11 +30,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@Api("/api/task/fetch")
+@Api("/api/task/fetch") @Slf4j
 @RequestMapping(value = "/api/task/fetch")
 public class TaskFetchController extends BaseRestController {
-
-    private static final Logger logger = LoggerFactory.getLogger(TaskFetchController.class);
 
     private final TaskBroker taskBroker;
     private final TaskImageBroker taskImageBroker;
@@ -108,6 +105,7 @@ public class TaskFetchController extends BaseRestController {
         String loggedInUserUid = getUserIdFromRequest(request);
         if (userUid.equals(loggedInUserUid)) {
             List<TaskFullDTO> tasks = taskBroker.fetchUpcomingUserTasksFull(userUid);
+            log.info("found {} tasks for user", tasks.size());
             return ResponseEntity.ok(tasks);
         } else
             return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
@@ -123,7 +121,7 @@ public class TaskFetchController extends BaseRestController {
         if (userUid.equals(loggedInUserUid)) {
             ChangedSinceData<TaskDTO> tasks = taskBroker.fetchGroupTasks(userUid, groupUid,
                     changedSinceMillis == null || changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis));
-            logger.info("returning tasks: {}", tasks);
+            log.info("returning tasks: {}", tasks);
             return ResponseEntity.ok(tasks);
         } else
             return new ResponseEntity<>((ChangedSinceData<TaskDTO>) null, HttpStatus.FORBIDDEN);

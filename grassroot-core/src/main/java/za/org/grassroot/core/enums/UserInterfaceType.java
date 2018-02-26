@@ -3,13 +3,20 @@ package za.org.grassroot.core.enums;
 
 public enum UserInterfaceType {
     UNKNOWN("unknown"),
+    SYSTEM("system"),
+
     USSD("ussd"),
     WEB("web"),
     ANDROID("android"),
-    SYSTEM("system"),
     INCOMING_SMS("incoming sms"),
     WEB_2("rebuilt_frontend"),
-    ANDROID_2("second android");
+    ANDROID_2("second android"),
+
+    FACEBOOK("facebook"),
+    TWITTER("twitter"),
+
+    EMAIL("incoming_email"),
+    WHATSAPP("incoming_whatsapp");
 
     private final String text;
 

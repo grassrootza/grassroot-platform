@@ -5,9 +5,11 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
+import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
+import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -55,5 +57,17 @@ public interface GeoLocationBroker {
 	List<Group> fetchGroupsWithRecordedLocationsFromSet(Set<Group> referenceSet);
 
 	List<double[]> fetchUserLatitudeLongitudeInAvgPeriod(String userUid, LocalDate localDate);
+
+	List<ObjectLocation> fetchGroupsNearby(String userUid, GeoLocation location, Integer radiusInMetres,
+										  String filterTerm, GeographicSearchType searchType)
+			throws InvalidParameterException;
+
+	List<ObjectLocation> fetchPublicGroupsNearbyWithLocation(GeoLocation geoLocation, Integer radiusInMetres)
+			throws InvalidParameterException;
+
+	List<ObjectLocation> fetchMeetingLocationsNearUser(User user, GeoLocation geoLocation, Integer radiusInMetres, GeographicSearchType searchType, String searchTerm)
+			throws InvalidParameterException;
+
+	GeoLocation fetchBestGuessUserLocation(String userUid);
 
 }

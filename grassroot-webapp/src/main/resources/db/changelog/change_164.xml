@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
+    <changeSet id="change_164" author="luke">
+        <comment>Wide ranging set of model adjustments, from WhatsApp flag to campaign cleaning</comment>
+        <sqlFile path="db/scripts/script_164_model_tweaks.sql" splitStatements="false"/>
+        <rollback>
+            <sqlFile path="db/scripts/script_164_rollback.sql"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

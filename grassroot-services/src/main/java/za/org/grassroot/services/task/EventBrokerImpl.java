@@ -189,7 +189,7 @@ public class EventBrokerImpl implements EventBroker {
 		Set<Notification> notifications = new HashSet<>();
 		logger.debug("constructing event notifications ... has image URL? : {}", event.getImageUrl());
 		for (User member : usersToNotify) {
-			cacheUtilService.clearRsvpCacheForUser(member, event.getEventType());
+			cacheUtilService.clearRsvpCacheForUser(member.getUid());
 			String message = messageAssemblingService.createEventInfoMessage(member, event);
 			Notification notification = new EventInfoNotification(member, message, eventLog);
 			notifications.add(notification);
@@ -825,40 +825,25 @@ public class EventBrokerImpl implements EventBroker {
 	/*
 	SECTION starts here for reading & retrieving user events
 	 */
-
 	@Override
-	@Transactional(readOnly = true)
-	public List<Event> getOutstandingResponseForUser(User user, EventType eventType) {
-		long startTime = System.currentTimeMillis();
-	    List<Event> cachedRsvps = cacheUtilService.getOutstandingResponseForUser(user, eventType);
+    @Transactional(readOnly = true)
+	public List<Event> getEventsNeedingResponseFromUser(User user) {
+	    long startTime = System.currentTimeMillis();
+		List<Event> cachedRsvps = cacheUtilService.getOutstandingResponseForUser(user.getUid());
 		if (cachedRsvps != null) {
 			return cachedRsvps;
-		} else {
-			Map<Long, Long> eventMap = new HashMap<>();
-			final List<Event> outstandingRSVPs = new ArrayList<>();
-
-			Specifications<Event> specs = EventSpecifications.upcomingEventsForUser(user)
-					.and((root, query, cb) -> cb.equal(root.get("type"), eventType));
-
-			Specification<Event> notCreatedByUser = (root, query, cb) -> cb.notEqual(root.get("createdByUser"), user);
-
-			if (EventType.MEETING.equals(eventType)) {
-				specs = specs.and(notCreatedByUser);
-			}
-
-			// simplest means of pulling the event log into the predicate failed - come back one day if strictly needed
-			eventRepository.findAll(specs).stream()
-					.filter(e -> !eventLogBroker.hasUserRespondedToEvent(e, user) && eventMap.get(e.getId()) == null)
-					.forEach(e -> {
-						outstandingRSVPs.add(e);
-						eventMap.put(e.getId(), e.getId());
-					});
-			logger.info("number of events returned: {}", eventMap.size());
-
-            cacheUtilService.putOutstandingResponseForUser(user, eventType, outstandingRSVPs);
-			logger.info("time to check for responses: {} msecs", System.currentTimeMillis() - startTime);
-			return outstandingRSVPs;
 		}
+
+		Specifications<Event> specs = EventSpecifications.upcomingEventsForUser(user);
+		Specification<Event> stripMeetingCreated = (root, query, cb) -> cb.or(cb.notEqual(root.get("type"), EventType.MEETING),
+				cb.notEqual(root.get("createdByUser"), user));
+		List<Event> events = eventRepository
+                .findAll(specs.and(stripMeetingCreated), new Sort(Sort.Direction.ASC, "createdDateTime")).stream()
+				.filter(e -> !eventLogBroker.hasUserRespondedToEvent(e, user))
+				.distinct().collect(Collectors.toList());
+		cacheUtilService.putOutstandingResponseForUser(user.getUid(), events);
+        logger.info("time to check for responses: {} msecs", System.currentTimeMillis() - startTime);
+		return events;
 	}
 
 
@@ -880,7 +865,7 @@ public class EventBrokerImpl implements EventBroker {
 		List<User> usersAnsweredYes = userRepository.findUsersThatRSVPYesForEvent(event);
 		List<User> usersAnsweredNo = userRepository.findUsersThatRSVPNoForEvent(event);
 
-		@SuppressWarnings("unchecked") // someting stange with getAllMembers and <user> creates an unchecked warning here (hence suppressing)
+		@SuppressWarnings("unchecked") // someting strange with getAllMembers and <user> creates an unchecked warning here (hence suppressing)
 				Set<User> users = new HashSet<>(event.getAllMembers());
 		users.forEach(u -> rsvpResponses.put(u, usersAnsweredYes.contains(u) ? EventRSVPResponse.YES :
 						usersAnsweredNo.contains(u) ? EventRSVPResponse.NO : EventRSVPResponse.NO_RESPONSE));

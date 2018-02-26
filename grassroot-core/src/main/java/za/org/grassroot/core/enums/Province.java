@@ -1,8 +1,6 @@
 package za.org.grassroot.core.enums;
 
-import java.util.AbstractMap;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -18,6 +16,9 @@ public enum Province {
     ZA_FS,
     ZA_MP,
     INTL;
+
+    public static final List<Province> ZA_CANONICAL =
+            Arrays.asList(ZA_GP, ZA_KZN, ZA_WC, ZA_EC, ZA_LP, ZA_MP, ZA_NW, ZA_FS, ZA_NC);
 
     // not doing this as strings and to string, as introduces many issues, and we will probably want multi-lingual in future
     public static final Map<String, Province> EN_PROVINCE_NAMES = Collections.unmodifiableMap(Stream.of(

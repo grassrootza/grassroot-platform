@@ -1,9 +1,8 @@
 package za.org.grassroot.services.util;
 
-import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.util.List;
@@ -13,11 +12,11 @@ import java.util.List;
  */
 public interface CacheUtilService {
 
-    void clearRsvpCacheForUser(User user, EventType eventType);
+    void clearRsvpCacheForUser(String userUid);
 
     // void clearCacheForAllUsersInGroup(EventDTO event);
 
-    List<Event> getOutstandingResponseForUser(User user, EventType eventType);
+    List<Event> getOutstandingResponseForUser(String userUid);
 
     List<SafetyEvent> getOutstandingSafetyEventResponseForUser(User user);
 
@@ -25,7 +24,7 @@ public interface CacheUtilService {
 
     void clearSafetyEventResponseForUser(User user, SafetyEvent safetyEvent);
 
-    void putOutstandingResponseForUser(User user, EventType eventType, List<Event> outstandingRSVPs);
+    void putOutstandingResponseForUser(String userUid, List<Event> outstandingRSVPs);
 
     void putUssdMenuForUser(String phoneNumber, String urlToCache);
 

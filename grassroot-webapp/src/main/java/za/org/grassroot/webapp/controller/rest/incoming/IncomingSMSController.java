@@ -87,7 +87,7 @@ public class IncomingSMSController {
                                          @RequestParam(value = MESSAGE_TEXT_PARAM_REPLY) String message) {
         log.info("Inside receiving newly initiated SMS, received {} as message", message);
         User user = userManager.loadOrCreateUser(phoneNumber); // this may be a user we don't know
-        Set<String> campaignTags = campaignBroker.getCampaignTags();
+        Set<String> campaignTags = campaignBroker.getActiveCampaignJoinTopics();
         log.info("active campaign tags = {}", campaignTags);
         // then: filter them
     }

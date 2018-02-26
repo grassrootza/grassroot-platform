@@ -34,6 +34,9 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
+    @Column(name = "message_group_id", nullable = false)
+    private String messageGroupId;
+
     @Column(name = "message", nullable = false, unique = true)
     private String message;
 
@@ -75,12 +78,6 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Column(name = "locale")
     private Locale locale;
 
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "actionMessage")
-    private CampaignMessageAction parentAction;
-
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "parentCampaignMessage", orphanRemoval = true)
-    private Set<CampaignMessageAction> campaignMessageActionSet = new HashSet<>();
-
     @Column(name = "next_actions")
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] nextActions;
@@ -89,9 +86,10 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         // for JPA
     }
 
-    public CampaignMessage(User createdByUser, Campaign campaign, Locale locale, String message, UserInterfaceType channel, MessageVariationAssignment variation, CampaignActionType actionType){
+    public CampaignMessage(User createdByUser, Campaign campaign, CampaignActionType actionType, String messageGroupId, Locale locale, String message, UserInterfaceType channel, MessageVariationAssignment variation){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
+        this.messageGroupId = messageGroupId;
         this.variation = variation == null ? MessageVariationAssignment.DEFAULT : variation;
         this.message = Objects.requireNonNull(message);
         this.createdByUser = Objects.requireNonNull(createdByUser);
@@ -126,10 +124,6 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Override
     public void setTags(String[] tags) {
         this.tags = tags;
-    }
-
-    public boolean matchesMessageAndLocale(Campaign campaign, final String message, Locale locale) {
-        return this.campaign.equals(campaign) && this.message.equals(message.trim()) && this.locale.equals(locale);
     }
 
     @Override
@@ -177,17 +171,6 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         sb.append(", version=").append(version);
         sb.append('}');
         return sb.toString();
-    }
-
-    public Set<CampaignMessageAction> getCampaignMessageActionSet() {
-        if(campaignMessageActionSet == null){
-            campaignMessageActionSet = new HashSet<>();
-        }
-        return campaignMessageActionSet;
-    }
-
-    public void setCampaignMessageActionSet(Set<CampaignMessageAction> campaignMessageActionSet) {
-        this.campaignMessageActionSet = campaignMessageActionSet;
     }
 
 }
