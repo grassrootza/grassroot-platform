@@ -1,6 +1,6 @@
 package za.org.grassroot.integration.livewire;
 
-import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.core.dto.GrassrootEmail;
 
 import java.util.List;
 

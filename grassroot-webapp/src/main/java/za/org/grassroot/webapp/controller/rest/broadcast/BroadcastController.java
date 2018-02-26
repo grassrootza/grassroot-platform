@@ -8,12 +8,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.BroadcastSchedule;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
@@ -142,6 +145,21 @@ public class BroadcastController extends BaseRestController {
         log.info("do we have a file? : ", image);
         String imageKey = mediaFileBroker.storeFile(image, MediaFunction.BROADCAST_IMAGE, image.getContentType(), null);
         return ResponseEntity.ok(imageKey);
+    }
+
+    @RequestMapping(value = "/create/task/{taskType}/{taskUid}", method = RequestMethod.POST)
+    public ResponseEntity<BroadcastDTO> sendTaskBroadcast(HttpServletRequest request, @PathVariable TaskType taskType,
+                                                             @PathVariable String taskUid,
+                                                             @RequestParam String message,
+                                                             @RequestParam(required = false) Boolean sendToAll) {
+        User user = getUserFromRequest(request);
+        if (user.getPrimaryAccount() == null || !user.getPrimaryAccount().isBillPerMessage()) {
+            throw new AccessDeniedException("Task broadcasts are only allowed for paid accounts");
+        }
+
+        String broadcastUid = broadcastBroker.sendTaskBroadcast(user.getUid(), taskUid, taskType, sendToAll == null || !sendToAll, message);
+
+        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
     }
 
     private void fillInContent(BroadcastCreateRequest createRequest, BroadcastComponents bc) {

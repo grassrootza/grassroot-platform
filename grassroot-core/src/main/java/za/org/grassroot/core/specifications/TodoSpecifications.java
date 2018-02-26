@@ -49,6 +49,7 @@ public final class TodoSpecifications {
         return (root, query, cb) -> {
             Join<Todo, Group> groups = root.join(AbstractTodoEntity_.parentGroup);
             Join<Group, Membership> members = groups.join(Group_.memberships);
+            query.distinct(true);
             return cb.equal(members.get(Membership_.user), user);
         };
     }
@@ -69,6 +70,7 @@ public final class TodoSpecifications {
         Specification<Todo> isOfType = (root, query, cb) -> root.get(Todo_.type).in(TodoType.typesRequiringResponse());
         Specification<Todo> isAssigned = (root, query, cb) -> {
             Join<Todo, TodoAssignment> join = root.join(Todo_.assignments);
+            query.distinct(true);
             return cb.and(
                     cb.equal(join.get(TodoAssignment_.user), user),
                     cb.isFalse(join.get(TodoAssignment_.hasResponded)),

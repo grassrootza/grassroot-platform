@@ -1,5 +1,7 @@
 package za.org.grassroot.integration.messaging;
 
+import za.org.grassroot.core.dto.GrassrootEmail;
+
 import java.util.List;
 
 /**

@@ -13,7 +13,7 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountBillingRecord;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
-import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.services.util.MessageUtils;
 
 import java.text.DecimalFormat;

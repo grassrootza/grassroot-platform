@@ -1,82 +1,34 @@
 package za.org.grassroot.webapp.model.rest;
 
-import java.io.Serializable;
+import lombok.Getter;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.enums.MessageVariationAssignment;
+
 import java.util.List;
+import java.util.Map;
 
+@Getter
+public class CampaignMessageViewDTO {
 
-public class CampaignMessageViewDTO implements Serializable {
+    private final String uid;
+    private final String message;
+    private final CampaignActionType actionType;
+    private final String createdDateTime;
+    private final String assignment;
+    private final String language;
+    private final List<String> tags;
+    private final Map<String, CampaignActionType> nextMessages;
 
-    private static final long serialVersionUID = -8566708934792370862L;
-    private String message;
-    private String createdDateTime;
-    private String createUser;
-    private String assignment;
-    private String language;
-    private String uid;
-    private List<String> tags;
-    private List<CampaignActionViewDTO> messageActions;
-
-    public String getMessage() {
-        return message;
+    public CampaignMessageViewDTO(CampaignMessage message) {
+        this.uid = message.getUid();
+        this.message = message.getMessage();
+        this.actionType = message.getActionType();
+        this.assignment = message.getVariation() == null ? MessageVariationAssignment.DEFAULT.name() : message.getVariation().name();
+        this.tags = message.getTagList();
+        this.createdDateTime = message.getCreatedDateTime().toString();
+        this.language = message.getLocale() != null ? message.getLocale().getLanguage() : null;
+        this.nextMessages = message.getNextMessages();
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getCreatedDateTime() {
-        return createdDateTime;
-    }
-
-    public void setCreatedDateTime(String createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
-
-    public String getCreateUser() {
-        return createUser;
-    }
-
-    public void setCreateUser(String createUser) {
-        this.createUser = createUser;
-    }
-
-    public String getAssignment() {
-        return assignment;
-    }
-
-    public void setAssignment(String assignment) {
-        this.assignment = assignment;
-    }
-
-    public String getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(String language) {
-        this.language = language;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public List<String> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<String> tags) {
-        this.tags = tags;
-    }
-
-    public List<CampaignActionViewDTO> getMessageActions() {
-        return messageActions;
-    }
-
-    public void setMessageActions(List<CampaignActionViewDTO> messageActions) {
-        this.messageActions = messageActions;
-    }
 }

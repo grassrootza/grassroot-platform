@@ -18,10 +18,14 @@ import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.MeetingRequest;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.dto.task.TaskFullDTO;
+import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.UserResponseBroker;
+import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
@@ -58,6 +62,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
     @Mock private UserResponseBroker userResponseBrokerMock;
     @Mock private ExperimentBroker experimentBrokerMock;
+    @Mock private TaskBroker taskBrokerMock;
 
     @InjectMocks
     private USSDHomeController ussdHomeController;
@@ -98,12 +103,13 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         groupMembers.add(testUser);
 
         for (User user: groupMembers) {
-
             user.setHasInitiatedSession(false);
+            TaskMinimalDTO taskDetails = new TaskMinimalDTO(meeting, Instant.now());
 
             when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
             when(userResponseBrokerMock.checkForEntityForUserResponse(user.getUid(), true)).thenReturn(meeting);
+            when(taskBrokerMock.fetchDescription(user.getUid(), meeting.getUid(), TaskType.MEETING)).thenReturn(taskDetails);
 
             mockMvc.perform(get("/ussd/start").param(phoneParam, user.getPhoneNumber())).andExpect(status().isOk());
             verify(userResponseBrokerMock, times(1)).checkForEntityForUserResponse(user.getUid(), true);

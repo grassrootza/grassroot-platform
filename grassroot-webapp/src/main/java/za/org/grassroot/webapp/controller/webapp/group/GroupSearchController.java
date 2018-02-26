@@ -21,8 +21,8 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.GeographicSearchType;
-import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupQueryBroker;
@@ -64,13 +64,13 @@ public class GroupSearchController extends BaseController {
 	private final LearningService learningService;
 	private final EventBroker eventBroker;
 	private final UserManagementService userManagementService;
-	private final ObjectLocationBroker objectLocationBroker;
+	private final GeoLocationBroker geoLocationBroker;
 
 	@Autowired
 	public GroupSearchController(GroupBroker groupBroker, GroupQueryBroker groupQueryBroker, TaskBroker taskBroker,
 								 GroupJoinRequestService groupJoinRequestService, AsyncUserLogger userLogger,
 								 LearningService learningService,EventBroker eventBroker,UserManagementService userManagementService,
-								 ObjectLocationBroker objectLocationBroker) {
+								 GeoLocationBroker geoLocationBroker) {
 		this.groupBroker = groupBroker;
 		this.groupQueryBroker = groupQueryBroker;
 		this.taskBroker = taskBroker;
@@ -79,7 +79,7 @@ public class GroupSearchController extends BaseController {
 		this.learningService = learningService;
 		this.eventBroker = eventBroker;
 		this.userManagementService = userManagementService;
-		this.objectLocationBroker = objectLocationBroker;
+		this.geoLocationBroker = geoLocationBroker;
 	}
 
 
@@ -161,7 +161,7 @@ public class GroupSearchController extends BaseController {
 
 				if (latitude != null && longitude != null) {
 					location = new GeoLocation(latitude,longitude);
-					List<ObjectLocation> publicMeetings = objectLocationBroker.fetchMeetingLocationsNearUser(user, location, searchRadius, GeographicSearchType.PUBLIC, null);
+					List<ObjectLocation> publicMeetings = geoLocationBroker.fetchMeetingLocationsNearUser(user, location, searchRadius, GeographicSearchType.PUBLIC, null);
 					model.addAttribute("publicMeetingsNearUser",publicMeetings);
 					log.info("Object Locations = {}" ,publicMeetings.size());
 				}

@@ -8,9 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -306,6 +309,36 @@ public class DateTimeUtil {
 
     public static int numberOfMinutesForDays(int days) {
         return 60 * 24 * days;
+    }
+
+    public static LocalDate getStartTimeForEntityStats(@Nullable Integer year, @Nullable Integer month, @Nonnull Instant entityCreationTime) {
+        if (year != null && month != null)
+            return LocalDate.of(year, month, 1);
+        else if (year != null)
+            return LocalDate.of(year, 1, 1);
+        else
+            return entityCreationTime.atZone(Clock.systemDefaultZone().getZone()).toLocalDate();
+    }
+
+    public static LocalDate getEndTime(@Nullable Integer year, @Nullable Integer month, @Nonnull  LocalDate startTime) {
+        if (year != null && month != null) {
+            LocalDate endDay = startTime.plus(1, ChronoUnit.MONTHS);
+            LocalDate thisDay = LocalDate.now();
+            if (thisDay.isBefore(endDay)) {
+                endDay = LocalDate.of(thisDay.getYear(), thisDay.getMonthValue(), thisDay.getDayOfMonth()).plusDays(1);
+            }
+            return endDay;
+        } else if (year != null) {
+            LocalDate endMonth = startTime.plus(1, ChronoUnit.YEARS);
+            LocalDate thisMOnth = LocalDate.now();
+            thisMOnth = LocalDate.of(thisMOnth.getYear(), thisMOnth.getMonthValue(), 1);
+            if (thisMOnth.isBefore(endMonth))
+                endMonth = LocalDate.of(thisMOnth.getYear(), thisMOnth.getMonthValue(), 1).plusMonths(1);
+            return endMonth;
+        } else {
+            LocalDate today = LocalDate.now();
+            return LocalDate.of(today.getYear(), today.getMonth(), 1).plusMonths(1);
+        }
     }
 
 }

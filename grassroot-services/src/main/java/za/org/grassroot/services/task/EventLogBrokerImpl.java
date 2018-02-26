@@ -78,11 +78,12 @@ public class EventLogBrokerImpl implements EventLogBroker {
         User user = userRepository.findOneByUid(userUid);
 
         log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
+        cacheUtilService.clearRsvpCacheForUser(user.getUid());
 
         if (!hasUserRespondedToEvent(event, user)) {
             EventLog eventLog = createEventLog(EventLogType.RSVP, event.getUid(), user.getUid(), rsvpResponse);
             // clear rsvp cache for user
-            cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
+            log.info("clearing rsvp cache for user");
 
             // see if everyone voted, if they did expire the vote so that the results are sent out
             if (event.getEventType().equals(EventType.VOTE)) {
@@ -112,12 +113,11 @@ public class EventLogBrokerImpl implements EventLogBroker {
 
     @Override
     public boolean hasUserRespondedToEvent(Event event, User user) {
-        log.info("Checking is user has responded to: {}", event.getName());
         long count = eventLogRepository.count(Specifications
                 .where(EventLogSpecifications.forEvent(event))
                 .and(EventLogSpecifications.forUser(user))
                 .and(EventLogSpecifications.isResponseToAnEvent()));
-        log.info("Count of responses: {}", count);
+        log.info("Checking user has responded to: {}, with count: {}", event.getName(), count);
         return count > 0;
     }
 

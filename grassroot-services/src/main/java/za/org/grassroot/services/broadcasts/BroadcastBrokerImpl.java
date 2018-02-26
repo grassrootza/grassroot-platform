@@ -20,18 +20,17 @@ import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
 import za.org.grassroot.core.domain.notification.GroupBroadcastNotification;
 import za.org.grassroot.core.dto.BroadcastDTO;
-import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.enums.DeliveryRoute;
-import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.dto.task.TaskDTO;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
-import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.socialmedia.*;
 import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.group.GroupFetchBroker;
+import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -60,8 +59,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final CampaignRepository campaignRepository;
     private final MembershipRepository membershipRepository;
 
-    // for heavy lifting on filtering
+    // for heavy lifting on filtering, and for getting event members
     private final GroupFetchBroker groupFetchBroker;
+    private final TaskBroker taskBroker;
 
     private final MessagingServiceBroker messagingServiceBroker;
     private final SocialMediaBroker socialMediaBroker;
@@ -72,13 +72,14 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final Environment environment;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository, Environment environment) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, TaskBroker taskBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository, Environment environment) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignRepository = campaignRepository;
         this.membershipRepository = membershipRepository;
         this.groupFetchBroker = groupFetchBroker;
+        this.taskBroker = taskBroker;
         this.messagingServiceBroker = messagingServiceBroker;
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
@@ -113,7 +114,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .twitterAccount(twitterAccount);
 
         builder.campaignNamesUrls(campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"))
-                .stream().filter(Campaign::isActive).collect(Collectors.toMap(Campaign::getName, Campaign::getUrl)));
+                .stream().filter(Campaign::isActive).collect(Collectors.toMap(Campaign::getName, Campaign::getLandingUrl)));
 
         // or for campaign, extract somehow
         Group group = groupRepository.findOneByUid(groupUid);
@@ -158,6 +159,30 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         broadcastRepository.saveAndFlush(broadcast);
 
         logsAndNotificationsBroker.storeBundle(bundle);
+
+        return broadcast.getUid();
+    }
+
+    @Override
+    @Transactional
+    public String sendTaskBroadcast(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders, String message) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        TaskDTO task = taskBroker.load(userUid, taskUid, taskType);
+
+        Broadcast broadcast = Broadcast.builder()
+                .createdByUser(user)
+                .account(user.getPrimaryAccount())
+                .title(taskType + ": " + task.getTitle())
+                .broadcastSchedule(BroadcastSchedule.IMMEDIATE)
+                .scheduledSendTime(Instant.now())
+                .build();
+
+        broadcast.setGroup(groupRepository.findOneByUid(task.getAncestorGroupUid()));
+        broadcast.setTask(taskUid, taskType, onlyPositiveResponders);
+
+        broadcastRepository.saveAndFlush(broadcast);
+
+        logsAndNotificationsBroker.storeBundle(generateGroupBroadcastBundle(broadcast));
 
         return broadcast.getUid();
     }
@@ -382,10 +407,19 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         boolean filtersPresent = !bc.getTaskTeams().isEmpty() || !bc.getProvinces().isEmpty() || !bc.getTaskTeams().isEmpty()
                 || !bc.getTopics().isEmpty() || !bc.getAffiliations().isEmpty() || !bc.getJoinMethods().isEmpty() || joinDate != null;
         log.info("do we have filters? : {}, taskTeamUids = {}, all tags: {}", filtersPresent, taskTeamUids, bc.getTagList());
-        List<Membership> membersToReceive = !filtersPresent ?
-                membershipRepository.findByGroupUid(group.getUid()) :
-                groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(), provinceResrictions, taskTeamUids,
-                        topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition, null);
+
+
+        List<Membership> membersToReceive;
+
+        if (filtersPresent) {
+            membersToReceive = groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(), provinceResrictions, taskTeamUids,
+                    topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition, null);
+        } else if (bc.hasTask()) {
+            membersToReceive = taskBroker.fetchMembersAssignedToTask(bc.getCreatedByUser().getUid(),
+                    bc.getTaskUid(), bc.getTaskType(), bc.taskOnlyPositive());
+        } else {
+            membersToReceive = membershipRepository.findByGroupUid(group.getUid());
+        }
 
         log.info("finished fetching members by topic, province, etc., found {} members", membersToReceive.size());
 

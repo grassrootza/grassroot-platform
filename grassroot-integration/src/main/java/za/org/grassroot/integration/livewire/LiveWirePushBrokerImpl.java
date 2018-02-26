@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.repository.LiveWireAlertRepository;
-import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 
 import java.util.ArrayList;

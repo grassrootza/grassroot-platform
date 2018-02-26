@@ -1,9 +1,11 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.user.UserManagementService;
@@ -26,7 +28,7 @@ import static za.org.grassroot.webapp.enums.USSDSection.*;
  * Created by luke on 2015/08/14.
  *
  */
-@Controller
+@Controller @Slf4j
 public class USSDBaseController {
 
     @Autowired
@@ -173,6 +175,13 @@ public class USSDBaseController {
 
     protected Map<String, String> optionsYesNo(User sesionUser, String nextUri) {
         return optionsYesNo(sesionUser, nextUri, nextUri);
+    }
+
+    protected Map<String, String> provinceOptions(User user, String url) {
+        Map<String, String> options = new LinkedHashMap<>();
+        Province.ZA_CANONICAL.forEach(p ->
+                options.put(url + p, getMessage("province." + p.name().substring("ZA_".length()), user)));
+        return options;
     }
 
     /*

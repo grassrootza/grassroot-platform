@@ -18,7 +18,7 @@ import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;

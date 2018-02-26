@@ -11,7 +11,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.task.TodoBroker;

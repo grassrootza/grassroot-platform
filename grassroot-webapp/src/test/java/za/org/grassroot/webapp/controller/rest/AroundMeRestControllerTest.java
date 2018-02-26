@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.location;
+package za.org.grassroot.webapp.controller.rest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,11 +25,10 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.GeographicSearchType;
-import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
-import za.org.grassroot.webapp.controller.rest.RestAbstractUnitTest;
+import za.org.grassroot.webapp.controller.rest.location.AroundMeRestController;
 
 import java.security.InvalidParameterException;
 import java.time.Instant;
@@ -49,10 +48,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     private AroundMeRestController aroundMeRestControllerMock;
 
     @Mock
-    private ObjectLocationBroker objectLocationBrokerMock;
-
-    @Mock
-    private UserRepository userRepositoryInMem;
+    private GeoLocationBroker geoLocationBrokerMock;
 
     @Mock
     private LiveWireAlertBroker liveWireAlertBrokerMock;
@@ -95,15 +91,15 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.load(testUser.getUid())).thenReturn(testUser);
 
-        when(objectLocationBrokerMock
+        when(geoLocationBrokerMock
                 .fetchMeetingLocationsNearUser(testUser,null,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm))
                 .thenThrow(new InvalidParameterException("Invalid Location parameter"));
 
-        when(objectLocationBrokerMock
+        when(geoLocationBrokerMock
                 .fetchMeetingLocationsNearUser(testUser,testLocation,-5, GeographicSearchType.PUBLIC,testSearchTerm))
                 .thenThrow(new InvalidParameterException("Invalid Radius parameter"));
 
-        when(objectLocationBrokerMock
+        when(geoLocationBrokerMock
                 .fetchMeetingLocationsNearUser(testUser,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm))
                 .thenReturn(objectLocationList);
 
@@ -119,10 +115,10 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         logger.info("Testing All Entities Results = {}",result.getResponse().getStatus());
 
         // just reaffirms 'when' set up above
-        Assert.assertNotNull(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm));
+        Assert.assertNotNull(geoLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm));
 
         verify(userManagementServiceMock, times(1)).load(testUser.getUid());
-        verify(objectLocationBrokerMock, times(1)).fetchMeetingLocationsNearUser(testUser, testLocation,
+        verify(geoLocationBrokerMock, times(1)).fetchMeetingLocationsNearUser(testUser, testLocation,
                 testRadiusMetres, GeographicSearchType.PUBLIC, testSearchTerm);
     }
 
@@ -139,15 +135,15 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         List<ObjectLocation> objectLocations = new ArrayList<>();
         objectLocations.add(objectLocation);
 
-        when(objectLocationBrokerMock
+        when(geoLocationBrokerMock
                 .fetchGroupsNearby(testUser.getUid(),null,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC))
                 .thenThrow(new InvalidParameterException("Invalid location parameter"));
 
-        when(objectLocationBrokerMock
+        when(geoLocationBrokerMock
                 .fetchGroupsNearby(testUser.getUid(),testLocation,-5,testFilterTerm,GeographicSearchType.PUBLIC))
                 .thenThrow(new InvalidParameterException("Invalid radius parameter"));
 
-        when(objectLocationBrokerMock
+        when(geoLocationBrokerMock
                 .fetchGroupsNearby(testUser.getUid(),testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC))
                 .thenReturn(objectLocations);
 
@@ -162,9 +158,9 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         Assert.assertNotNull(result);
         logger.info("Testing Groups Near User Results = {}",result.getResponse().getStatus());
 
-        verify(objectLocationBrokerMock,times(1))
+        verify(geoLocationBrokerMock,times(1))
                 .fetchGroupsNearby(testUser.getUid(),testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC);
-        Assert.assertNotNull(objectLocationBrokerMock.fetchGroupsNearby(uidParameter,testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC));
+        Assert.assertNotNull(geoLocationBrokerMock.fetchGroupsNearby(uidParameter,testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC));
     }
 
     @Test

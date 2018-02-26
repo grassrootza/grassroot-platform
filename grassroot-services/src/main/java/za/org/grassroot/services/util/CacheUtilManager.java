@@ -1,16 +1,15 @@
 package za.org.grassroot.services.util;
 
+import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheException;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.util.ArrayList;
@@ -20,40 +19,32 @@ import java.util.List;
 /**
  * Created by aakilomar on 11/2/15.
  */
-@Service
+@Service @Slf4j
 public class CacheUtilManager implements CacheUtilService {
 
-    private Logger log = LoggerFactory.getLogger(CacheUtilManager.class);
+    private final CacheManager cacheManager;
 
     @Autowired
-    CacheManager cacheManager;
+    public CacheUtilManager(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+    }
 
     @Override
-    public void clearRsvpCacheForUser(User user, EventType eventType) {
+    public void clearRsvpCacheForUser(String userUid) {
         try {
-            String cacheKey = eventType.toString() + "|" + user.getId();
             Cache cache = cacheManager.getCache("userRSVP");
-            cache.remove(cacheKey);
+            cache.remove(userUid);
         } catch (Exception e) {
-            log.error("FAILED to clear userRSVP..." + user.getId() + " error: " + e.toString());
+            log.error("FAILED to clear userRSVP..." + userUid + " error: " + e.toString());
         }
 
     }
 
     @Override
-    public List<Event> getOutstandingResponseForUser(User user, EventType eventType) {
-        List<Event> outstandingRSVPs = null;
-
+    public List<Event> getOutstandingResponseForUser(String userUid) {
         Cache cache = cacheManager.getCache("userRSVP");
-        String cacheKey = eventType.toString() + "|" + user.getId();
-        log.info("getOutstandingResponseForUser...cacheKey..." + cacheKey);
-        try {
-            outstandingRSVPs = (List<Event>) cache.get(cacheKey).getObjectValue();
-
-        } catch (Exception e) {
-            log.debug("Could not retrieve outstanding RSVP/Vote from cache  userRSVP for user " + user.getPhoneNumber() + " error: " + e.toString() + " eventType: " + eventType.toString());
-        }
-        return outstandingRSVPs;
+        log.info("getOutstandingResponseForUser... anything in cache : {}", cache.isKeyInCache(userUid));
+        return cache.isKeyInCache(userUid) ? (List<Event>) cache.get(userUid).getObjectValue() : null;
     }
 
     @Override
@@ -117,15 +108,13 @@ public class CacheUtilManager implements CacheUtilService {
     }
 
     @Override
-    public void putOutstandingResponseForUser(User user, EventType eventType, List<Event> outstandingRSVPs) {
+    public void putOutstandingResponseForUser(String userUid, List<Event> outstandingRSVPs) {
         try {
             Cache cache = cacheManager.getCache("userRSVP");
-            String cacheKey = eventType.toString() + "|" + user.getId();
-            cache.put(new Element(cacheKey,outstandingRSVPs));
-        } catch (Exception e) {
+            cache.put(new Element(userUid,outstandingRSVPs));
+        } catch (CacheException|NullPointerException e) {
             log.error(e.toString());
         }
-
     }
 
     @Override

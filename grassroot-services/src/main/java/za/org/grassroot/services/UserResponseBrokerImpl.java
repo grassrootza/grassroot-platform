@@ -58,15 +58,9 @@ public class UserResponseBrokerImpl implements UserResponseBroker {
             }
         }
 
-        // todo : consolidate next two
-        List<Event> votes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
-        if (votes != null && !votes.isEmpty()) {
-            return votes.get(0);
-        }
-
-        List<Event> meetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
-        if (meetings != null && !meetings.isEmpty()) {
-            return meetings.get(0);
+        List<Event> events = eventBroker.getEventsNeedingResponseFromUser(user);
+        if (events != null && !events.isEmpty()) {
+            return events.get(0);
         }
 
         Todo todo = todoBroker.checkForTodoNeedingResponse(userUid);
@@ -91,16 +85,19 @@ public class UserResponseBrokerImpl implements UserResponseBroker {
         EventRSVPResponse responseType = EventRSVPResponse.fromString(response);
         boolean isYesNoResponse = responseType == EventRSVPResponse.YES || responseType == EventRSVPResponse.NO || responseType == EventRSVPResponse.MAYBE;
 
-        List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
-        List<Event> outstandingYesNoVotes = outstandingVotes.stream()
+        List<Event> outstandingEvents = eventBroker.getEventsNeedingResponseFromUser(user);
+        List<Event> outstandingYesNoVotes = outstandingEvents.stream()
+                .filter(event -> EventType.VOTE.equals(event.getEventType()))
                 .filter(vote -> vote.getTags() == null || vote.getTags().length == 0)
                 .collect(Collectors.toList());
 
-        List<Event> outstandingOptionsVotes = outstandingVotes.stream()
+        List<Event> outstandingOptionsVotes = outstandingEvents.stream()
+                .filter(event -> EventType.VOTE.equals(event.getEventType()))
                 .filter(vote -> hasVoteOption(response, vote))
                 .collect(Collectors.toList());
 
-        List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
+        List<Event> outstandingMeetings = outstandingEvents.stream()
+                .filter(event -> EventType.MEETING.equals(event.getEventType())).collect(Collectors.toList());
 
         // add in check on response
         Todo outstandingTodo = todoBroker.checkForTodoNeedingResponse(userUid);

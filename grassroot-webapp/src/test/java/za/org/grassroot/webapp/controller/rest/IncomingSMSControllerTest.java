@@ -15,7 +15,6 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
@@ -221,7 +220,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         List<Event> votes = Collections.singletonList(vote);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.getOutstandingResponseForUser(sessionTestUser, EventType.VOTE)).thenReturn(votes);
+        when(eventBrokerMock.getEventsNeedingResponseFromUser(sessionTestUser)).thenReturn(votes);
 
         mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
