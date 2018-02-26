@@ -22,6 +22,7 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.campaign.CampaignBroker;
@@ -35,9 +36,7 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.RestValidationMessage;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.CampaignViewDTO;
-import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageRequest;
 import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequest;
-import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.annotation.PostConstruct;
@@ -105,19 +104,6 @@ public class CampaignManagerController extends BaseRestController {
         }
     }
 
-    private List<CampaignViewDTO> checkForCampaignsInCache(String userUid) {
-        if (userCampaignsCache.isKeyInCache(userUid)) {
-            Object cacheElement = userCampaignsCache.get(userUid).getObjectValue();
-            return cacheElement != null ? (List<CampaignViewDTO>) cacheElement : null;
-        } else {
-            return null;
-        }
-    }
-
-    private void cacheUserCampaigns(String userUid, List<CampaignViewDTO> campaigns) {
-        userCampaignsCache.put(new Element(userUid, campaigns));
-    }
-
     @RequestMapping(value = "/list/group", method = RequestMethod.GET)
     @ApiOperation(value = "List  campaigns linked to group", notes = "Lists the campaigns linked to specific group")
     public ResponseEntity<List<CampaignViewDTO>> fetchCampaignsForGroup(String groupUid) {
@@ -129,15 +115,6 @@ public class CampaignManagerController extends BaseRestController {
                 .map(CampaignViewDTO::new).collect(Collectors.toList());
         cacheGroupCampaigns(groupUid, campaigns);
         return ResponseEntity.ok(campaigns);
-    }
-
-    private List<CampaignViewDTO> checkForGroupCampaignsCache(String groupUid) {
-        return !groupCampaignsCache.isKeyInCache(groupUid) ? null :
-                (List<CampaignViewDTO>) groupCampaignsCache.get(groupUid).getObjectValue();
-    }
-
-    private void cacheGroupCampaigns(String groupUid, List<CampaignViewDTO> campaigns) {
-        groupCampaignsCache.put(new Element(groupUid, campaigns));
     }
 
     @RequestMapping(value = "/fetch/{campaignUid}", method = RequestMethod.GET)
@@ -155,6 +132,28 @@ public class CampaignManagerController extends BaseRestController {
         } catch (AccessDeniedException e) {
             return RestUtil.errorResponse(RestMessage.USER_NOT_CAMPAIGN_MANAGER);
         }
+    }
+
+    private List<CampaignViewDTO> checkForCampaignsInCache(String userUid) {
+        if (userCampaignsCache.isKeyInCache(userUid)) {
+            Object cacheElement = userCampaignsCache.get(userUid).getObjectValue();
+            return cacheElement != null ? (List<CampaignViewDTO>) cacheElement : null;
+        } else {
+            return null;
+        }
+    }
+
+    private void cacheUserCampaigns(String userUid, List<CampaignViewDTO> campaigns) {
+        userCampaignsCache.put(new Element(userUid, campaigns));
+    }
+
+    private List<CampaignViewDTO> checkForGroupCampaignsCache(String groupUid) {
+        return !groupCampaignsCache.isKeyInCache(groupUid) ? null :
+                (List<CampaignViewDTO>) groupCampaignsCache.get(groupUid).getObjectValue();
+    }
+
+    private void cacheGroupCampaigns(String groupUid, List<CampaignViewDTO> campaigns) {
+        groupCampaignsCache.put(new Element(groupUid, campaigns));
     }
 
     private CampaignViewDTO checkForCampaignInCache(String campaignUid, String userUid) {
@@ -236,27 +235,68 @@ public class CampaignManagerController extends BaseRestController {
         return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign));
     }
 
-    @RequestMapping(value ="/messages/add/{campaignUid}", method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "add message to campaign", notes = "add message to a campaign")
-    public ResponseEntity<ResponseWrapper> addCampaignMessage(HttpServletRequest request,
-                                                              @PathVariable String campaignUid,
-                                                              @Valid @RequestBody CreateCampaignMessageRequest createRequest,
-                                                              BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_MESSAGE_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
-        }
-        List<String> tagList = null;
-        if (createRequest.getTags() != null && !createRequest.getTags().isEmpty()) {
-            tagList = Collections.list(Collections.enumeration(createRequest.getTags()));
-        }
-        User user = getUserFromRequest(request);
-        Campaign campaign = campaignBroker.addCampaignMessage(campaignUid, createRequest.getMessage(),
-                createRequest.getLanguage(), createRequest.getAssignmentType(), createRequest.getChannelType(), user, tagList);
+    @RequestMapping(value = "/update/settings/{campaignUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "update some basic settings on campaign")
+    public ResponseEntity updateCampaignBasicSettings(HttpServletRequest request, @PathVariable String campaignUid,
+                                                      @RequestParam(required = false) String name,
+                                                      @RequestParam(required = false) String description,
+                                                      @RequestParam(required = false) String mediaFileUid,
+                                                      @RequestParam(required = false) Long endDateMillis,
+                                                      @RequestParam(required = false) String landingUrl,
+                                                      @RequestParam(required = false) String petitionApi) {
+        String userUid = getUserIdFromRequest(request);
+        log.info("altering campaign, setting fields: name = {}, desc = {}, image = {}, endDate = {}, landing = {}, petition = {}",
+                name, description, mediaFileUid, endDateMillis, landingUrl, petitionApi);
+        campaignBroker.updateCampaignDetails(userUid, campaignUid, name, description, mediaFileUid,
+                endDateMillis != null ? Instant.ofEpochMilli(endDateMillis) : null, landingUrl, petitionApi);
+        Campaign updatedCampaign = campaignBroker.load(campaignUid);
+        clearCaches(campaignUid, userUid, updatedCampaign.getMasterGroup().getUid());
+        return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign));
+    }
 
-        if(campaign != null) {
-            return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ADDED, new CampaignViewDTO(campaign));
-        }
-        return RestUtil.messageOkayResponse(RestMessage.CAMPAIGN_NOT_FOUND);
+    @RequestMapping(value = "/update/reactivate/{campaignUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "reactivate an old campaign")
+    public ResponseEntity reactivateCampaign(HttpServletRequest request, @PathVariable String campaignUid,
+                                             @RequestParam long newEndDateMillis, @RequestParam(required = false) String newCode) {
+        String userUid = getUserIdFromRequest(request);
+        log.info("reactivating a campaign, fields: new end date = {}, instant = {}, newCode = {}", newEndDateMillis,
+                Instant.ofEpochMilli(newEndDateMillis), newCode);
+        campaignBroker.reactivateCampaign(userUid, campaignUid, Instant.ofEpochMilli(newEndDateMillis), newCode);
+        return ResponseEntity.ok(fetchAndCacheUpdatedCampaign(campaignUid, userUid));
+    }
+
+    @RequestMapping(value = "/update/sharing/{campaignUid}", method = RequestMethod.POST)
+    public ResponseEntity alterSmsSharingSettings(HttpServletRequest request, @PathVariable String campaignUid,
+                                                  @RequestParam boolean smsEnabled, @RequestParam long smsBudget,
+                                                  @RequestBody Set<CampaignMessageDTO> sharingMessages) {
+        String userUid = getUserIdFromRequest(request);
+        log.info("changing SMS settings: enabled = {}, budget = {}, messages = {}", smsEnabled, smsBudget, sharingMessages);
+        campaignBroker.alterSmsSharingSettings(userUid, campaignUid, smsEnabled, smsBudget, sharingMessages);
+        return ResponseEntity.ok(fetchAndCacheUpdatedCampaign(campaignUid, userUid));
+    }
+
+    @RequestMapping(value = "/update/type/{campaignUid}", method = RequestMethod.POST)
+    public ResponseEntity updateCampaignType(HttpServletRequest request, @PathVariable String campaignUid,
+                                             @RequestParam CampaignType campaignType,
+                                             @RequestBody Set<CampaignMessageDTO> revisedMessages) {
+        String userUid = getUserIdFromRequest(request);
+        log.info("changing campaign to type: {}, with messages: {}", campaignType, revisedMessages);
+        campaignBroker.changeCampaignType(userUid, campaignUid, campaignType, revisedMessages);
+        return ResponseEntity.ok(fetchAndCacheUpdatedCampaign(campaignUid, userUid));
+    }
+
+    private CampaignViewDTO fetchAndCacheUpdatedCampaign(String campaignUid, String userUid) {
+        Campaign updatedCampaign = campaignBroker.load(campaignUid);
+        clearCaches(campaignUid, userUid, updatedCampaign.getMasterGroup().getUid());
+        CampaignViewDTO viewDTO = new CampaignViewDTO(updatedCampaign);
+        cacheCampaignFull(viewDTO, userUid);
+        return viewDTO;
+    }
+
+    private void clearCaches(String campaignUid, String userUid, String groupUid) {
+        fullCampaignsCache.remove(campaignUid);
+        userCampaignsCache.remove(userUid);
+        groupCampaignsCache.remove(groupUid);
     }
 
     private List<RestValidationMessage> getFieldValidationErrors(List<FieldError> errors) {

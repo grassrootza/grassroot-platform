@@ -63,7 +63,10 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
         Group dummyGroup = new Group("Dummy Group3", new User(
                 "234345345", null, null));
 
-        Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(dummyGroup).setEventLocation("some place").createMeeting();
+        Meeting dummyMeeting = new MeetingBuilder().setName("test meeting")
+                .setStartDateTime(oneDayAway)
+                .setUser(sessionTestUser)
+                .setParent(dummyGroup).setEventLocation("some place").createMeeting();
         MeetingBuilderHelper helper = new MeetingBuilderHelper()
                 .userUid(sessionTestUser.getUid())
                 .parentType(JpaEntityType.GROUP)
@@ -71,6 +74,7 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
                 .name(testSubject)
                 .location(testEventLocation)
                 .startDateTimeInstant(Instant.ofEpochMilli(testDateTimeEpochMillis));
+
 
 
         when(jwtServiceMock.getUserIdFromJwtToken("testing")).thenReturn(sessionTestUser.getUid());

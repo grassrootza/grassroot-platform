@@ -6,7 +6,7 @@ import lombok.Setter;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.DeliveryRoute;
-import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.core.dto.GrassrootEmail;
 
 @Getter @Setter @Builder
 public class EmailBroadcast {

@@ -13,9 +13,13 @@ import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.core.dto.GrassrootEmail;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2017/05/23.
@@ -85,43 +89,12 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
 
     @Override
     public void sendEmail(List<String> addresses, GrassrootEmail email) {
-
-        UriComponentsBuilder builder = baseUri()
-                .path("/email/send")
-                .queryParam("addresses", addresses.toArray())
-                .queryParam("subject", email.getSubject());
-
-        if (email.hasAttachment()) {
-            logger.info("we have an attachment, setting it here");
-            builder = builder.queryParam("attachmentName", email.getAttachmentName());
-        }
-
-        if (email.hasHtmlContent()) {
-            builder = builder.queryParam("content", email.getHtmlContent())
-                    .queryParam("textContent", email.getContent());
-        } else {
-            builder = builder.queryParam("content", email.getContent());
-        }
-
-        if (!StringUtils.isEmpty(email.getFrom())) {
-            builder = builder.queryParam("fromName", email.getFrom());
-        }
-
-        if (!StringUtils.isEmpty(email.getFromAddress())) {
-            builder = builder.queryParam("fromAddress", email.getFromAddress());
-        }
-
-        HttpHeaders headers = jwtHeaders();
-        LinkedMultiValueMap<String, Object> params = new LinkedMultiValueMap<>();
-        if (email.hasAttachment()) {
-            params.add("attachment", new FileSystemResource(email.getAttachment()));
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        }
-        HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(params, headers);
+        UriComponentsBuilder builder = baseUri().path("/email/send");
+        HttpEntity<Set<GrassrootEmail>> requestEntity = new HttpEntity<>(
+                addresses.stream().map(email::copyIntoNew).collect(Collectors.toSet()), jwtHeaders());
 
         try {
-            ResponseEntity<String> responseEntity =
-                    restTemplate.exchange(builder.build().toUri(), HttpMethod.POST,
+            ResponseEntity<String> responseEntity = restTemplate.exchange(builder.build().toUri(), HttpMethod.POST,
                             requestEntity, String.class);
             logger.info("what happened ? {}", responseEntity);
         } catch (RestClientException e) {

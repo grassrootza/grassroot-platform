@@ -247,29 +247,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign addCampaignMessage(String campaignUid, String campaignMessage, Locale messageLocale, MessageVariationAssignment assignment, UserInterfaceType interfaceType, User createUser, List<String> messageTags){
-        Objects.requireNonNull(campaignUid);
-        Objects.requireNonNull(campaignMessage);
-        Objects.requireNonNull(messageLocale);
-        Objects.requireNonNull(interfaceType);
-        Objects.requireNonNull(createUser);
-        Objects.requireNonNull(assignment);
-
-        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-
-        CampaignMessage message = new CampaignMessage(createUser, campaign, CampaignActionType.OPENING, "testing_123", messageLocale, campaignMessage, interfaceType, assignment);
-        if(messageTags != null) {
-            message.addTags(messageTags);
-        }
-        campaign.getCampaignMessages().add(message);
-        Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
-        CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser(), CampaignLogType.CAMPAIGN_MESSAGE_ADDED, campaign, null, null);
-        persistCampaignLog(campaignLog);
-        return updatedCampaign;
-    }
-
-    @Override
-    @Transactional
     public Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(campaignUid);
@@ -280,6 +257,16 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         validateUserCanModifyCampaign(user, campaign);
 
+        campaign.setCampaignMessages(transformMessageDTOs(campaignMessages, campaign, user));
+
+        Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
+        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_MESSAGES_SET, campaign, null, null);
+        persistCampaignLog(campaignLog);
+
+        return updatedCampaign;
+    }
+
+    private Set<CampaignMessage> transformMessageDTOs(Set<CampaignMessageDTO> campaignMessages, Campaign campaign, User user) {
         // step one: find and map all the existing messages, if they exist
         Map<String, CampaignMessage> existingMessages = campaign.getCampaignMessages().stream()
                 .collect(Collectors.toMap(cm -> cm.getMessageGroupId() + LOCALE_SEP + cm.getLocale(), cm -> cm));
@@ -288,8 +275,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
         // step two: explode each of the message DTOs into their separate locale-based messages, mapped by incoming ID and lang
         Map<String, CampaignMessage> explodedMessages = new LinkedHashMap<>();
         campaignMessages.forEach(cm -> explodedMessages.putAll(cm.getMessages().stream().collect(Collectors.toMap(
-                    msg -> cm.getMessageId() + LOCALE_SEP + msg.getLanguage(),
-                    msg -> updateExistingOrCreateNew(user, campaign, cm, msg, existingMessages)))));
+                msg -> cm.getMessageId() + LOCALE_SEP + msg.getLanguage(),
+                msg -> updateExistingOrCreateNew(user, campaign, cm, msg, existingMessages)))));
 
         log.info("exploded message set: {}", explodedMessages);
         log.info("campaign messages look like: {}", campaignMessages);
@@ -298,27 +285,20 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         // step two: go through each message, and wire up where to go next (better than earlier iterations, but can be cleaned)
         campaignMessages.forEach(cdto ->
-            cdto.getLanguages().forEach(lang -> {
-                CampaignMessage cm = explodedMessages.get(cdto.getMessageId() + LOCALE_SEP + lang);
-                log.info("wiring up message: {}", cm);
-                cdto.getNextMsgIds().forEach(nextMsgId -> {
-                    CampaignMessage nextMsg = explodedMessages.get(nextMsgId + LOCALE_SEP + lang);
-                    log.info("for next msg {}, found CM: {}", nextMsgId + LOCALE_SEP + lang, nextMsg);
-                    cm.addNextMessage(nextMsg.getUid(), mappedMessages.get(nextMsgId).getLinkedActionType());
-                });
-            })
+                cdto.getLanguages().forEach(lang -> {
+                    CampaignMessage cm = explodedMessages.get(cdto.getMessageId() + LOCALE_SEP + lang);
+                    log.info("wiring up message: {}", cm);
+                    cdto.getNextMsgIds().forEach(nextMsgId -> {
+                        CampaignMessage nextMsg = explodedMessages.get(nextMsgId + LOCALE_SEP + lang);
+                        log.info("for next msg {}, found CM: {}", nextMsgId + LOCALE_SEP + lang, nextMsg);
+                        cm.addNextMessage(nextMsg.getUid(), mappedMessages.get(nextMsgId).getLinkedActionType());
+                    });
+                })
         );
 
         Set<CampaignMessage> messages = new HashSet<>(explodedMessages.values());
-
         log.info("completed transformation, unpacked {} messages", messages.size());
-
-        campaign.setCampaignMessages(messages);
-        Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
-        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_MESSAGES_SET, campaign, null, null);
-        persistCampaignLog(campaignLog);
-
-        return updatedCampaign;
+        return messages;
     }
 
     @Override
@@ -432,8 +412,25 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public void alterSmsSharingSettings(String userUid, String campaignUid, boolean smsEnabled, Long smsBudget, Set<CampaignMessage> sharingMessages) {
+    public void alterSmsSharingSettings(String userUid, String campaignUid, boolean smsEnabled, Long smsBudget, Set<CampaignMessageDTO> sharingMessages) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
 
+        validateUserCanModifyCampaign(user, campaign);
+
+        boolean noSharingMsgs = sharingMessages.stream().noneMatch(msg -> CampaignActionType.SHARE_PROMPT.equals(msg.getLinkedActionType()));
+        boolean noSharingMsgInCampaign = campaign.getCampaignMessages().stream().noneMatch(msg -> CampaignActionType.SHARE_PROMPT.equals(msg.getActionType()));
+        if (smsEnabled && noSharingMsgs && noSharingMsgInCampaign) {
+            throw new IllegalArgumentException("Attempting to enable with no prior or given sharing prompts");
+        }
+
+        campaign.setSharingEnabled(smsEnabled);
+        campaign.setSharingBudget(smsBudget);
+
+        campaign.addCampaignMessages(transformMessageDTOs(sharingMessages, campaign, user));
+
+        persistCampaignLog(new CampaignLog(user, CampaignLogType.SHARING_SETTINGS_ALTERED, campaign, null,
+                "Enabled: " + smsEnabled + ", budget = " + smsBudget));
     }
 
     @Override
@@ -452,7 +449,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public void changeCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessage> revisedMessages) {
+    public void changeCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessageDTO> revisedMessages) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(userUid));
+
+        validateUserCanModifyCampaign(user, campaign);
 
     }
 

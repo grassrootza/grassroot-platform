@@ -14,14 +14,18 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.campaign.CampaignMessageDTO;
+import za.org.grassroot.services.campaign.MessageLanguagePair;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Locale;
 
 @RunWith(SpringRunner.class)
@@ -63,8 +67,15 @@ public class CampaignBrokerTest {
         Assert.assertNotNull(campaign.getCampaignCode(), "234");
         Assert.assertNotNull(campaign.getName(), "national campaign");
 
+        CampaignMessageDTO messageDTO = new CampaignMessageDTO();
+        messageDTO.setChannel(UserInterfaceType.USSD);
+        messageDTO.setMessages(Collections.singletonList(new MessageLanguagePair(Locale.ENGLISH, "Test message")));
+        messageDTO.setLinkedActionType(CampaignActionType.OPENING);
+        messageDTO.setMessageId("test-message-ID");
+
+        // "Test message", Locale.ENGLISH, MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, testUser, null
         Campaign updatedCampaign = campaignBroker
-                .addCampaignMessage(campaign.getUid(),"Test message", Locale.ENGLISH, MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, testUser, null);
+                .setCampaignMessages(testUser.getUid(), campaign.getUid(), Collections.singleton(messageDTO));
         Assert.assertNotNull(updatedCampaign);
         Assert.assertEquals(updatedCampaign.getName(), "national campaign");
         Assert.assertEquals(updatedCampaign.getCampaignMessages().size(), 1);

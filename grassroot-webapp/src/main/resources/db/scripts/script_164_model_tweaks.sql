@@ -24,9 +24,12 @@ create index campaign_code_index on campaign(code);
 alter table campaign_log add column user_interface_channel varchar(50);
 create index campaign_log_channel_index on campaign_log(user_interface_channel);
 
+drop table campaign_message_action;
+
 alter table user_profile add column whatsapp boolean default false;
 update user_profile set whatsapp = false;
 
 create index whatsapp_index on user_profile(whatsapp);
 
-drop table campaign_message_action;
+alter table group_profile alter column description type text;
+alter table event_request alter column name type varchar(255);

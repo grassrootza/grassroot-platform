@@ -94,19 +94,6 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         Assert.assertNotNull(response);
     }
 
-    @Test
-    public void testAddCampaignMessage() throws Exception{
-        when(campaignBroker.addCampaignMessage(anyString(),anyString(),any(Locale.class),any(MessageVariationAssignment.class),any(UserInterfaceType.class),any(User.class),anyList())).thenReturn(testCampaign);
-        when(userManager.load(anyString())).thenReturn(testUser);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
-        String requestJson = mapper.writeValueAsString(createCampaignMessageRequest);
-        ResultActions response = mockMvc.perform(post("/api/campaign/manage/messages/add/" + testCampaign.getUid())
-                .contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
-        response.andExpect(status().isOk());
-        Assert.assertNotNull(response);
-    }
-
     private CreateCampaignRequest createTestWrapper(){
         CreateCampaignRequest wrapper = new CreateCampaignRequest();
         wrapper.setName("Test campaign");

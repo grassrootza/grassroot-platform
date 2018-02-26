@@ -161,6 +161,13 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
                 .count();
     }
 
+    public void addCampaignMessages(Set<CampaignMessage> messages) {
+        if (this.campaignMessages == null) {
+            this.campaignMessages = new HashSet<>();
+        }
+        this.campaignMessages.addAll(messages);
+    }
+
 
     @Override
     public boolean equals(Object o) {

@@ -67,7 +67,7 @@ public class USSDAdvancedHomeController extends USSDBaseController {
         User user = userManager.findByInputNumber(msisdn);
         USSDMenu ussdMenu = new USSDMenu(getMessage(thisSection, "more", promptKey, user));
         ussdMenu.addMenuOption(safetyMenus + startMenu, getMessage(thisSection, "more", optionsKey + "safety", user));
-        ussdMenu.addMenuOption(moreMenus + "/public/mtgs", getMessage(thisSection, "more", optionsKey + "publicmtgs", user));
+        ussdMenu.addMenuOption(moreMenus + "public/mtgs", getMessage(thisSection, "more", optionsKey + "publicmtgs", user));
         ussdMenu.addMenuOption(startMenu, getMessage(optionsKey + "back", user));
         return menuBuilder(ussdMenu);
     }
