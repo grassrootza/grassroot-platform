@@ -96,10 +96,11 @@ public class USSDGeoApiController extends USSDBaseController {
         if (availableInfo.size() == 1) {
             return menuBuilder(sendMessageWithInfo(dataSet, availableInfo.get(0), province, user));
         } else {
-            USSDMenu menu = new USSDMenu("What info?");
+            USSDMenu menu = new USSDMenu(messageAssembler.getMessage("service.prompt." + dataSet, user));
             final String urlRoot = REL_PATH + "/info/send?dataSet=" + dataSet + "&province=" + province + "&infoTag=";
             availableInfo.forEach(al -> {
-                menu.addMenuOption(urlRoot + al, al); // todo : think through option message (and info set extraction in general)
+                String msg = messageAssembler.getMessage(dataSet + ".service.options." + al, user);
+                menu.addMenuOption(urlRoot + al, msg);
             });
             return menuBuilder(menu);
         }

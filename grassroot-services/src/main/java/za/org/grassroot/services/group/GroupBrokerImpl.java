@@ -292,7 +292,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, joinMethod, user.getName(), false, true);
             storeBundleAfterCommit(bundle);
             Set<String> memberTopics = membershipInfos.stream().map(MembershipInfo::getTopics)
-                    .flatMap(List::stream).distinct().collect(Collectors.toSet());
+                    .filter(Objects::nonNull).flatMap(List::stream).distinct().collect(Collectors.toSet());
+            logger.info("member topics ? : ", memberTopics);
             group.addTopics(memberTopics); // method will take care of removing duplicates
         } catch (InvalidPhoneNumberException e) {
             logger.error("Error! Invalid phone number : " + e.getMessage());

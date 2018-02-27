@@ -78,9 +78,9 @@ public class USSDHomeController extends USSDBaseController {
     @Value("${grassroot.geo.apis.enabled:false}")
     private boolean geoApisEnabled;
 
-    // todo : think about how to do dynamically (and/or decide on this)
+    // todo : think about how to do dynamically
     private final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
-            new AbstractMap.SimpleEntry<>("11", "IZWE_LAMI")
+            new AbstractMap.SimpleEntry<>("11", "IZWE_LAMI_CONS")
     ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
     @Autowired

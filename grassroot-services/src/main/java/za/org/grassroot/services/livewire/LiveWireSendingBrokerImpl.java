@@ -14,13 +14,14 @@ import org.thymeleaf.context.Context;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.LiveWireAlertRepository;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.core.dto.GrassrootEmail;
-import za.org.grassroot.integration.livewire.LiveWirePushBroker;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.storage.StorageBroker;
 
 import java.io.File;
@@ -41,12 +42,16 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     @Value("${grassroot.livewire.public.path:http://localhost:8080/livewire/public/}")
     private String publicInfoPath;
 
+    @Value("${grassroot.livewire.from.address:livewire@grassroot.org.za}")
+    private String livewireEmailAddress;
+
     private static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE, d MMMM yyyy");
     private static final DateTimeFormatter mtgFormat = DateTimeFormatter.ofPattern("dd MM, HH:mm");
 
     private final LiveWireAlertRepository alertRepository;
     private final DataSubscriberRepository subscriberRepository;
-    private final LiveWirePushBroker liveWirePushBroker;
+
+    private final MessagingServiceBroker messagingServiceBroker;
 
     private final MessageSourceAccessor messageSource;
     private final TemplateEngine templateEngine;
@@ -55,13 +60,13 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     @Autowired
     public LiveWireSendingBrokerImpl(LiveWireAlertRepository alertRepository,
                                      DataSubscriberRepository subscriberRepository,
-                                     LiveWirePushBroker liveWirePushBroker,
+                                     MessagingServiceBroker messagingServiceBroker,
                                      @Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSource,
                                      @Qualifier("emailTemplateEngine") TemplateEngine templateEngine,
                                      StorageBroker storageBroker) {
         this.alertRepository = alertRepository;
         this.subscriberRepository = subscriberRepository;
-        this.liveWirePushBroker = liveWirePushBroker;
+        this.messagingServiceBroker = messagingServiceBroker;
         this.messageSource = messageSource;
         this.templateEngine = templateEngine;
         this.storageBroker = storageBroker;
@@ -69,7 +74,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
 
     // removed async as it was causing a seriously weird bug in here
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public void sendLiveWireAlerts(Set<String> alertUids) {
         logger.info("starting to process {} alerts : ", alertUids.size());
         final List<String> publicPushMail = subscriberRepository.findAllActiveSubscriberPushEmails(DataSubscriberType.SYSTEM.name());
@@ -92,9 +97,21 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
                 alertEmails.addAll(collectPublicEmailAddresses(alert));
                 break;
         }
-        liveWirePushBroker.sendLiveWireEmails(alert.getUid(), generateEmailsForAlert(alert, alertEmails));
+        sendEmails(alert, generateEmailsForAlert(alert, alertEmails));
         logger.info("LiveWire of type {} sent to {} emails! Headline : {}. Setting to sent ...",
                 alert.getDestinationType(), alertEmails.size(), alert.getHeadline());
+    }
+
+    private void sendEmails(LiveWireAlert alert, List<GrassrootEmail> emails) {
+        DebugUtil.transactionRequired("");
+        List<String> toAddresses = new ArrayList<>();
+        emails.forEach(e -> {
+            e.setFromAddress(livewireEmailAddress);
+            toAddresses.add(e.getAddress());
+        });
+
+        messagingServiceBroker.sendEmail(toAddresses, emails.get(0));
+        alert.setSent(true);
     }
 
     private List<String> collectPublicEmailAddresses(LiveWireAlert alert) {
