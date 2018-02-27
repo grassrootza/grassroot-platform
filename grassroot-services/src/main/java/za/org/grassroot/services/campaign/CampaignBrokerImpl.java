@@ -191,9 +191,10 @@ public class CampaignBrokerImpl implements CampaignBroker {
         List<CampaignMessage> messages = findCampaignMessage(campaignUid, CampaignActionType.SHARE_SEND, Locale.ENGLISH);
         final String msg = !messages.isEmpty() ? messages.get(0).getMessage() : defaultTemplate;
         final String template = msg.replace(Broadcast.NAME_FIELD_TEMPLATE, "%1$s")
-                .replace(Broadcast.INBOUND_FIELD_TEMPLATE, "%2$s");
+                .replace(Broadcast.ENTITY_FIELD_TEMPLATE, "%2$s")
+                .replace(Broadcast.INBOUND_FIELD_TEMPLATE, "%3$s");
 
-        final String mergedMsg = String.format(template, user.getName(), "Dial *134*...");
+        final String mergedMsg = String.format(template, user.getName(), campaign.getName(), campaign.getCampaignCode());
         CampaignSharingNotification sharingNotification = new CampaignSharingNotification(targetUser, mergedMsg, campaignLog);
 
         log.info("alright, we're storing this notification: {}", sharingNotification);
@@ -215,7 +216,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate, Instant endDate, List<String> campaignTags, CampaignType campaignType, String url){
+    public Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate, Instant endDate, List<String> joinTopics, CampaignType campaignType, String url){
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(masterGroupUid);
         Objects.requireNonNull(campaignType);
@@ -234,9 +235,9 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate,campaignType, url);
         newCampaign.setMasterGroup(masterGroup);
 
-        if(campaignTags != null && !campaignTags.isEmpty()){
-            log.info("setting campaign tags ... {}", campaignTags);
-            newCampaign.setTags(campaignTags);
+        if(joinTopics != null && !joinTopics.isEmpty()){
+            newCampaign.setJoinTopics(joinTopics.stream().map(String::trim).collect(Collectors.toSet()));
+            log.info("set campaign join topics ... {}", newCampaign.getJoinTopics());
         }
 
         Campaign perstistedCampaign = campaignRepository.saveAndFlush(newCampaign);
@@ -449,10 +450,24 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
+    public void setUserJoinTopic(String campaignUid, String userUid, String joinTopic, UserInterfaceType channel) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+
+        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_TAGGED, campaign, channel,
+                Campaign.JOIN_TOPIC_PREFIX + joinTopic);
+
+        groupBroker.assignMembershipTopics(userUid, campaign.getMasterGroup().getUid(), userUid, Collections.singleton(joinTopic), true);
+        persistCampaignLog(campaignLog);
+    }
+
+    @Override
+    @Transactional
     public void changeCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessageDTO> revisedMessages) {
         User user = userManager.load(Objects.requireNonNull(userUid));
-        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
 
+        log.info("user = {}, campaign = {}", user, campaign);
         validateUserCanModifyCampaign(user, campaign);
 
     }

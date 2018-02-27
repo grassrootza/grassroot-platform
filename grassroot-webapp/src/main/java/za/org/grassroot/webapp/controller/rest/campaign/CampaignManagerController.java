@@ -157,8 +157,13 @@ public class CampaignManagerController extends BaseRestController {
     }
 
     private CampaignViewDTO checkForCampaignInCache(String campaignUid, String userUid) {
-        return !fullCampaignsCache.isKeyInCache(campaignUid + userUid) ? null :
-                (CampaignViewDTO) fullCampaignsCache.get(campaignUid + userUid).getObjectValue();
+        try {
+            return !fullCampaignsCache.isKeyInCache(campaignUid + userUid) ? null :
+                    (CampaignViewDTO) fullCampaignsCache.get(campaignUid + userUid).getObjectValue();
+        } catch (NullPointerException e) {
+            log.info("got null pointer getting campaign from cache");
+            return null;
+        }
     }
 
     private void cacheCampaignFull(CampaignViewDTO campaign, String userUid) {
@@ -177,12 +182,6 @@ public class CampaignManagerController extends BaseRestController {
         if (createCampaignRequest.hasNoGroup()) {
             return RestUtil.errorResponse(RestMessage.CAMPAIGN_MISSING_MASTER_GROUP);
         }
-
-        List<String> tagList = null;
-        if(createCampaignRequest.getTags() != null && !createCampaignRequest.getTags().isEmpty()){
-            tagList = Collections.list(Collections.enumeration(createCampaignRequest.getTags()));
-        }
-        log.info("finished processing tags, value = {}", tagList);
 
         Instant campaignStartDate = Instant.ofEpochMilli(createCampaignRequest.getStartDateEpochMillis());
         Instant campaignEndDate = Instant.ofEpochMilli(createCampaignRequest.getEndDateEpochMillis());
@@ -203,10 +202,11 @@ public class CampaignManagerController extends BaseRestController {
                 masterGroupUid,
                 campaignStartDate,
                 campaignEndDate,
-                tagList,
+                createCampaignRequest.getJoinTopics(),
                 createCampaignRequest.getType(),
                 createCampaignRequest.getUrl());
 
+        clearCaches(campaign.getUid(), userUid, campaign.getMasterGroup().getUid());
         return ResponseEntity.ok(new CampaignViewDTO(campaign));
     }
 
@@ -278,7 +278,7 @@ public class CampaignManagerController extends BaseRestController {
     @RequestMapping(value = "/update/type/{campaignUid}", method = RequestMethod.POST)
     public ResponseEntity updateCampaignType(HttpServletRequest request, @PathVariable String campaignUid,
                                              @RequestParam CampaignType campaignType,
-                                             @RequestBody Set<CampaignMessageDTO> revisedMessages) {
+                                             @RequestBody(required = false) Set<CampaignMessageDTO> revisedMessages) {
         String userUid = getUserIdFromRequest(request);
         log.info("changing campaign to type: {}, with messages: {}", campaignType, revisedMessages);
         campaignBroker.changeCampaignType(userUid, campaignUid, campaignType, revisedMessages);
