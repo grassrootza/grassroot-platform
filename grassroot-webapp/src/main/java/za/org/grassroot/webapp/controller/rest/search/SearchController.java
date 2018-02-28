@@ -15,7 +15,10 @@ import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.PublicGroupDTO;
+import za.org.grassroot.core.dto.task.PublicMeetingDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
+import za.org.grassroot.core.dto.task.TaskRefDTO;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;
@@ -122,17 +125,16 @@ public class SearchController extends BaseRestController {
     // switch this to same pattern as I have done for groups
     @RequestMapping(value = "/publicMeetings/{userUid}/{searchTerm}", method = RequestMethod.GET)
     @ApiOperation(value = "User public meetings using search term")
-    public ResponseEntity<List<TaskFullDTO>> userPublicMeetings(@PathVariable String userUid,
-                                                               @PathVariable String searchTerm,
-                                                               HttpServletRequest request){
+    public ResponseEntity<List<PublicMeetingDTO>> userPublicMeetings(@PathVariable String userUid,
+                                                                     @PathVariable String searchTerm,
+                                                                     HttpServletRequest request){
         String loggedInUserUid = getUserIdFromRequest(request);
         if(userUid.equals(loggedInUserUid)){
             User user = getUserFromRequest(request);
-            List<Meeting> meetings = eventBroker.publicMeetingsUserIsNotPartOf(searchTerm,user);
-            List<TaskFullDTO> taskFullDTOS = new ArrayList<>();
+            List<PublicMeetingDTO> meetingDTOS = eventBroker.publicMeetingsUserIsNotPartOf(searchTerm,user)
+                    .stream().map(PublicMeetingDTO::new).collect(Collectors.toList());
 
-            meetings.forEach(meeting -> taskFullDTOS.add(new TaskFullDTO(meeting,user,meeting.getDeadlineTime(),null)));
-            return ResponseEntity.ok(taskFullDTOS);
+            return ResponseEntity.ok(meetingDTOS);
         }
         else{
             return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
