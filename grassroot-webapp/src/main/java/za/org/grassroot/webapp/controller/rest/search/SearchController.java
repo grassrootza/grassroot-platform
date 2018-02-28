@@ -73,8 +73,10 @@ public class SearchController extends BaseRestController {
     @ApiOperation(value = "User groups using search term")
     public ResponseEntity<List<GroupFullDTO>> searchForUserGroupsByTerm(@RequestParam String searchTerm,
                                                                         HttpServletRequest request){
-        List<Group> groups = groupQueryBroker.searchUsersGroups(getUserIdFromRequest(request),searchTerm,false);
-        List<GroupFullDTO> dtos = groups.stream().map(group -> groupFetchBroker.fetchGroupFullInfo(group.getCreatedByUser().getUid(),group.getUid(),
+        final String userUid = getUserIdFromRequest(request);
+        List<Group> groups = groupQueryBroker.searchUsersGroups(userUid,searchTerm,false);
+        log.info("group names: {}", groups.stream().map(Group::getName).collect(Collectors.joining(", ")));
+        List<GroupFullDTO> dtos = groups.stream().map(group -> groupFetchBroker.fetchGroupFullInfo(userUid, group.getUid(),
                 false,false,false)).collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);

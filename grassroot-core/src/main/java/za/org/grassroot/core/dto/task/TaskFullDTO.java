@@ -61,7 +61,6 @@ public class TaskFullDTO {
         this.location = task.getTaskType().equals(TaskType.MEETING) ? ((Meeting) task).getEventLocation() : null;
 
         Group ancestorGroup = task.getAncestorGroup();
-        log.info("ancestor group in task full dto: {}", ancestorGroup);
         // just in case membership is gone (and useful for test) by time user pulls task
         Membership creatorMembership = ancestorGroup.getMembership(task.getCreatedByUser());
         this.createdByUserName = creatorMembership != null ? creatorMembership.getDisplayName() : task.getCreatedByUser().getName();

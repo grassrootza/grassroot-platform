@@ -151,6 +151,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
+        log.debug("fetching heavy group, group uid = {}, user = {}", groupUid, user.getName());
+
         List<GroupFullDTO> dtoResults = entityManager.createQuery("" +
                 "select new za.org.grassroot.core.dto.group.GroupFullDTO(g, m) " +
                 "from Group g inner join g.memberships m " +
