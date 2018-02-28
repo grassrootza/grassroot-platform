@@ -18,8 +18,10 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingRequest;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
@@ -32,6 +34,7 @@ import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
+import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -63,9 +66,9 @@ public class USSDMeetingController extends USSDBaseController {
     private boolean locationRequestEnabled;
     private static final int EVENT_LIMIT_WARNING_THRESHOLD = 5; // only warn when below this
 
-
     private final EventBroker eventBroker;
     private final GroupBroker groupBroker;
+    private final TaskBroker taskBroker;
     private final EventRequestBroker eventRequestBroker;
     private final EventLogBroker eventLogBroker;
     private final AccountGroupBroker accountGroupBroker;
@@ -108,9 +111,10 @@ public class USSDMeetingController extends USSDBaseController {
     }
 
     @Autowired
-    public USSDMeetingController(EventBroker eventBroker, GroupBroker groupBroker, EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, AccountGroupBroker accountGroupBroker, GeoLocationBroker geoLocationBroker) {
+    public USSDMeetingController(EventBroker eventBroker, GroupBroker groupBroker, TaskBroker taskBroker, EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, AccountGroupBroker accountGroupBroker, GeoLocationBroker geoLocationBroker) {
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
+        this.taskBroker = taskBroker;
         this.eventRequestBroker = eventRequestBroker;
         this.eventLogBroker = eventLogBroker;
         this.accountGroupBroker = accountGroupBroker;
@@ -130,22 +134,23 @@ public class USSDMeetingController extends USSDBaseController {
     /*
     RSVP menu
      */
-    protected USSDMenu assembleRsvpMenu(User sessionUser, EntityForUserResponse entity) {
+    protected USSDMenu assembleRsvpMenu(User user, EntityForUserResponse entity) {
         Event meeting = (Event) entity;
 
-        String[] meetingDetails = new String[]{meeting.getAncestorGroup().getName(""),
-                meeting.getAncestorGroup().getMembership(meeting.getCreatedByUser()).getDisplayName(),
-                meeting.getName(),
+        // do this so various bits of assembly are guaranteed to happen in a TX
+        TaskMinimalDTO mtgDetails = taskBroker.fetchDescription(user.getUid(), meeting.getUid(), TaskType.MEETING);
+        String[] meetingDetails = new String[]{mtgDetails.getAncestorGroupName(),
+                mtgDetails.getCreatedByUserName(), mtgDetails.getTitle(),
                 meeting.getEventDateTimeAtSAST().format(dateTimeFormat)};
 
         // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
-        String defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp", meetingDetails, sessionUser);
+        String defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp", meetingDetails, user);
         if (defaultPrompt.length() > 120)
-            defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp.short", meetingDetails, sessionUser);
+            defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp.short", meetingDetails, user);
 
         String optionUri = meetingMenus + "rsvp" + entityUidUrlSuffix + meeting.getUid();
         USSDMenu openingMenu = new USSDMenu(defaultPrompt);
-        openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(sessionUser, optionUri, optionUri)));
+        openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(user, optionUri, optionUri)));
         return openingMenu;
     }
 

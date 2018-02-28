@@ -14,7 +14,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventRequest;
 import za.org.grassroot.core.domain.task.Vote;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
@@ -125,7 +124,7 @@ public class USSDVoteController extends USSDBaseController {
         User user = userManager.findByInputNumber(inputNumber);
         voteBroker.recordUserVote(user.getUid(), voteUid, response);
         final String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
-        cacheManager.clearRsvpCacheForUser(user, EventType.VOTE);
+        cacheManager.clearRsvpCacheForUser(user.getUid());
         return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, false)));
     }
 

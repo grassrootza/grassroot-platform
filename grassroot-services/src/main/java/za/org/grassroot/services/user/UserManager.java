@@ -31,6 +31,7 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.async.AsyncUserLogger;
+import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
@@ -221,7 +222,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     // a lot of potential for things to go wrong in here, hence a lot of checks - in general, this one is hairy
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = InvalidOtpException.class)
     public boolean updateUser(String userUid, String displayName, String phoneNumber, String emailAddress,
                               Province province, AlertPreference alertPreference, Locale locale, String validationOtp) {
         Objects.requireNonNull(userUid);
@@ -241,8 +242,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
             return false;
         }
 
-        if ((phoneChanged || emailChanged)) {
-            passwordTokenService.validateOtp(user.getUsername(), validationOtp);
+        if ((phoneChanged || emailChanged) && !passwordTokenService.isShortLivedOtpValid(user.getUsername(), validationOtp)) {
+            throw new InvalidOtpException();
         }
 
         // if user set their phone number to be blank, they must have an email address, and if so, switch username to it
@@ -661,6 +662,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
         log.info("set the user language to : {} ", user.getLanguageCode());
 
         cacheUtilService.putUserLanguage(user.getPhoneNumber(), locale.getLanguage());
+    }
+
+    @Override
+    @Transactional
+    public void updateUserProvince(String userUid, Province province) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        user.setProvince(province);
     }
 
     @Override

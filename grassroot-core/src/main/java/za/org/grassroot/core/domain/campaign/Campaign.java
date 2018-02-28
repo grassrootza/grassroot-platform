@@ -3,21 +3,29 @@ package za.org.grassroot.core.domain.campaign;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
+import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity @Getter @Setter
 @Table(name = "campaign")
 public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
+
+    public static final String JOIN_TOPIC_PREFIX = "JOIN_TOPIC_";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,7 +45,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @Column(name = "description", length = 512)
     private String description;
 
-    @Column(name = "code", nullable = false, length = 5)
+    @Column(name = "code", length = 5)
     private String campaignCode;
 
     @Column(name = "created_date_time", insertable = true, updatable = false)
@@ -55,7 +63,11 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     @ManyToOne
     @JoinColumn(name = "ancestor_group_id", nullable = true)
-    private Group masterGroup ;
+    private Group masterGroup;
+
+    @ManyToOne
+    @JoinColumn(name = "account_uid", referencedColumnName = "uid")
+    private Account account;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign")
     private Set<CampaignMessage> campaignMessages = new HashSet<>();
@@ -68,11 +80,30 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @Column(name = "type",nullable = false)
     private CampaignType campaignType;
 
-    @Column(name = "url",nullable = true)
-    private String url;
+    @Column(name = "landing_url",nullable = true)
+    private String landingUrl;
+
+    @Column(name = "petition_api")
+    private String petitionApi;
+
+    @Column(name = "petition_result_api")
+    private String petitionResultApi;
 
     @OneToMany(mappedBy = "campaign")
     private Set<CampaignLog> campaignLogs = new HashSet<>();
+
+    @Column(name = "sharing_enabled")
+    private boolean sharingEnabled = false;
+
+    @Column(name = "sharing_budget")
+    private long sharingBudget; // in cents
+
+    @Column(name = "sharing_spent")
+    private long sharingSpent; // in cents, also can be calculated from notification count, but double checking (also as price per may alter)
+
+    @ManyToOne
+    @JoinColumn(name = "image_record_uid", referencedColumnName = "uid")
+    private MediaFileRecord campaignImage;
 
     public Campaign() {
         this.uid = UIDGenerator.generateId();
@@ -89,11 +120,18 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         this.startDateTime = Objects.requireNonNull(startDateTime);
         this.endDateTime = Objects.requireNonNull(endDateTime);
         this.campaignType = Objects.requireNonNull(campaignType);
-        this.url = campaignUrl;
+        this.landingUrl = campaignUrl;
+        this.sharingEnabled = false;
+        this.sharingBudget = 0L;
+        this.sharingSpent = 0L;
     }
 
     public boolean isActive() {
         return Instant.now().isBefore(endDateTime);
+    }
+
+    public boolean isActiveWithUrl() {
+        return isActive() && !StringUtils.isEmpty(landingUrl);
     }
 
     @Override
@@ -105,6 +143,36 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     public void setTags(String[] tags) {
         this.tags = tags;
     }
+
+    public List<String> getJoinTopics() {
+        return this.getTagList().stream().filter(s -> s.startsWith(JOIN_TOPIC_PREFIX))
+                .map(s -> s.substring(JOIN_TOPIC_PREFIX.length())).collect(Collectors.toList());
+    }
+
+    public void setJoinTopics(Set<String> joinTopics) {
+        // first get all the non-affiliation tags
+        List<String> tags = getTagList().stream()
+                .filter(s -> !s.startsWith(JOIN_TOPIC_PREFIX)).collect(Collectors.toList());
+        // then add the topics
+        tags.addAll(joinTopics.stream().map(s -> JOIN_TOPIC_PREFIX + s).collect(Collectors.toSet()));
+        setTags(tags);
+    }
+
+    public long countUsersInLogs(CampaignLogType logType) {
+        return getCampaignLogs().stream()
+                .filter(log -> logType.equals(log.getCampaignLogType()))
+                .map(log -> log.getUser().getId())
+                .distinct()
+                .count();
+    }
+
+    public void addCampaignMessages(Set<CampaignMessage> messages) {
+        if (this.campaignMessages == null) {
+            this.campaignMessages = new HashSet<>();
+        }
+        this.campaignMessages.addAll(messages);
+    }
+
 
     @Override
     public boolean equals(Object o) {

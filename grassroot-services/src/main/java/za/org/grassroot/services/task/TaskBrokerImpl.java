@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
@@ -66,12 +67,13 @@ public class TaskBrokerImpl implements TaskBroker {
     private final EventRepository eventRepository;
     private final EventLogRepository eventLogRepository;
     private final TodoLogRepository todoLogRepository;
+    private final MembershipRepository membershipRepository;
 
     private final VoteBroker voteBroker;
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, UidIdentifiableRepository genericRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, VoteBroker voteBroker) {
+    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, UidIdentifiableRepository genericRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, MembershipRepository membershipRepository, PermissionBroker permissionBroker, VoteBroker voteBroker) {
         this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
@@ -80,6 +82,7 @@ public class TaskBrokerImpl implements TaskBroker {
         this.eventRepository = eventRepository;
         this.eventLogRepository = eventLogRepository;
         this.todoLogRepository = todoLogRepository;
+        this.membershipRepository = membershipRepository;
         this.permissionBroker = permissionBroker;
         this.voteBroker = voteBroker;
     }
@@ -202,6 +205,7 @@ public class TaskBrokerImpl implements TaskBroker {
                     .map(AbstractEventEntity::getUid)
                     .collect(Collectors.toSet());
         }
+
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, changedSince);
 
         List<Todo> todos = todoBroker.fetchTodosForGroup(userUid, groupUid, false, false, null, null, null);
@@ -235,7 +239,9 @@ public class TaskBrokerImpl implements TaskBroker {
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
         Collections.sort(tasks);
-        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - now.toEpochMilli());
+
+        log.info("Retrieved all the user's upcoming tasks, found {}, took {} msecs", tasks.size(),
+                System.currentTimeMillis() - now.toEpochMilli());
         return tasks;
     }
 
@@ -253,20 +259,18 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
         Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
+
         List<Todo> todos = todoBroker.fetchTodosForUser(userUid, true, true, todoStart, todoEnd, null);
+        log.info("number of todos fetched for user: {}", todos.size());
 
-
-        for (Todo todo : todos) {
-            taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), getUserResponse(todo, user)));
-        }
-
+        todos.forEach(todo -> taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), getUserResponse(todo, user))));
 
         List<TaskFullDTO> tasks = new ArrayList<>(taskDtos);
-        Collections.sort(tasks, (o1, o2) -> ComparisonChain.start()
+        tasks.sort((o1, o2) -> ComparisonChain.start()
                 .compare(o1.getDeadlineMillis(), o2.getDeadlineMillis())
                 .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
                 .result());
-        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - now.toEpochMilli());
+        log.info("Retrieved all the user's upcoming tasks, found {}, took {} msecs", tasks.size(), System.currentTimeMillis() - now.toEpochMilli());
         return tasks;
     }
 
@@ -323,6 +327,32 @@ public class TaskBrokerImpl implements TaskBroker {
 
 		return tasks;
 	}
+
+    @Override
+    @Transactional(readOnly = true)
+    public TaskMinimalDTO fetchDescription(String userUid, String taskUid, TaskType type) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Objects.requireNonNull(taskUid);
+        Objects.requireNonNull(type);
+
+        TaskMinimalDTO taskToReturn;
+
+        switch (type) {
+            case MEETING:
+            case VOTE:
+                Event event = eventBroker.load(taskUid);
+                taskToReturn = new TaskMinimalDTO(event, event.getCreatedDateTime());
+                break;
+            case TODO:
+                Todo todo = todoBroker.load(taskUid);
+                taskToReturn = new TaskMinimalDTO(todo, todo.getCreatedDateTime());
+                break;
+            default:
+                taskToReturn = null;
+        }
+
+        return taskToReturn;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -439,22 +469,35 @@ public class TaskBrokerImpl implements TaskBroker {
 
         List<Task> tasks = new ArrayList<>();
 
-        List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
-        List<Event> outstandingYesNoVotes = outstandingVotes.stream()
-                .filter(vote -> vote.getTags() == null || vote.getTags().length == 0)
-                .collect(Collectors.toList());
-
-        List<Event> outstandingOptionsVotes = outstandingVotes.stream()
-                .filter(v -> ((Vote) v).hasOption(userResponse.trim()))
-                .collect(Collectors.toList());
-
-        List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
-
-        tasks.addAll(outstandingYesNoVotes);
-        tasks.addAll(outstandingOptionsVotes);
-        tasks.addAll(outstandingMeetings);
+        tasks.addAll(eventBroker.getEventsNeedingResponseFromUser(user));
+        tasks.addAll(todoBroker.fetchTodosForUser(userUid, false, true, Instant.now(), null,
+                new Sort(Sort.Direction.ASC, "createdDateTime")));
 
         return tasks;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Membership> fetchMembersAssignedToTask(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        List<Membership> members = new ArrayList<>();
+
+        if (TaskType.MEETING.equals(taskType)) {
+            Meeting meeting = eventBroker.loadMeeting(taskUid);
+
+            Group ancestorGroup = meeting.getAncestorGroup();
+            if (!ancestorGroup.hasMember(user)) {
+                throw new AccessDeniedException("Error! Must be part of group");
+            }
+
+            List<User> assignedUsers = onlyPositiveResponders ? userRepository.findUsersThatRSVPForEvent(meeting)
+                    : new ArrayList<>(meeting.getMembers());
+            // this could be very big, so don't user group.getMemberships which may induce graph problems
+            members.addAll(membershipRepository.findByGroupAndUserIn(ancestorGroup, assignedUsers));
+            log.info("added members from meeting, number: {}", members.size());
+        }
+
+        return members;
     }
 
     @Override

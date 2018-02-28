@@ -5,6 +5,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountBillingRecord;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -51,5 +52,7 @@ public interface AccountBillingBroker {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
     void changeBillPaymentDate(String adminUid, String recordUid, LocalDateTime paymentDate);
+
+    long calculateMessageCostsInPeriod(Account account, Instant billingPeriodStart, Instant billingPeriodEnd);
 
 }

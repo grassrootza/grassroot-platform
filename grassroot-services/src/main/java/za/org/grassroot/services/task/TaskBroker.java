@@ -1,6 +1,7 @@
 package za.org.grassroot.services.task;
 
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
@@ -34,16 +35,15 @@ public interface TaskBroker {
 
     /**
      * TaskDTO is deprecated in favor of TaskFullDTO, so this is a replacement method for List<TaskDTO> fetchUpcomingUserTasks
-     * might be better to return List<Task> and transform to appropriate DTO in controller
-     *
-     * @param userUid
-     * @return
+     * might be better to return List<Task> and transform to appropriate DTO in controller (if transaction mgmt allows)
      */
     List<TaskFullDTO> fetchUpcomingUserTasksFull(String userUid);
 
     ChangedSinceData<TaskDTO> fetchUpcomingTasksAndCancelled(String userUid, Instant changedSince);
 
     List<TaskFullDTO> searchForTasks(String userUid, String searchTerm);
+
+    TaskMinimalDTO fetchDescription(String userUid, String taskUid, TaskType type);
 
     /*
     Some new methods for new REST API
@@ -78,6 +78,8 @@ public interface TaskBroker {
     List<TaskFullDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType);
 
     List<Task> fetchTasksRequiringUserResponse(String userUid, String userResponse);
+
+    List<Membership> fetchMembersAssignedToTask(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders);
 
     @Transactional(readOnly = true)
     List<TaskFullDTO> fetchUpcomingGroupTasks(String userUid, String groupUid);

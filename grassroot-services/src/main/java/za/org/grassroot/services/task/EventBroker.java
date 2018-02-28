@@ -1,7 +1,9 @@
 package za.org.grassroot.services.task;
 
 import org.springframework.data.domain.Page;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
@@ -83,7 +85,7 @@ public interface EventBroker {
 	Methods for retrieving lists of upcoming events (all read only)
 	 */
 
-	List<Event> getOutstandingResponseForUser(User user, EventType eventType);
+	List<Event> getEventsNeedingResponseFromUser(User user);
 
 	boolean userHasEventsToView(User user, EventType type, EventListTimeType timeType);
 

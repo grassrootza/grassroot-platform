@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Task;
@@ -15,7 +18,7 @@ import za.org.grassroot.core.enums.TaskType;
 import java.time.Instant;
 import java.util.Map;
 
-@Getter
+@Getter @Slf4j
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @ApiModel(value = "Full DTO for task (almost)", description = "Generic DTO for meetings, votes, and actions, a little " +
         "lighter and more streamlined than older TaskDTO")
@@ -57,9 +60,13 @@ public class TaskFullDTO {
         this.description = task.getDescription();
         this.location = task.getTaskType().equals(TaskType.MEETING) ? ((Meeting) task).getEventLocation() : null;
 
-        this.createdByUserName = task.getCreatedByUser().getName();
+        Group ancestorGroup = task.getAncestorGroup();
+        log.info("ancestor group in task full dto: {}", ancestorGroup);
+        // just in case membership is gone (and useful for test) by time user pulls task
+        Membership creatorMembership = ancestorGroup.getMembership(task.getCreatedByUser());
+        this.createdByUserName = creatorMembership != null ? creatorMembership.getDisplayName() : task.getCreatedByUser().getName();
         this.createdByThisUser = task.getCreatedByUser().equals(user);
-        this.ancestorGroupName = task.getAncestorGroup().getName();
+        this.ancestorGroupName = ancestorGroup.getName();
 
         this.type = task.getTaskType();
 

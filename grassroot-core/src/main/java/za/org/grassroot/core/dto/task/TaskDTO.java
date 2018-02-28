@@ -47,6 +47,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
     private final String parentUid;
     private final String parentName;
+    private final String ancestorGroupUid;
 
     private final String deadline;
     private final String deadlineISO;
@@ -76,6 +77,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
         this.parentUid = task.getParent().getUid();
 	    this.parentName = task.getParent().getName();
+	    this.ancestorGroupUid = task.getAncestorGroup().getUid();
 
         this.wholeGroupAssigned = task.isAllGroupMembersAssigned();
         this.assignedMemberCount = task.countAssignedMembers();

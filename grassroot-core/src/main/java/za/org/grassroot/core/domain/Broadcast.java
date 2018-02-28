@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -38,10 +39,15 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     private static final String JOIN_DATE_CONDITION_PREFIX = "JOIN_DATE_CONDITION:";
     private static final String JOIN_DATE_PREFIX = "JOIN_DATE_VALUE:";
 
+    private static final String TASK_PREFIX = "TASK:";
+    public static final String TASK_FIELD_SEP = ";";
+
     public static String NAME_FIELD_TEMPLATE = "{__name__}";
     public static String CONTACT_FIELD_TEMPALTE = "{__contact__}";
     public static String DATE_FIELD_TEMPLATE = "{__date__}";
     public static String PROVINCE_FIELD_TEMPLATE = "{__province__}";
+    public static String INBOUND_FIELD_TEMPLATE = "{__inbound__}";
+    public static String ENTITY_FIELD_TEMPLATE = "{__entity_name__}";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -302,6 +308,30 @@ public class Broadcast implements GrassrootEntity, TagHolder {
 
     public void setJoinDateValue(LocalDate joinDateValue) {
         setFilterEntities(JOIN_DATE_PREFIX, Stream.of(String.valueOf(joinDateValue.format(DateTimeFormatter.ISO_DATE))));
+    }
+
+    public void setTask(String taskUid, TaskType taskType, boolean onlyPositive) {
+        final String collatedDetails = taskUid + TASK_FIELD_SEP + taskType + TASK_FIELD_SEP + onlyPositive;
+        setFilterEntities(TASK_PREFIX, Stream.of(collatedDetails));
+    }
+
+    public boolean hasTask() {
+        return getTagList().stream().anyMatch(s -> s.startsWith(TASK_PREFIX));
+    }
+
+    public String getTaskUid() {
+        return getFilterEntitiesFromTag(TASK_PREFIX).findFirst()
+                .map(details -> details.split(TASK_FIELD_SEP)[0]).orElseThrow(IllegalArgumentException::new);
+    }
+
+    public TaskType getTaskType() {
+        return getFilterEntitiesFromTag(TASK_PREFIX).findFirst().map(details -> details.split(TASK_FIELD_SEP)[1])
+                .map(TaskType::valueOf).orElseThrow(IllegalArgumentException::new);
+    }
+
+    public boolean taskOnlyPositive() {
+        return getFilterEntitiesFromTag(TASK_PREFIX).findFirst().map(details -> details.split(TASK_FIELD_SEP)[2])
+                .map(Boolean::valueOf).orElseThrow(IllegalArgumentException::new);
     }
 
     private void setFilterEntities(String prefix, Stream<String> entities) {

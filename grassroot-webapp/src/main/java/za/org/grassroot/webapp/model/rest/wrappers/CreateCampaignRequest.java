@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.campaign.CampaignType;
 
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Set;
 
 
@@ -35,8 +36,8 @@ public class CreateCampaignRequest implements Serializable {
     private String groupUid;
     @ApiModelProperty(value = "name of campaign master group for new group")
     private String groupName;
-    @ApiModelProperty(value = "tags for campaign", required = false)
-    private Set<String> tags;
+    @ApiModelProperty(value = "topics for campaign", required = false)
+    private List<String> joinTopics;
 
     public CreateCampaignRequest(){}
 
@@ -62,8 +63,8 @@ public class CreateCampaignRequest implements Serializable {
         return endDateEpochMillis;
     }
 
-    public Set<String> getTags() {
-        return tags;
+    public List<String> getJoinTopics() {
+        return joinTopics;
     }
 
     @NotNull(message = "campaign.type.required")

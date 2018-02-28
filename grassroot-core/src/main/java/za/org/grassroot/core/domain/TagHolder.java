@@ -60,8 +60,10 @@ public interface TagHolder {
     }
 
     default void addTopics(Set<String> topics) {
-        List<String> newTopics = topics.stream().map(topic -> TOPIC_PREFIX + topic).collect(Collectors.toList());
-        addTags(newTopics);
+        if (topics != null) {
+            List<String> newTopics = topics.stream().map(topic -> TOPIC_PREFIX + topic).collect(Collectors.toList());
+            addTags(newTopics);
+        }
     }
 
     default void removeTopics(Collection<String> topics) {

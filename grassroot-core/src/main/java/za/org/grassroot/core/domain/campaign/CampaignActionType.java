@@ -5,10 +5,11 @@ public enum  CampaignActionType {
 
     OPENING,
     TAG_ME,
-    JOIN_MASTER_GROUP,
+    JOIN_GROUP,
     SIGN_PETITION,
     MORE_INFO,
-    SHARE,
+    SHARE_PROMPT,
+    SHARE_SEND,
     EXIT_POSITIVE,
     EXIT_NEGATIVE;
 
