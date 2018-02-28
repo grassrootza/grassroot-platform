@@ -135,10 +135,10 @@ public class CampaignManagerController extends BaseRestController {
     }
 
     private List<CampaignViewDTO> checkForCampaignsInCache(String userUid) {
-        if (userCampaignsCache.isKeyInCache(userUid)) {
-            Object cacheElement = userCampaignsCache.get(userUid).getObjectValue();
-            return cacheElement != null ? (List<CampaignViewDTO>) cacheElement : null;
-        } else {
+        try {
+            return userCampaignsCache.isKeyInCache(userUid) ? (List<CampaignViewDTO>) userCampaignsCache.get(userUid).getObjectValue() : null;
+        } catch (NullPointerException e) {
+            log.info("null pointer strangeness in campaigns cache again");
             return null;
         }
     }

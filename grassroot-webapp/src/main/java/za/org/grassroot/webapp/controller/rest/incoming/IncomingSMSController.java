@@ -26,6 +26,8 @@ import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.text.MessageFormat;
 import java.time.Duration;
@@ -46,14 +48,11 @@ public class IncomingSMSController {
     private final UserManagementService userManager;
 
     private final NotificationService notificationService;
-    private final UserLogRepository userLogRepository;
-    private final GroupLogRepository groupLogRepository;
 
     private final GroupBroker groupBroker;
     private final CampaignBroker campaignBroker;
 
-    private final MessageAssemblingService messageAssemblingService;
-    private final MessagingServiceBroker messagingServiceBroker;
+    private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     private static final String FROM_PARAMETER_REPLY ="fn";
     private static final String MESSAGE_TEXT_PARAM_REPLY ="ms";
@@ -64,19 +63,14 @@ public class IncomingSMSController {
     private static final Duration NOTIFICATION_WINDOW = Duration.of(6, ChronoUnit.HOURS);
 
     @Autowired
-    public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, EventLogBroker eventLogManager,
-                                 GroupBroker groupBroker, MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
-                                 UserLogRepository userLogRepository, NotificationService notificationService,
-                                 GroupLogRepository groupLogRepository, CampaignBroker campaignBroker) {
+    public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker, MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
+                                 NotificationService notificationService, CampaignBroker campaignBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userResponseBroker = userResponseBroker;
 
         this.userManager = userManager;
         this.groupBroker = groupBroker;
-        this.messageAssemblingService = messageAssemblingService;
-        this.messagingServiceBroker = messagingServiceBroker;
-        this.userLogRepository = userLogRepository;
+        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.notificationService = notificationService;
-        this.groupLogRepository = groupLogRepository;
         this.campaignBroker = campaignBroker;
     }
 
@@ -127,7 +121,7 @@ public class IncomingSMSController {
     public void receiveSmsReply(@RequestParam(value = FROM_PARAMETER_REPLY) String phoneNumber,
                                 @RequestParam(value = MESSAGE_TEXT_PARAM_REPLY) String msg) {
 
-        log.info("Inside IncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
+        log.info("Inside IncomingSMSController - following message was received: ms= {}", msg);
         User user = userManager.findByInputNumber(phoneNumber);
         if (user == null) {
             log.warn("Message {} from unknown user: {}", msg, phoneNumber);
@@ -138,7 +132,7 @@ public class IncomingSMSController {
         EntityForUserResponse likelyEntity = userResponseBroker.checkForEntityForUserResponse(user.getUid(), false);
 
         if (likelyEntity == null || !checkValidityOfResponse(likelyEntity, trimmedMsg)) {
-            log.info("User response is {}, type {} and cannot find an entity waiting for response ... handling unknown message");
+            log.info("User response does not match any recently sent entities, recording raw text log");
             handleUnknownResponse(user, trimmedMsg);
             return;
         }
@@ -169,13 +163,11 @@ public class IncomingSMSController {
     }
 
     private void handleUnknownResponse(User user, String trimmedMsg) {
-//        notifyUnableToProcessReply(user);
-
-        log.info("Recording  unexpected user SMS message user log.");
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE,
                 trimmedMsg, UserInterfaceType.INCOMING_SMS);
 
-        userLogRepository.save(userLog);
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(userLog);
 
         List<Notification> recentNotifications = notificationService
                 .fetchSentOrBetterSince(user.getUid(), Instant.now().minus(NOTIFICATION_WINDOW), null);
@@ -198,14 +190,11 @@ public class IncomingSMSController {
             GroupLog groupLog = new GroupLog(entry.getKey(), user,
                     GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user, null, null,
                     description.substring(0, Math.min(255, description.length()))); // since could be very long ...
-            groupLogRepository.save(groupLog);
+            bundle.addLog(groupLog);
         }
 
-    }
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
 
-    private void notifyUnableToProcessReply(User user) {
-        String message = messageAssemblingService.createReplyFailureMessage(user);
-        messagingServiceBroker.sendSMS(message, user.getUid(), true);
     }
 
 }

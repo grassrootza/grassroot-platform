@@ -16,6 +16,7 @@ import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.exception.InvalidOtpException;
@@ -131,27 +132,18 @@ public class PasswordTokenManager implements PasswordTokenService {
     }
 
     @Override
+    @Transactional(noRollbackFor = InvalidOtpException.class)
     public void validateOtp(String username, String otp) {
         Objects.requireNonNull(username);
         Objects.requireNonNull(otp);
 
-        VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(username, VerificationCodeType.SHORT_OTP);
-        if (token == null || Instant.now().isAfter(token.getExpiryDateTime()) || !token.getCode().equals(otp)) {
+        DebugUtil.transactionRequired("");
+
+        if (!isShortLivedOtpValid(username, otp)) {
             throw new InvalidOtpException();
         }
     }
 
-
-    @Override
-    public void validatePassword(String phoneNumber, String password) {
-        Objects.requireNonNull(phoneNumber);
-        Objects.requireNonNull(password);
-
-        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
-        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
-            throw new UsernamePasswordLoginFailedException();
-        }
-    }
 
     @Override
     public void validatePwdPhoneOrEmail(String username, String password) {
@@ -188,7 +180,7 @@ public class PasswordTokenManager implements PasswordTokenService {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = InvalidOtpException.class)
     public boolean isShortLivedOtpValid(String username, String code) {
         if (username == null || code == null)
             return false;
@@ -208,7 +200,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         if (!valid)
             token.incrementTokenAttempts();
 
-        log.info("returning valid");
+        log.info("returning {}", valid);
         return valid;
     }
 
