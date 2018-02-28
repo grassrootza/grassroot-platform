@@ -540,7 +540,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         }
     }
 
-    private long calculateMessageCostsInPeriod(Account account, Instant billingPeriodStart, Instant billingPeriodEnd) {
+    @Override
+    public long calculateMessageCostsInPeriod(Account account, Instant billingPeriodStart, Instant billingPeriodEnd) {
         if (account.getDisabledDateTime().isBefore(billingPeriodStart)) {
             log.info("account seems disabled, disabled time : {}, billing period start : {}", account.getDisabledDateTime(),
                     billingPeriodStart);
