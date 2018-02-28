@@ -187,8 +187,7 @@ public class AccountSettingsController extends BaseRestController {
                 permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
             }
 
-            billingBroker.generateClosingBill(user.getUid(), accountUid);
-            accountBroker.closeAccountRest(user.getUid(), accountUid, false);
+            accountBroker.closeAccountRest(user.getUid(), accountUid, true);
             return "closed";
         }catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);

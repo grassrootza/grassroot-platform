@@ -782,24 +782,19 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     @Override
+    @Transactional
     public void closeAccountRest(String userUid, String accountUid, boolean generateClosingBill) {
-        // note : this is to remove the account even from views (disabled accounts can be reenabled, so still show up)
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(userUid));
+        User user = userRepository.findOneByUid(Objects.requireNonNull(accountUid));
 
-        Account account = accountRepository.findOneByUid(accountUid);
-        if (account.isEnabled()) {
-            account.setEnabled(false);
-        }
+        validateAdmin(user, account); // note: this allows non-billing admin to close account, leaving for now but may revisit
+
+        account.setEnabled(false);
+        account.setVisible(false);
 
         if (generateClosingBill) {
             accountBillingBroker.generateClosingBill(userUid, accountUid);
         }
-
-        User user = userRepository.findOneByUid(userUid);
-        validateAdmin(user, account); // note: this allows non-billing admin to close account, leaving for now but may revisit
-
-        account.setVisible(false);
 
         log.info("removing {} paid groups", account.getPaidGroups().size());
         Set<String> paidGroupUids = account.getPaidGroups().stream().map(pg -> pg.getGroup().getUid()).collect(Collectors.toSet());
