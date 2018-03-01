@@ -48,15 +48,16 @@
             </div>
 
             <div class="form-group inline-field">
-              <div class="col-md-4 col-sm-4 col-xs-4"><label>Name</label></div>
-              <div class="col-md-3 col-sm-3 col-xs-4"><label>Phone</label></div>
-              <div class="col-md-4 col-sm-4 col-xs-4"><label>Role</label></div>
+              <div class="col-md-3 col-sm-6 col-xs-4"><label>Name</label></div>
+              <div class="col-md-3 col-sm-6 col-xs-4"><label>Phone</label></div>
+              <div class="col-md-3 col-sm-6 col-xs-4"><label>Email</label></div>
+              <div class="col-md-3 col-sm-6 col-xs-4"><label>Role</label></div>
             </div>
 
 
             <div id="member-input">
               <div class="form-group member-row inline-field" th:each="member, iterStat: *{listOfMembers}">
-                <div class="col-md-4 col-xs-12">
+                <div class="col-md-3 col-xs-12">
                   <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control input-lg" placeholder="Member's name" maxlength="35"/>
                 </div>
                 <div class="col-md-3 col-xs-12">
@@ -65,7 +66,13 @@
                     <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}" class="alert has-error">Error!</span>
                   </div>
                 </div>
-                <div class="col-md-4 col-xs-12">
+                <div class="col-md-3 col-xs-12">
+                  <div th:class="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].memberEmail')}? has-error">
+                    <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].memberEmail}" class="form-control input-lg" th:errorclass="error" placeholder="Phone number"/>
+                    <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].memberEmail')}" class="alert has-error">Error!</span>
+                  </div>
+                </div>
+                <div class="col-md-2 col-xs-12">
                   <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control input-lg">
                     <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
                             th:value="${role}"
@@ -165,6 +172,7 @@
         member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex, false));
         var newRow = member_table.find('.member-row:last');
         var phoneInput = newRow.find('[name$="phoneNumber"]');
+        var emailInput = newRow.find('[name$="memberEmail"]');
         var nameInput = newRow.find('[name$="displayName"]');
         phoneInput.rules('add', grassrootJS.phoneRules);
         nameInput.autocomplete(grassrootJS.memberAutoComplete(nameInput, phoneInput));

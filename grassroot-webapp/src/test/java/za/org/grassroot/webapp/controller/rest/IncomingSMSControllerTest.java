@@ -6,10 +6,8 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -19,6 +17,8 @@ import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.UserResponseBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.webapp.controller.rest.incoming.IncomingSMSController;
 
 import java.time.Instant;
@@ -48,6 +48,9 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
     @Mock
     private UserResponseBroker userResponseBrokerMock;
+
+    @Mock
+    private LogsAndNotificationsBroker logsAndNotificationsBrokerMock;
 
     @InjectMocks
     private IncomingSMSController aatIncomingSMSController;
@@ -122,8 +125,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
-        verify(userLogRepositoryMock, times(1)).save(any(UserLog.class));
-        verify(groupLogRepositoryMock, times(1)).save(any(GroupLog.class));
+        verify(logsAndNotificationsBrokerMock, times(1)).asyncStoreBundle(any(LogsAndNotificationsBundle.class));
         verify(notificationServiceMock, times(1)).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
 //        verify(messageAssemblingService, times(1)).createReplyFailureMessage(sessionTestUser);
         verifyZeroInteractions(eventLogBrokerMock);
@@ -225,7 +227,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
-        verify(userLogRepositoryMock, times(1)).save(any(UserLog.class));
+        verify(logsAndNotificationsBrokerMock, times(1)).asyncStoreBundle(any(LogsAndNotificationsBundle.class));
         verify(notificationServiceMock, times(1)).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
         verifyZeroInteractions(eventLogBrokerMock);
         verifyZeroInteractions(groupLogRepositoryMock);
@@ -252,7 +254,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().isOk());
 
         verify(userResponseBrokerMock).checkForEntityForUserResponse(sessionTestUser.getUid(), false);
-        verify(userLogRepositoryMock).save(any(UserLog.class));
+        verify(logsAndNotificationsBrokerMock).asyncStoreBundle(any(LogsAndNotificationsBundle.class));
 //        verify(messagingServiceBroker).sendSMS(anyString(), anyString(), anyBoolean());
         verify(notificationServiceMock).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
 
@@ -287,10 +289,9 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
-        verify(userLogRepositoryMock).save(any(UserLog.class));
+        verify(logsAndNotificationsBrokerMock).asyncStoreBundle(any(LogsAndNotificationsBundle.class));
 //        verify(messagingServiceBroker).sendSMS(anyString(), anyString(), anyBoolean());
         verify(notificationServiceMock).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
-        verify(groupLogRepositoryMock).save(any(GroupLog.class));
 
         verifyZeroInteractions(eventLogBrokerMock);
 

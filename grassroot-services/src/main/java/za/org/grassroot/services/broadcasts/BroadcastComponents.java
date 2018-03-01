@@ -46,6 +46,7 @@ public class BroadcastComponents {
     private List<String> affiliations;
     private List<GroupJoinMethod> joinMethods;
     private JoinDateCondition joinDateCondition;
+    private String filterNamePhoneOrEmail;
     private @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     LocalDate joinDate;
 

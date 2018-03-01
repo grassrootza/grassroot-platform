@@ -46,6 +46,8 @@ public class BroadcastCreateRequest {
     private List<String> taskTeams;
     private List<GroupJoinMethod> joinMethods;
 
+    private String filterNamePhoneEmail;
+
     private boolean skipSmsIfEmail;
 
     private JoinDateCondition joinDateCondition;

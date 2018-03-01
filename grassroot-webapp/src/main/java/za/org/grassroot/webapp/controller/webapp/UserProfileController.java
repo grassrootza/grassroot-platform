@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.socialmedia.ManagedPage;
 import za.org.grassroot.integration.socialmedia.ManagedPagesResponse;
 import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
@@ -69,7 +71,9 @@ public class UserProfileController extends BaseController {
         log.info("retrieved this user, displayName={}, alertPref={}, language={}", sessionUser.getDisplayName(),
                 sessionUser.getAlertPreference(), sessionUser.getLanguageCode());
         try {
-            userManagementService.updateUser(getUserProfile().getUid(), sessionUser.getDisplayName(), null, sessionUser.getEmailAddress(),
+            final String phone = StringUtils.isEmpty(sessionUser.getPhoneNumber()) ? null :
+                    PhoneNumberUtil.convertPhoneNumber(sessionUser.getPhoneNumber());
+            userManagementService.updateUser(getUserProfile().getUid(), sessionUser.getDisplayName(), phone, sessionUser.getEmailAddress(),
                     null, sessionUser.getAlertPreference(), new Locale(sessionUser.getLanguageCode()), null);
             addMessage(redirectAttributes, MessageType.SUCCESS, "user.profile.change.success", request);
             return "redirect:settings"; // using redirect to avoid reposting
@@ -87,8 +91,6 @@ public class UserProfileController extends BaseController {
     @RequestMapping(value = "password", method = RequestMethod.POST)
     public String changePasswordDo(Model model, @ModelAttribute User sessionUser, @RequestParam(value = "otp_entered") String otpField,
                                    @RequestParam String password, RedirectAttributes attributes, HttpServletRequest request) {
-
-        // todo : extra validation
         try {
             userManagementService.resetUserPassword(getUserProfile().getUsername(), password, otpField);
             addMessage(attributes, MessageType.SUCCESS, "user.profile.password.done", request);
