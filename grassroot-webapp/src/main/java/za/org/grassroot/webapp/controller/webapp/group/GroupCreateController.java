@@ -56,6 +56,8 @@ public class GroupCreateController extends BaseController {
 			groupCreator = new GroupWrapper();
 			MembershipInfo creator = new MembershipInfo(getUserProfile().getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
 					getUserProfile().getDisplayName());
+			creator.setMemberEmail(getUserProfile().getEmailAddress());
+			logger.info("creator entity: {}", creator);
 			groupCreator.addMember(creator); // to remove ambiguity about group creator being part of group
 		}
 

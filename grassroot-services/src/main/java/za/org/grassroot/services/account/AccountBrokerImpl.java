@@ -735,4 +735,80 @@ public class AccountBrokerImpl implements AccountBroker {
         bundle.addLog(accountLog);
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
+
+    @Override
+    @Transactional
+    public void modifyAccount(String adminUid, String accountUid, AccountType accountType, String accountName, String billingEmail, AccountBillingCycle billingCycle) {
+        Objects.requireNonNull(adminUid);
+        Objects.requireNonNull(accountUid);
+
+        User user = userRepository.findOneByUid(adminUid);
+//        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        StringBuilder sb = new StringBuilder("Changes: ");
+
+        if(!account.getType().equals(accountType)) {
+            account.setType(accountType);
+            sb.append(" account type = ").append(accountType).append(";");
+
+            Map<AccountType, Integer> accountFees = getAccountTypeFees();
+            Integer changedFee = accountFees.get(accountType);
+
+            account.setSubscriptionFee(changedFee);
+            sb.append(" subscription fee = ").append(changedFee).append(";");
+        }
+
+        if(!account.getAccountName().equals(accountName)) {
+            account.setAccountName(accountName);
+            sb.append(" account name = ").append(accountName).append(";");
+        }
+
+        if(!account.getBillingUser().getEmailAddress().equals(billingEmail)) {
+            account.getBillingUser().setEmailAddress(billingEmail);
+            sb.append(" account billing email = ").append(billingEmail).append(";");
+        }
+
+        if(!account.getBillingCycle().equals(billingCycle)) {
+            account.setBillingCycle(billingCycle);
+            sb.append(" account billing cycle = ").append(billingCycle).append(";");
+
+        }
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.SYSADMIN_MODIFIED_MULTIPLE)
+                .user(user)
+                .description(sb.toString()).build());
+    }
+
+    @Override
+    @Transactional
+    public void closeAccountRest(String userUid, String accountUid, boolean generateClosingBill) {
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(userUid));
+        User user = userRepository.findOneByUid(Objects.requireNonNull(accountUid));
+
+        validateAdmin(user, account); // note: this allows non-billing admin to close account, leaving for now but may revisit
+
+        account.setEnabled(false);
+        account.setVisible(false);
+
+        if (generateClosingBill) {
+            accountBillingBroker.generateClosingBill(userUid, accountUid);
+        }
+
+        log.info("removing {} paid groups", account.getPaidGroups().size());
+        Set<String> paidGroupUids = account.getPaidGroups().stream().map(pg -> pg.getGroup().getUid()).collect(Collectors.toSet());
+        accountGroupBroker.removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .user(user)
+                .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
+                .description("account closed and removed from view").build());
+
+        log.info("removing {} administrators", account.getAdministrators().size());
+        account.getAdministrators().stream().filter(u -> !u.getUid().equals(userUid))
+                .forEach(a -> removeAdministrator(userUid, accountUid, a.getUid(), false));
+
+        removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
+    }
 }

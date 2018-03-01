@@ -64,6 +64,7 @@ public class CampaignLog implements ActionLog {
         this.campaignLogType = Objects.requireNonNull(campaignLogType);
         this.campaign = Objects.requireNonNull(campaign);
         this.channel = channel;
+        this.description = description;
     }
 
     @Override

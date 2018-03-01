@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.campaign;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
@@ -129,6 +130,10 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         return Instant.now().isBefore(endDateTime);
     }
 
+    public boolean isActiveWithUrl() {
+        return isActive() && !StringUtils.isEmpty(landingUrl);
+    }
+
     @Override
     public String[] getTags(){
         return tags;
@@ -144,7 +149,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
                 .map(s -> s.substring(JOIN_TOPIC_PREFIX.length())).collect(Collectors.toList());
     }
 
-    public void setAffiliations(Set<String> joinTopics) {
+    public void setJoinTopics(Set<String> joinTopics) {
         // first get all the non-affiliation tags
         List<String> tags = getTagList().stream()
                 .filter(s -> !s.startsWith(JOIN_TOPIC_PREFIX)).collect(Collectors.toList());

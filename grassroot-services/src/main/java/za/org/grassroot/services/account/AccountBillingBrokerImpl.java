@@ -540,10 +540,14 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         }
     }
 
-    private long calculateMessageCostsInPeriod(Account account, Instant billingPeriodStart, Instant billingPeriodEnd) {
-        if (account.getDisabledDateTime().isBefore(billingPeriodStart)) {
+    @Override
+    @Transactional(readOnly = true)
+    public long calculateMessageCostsInPeriod(Account account, Instant billingPeriodStart, Instant billingPeriodEnd) {
+        Objects.requireNonNull(account);
+        Instant startTime = billingPeriodStart == null ? account.getEnabledDateTime() : billingPeriodStart;
+        if (account.getDisabledDateTime() != null && account.getDisabledDateTime().isBefore(startTime)) {
             log.info("account seems disabled, disabled time : {}, billing period start : {}", account.getDisabledDateTime(),
-                    billingPeriodStart);
+                    startTime);
             return 0;
         }
 
@@ -552,10 +556,10 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         Set<PaidGroup> paidGroups = account.getPaidGroups();
         final int messageCost = account.getFreeFormCost();
 
-        log.info("counting notifications between {} and {}", billingPeriodStart, billingPeriodEnd);
+        log.info("counting notifications between {} and {}", startTime, billingPeriodEnd);
         Specifications<Notification> notificationCounter = Specifications
                 .where(wasDelivered())
-                .and(createdTimeBetween(billingPeriodStart, billingPeriodEnd))
+                .and(createdTimeBetween(startTime, billingPeriodEnd))
                 .and(belongsToAccount(account));
 
         long numberOfMessages = logsAndNotificationsBroker.countNotifications(notificationCounter);
@@ -564,7 +568,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         log.info("number of notifications for account in period = {}", numberOfMessages);
 
         for (PaidGroup paidGroup : paidGroups) {
-            costAccumulator += (countMessagesForPaidGroup(paidGroup, billingPeriodStart, billingPeriodEnd) * messageCost);
+            costAccumulator += (countMessagesForPaidGroup(paidGroup, startTime, billingPeriodEnd) * messageCost);
         }
 
         return costAccumulator;

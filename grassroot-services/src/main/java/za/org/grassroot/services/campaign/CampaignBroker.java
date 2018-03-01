@@ -44,9 +44,11 @@ public interface CampaignBroker {
 
     Campaign addUserToCampaignMasterGroup(String campaignUid, String userUid, UserInterfaceType channel);
 
+    void setUserJoinTopic(String campaignUid, String userUid, String joinTopic, UserInterfaceType channel);
+
     // modifying and adding
     Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate,
-                    Instant endDate, List<String> campaignTags, CampaignType campaignType, String url);
+                    Instant endDate, List<String> joinTopics, CampaignType campaignType, String url);
 
     Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages);
 

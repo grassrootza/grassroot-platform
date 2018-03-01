@@ -110,6 +110,17 @@ public class USSDCampaignController extends USSDBaseController {
         return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
+    @RequestMapping(value = campaignUrl + "topic/set")
+    @ResponseBody
+    public Request setUserJoinTopic(@RequestParam(value = phoneNumber) String inputNumber,
+                                    @RequestParam String campaignUid,
+                                    @RequestParam String topic) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        Campaign campaign = campaignBroker.load(campaignUid);
+        campaignBroker.setUserJoinTopic(campaignUid, user.getUid(), topic, UserInterfaceType.USSD);
+        return menuBuilder(processFinalOptionsMenu(campaign, user, "", user.getLocale()));
+    }
+
     @RequestMapping(value = campaignUrl + "province")
     public Request processProvinceRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                           @RequestParam String campaignUid,
@@ -137,7 +148,7 @@ public class USSDCampaignController extends USSDBaseController {
         USSDMenu menu;
         if (!campaign.getJoinTopics().isEmpty()) {
             final String prompt = promptStart + getMessage("campaign.choose.topic", locale.getLanguage());
-            final String urlPrefix = campaignMenus + USSDCampaignConstants.TAG_ME_URL + "?campaignUid=" + campaign.getUid();
+            final String urlPrefix = campaignMenus + "topic/set?campaignUid=" + campaign.getUid() + "&topic=";
             menu = new USSDMenu(prompt);
             campaign.getJoinTopics().forEach(topic -> menu.addMenuOption(urlPrefix + topic, topic));
         } else {
@@ -192,8 +203,8 @@ public class USSDCampaignController extends USSDBaseController {
                            @RequestParam(value = userInputParam) String userInput,
                            @RequestParam String campaignUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
-        // todo: check number validity
-        campaignBroker.sendShareMessage(campaignUid, user.getUid(), userInput, "Hello please sign up", UserInterfaceType.USSD);
+        final String shareDefault = getMessage("campaign.share.send.generic", user);
+        campaignBroker.sendShareMessage(campaignUid, user.getUid(), userInput, shareDefault, UserInterfaceType.USSD);
         return menuBuilder(genericPositiveExit(campaignUid, user.getLocale()));
     }
 

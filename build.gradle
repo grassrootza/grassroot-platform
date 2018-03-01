@@ -65,5 +65,9 @@ subprojects {
       csv.enabled false
     }
   }
+
+  task showMeCache << {
+    configurations.compile.each { println it }
+  }
   
 }

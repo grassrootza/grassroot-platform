@@ -103,6 +103,7 @@ public class BroadcastController extends BaseRestController {
                 .joinMethods(createRequest.getJoinMethods())
                 .joinDateCondition(createRequest.getJoinDateCondition())
                 .joinDate(createRequest.getJoinDate())
+                .filterNamePhoneOrEmail(createRequest.getFilterNamePhoneEmail())
                 .skipSmsIfEmail(createRequest.isSkipSmsIfEmail())
                 .build();
 

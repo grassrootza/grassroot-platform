@@ -12,6 +12,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -20,12 +21,12 @@ import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
 import za.org.grassroot.core.domain.notification.GroupBroadcastNotification;
 import za.org.grassroot.core.dto.BroadcastDTO;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.socialmedia.*;
 import za.org.grassroot.services.exception.NoPaidAccountException;
@@ -113,8 +114,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.isTwitterConnected(twitterAccount != null)
                 .twitterAccount(twitterAccount);
 
-        builder.campaignNamesUrls(campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"))
-                .stream().filter(Campaign::isActive).collect(Collectors.toMap(Campaign::getName, Campaign::getLandingUrl)));
+        List<Campaign> associatedCampaigns = campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"));
+        if (associatedCampaigns != null) {
+            builder.campaignNamesUrls(associatedCampaigns
+                .stream().filter(Campaign::isActiveWithUrl).collect(Collectors.toMap(Campaign::getName, Campaign::getLandingUrl)));
+        }
 
         // or for campaign, extract somehow
         Group group = groupRepository.findOneByUid(groupUid);
@@ -188,6 +192,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private void wireUpFilters(BroadcastComponents bc, Broadcast broadcast) {
+        if (!StringUtils.isEmpty(bc.getFilterNamePhoneOrEmail()))
+            broadcast.setNameFilter(bc.getFilterNamePhoneOrEmail());
+
         if (bc.getProvinces() != null && !bc.getProvinces().isEmpty())
             broadcast.setProvinces(bc.getProvinces());
 
@@ -404,16 +411,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         JoinDateCondition joinDateCondition = bc.getJoinDateCondition().orElse(null);
         LocalDate joinDate = bc.getJoinDate().orElse(null);
 
-        boolean filtersPresent = !bc.getTaskTeams().isEmpty() || !bc.getProvinces().isEmpty() || !bc.getTaskTeams().isEmpty()
-                || !bc.getTopics().isEmpty() || !bc.getAffiliations().isEmpty() || !bc.getJoinMethods().isEmpty() || joinDate != null;
-        log.info("do we have filters? : {}, taskTeamUids = {}, all tags: {}", filtersPresent, taskTeamUids, bc.getTagList());
-
-
         List<Membership> membersToReceive;
 
-        if (filtersPresent) {
+        if (bc.hasFilter()) {
             membersToReceive = groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(), provinceResrictions, taskTeamUids,
-                    topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition, null);
+                    topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition, bc.getNamePhoneEmailFilter());
         } else if (bc.hasTask()) {
             membersToReceive = taskBroker.fetchMembersAssignedToTask(bc.getCreatedByUser().getUid(),
                     bc.getTaskUid(), bc.getTaskType(), bc.taskOnlyPositive());
@@ -426,6 +428,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         if (bc.hasEmail()) {
             Set<User> emailUsers = membersToReceive.stream().map(Membership::getUser)
                     .filter(User::hasEmailAddress).collect(Collectors.toSet());
+            log.info("broadcast has an email, sending it to {} users", emailUsers.size());
             handleBroadcastEmails(bc, groupLog, emailUsers, bundle);
         }
 

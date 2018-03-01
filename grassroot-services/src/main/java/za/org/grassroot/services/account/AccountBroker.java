@@ -91,4 +91,9 @@ public interface AccountBroker {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void setAccountVisibility(String adminUid, String accountUid, boolean visible);
 
+    void modifyAccount(String adminUid, String accountUid, AccountType accountType,
+                       String accountName, String billingEmail, AccountBillingCycle billingCycle);
+
+    void closeAccountRest(String userUid, String accountUid, boolean generateClosingBill);
+
 }

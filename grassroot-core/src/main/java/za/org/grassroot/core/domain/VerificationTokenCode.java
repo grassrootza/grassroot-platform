@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import lombok.extern.slf4j.Slf4j;
 import za.org.grassroot.core.enums.VerificationCodeType;
 
 import javax.persistence.*;
@@ -10,7 +11,7 @@ import java.util.Objects;
 /**
  * @author Lesetse Kimwaga
  */
-@Entity
+@Entity @Slf4j
 @Table(name = "verification_token_code")
 public class VerificationTokenCode {
 
@@ -34,7 +35,7 @@ public class VerificationTokenCode {
     private Instant expiryDateTime;
 
     @Column(name = "token_access_attempts")
-    private int tokenAccessAttempts = 1;
+    private int tokenAccessAttempts = 0;
 
     @Column(name = "token_type", nullable = false)
     @Enumerated(EnumType.STRING)
@@ -76,10 +77,11 @@ public class VerificationTokenCode {
     public void setExpiryDateTime(Instant expiryDateTime) { this.expiryDateTime = expiryDateTime; }
 
     public void incrementTokenAttempts() {
-       this.tokenAccessAttempts = tokenAccessAttempts + 1;
+       this.tokenAccessAttempts = this.tokenAccessAttempts + 1;
        if (this.tokenAccessAttempts > MAX_TOKEN_ACCESS_ATTEMPTS) {
            this.setExpiryDateTime(Instant.now());
        }
+       log.info("token code {}, access attempts now = {}", this.code, this.tokenAccessAttempts);
     }
 
     public VerificationCodeType getType() {
