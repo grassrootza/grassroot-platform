@@ -4,29 +4,35 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.dto.group.PublicGroupDTO;
 import za.org.grassroot.core.dto.task.PublicMeetingDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.services.group.GroupFetchBroker;
-import za.org.grassroot.services.group.GroupJoinRequestService;
-import za.org.grassroot.services.group.GroupLocationFilter;
-import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.group.*;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -40,6 +46,7 @@ public class SearchController extends BaseRestController {
     private final EventBroker eventBroker;
     private final GeoLocationBroker geoLocationBroker;
     private final GroupJoinRequestService groupJoinRequestService;
+    private final GroupBroker groupBroker;
 
     @Autowired
     public SearchController(TaskBroker taskBroker,
@@ -47,6 +54,7 @@ public class SearchController extends BaseRestController {
                             GroupFetchBroker groupFetchBroker,
                             EventBroker eventBroker,
                             GeoLocationBroker geoLocationBroker,
+                            GroupBroker groupBroker,
                             GroupJoinRequestService groupJoinRequestService,
                             JwtService jwtService,
                             UserManagementService userManagementService){
@@ -57,6 +65,7 @@ public class SearchController extends BaseRestController {
         this.eventBroker = eventBroker;
         this.geoLocationBroker = geoLocationBroker;
         this.groupJoinRequestService = groupJoinRequestService;
+        this.groupBroker = groupBroker;
     }
 
     @RequestMapping(value = "/tasks/user", method = RequestMethod.GET)
@@ -73,6 +82,11 @@ public class SearchController extends BaseRestController {
     @ApiOperation(value = "User groups using search term")
     public ResponseEntity<List<GroupFullDTO>> searchForUserGroupsByTerm(@RequestParam String searchTerm,
                                                                         HttpServletRequest request){
+        if(checkNumbers(searchTerm) != null){
+            log.info("Ke nnete monna eso................");
+        }else{
+            log.info("Metswako......................");
+        }
         final String userUid = getUserIdFromRequest(request);
         List<Group> groups = groupQueryBroker.searchUsersGroups(userUid,searchTerm,false);
         log.info("group names: {}", groups.stream().map(Group::getName).collect(Collectors.joining(", ")));
@@ -119,5 +133,43 @@ public class SearchController extends BaseRestController {
         return ResponseEntity.ok(new GroupJoinRequestDTO(groupJoinRequestService.loadRequest(joinRequestUid), getUserFromRequest(request)));
     }
 
+    @RequestMapping(value = "/group/join", method = RequestMethod.POST)
+    @ApiOperation(value = "Adds a member to a group using join code")
+    public ResponseEntity<ResponseWrapper> addMemberWithJoinCode(@RequestParam String joinCode,
+                                                                 @RequestParam String groupUid,
+                                                                 HttpServletRequest request){
+        try{
+            groupBroker.addMemberViaJoinCode(getUserIdFromRequest(request),groupUid,joinCode, UserInterfaceType.WEB);
+            return new ResponseEntity<ResponseWrapper>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS),HttpStatus.OK);
+        }catch (Exception e){
+            return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEMBER_ALREADY_SET);
+        }
+    }
 
+
+    @RequestMapping(value = "/group",method = RequestMethod.GET)
+    @ApiOperation(value = "Searches for a group and returns ref DTO")
+    public ResponseEntity<GroupRefDTO> findGroup(@RequestParam String joinCode){
+        ResponseEntity<GroupRefDTO> dtoResponseEntity;
+        Optional<Group> groupByToken = groupQueryBroker.findGroupFromJoinCode(joinCode);
+        if(groupByToken.isPresent()){
+            GroupRefDTO groupRefDTO = new GroupRefDTO(groupByToken.get().getUid(),
+                    groupByToken.get().getGroupName(),groupByToken.get().getMembers().size());
+            log.info("Group ref.............",groupRefDTO);
+            return ResponseEntity.ok(groupRefDTO);
+        }else{
+            return null;
+        }
+    }
+
+    private String checkNumbers(String searchTerm){
+        String code = null;
+        if(searchTerm.matches("[0-9]+") && searchTerm.length() == 4){
+            log.info("Is digits only and length is four.....................");
+            code = searchTerm;
+        }else if(searchTerm.length() == 15 && searchTerm.contains("*") && searchTerm.contains("#")){
+            code = searchTerm.substring(searchTerm.lastIndexOf("*") + 1,searchTerm.indexOf("#"));
+        }
+        return code;
+    }
 }
