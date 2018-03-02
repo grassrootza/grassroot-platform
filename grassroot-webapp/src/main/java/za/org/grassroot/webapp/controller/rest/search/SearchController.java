@@ -82,11 +82,6 @@ public class SearchController extends BaseRestController {
     @ApiOperation(value = "User groups using search term")
     public ResponseEntity<List<GroupFullDTO>> searchForUserGroupsByTerm(@RequestParam String searchTerm,
                                                                         HttpServletRequest request){
-        if(checkNumbers(searchTerm) != null){
-            log.info("Ke nnete monna eso................");
-        }else{
-            log.info("Metswako......................");
-        }
         final String userUid = getUserIdFromRequest(request);
         List<Group> groups = groupQueryBroker.searchUsersGroups(userUid,searchTerm,false);
         log.info("group names: {}", groups.stream().map(Group::getName).collect(Collectors.joining(", ")));
@@ -160,16 +155,5 @@ public class SearchController extends BaseRestController {
         }else{
             return null;
         }
-    }
-
-    private String checkNumbers(String searchTerm){
-        String code = null;
-        if(searchTerm.matches("[0-9]+") && searchTerm.length() == 4){
-            log.info("Is digits only and length is four.....................");
-            code = searchTerm;
-        }else if(searchTerm.length() == 15 && searchTerm.contains("*") && searchTerm.contains("#")){
-            code = searchTerm.substring(searchTerm.lastIndexOf("*") + 1,searchTerm.indexOf("#"));
-        }
-        return code;
     }
 }
