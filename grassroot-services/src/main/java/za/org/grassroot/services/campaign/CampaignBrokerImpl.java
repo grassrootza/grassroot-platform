@@ -15,6 +15,8 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.*;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
+import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.notification.CampaignSharingNotification;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
@@ -150,6 +152,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Set<String> campaignCodes = campaignRepository.fetchAllActiveCampaignCodes();
         campaignCodes.addAll(SYSTEM_CODES);
         return campaignCodes;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isCodeTaken(String proposedCode) {
+        return campaignRepository.countByCampaignCodeAndEndDateTimeAfter(proposedCode, Instant.now()) > 0;
     }
 
     @Override
@@ -470,6 +478,18 @@ public class CampaignBrokerImpl implements CampaignBroker {
         log.info("user = {}, campaign = {}", user, campaign);
         validateUserCanModifyCampaign(user, campaign);
 
+    }
+
+    @Override
+    @Transactional
+    public void setCampaignImage(String userUid, String campaignUid, String mediaFileKey) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+
+        validateUserCanModifyCampaign(user, campaign);
+
+        MediaFileRecord record = mediaFileBroker.load(MediaFunction.CAMPAIGN_IMAGE, mediaFileKey);
+        campaign.setCampaignImage(record);
     }
 
     private Campaign getCampaignByCampaignCode(String campaignCode){

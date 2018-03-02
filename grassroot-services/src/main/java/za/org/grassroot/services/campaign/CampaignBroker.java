@@ -34,6 +34,8 @@ public interface CampaignBroker {
 
     Set<String> getActiveCampaignCodes();
 
+    boolean isCodeTaken(String proposedCode);
+
     Set<String> getActiveCampaignJoinTopics();
 
     void signPetition(String campaignUid, String userUid, UserInterfaceType channel);
@@ -64,5 +66,7 @@ public interface CampaignBroker {
                                  Set<CampaignMessageDTO> sharingMessages);
 
     void changeCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessageDTO> revisedMessages);
+
+    void setCampaignImage(String userUid, String campaignUid, String mediaFileKey);
 
 }

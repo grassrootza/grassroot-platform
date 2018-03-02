@@ -52,6 +52,31 @@ public class IncomingImageFetchController {
         return new ResponseEntity<>(data, headers, HttpStatus.OK);
     }
 
+    @RequestMapping("/{mediaFunction}/{imageKey}")
+    public ResponseEntity<byte[]> fetchImage(@PathVariable MediaFunction mediaFunction,
+                                             @PathVariable String imageKey) throws IOException {
+        MediaFileRecord record = mediaFileBroker.load(mediaFunction, imageKey);
+        log.info("record retrieved: {}", record);
+        return convertRecordToResponse(record);
+    }
+
+    private ResponseEntity<byte[]> convertRecordToResponse(MediaFileRecord record) throws IOException {
+        File imageFile = storageBroker.fetchFileFromRecord(record);
+        byte[] data = IOUtils.toByteArray(new FileInputStream(imageFile));
+        HttpHeaders headers = new HttpHeaders();
+        try {
+            headers.setContentType(MediaType.parseMediaType(record.getMimeType()));
+        } catch (InvalidMediaTypeException e) {
+            log.info("error processing mime type, record has: {}", record.getMimeType());
+            log.error("couldn't set MIME heading ...", e);
+        }
+        String filename = "image-" + record.getKey() + "." + record.getMimeType();
+        log.info("file name : ", filename);
+        headers.setContentDispositionFormData(filename, filename);
+        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+        return new ResponseEntity<>(data, headers, HttpStatus.OK);
+    }
+
     @ExceptionHandler(IOException.class)
     public ResponseEntity noImageResponse(IOException e) {
         log.error("IO Exception in image fetching: ", e);

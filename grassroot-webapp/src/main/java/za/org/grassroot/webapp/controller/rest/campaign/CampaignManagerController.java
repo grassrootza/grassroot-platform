@@ -221,6 +221,13 @@ public class CampaignManagerController extends BaseRestController {
         return ResponseEntity.ok(campaignBroker.getActiveCampaignCodes());
     }
 
+    @RequestMapping(value = "/codes/check", method = RequestMethod.GET)
+    @ApiOperation(value = "Check if a campaign code is available")
+    public Boolean isCodeAvailable(@RequestParam String code) {
+        log.debug("is this code available: {}", code);
+        return !campaignBroker.isCodeTaken(code);
+    }
+
     @RequestMapping(value = "/messages/set/{campaignUid}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "add a set of messages to a campaign")
     public ResponseEntity addCampaignMessages(HttpServletRequest request, @PathVariable String campaignUid,
@@ -233,6 +240,15 @@ public class CampaignManagerController extends BaseRestController {
         log.info("campaign messages received: {}", campaignMessages);
         Campaign updatedCampaign = campaignBroker.setCampaignMessages(getUserIdFromRequest(request), campaignUid, campaignMessages);
         return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign));
+    }
+
+    @RequestMapping(value = "/update/image/{campaignUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "update the image for the campaign")
+    public ResponseEntity updateCampaignImage(HttpServletRequest request, @PathVariable String campaignUid,
+                                              @RequestParam String mediaFileUid) {
+        campaignBroker.setCampaignImage(getUserIdFromRequest(request), campaignUid, mediaFileUid);
+        clearCaches(campaignUid, getUserIdFromRequest(request), null);
+        return ResponseEntity.ok().build();
     }
 
     @RequestMapping(value = "/update/settings/{campaignUid}", method = RequestMethod.POST)
@@ -294,9 +310,12 @@ public class CampaignManagerController extends BaseRestController {
     }
 
     private void clearCaches(String campaignUid, String userUid, String groupUid) {
-        fullCampaignsCache.remove(campaignUid);
-        userCampaignsCache.remove(userUid);
-        groupCampaignsCache.remove(groupUid);
+        if (campaignUid != null)
+            fullCampaignsCache.remove(campaignUid);
+        if (userUid != null)
+            userCampaignsCache.remove(userUid);
+        if (groupUid != null)
+            groupCampaignsCache.remove(groupUid);
     }
 
     private List<RestValidationMessage> getFieldValidationErrors(List<FieldError> errors) {

@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.media;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -14,7 +15,7 @@ import java.util.Objects;
 @Table(name = "media_file", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"bucket", "key"}, name="uk_media_file_bucket_key")
 })
-public class MediaFileRecord {
+public class MediaFileRecord implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -6,11 +6,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.repository.MediaFileRecordRepository;
 import za.org.grassroot.integration.storage.StorageBroker;
+
+import java.util.Objects;
 
 @Service
 public class MediaFileBrokerImpl implements MediaFileBroker {
@@ -50,34 +53,32 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
 
     @Override
     public boolean doesFileExist(MediaFunction function, String imageKey) {
-        return recordRepository.findByBucketAndKey(getBucketForFunction(function), imageKey) != null;
+        return imageKey != null && recordRepository.findByBucketAndKey(getBucketForFunction(function), imageKey) != null;
     }
 
     @Override
     @Transactional
     public String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey) {
-        logger.info("Media function:{}",function);
-        logger.info("storing a file, with content type: {}, passed mime type: {}, original name: {}",
-                file.getContentType(), mimeType, file.getOriginalFilename());
+        String bucket = getBucketForFunction(Objects.requireNonNull(function));
 
-        String bucket = getBucketForFunction(function);
-        logger.info("Bucket.....{}",bucket);
+        logger.info("storing a file, with function {}, bucket {}, content type: {}, passed mime type: {}, original name: {}",
+                function, file.getContentType(), mimeType, file.getOriginalFilename());
+
         MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
+        String contentType = StringUtils.isEmpty(mimeType) ? file.getContentType() : mimeType;
         if (record == null)
-            record = new MediaFileRecord(bucket, mimeType, imageKey);
+            record = new MediaFileRecord(bucket, contentType, imageKey);
 
-        logger.info("created media record ...");
-
-        try{
-            storageBroker.storeMedia(record, file);
-        }catch (SdkClientException e){
-            logger.info("SDK exception ...",e.getMessage());
+        boolean fileStored = false;
+        try {
+            fileStored = storageBroker.storeMedia(record, file);
+        } catch (SdkClientException e){
+            logger.error("AWS SDK exception storing file ...",e.getMessage());
         }
 
-        if (storageBroker.storeMedia(record, file)) {
-            record.setMimeType(mimeType);
+        if (fileStored) {
             logger.info("media record stored and has mime type");
-            recordRepository.save(record);
+            record = recordRepository.save(record);
             return record.getUid();
         } else {
             logger.error("Error storing media file, returning null");
@@ -94,6 +95,8 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
             case USER_PROFILE_IMAGE:
                 return defaultMediaBucket;
             case BROADCAST_IMAGE:
+                return defaultMediaBucket;
+            case CAMPAIGN_IMAGE:
                 return defaultMediaBucket;
             default:
                 return defaultMediaBucket;

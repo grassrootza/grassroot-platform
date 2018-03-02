@@ -17,6 +17,7 @@
            eternal="false"
            timeToIdleSeconds="3600">
     </cache>
+
     <cache name="user_language"
            maxEntriesLocalHeap="2000"
            eternal="false"
@@ -33,6 +34,11 @@
            eternal="false"
            timeToIdleSeconds="3600">
     </cache>
+
+    <cache name="public_activity_logs"
+           maxEntriesLocalHeap="100"
+           eternal="false"
+           timeToLiveSeconds="60" />
 
     <cache name="group_stats_member_count"
            maxEntriesLocalHeap="2000"

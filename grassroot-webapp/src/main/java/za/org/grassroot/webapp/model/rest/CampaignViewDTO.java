@@ -50,6 +50,8 @@ public class CampaignViewDTO {
     private long smsSharingBudget;
     private long smsSharingCost;
 
+    private String campaignImageKey;
+
     private CampaignViewDTO(String campaignUid, String campaignName, String campaignDescription, CampaignType campaignType,
                            String createUserUid, String createUserName, Instant createdDateTime,
                            Instant campaignStartDate, Instant campaignEndDate, String campaignUrl, String campaignCode, List<String> campaignTags){
@@ -98,6 +100,10 @@ public class CampaignViewDTO {
         if(!campaign.getCampaignMessages().isEmpty()){
             this.campaignMessages = groupCampaignMessages(campaign);
             log.info("campaign DTO message list: {}", campaign.getCampaignMessages());
+        }
+
+        if (campaign.getCampaignImage() != null) {
+            this.campaignImageKey = campaign.getCampaignImage().getUid();
         }
     }
 

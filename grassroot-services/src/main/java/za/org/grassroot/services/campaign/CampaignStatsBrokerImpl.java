@@ -93,7 +93,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         Cache cache = getStatsCache(GROWTH_CACHE);
 
         final String cacheKey = campaignUid + "-" + year + "-" + month;
-        if (cache.isKeyInCache(cacheKey)) {
+        if (cache.isKeyInCache(cacheKey) && cache.get(cacheKey).getObjectValue() != null) {
             return (Map<String, Integer>) cache.get(cacheKey).getObjectValue();
         }
 
