@@ -32,6 +32,7 @@ public class Broadcast implements GrassrootEntity, TagHolder {
 
     public static final int MAX_MESSAGES = 3;
 
+    private static final String NAME_FILTER_PREFIX = "NAME_FILTER:";
     private static final String PROVINCE_PREFIX = "PROVINCE:";
     private static final String TASK_TEAM_PREFIX = "TASK_TEAM:";
     private static final String AFFIL_PREFIX = "AFFILIATION:";
@@ -252,7 +253,7 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     }
 
     public boolean hasFilter() {
-        return !getTaskTeams().isEmpty() || !getProvinces().isEmpty() || !getTaskTeams().isEmpty()
+        return !StringUtils.isEmpty(getNamePhoneEmailFilter()) || !getTaskTeams().isEmpty() || !getProvinces().isEmpty() || !getTaskTeams().isEmpty()
                 || !getTopics().isEmpty() || !getAffiliations().isEmpty() || !getJoinMethods().isEmpty() || getJoinDateCondition().isPresent();
     }
 
@@ -284,6 +285,15 @@ public class Broadcast implements GrassrootEntity, TagHolder {
 
     private Stream<String> getFilterEntitiesFromTag(String prefix) {
         return getTagList().stream().filter(s -> s.startsWith(prefix)).map(s -> s.substring(prefix.length()));
+    }
+
+    public String getNamePhoneEmailFilter() {
+        return getTagList().stream().filter(s -> s.startsWith(NAME_FILTER_PREFIX))
+                .map(s -> s.substring(NAME_FILTER_PREFIX.length())).findFirst().orElse(null);
+    }
+
+    public void setNameFilter(String namePhoneOrEmail) {
+        setFilterEntities(NAME_FILTER_PREFIX, Stream.of(namePhoneOrEmail));
     }
 
     public void setProvinces(Collection<Province> provinces) {

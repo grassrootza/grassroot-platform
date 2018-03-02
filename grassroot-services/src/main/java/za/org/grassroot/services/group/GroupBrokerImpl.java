@@ -179,6 +179,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         storeBundleAfterCommit(bundle);
 
+        logger.info("returning group now ... group has {} members", group.getMemberships().size());
+
         return group;
     }
 
