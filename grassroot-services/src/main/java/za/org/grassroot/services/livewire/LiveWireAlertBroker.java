@@ -82,4 +82,6 @@ public interface LiveWireAlertBroker {
 
     List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, int radius, GeographicSearchType searchType);
 
+    Page<LiveWireAlert> findPublicAlerts(Pageable pageRequest);
+
 }

@@ -6,6 +6,7 @@ public enum MediaFunction {
     LIVEWIRE_MEDIA,
     USER_PROFILE_IMAGE,
     BROADCAST_IMAGE,
+    CAMPAIGN_IMAGE,
     GENERAL_UNKNOWN
 
 }

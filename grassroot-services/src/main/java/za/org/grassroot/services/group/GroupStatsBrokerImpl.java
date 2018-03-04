@@ -278,15 +278,40 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     }
 
     @Override
-    public Map<String, Integer> getTopicInterestStats(String groupUid) {
+    public Map<String, Integer> getTopicInterestStatsPercentage(String groupUid) {
+        Map<String, Integer> topicInterests = new HashMap<>(getTopicInterestStats(groupUid, false));
+
+        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+
+        double membersCount = memberships.size();
+        topicInterests.entrySet().forEach(entry -> {
+            if (membersCount > 0)
+                entry.setValue((int) (100 * entry.getValue() / membersCount));
+            else entry.setValue(0);
+        });
+
+        return topicInterests;
+    }
+
+    @Override
+    public Map<String, Integer> getTopicInterestStatsRaw(String groupUid, Boolean clearCache) {
+        return getTopicInterestStats(groupUid, clearCache);
+    }
+
+    private Map<String, Integer> getTopicInterestStats(String groupUid, Boolean clearCache) {
 
         Cache cache = cacheManager.getCache("group_stats_topic_interests");
         String cacheKey = groupUid;
         Element element = cache.get(cacheKey);
         Map<String, Integer> resultFromCache = element != null ? (Map<String, Integer>) element.getObjectValue() : null;
 
-        if (resultFromCache != null)
-            return resultFromCache;
+        if(clearCache) {
+            cache.remove(cacheKey);
+        }else {
+            if (resultFromCache != null)
+                return resultFromCache;
+        }
+
 
         List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
 
@@ -299,17 +324,11 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
             }
         }
 
-        double membersCount = memberships.size();
-        topicInterests.entrySet().forEach(entry -> {
-            if (membersCount > 0)
-                entry.setValue((int) (100 * entry.getValue() / membersCount));
-            else entry.setValue(0);
-        });
-
         cache.put(new Element(cacheKey, topicInterests));
 
         return topicInterests;
     }
+
 
 }
 

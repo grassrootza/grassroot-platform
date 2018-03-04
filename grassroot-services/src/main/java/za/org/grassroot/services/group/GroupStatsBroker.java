@@ -16,6 +16,8 @@ public interface GroupStatsBroker {
 
     Map<String, Integer> getMemberDetailsStats(String groupUid);
 
-    Map<String, Integer> getTopicInterestStats(String groupUid);
+    Map<String, Integer> getTopicInterestStatsPercentage(String groupUid);
+
+    Map<String, Integer> getTopicInterestStatsRaw(String groupUid, Boolean clearCache);
 
 }

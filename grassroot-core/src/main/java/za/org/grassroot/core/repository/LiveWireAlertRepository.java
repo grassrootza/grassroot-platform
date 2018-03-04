@@ -4,8 +4,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -20,6 +22,9 @@ public interface LiveWireAlertRepository extends JpaRepository<LiveWireAlert, Lo
     Page<LiveWireAlert> findByCompleteTrue(Pageable pageable);
 
     Page<LiveWireAlert> findByCompleteTrueAndReviewedFalse(Pageable pageable);
+
+    Page<LiveWireAlert> findByCompleteTrueAndReviewedTrueAndDestinationTypeIn(Collection<LiveWireAlertDestType> destTypes,
+                                                                              Pageable pageable);
 
     long countByCreationTimeBetween(Instant start, Instant end);
 

@@ -17,7 +17,7 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long>, JpaSp
     Campaign findOneByUid(String uid);
 
     Campaign findByCampaignCodeAndEndDateTimeAfter(String campaignCode, Instant date);
-    Campaign findByNameAndEndDateTimeAfter(String campaignName, Instant date);
+    long countByCampaignCodeAndEndDateTimeAfter(String campaignCode, Instant date);
 
     List<Campaign> findByCreatedByUser(User createdByUser, Sort sort);
 
