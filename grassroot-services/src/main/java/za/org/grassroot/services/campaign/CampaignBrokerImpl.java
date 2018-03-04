@@ -373,8 +373,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         validateUserCanModifyCampaign(user, campaign);
 
-        log.info("campaign account: ", campaign.getAccount());
-
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         if (!StringUtils.isEmpty(name) && !campaign.getName().trim().equalsIgnoreCase(name)) {
             campaign.setName(name);
@@ -399,6 +397,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
                 campaign.setEndDateTime(endDate);
                 bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_END_CHANGED, campaign, null, endDate.toString()));
             } else {
+                log.info("campaign inactive, reactivating with end date: ", endDate);
                 bundle.addLog(reactivateCampaign(campaign, user, endDate, newCode));
             }
         }
@@ -432,6 +431,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             campaign.setCampaignCode(null);
         }
 
+        log.info("reactivating campaign, with new end date: {}", newEndDate);
         campaign.setEndDateTime(newEndDate);
 
         return new CampaignLog(user, CampaignLogType.CAMPAIGN_REACTIVATED, campaign, null, newEndDate + ";" + newCode);
