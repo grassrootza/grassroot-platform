@@ -512,6 +512,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         User user = userManager.load(Objects.requireNonNull(userUid));
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
 
+        log.info("user = {}, campaign = {}", user, campaign);
         validateUserCanModifyCampaign(user, campaign);
 
         MediaFileRecord record = mediaFileBroker.load(MediaFunction.CAMPAIGN_IMAGE, mediaFileKey);
