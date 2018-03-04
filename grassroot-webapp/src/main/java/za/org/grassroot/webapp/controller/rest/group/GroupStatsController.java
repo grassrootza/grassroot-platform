@@ -66,7 +66,12 @@ public class GroupStatsController extends BaseRestController {
     @RequestMapping(value = "/topic-interests")
     @ApiOperation("Returns percents of users interested in specific topic")
     public Map<String, Integer> getTopicInterestStats(String groupUid) {
-        return groupStatsBroker.getTopicInterestStats(groupUid);
+        return groupStatsBroker.getTopicInterestStatsPercentage(groupUid);
     }
 
+    @RequestMapping(value = "/raw-topic-interests")
+    @ApiOperation("Returns raw number of users interested in specific topic")
+    public Map<String, Integer> getRawTopicInterestStats(String groupUid) {
+        return groupStatsBroker.getTopicInterestStatsRaw(groupUid, false);
+    }
 }
