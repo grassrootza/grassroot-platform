@@ -38,7 +38,7 @@ public class CampaignRepositoryTest {
     @Test
     public void testCreateCampaign(){
         User user = userRepository.save(new User("3456", null, null));
-        Campaign campaign = campaignRepository.saveAndFlush(new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION,null));
+        Campaign campaign = campaignRepository.saveAndFlush(new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION,null, null));
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getUid());
         Assert.assertNotNull(campaign.getCreatedDateTime());
@@ -52,7 +52,7 @@ public class CampaignRepositoryTest {
     @Test
     public void testCampaignMessages(){
         User user = userRepository.save(new User("3456", null, null));
-        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION, null);
+        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION, null, null);
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage(user, campaign, CampaignActionType.OPENING, "testing_123", Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL);
         messageSet.add(campaignMessage);
@@ -69,7 +69,7 @@ public class CampaignRepositoryTest {
         List<String> tags = new ArrayList<>();
         tags.add("braamfontein");
         User user = userRepository.save(new User("3456", null, null));
-        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX, CampaignType.INFORMATION, null);
+        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX, CampaignType.INFORMATION, null, null);
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage(user, campaign, CampaignActionType.OPENING, "testing_123", Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL);
         messageSet.add(campaignMessage);

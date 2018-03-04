@@ -46,7 +46,7 @@ public class IncomingImageFetchController {
             log.error("couldn't set MIME heading ...", e);
         }
         String filename = "image-" + mediaFileKey + "." + record.getMimeType();
-        log.info("file name : ", filename);
+        log.debug("file name : {}", filename);
         headers.setContentDispositionFormData(filename, filename);
         headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
         return new ResponseEntity<>(data, headers, HttpStatus.OK);
@@ -71,7 +71,7 @@ public class IncomingImageFetchController {
             log.error("couldn't set MIME heading ...", e);
         }
         String filename = "image-" + record.getKey() + "." + record.getMimeType();
-        log.info("file name : ", filename);
+        log.debug("file name : {}", filename);
         headers.setContentDispositionFormData(filename, filename);
         headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
         return new ResponseEntity<>(data, headers, HttpStatus.OK);

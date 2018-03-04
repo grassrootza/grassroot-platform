@@ -28,8 +28,8 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
-import za.org.grassroot.services.exception.CampaignNotFoundException;
 import za.org.grassroot.services.exception.GroupNotFoundException;
+import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -156,7 +156,16 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean isCodeTaken(String proposedCode) {
+    public boolean isCodeTaken(String proposedCode, String campaignUid) {
+        Objects.requireNonNull(proposedCode);
+        if (campaignUid != null) {
+            Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+            log.info("well, we're looking for campaign, it has code = {}, proposed = {}, is active = {}",
+                    campaign.getCampaignCode(), proposedCode, campaign.isActive());
+            if (campaign.isActive() && proposedCode.equals(campaign.getCampaignCode())) {
+                return false; // because it's not taken by another campaign
+            }
+        }
         return campaignRepository.countByCampaignCodeAndEndDateTimeAfter(proposedCode, Instant.now()) > 0;
     }
 
@@ -240,11 +249,15 @@ public class CampaignBrokerImpl implements CampaignBroker {
             throw new GroupNotFoundException();
         }
 
-        Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate,campaignType, url);
+        if (user.getPrimaryAccount() == null) {
+            throw new NoPaidAccountException();
+        }
+
+        Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate,campaignType, url, user.getPrimaryAccount());
         newCampaign.setMasterGroup(masterGroup);
 
         if(joinTopics != null && !joinTopics.isEmpty()){
-            newCampaign.setJoinTopics(joinTopics.stream().map(String::trim).collect(Collectors.toSet()));
+            newCampaign.setJoinTopics(joinTopics.stream().map(String::trim).collect(Collectors.toList()));
             log.info("set campaign join topics ... {}", newCampaign.getJoinTopics());
         }
 
@@ -338,29 +351,29 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Override
     @Transactional
     public Campaign updateMasterGroup(String campaignUid, String groupUid, String userUid){
-        Objects.requireNonNull(campaignUid);
-        Objects.requireNonNull(groupUid);
-        Group group = groupBroker.load(groupUid);
-        User user = userManager.load(userUid);
-        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-        if(group != null && campaign != null){
-            campaign.setMasterGroup(group);
-            Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
-            CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_LINKED_GROUP,campaign, null,
-                    groupUid);
-            persistCampaignLog(campaignLog);
-            return updatedCampaign;
+        Group group = groupBroker.load(Objects.requireNonNull(groupUid));
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+
+        if (group == null) {
+            throw new IllegalArgumentException("Error! Group to set as master group cannot be null");
         }
-        LOG.error("No Campaign found for code = {}" + campaignUid);
-        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
+
+        campaign.setMasterGroup(group);
+        Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
+        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_LINKED_GROUP,campaign, null, groupUid);
+        persistCampaignLog(campaignLog);
+        return updatedCampaign;
     }
 
     @Override
     @Transactional
-    public void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid, Instant endDate, String landingUrl, String petitionApi) {
+    public void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid, boolean removeImage, Instant endDate, String newCode, String landingUrl, String petitionApi, List<String> joinTopics) {
         User user = userManager.load(Objects.requireNonNull(userUid));
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         validateUserCanModifyCampaign(user, campaign);
+
+        log.info("campaign account: ", campaign.getAccount());
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         if (!StringUtils.isEmpty(name) && !campaign.getName().trim().equalsIgnoreCase(name)) {
@@ -376,12 +389,18 @@ public class CampaignBrokerImpl implements CampaignBroker {
         if (!StringUtils.isEmpty(mediaFileUid)) {
             campaign.setCampaignImage(mediaFileBroker.load(mediaFileUid));
             bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_IMG_CHANGED, campaign, null, mediaFileUid));
+        } else if (removeImage) {
+            campaign.setCampaignImage(null);
+            bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_IMG_REMOVED, campaign, null, null));
         }
 
         if (endDate != null) {
-            campaign.setEndDateTime(endDate);
-            bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_END_CHANGED, campaign, null,
-                    endDate.toString()));
+            if (campaign.isActive()) {
+                campaign.setEndDateTime(endDate);
+                bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_END_CHANGED, campaign, null, endDate.toString()));
+            } else {
+                bundle.addLog(reactivateCampaign(campaign, user, endDate, newCode));
+            }
         }
 
         if (!Objects.equals(landingUrl, campaign.getLandingUrl()) || !Objects.equals(petitionApi, campaign.getPetitionApi())) {
@@ -391,17 +410,17 @@ public class CampaignBrokerImpl implements CampaignBroker {
                     landingUrl + "; " + petitionApi));
         }
 
+        if (joinTopics != null) {
+            campaign.setJoinTopics(joinTopics);
+        }
+
+        log.info("campaign still has account? {}", campaign.getAccount());
+
         AfterTxCommitTask task = () -> logsAndNotificationsBroker.storeBundle(bundle);
         eventPublisher.publishEvent(task);
     }
 
-    @Override
-    @Transactional
-    public void reactivateCampaign(String userUid, String campaignUid, Instant newEndDate, String newCode) {
-        User user = userManager.load(Objects.requireNonNull(userUid));
-        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-        validateUserCanModifyCampaign(user, campaign);
-
+    private CampaignLog reactivateCampaign(Campaign campaign, User user, Instant newEndDate, String newCode) {
         if (campaign.isActive()) {
             throw new IllegalArgumentException("Error! Campaign already active");
         }
@@ -415,8 +434,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         campaign.setEndDateTime(newEndDate);
 
-        persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_REACTIVATED, campaign,
-                null, newEndDate + ";" + newCode));
+        return new CampaignLog(user, CampaignLogType.CAMPAIGN_REACTIVATED, campaign, null, newEndDate + ";" + newCode);
     }
 
     @Override
@@ -471,13 +489,21 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public void changeCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessageDTO> revisedMessages) {
+    public void updateCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessageDTO> revisedMessages) {
         User user = userManager.load(Objects.requireNonNull(userUid));
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
 
-        log.info("user = {}, campaign = {}", user, campaign);
         validateUserCanModifyCampaign(user, campaign);
 
+        CampaignType oldType = campaign.getCampaignType();
+        campaign.setCampaignType(newType);
+
+        if (revisedMessages != null && !revisedMessages.isEmpty()) {
+            setCampaignMessages(userUid, campaignUid, revisedMessages);
+        }
+
+        persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_TYPE_CHANGED, campaign, null,
+                "From: " + oldType + ", to = " + newType));
     }
 
     @Override

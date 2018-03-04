@@ -93,8 +93,9 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         Cache cache = getStatsCache(GROWTH_CACHE);
 
         final String cacheKey = campaignUid + "-" + year + "-" + month;
-        if (cache.isKeyInCache(cacheKey) && cache.get(cacheKey).getObjectValue() != null) {
-            return (Map<String, Integer>) cache.get(cacheKey).getObjectValue();
+        Map<String, Integer> cacheResult = nullSafeCheckCache(cache, cacheKey);
+        if (cacheResult != null) {
+            return cacheResult;
         }
 
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
@@ -161,8 +162,10 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
     public Map<String, Long> getCampaignConversionStats(String campaignUid) {
         Cache cache = getStatsCache(CURRENT_CACHE);
         final String cacheKey = campaignUid + "_engagement";
-        if (cache.isKeyInCache(cacheKey))
-            return (Map<String, Long>) cache.get(cacheKey).getObjectValue();
+        Map<String, Long> cacheResult = nullSafeCheckCache(cache, cacheKey);
+        if (cacheResult != null) {
+            return cacheResult;
+        }
 
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
 
@@ -189,8 +192,10 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
     public Map<String, Long> getCampaignChannelStats(String campaignUid) {
         Cache cache = getStatsCache(CURRENT_CACHE);
         final String cacheKey = campaignUid + "_channels";
-        if (cache.isKeyInCache(cacheKey))
-            return (Map<String, Long>) cache.get(cacheKey).getObjectValue();
+        Map<String, Long> cacheResult = nullSafeCheckCache(cache, cacheKey);
+        if (cacheResult != null) {
+            return cacheResult;
+        }
 
         // step 1: get all engagement logs
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
@@ -219,8 +224,10 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
     public Map<String, Long> getCampaignProvinceStats(String campaignUid) {
         Cache cache = getStatsCache(CURRENT_CACHE);
         final String cacheKey = campaignUid + "_provinces";
-        if (cache.isKeyInCache(cacheKey))
-            return (Map<String, Long>) cache.get(cacheKey).getObjectValue();
+        Map<String, Long> cacheResult = nullSafeCheckCache(cache, cacheKey);
+        if (cacheResult != null) {
+            return cacheResult;
+        }
 
         // step 1: get all users that have engaged
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
@@ -247,8 +254,10 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         Cache cache = getStatsCache(CURRENT_CACHE);
         final String cacheKey = campaignUid + "_activity_" + request.getDatasetDivision() + "_" + request.getTimePeriod();
         log.info("activity stats, cache key: {}", cacheKey);
-        if (cache.isKeyInCache(cacheKey))
-            return (Map<String, Object>) cache.get(cacheKey).getObjectValue();
+        Map<String, Object> cacheResult = nullSafeCheckCache(cache, cacheKey);
+        if (cacheResult != null) {
+            return cacheResult;
+        }
 
         // step 1 : get engagement logs that need dividing up, depending on time period
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
@@ -315,6 +324,16 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
             cacheManager.addCacheIfAbsent(statsCache);
         }
         return cacheManager.getCache(cacheName);
+    }
+
+    private <T> Map<String, T> nullSafeCheckCache(Cache cache, String cacheKey) {
+        try {
+            if (cache.isKeyInCache(cacheKey))
+                return (Map<String, T>) cache.get(cacheKey).getObjectValue();
+            return null;
+        } catch (NullPointerException e) {
+            return null;
+        }
     }
 
 }

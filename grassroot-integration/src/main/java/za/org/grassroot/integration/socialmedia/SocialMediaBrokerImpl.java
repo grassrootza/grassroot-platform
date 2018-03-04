@@ -107,7 +107,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         if (mockSocialMediaBroadcasts) {
             switch (providerId) {
                 case "facebook": return mockFbPages();
-//                case "twitter": return mockTwitterAccount();
+                case "twitter": return mockTwitterAccount();
                 default: return null;
             }
         } else {

@@ -506,7 +506,7 @@ public class Account implements GrassrootEntity, Serializable {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Account)) {
+        if (o == null || !(o instanceof Account)) {
             return false;
         }
 
