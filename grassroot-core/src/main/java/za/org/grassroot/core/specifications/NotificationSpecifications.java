@@ -65,8 +65,11 @@ public final class NotificationSpecifications {
             Join<Notification, TodoLog> todoLogJoin = root.join(Notification_.todoLog, JoinType.LEFT);
             Join<TodoLog, Todo> todoJoin = todoLogJoin.join(TodoLog_.todo, JoinType.LEFT);
             Join<Notification, AccountLog> accountLogJoin = root.join(Notification_.accountLog, JoinType.LEFT);
-            return cb.or(cb.or(cb.equal(eventJoin.get(Event_.ancestorGroup), group),
-                    cb.equal(todoJoin.get(Todo_.ancestorGroup), group)), cb.equal(accountLogJoin.get(AccountLog_.group), group));
+            Join<Notification, GroupLog> groupLogJoin = root.join(Notification_.groupLog, JoinType.LEFT);
+
+            return cb.or(cb.or(cb.or(cb.equal(eventJoin.get(Event_.ancestorGroup), group),
+                    cb.equal(todoJoin.get(Todo_.ancestorGroup), group)), cb.equal(accountLogJoin.get(AccountLog_.group), group)),
+                    cb.equal(groupLogJoin.get(GroupLog_.group), group));
         };
     }
 
