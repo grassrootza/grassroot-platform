@@ -93,8 +93,9 @@ public class LiveWireAlertCreateController extends BaseController {
     // jQuery file upload handles JSON better, so using that
     @RequestMapping("/image/add")
     public @ResponseBody UidNameDTO uploadImage(@RequestParam MultipartFile image) {
-        // todo: proper MIME type handling
-        final String mediaFileUid = mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, "image/jpeg", null);
+        logger.info("received a file, here is it's name: {}", image.getOriginalFilename());
+        final String mediaFileUid = mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, image.getContentType(),
+                null, image.getOriginalFilename());
         logger.info("stored image, returning UID = {}", mediaFileUid);
         return new UidNameDTO(mediaFileUid, "");
     }

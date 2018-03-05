@@ -37,7 +37,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAdjuster;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -155,7 +154,7 @@ public class BroadcastController extends BaseRestController {
     public ResponseEntity uploadImage(@RequestBody MultipartFile image) {
         // todo : rate limiting?
         log.info("do we have a file? : ", image);
-        String imageKey = mediaFileBroker.storeFile(image, MediaFunction.BROADCAST_IMAGE, image.getContentType(), null);
+        String imageKey = mediaFileBroker.storeFile(image, MediaFunction.BROADCAST_IMAGE, image.getContentType(), null, image.getName());
         return ResponseEntity.ok(imageKey);
     }
 
@@ -221,6 +220,8 @@ public class BroadcastController extends BaseRestController {
                     .message(request.getFacebookContent())
                     .linkUrl(request.getFacebookLink())
                     .linkName(request.getFacebookLinkCaption())
+                    .imageKey(request.getFacebookImageKey())
+                    .imageMediaType(MediaFunction.BROADCAST_IMAGE)
                     .build()
         ).collect(Collectors.toList());
     }
@@ -229,7 +230,8 @@ public class BroadcastController extends BaseRestController {
         return TwitterPostBuilder.builder()
                 .postingUserUid(userUid)
                 .message(request.getTwitterContent())
-                .imageKey(request.getTwitterLink())
+                .imageKey(request.getTwitterImageKey())
+                .imageMediaFunction(MediaFunction.BROADCAST_IMAGE)
                 .build();
     }
 

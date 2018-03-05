@@ -307,20 +307,16 @@ public class TaskBrokerImpl implements TaskBroker {
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, false);
 
 		List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameSearchTerm(user.getId(), tsQuery);
-		//Set<TaskDTO> taskDTOs = resolveEventTaskDtos(events, user, null);
 
         Set<TaskFullDTO> taskFullDtos = new HashSet<>();
         events.forEach(event -> taskFullDtos.add(new TaskFullDTO(event,user, event.getCreatedDateTime(), getUserResponse(event, user))));
 
         List<Todo> todos = todoBroker.searchUserTodos(userUid, searchTerm);
         todos.forEach(todo -> taskFullDtos.add(new TaskFullDTO(todo,user,todo.getDeadlineTime(),getUserResponse(todo,user))));
-		//Set<TaskDTO> todoTaskDTOs = resolveTodoTaskDtos(todos, user, null);
-		//taskDTOs.addAll(todoTaskDTOs);
 
 		List<TaskFullDTO> tasks = new ArrayList<>(taskFullDtos);
-		//Collections.sort(tasks);
-        Collections.sort(tasks, (o1, o2) -> ComparisonChain.start()
-                .compare(o1.getDeadlineMillis(), o2.getDeadlineMillis())
+        tasks.sort((o1, o2) -> ComparisonChain.start()
+                .compare(o2.getDeadlineMillis(), o1.getDeadlineMillis()) // for reverse order
                 .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
                 .result());
 		log.info("Searched for the term {} among all of user's tasks, took {} msecs", searchTerm, System.currentTimeMillis() - startTime);

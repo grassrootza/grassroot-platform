@@ -137,9 +137,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             throw new NoPaidAccountException();
         }
 
-        log.info("creating broadcast with Id: {}", bc.getBroadcastId());
+        // prepersist is not working as reliably as hoped (or is happening in wrong sequence), to generate this if blank, hence
+        final String uid = StringUtils.isEmpty(bc.getBroadcastId()) ? UIDGenerator.generateId() : bc.getBroadcastId();
+        log.info("creating broadcast, incoming ID {}, set id: {}", bc.getBroadcastId(), uid);
         Broadcast broadcast = Broadcast.builder()
-                .uid(bc.getBroadcastId())
+                .uid(uid)
                 .createdByUser(user)
                 .account(account)
                 .title(bc.getTitle())
@@ -514,7 +516,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .and(scheduledTimePast).and(notSent));
         log.info("found {} broadcasts to send", scheduledBroadcasts.size());
         // avoiding send for now, juuuust in case ...
-        if (!scheduledBroadcasts.isEmpty() && !environment.acceptsProfiles("production")) {
+        if (!scheduledBroadcasts.isEmpty()) {
             scheduledBroadcasts.forEach(this::sendScheduledBroadcast);
         }
     }
