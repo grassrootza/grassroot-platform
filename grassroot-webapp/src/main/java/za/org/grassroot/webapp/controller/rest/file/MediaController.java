@@ -3,10 +3,7 @@ package za.org.grassroot.webapp.controller.rest.file;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -65,7 +62,7 @@ public class MediaController {
         boolean duplicate = mediaFileBroker.doesFileExist(mediaFunction, imageKey);
         String storedFileUid = duplicate ?
                 mediaFileBroker.load(mediaFunction, imageKey).getUid() :
-                mediaFileBroker.storeFile(file, mediaFunction, mimeType, imageKey);
+                mediaFileBroker.storeFile(file, mediaFunction, mimeType, imageKey, file.getName());
         return RestUtil.okayResponseWithData(duplicate ? RestMessage.ALREADY_EXISTS : RestMessage.UPLOADED, storedFileUid);
     }
 

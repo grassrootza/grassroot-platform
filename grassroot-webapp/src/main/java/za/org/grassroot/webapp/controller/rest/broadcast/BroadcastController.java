@@ -37,7 +37,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAdjuster;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -155,7 +154,7 @@ public class BroadcastController extends BaseRestController {
     public ResponseEntity uploadImage(@RequestBody MultipartFile image) {
         // todo : rate limiting?
         log.info("do we have a file? : ", image);
-        String imageKey = mediaFileBroker.storeFile(image, MediaFunction.BROADCAST_IMAGE, image.getContentType(), null);
+        String imageKey = mediaFileBroker.storeFile(image, MediaFunction.BROADCAST_IMAGE, image.getContentType(), null, image.getName());
         return ResponseEntity.ok(imageKey);
     }
 

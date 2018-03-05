@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain.media;
 
+import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -11,7 +13,7 @@ import java.util.Objects;
  * Task to hold a media file that we can attach to various things, but which we do not compress or analyze in any way
  * (e.g., for LiveWire alerts, PDF flyers, etc)
  */
-@Entity
+@Entity @Getter
 @Table(name = "media_file", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"bucket", "key"}, name="uk_media_file_bucket_key")
 })
@@ -28,11 +30,11 @@ public class MediaFileRecord implements Serializable {
 
     @Basic
     @Column(name = "bucket", nullable = false)
-    private String bucket;
+    @Setter private String bucket;
 
     @Basic
     @Column(name = "key", nullable = false)
-    private String key;
+    @Setter private String key;
 
     @Basic
     @Column(name = "creation_time", nullable = false, updatable = false) // i.e., when the image was first stored
@@ -40,15 +42,15 @@ public class MediaFileRecord implements Serializable {
 
     @Basic
     @Column(name = "stored_time")
-    private Instant storedTime;
+    @Setter private Instant storedTime;
 
     @Basic
     @Column(name = "md5_hash", length = 24)
-    private String md5;
+    @Setter private String md5;
 
     @Basic
     @Column(name = "mime_type")
-    private String mimeType;
+    @Setter private String mimeType;
 
     @Version
     private Integer version;
@@ -57,11 +59,15 @@ public class MediaFileRecord implements Serializable {
     @Column(name = "read_count", nullable = false)
     private long readRequests;
 
+    @Basic
+    @Column(name = "file_name")
+    @Setter private String fileName;
+
     private MediaFileRecord() {
         // for JPA
     }
 
-    public MediaFileRecord(String bucket, String contentType, String key) {
+    public MediaFileRecord(String bucket, String contentType, String key, String fileName) {
         Objects.requireNonNull(bucket);
         this.uid = UIDGenerator.generateId();
         this.bucket = bucket;
@@ -69,65 +75,11 @@ public class MediaFileRecord implements Serializable {
         this.creationTime = Instant.now();
         this.readRequests = 0;
         this.mimeType = contentType;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    public String getBucket() {
-        return bucket;
-    }
-
-    public String getKey() {
-        return key;
-    }
-
-    public Instant getCreationTime() {
-        return creationTime;
-    }
-
-    public Instant getStoredTime() {
-        return storedTime;
-    }
-
-    public String getMd5() {
-        return md5;
-    }
-
-    public long getReadRequests() {
-        return readRequests;
-    }
-
-    public void setBucket(String bucket) {
-        this.bucket = bucket;
-    }
-
-    public void setKey(String key) {
-        this.key = key;
-    }
-
-    public void setCreationTime(Instant creationTime) {
-        this.creationTime = creationTime;
-    }
-
-    public void setStoredTime(Instant storedTime) {
-        this.storedTime = storedTime;
-    }
-
-    public void setMd5(String md5) {
-        this.md5 = md5;
+        this.fileName = fileName;
     }
 
     public void incrementReadRequests() {
         this.readRequests++;
     }
 
-    public String getMimeType() {
-        return mimeType;
-    }
-
-    public void setMimeType(String mimeType) {
-        this.mimeType = mimeType;
-    }
 }
