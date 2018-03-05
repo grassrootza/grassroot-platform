@@ -266,14 +266,18 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private void sendScheduledBroadcast(Broadcast bc) {
 
-        if (bc.hasFbPost() && !bc.getFbPostSucceeded()) {
-            List<GenericPostResponse> fbResponse = socialMediaBroker.postToFacebook(extractFbFromBroadcast(bc));
-            bc.setFbPostSucceeded(fbResponse.stream().anyMatch(GenericPostResponse::isPostSuccessful));
-        }
+        try {
+            if (bc.hasFbPost() && !bc.getFbPostSucceeded()) {
+                List<GenericPostResponse> fbResponse = socialMediaBroker.postToFacebook(extractFbFromBroadcast(bc));
+                bc.setFbPostSucceeded(fbResponse.stream().anyMatch(GenericPostResponse::isPostSuccessful));
+            }
 
-        if (bc.hasTwitterPost() && !bc.getTwitterSucceeded()) {
-            GenericPostResponse twResponse = socialMediaBroker.postToTwitter(extractTweetFromBroadcast(bc));
-            bc.setTwitterSucceeded(twResponse.isPostSuccessful());
+            if (bc.hasTwitterPost() && !bc.getTwitterSucceeded()) {
+                GenericPostResponse twResponse = socialMediaBroker.postToTwitter(extractTweetFromBroadcast(bc));
+                bc.setTwitterSucceeded(twResponse.isPostSuccessful());
+            }
+        } catch (NullPointerException e) {
+            log.error("Strange null point error in sending scedhuled broadcast");
         }
 
         try {

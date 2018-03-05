@@ -179,8 +179,10 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             logger.debug("Fields Map = {}, form field = {}", pdfFormFieldMap, pdfFormFieldMap.get("join_code_header").getValueAsString());
 
             pdfFormFieldMap.get("group_name").setValue("HOW TO JOIN " + grpEntity.getGroupName().toUpperCase() + " ON GRASSROOT");//**
-            pdfFormFieldMap.get("join_code_header").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
-            pdfFormFieldMap.get("join_code_phone").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
+            if (grpEntity.hasValidGroupTokenCode()) {
+                pdfFormFieldMap.get("join_code_header").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
+                pdfFormFieldMap.get("join_code_phone").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
+            }
 
 
             pdfFormFieldMap.get("join_code_header");
