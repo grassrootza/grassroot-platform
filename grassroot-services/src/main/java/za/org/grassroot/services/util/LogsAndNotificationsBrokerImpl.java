@@ -1,9 +1,11 @@
 package za.org.grassroot.services.util;
 
 import com.google.common.collect.ImmutableSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.CacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
@@ -16,9 +18,7 @@ import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TaskLog;
 import za.org.grassroot.core.domain.task.TodoLog;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.LiveWireLogType;
-import za.org.grassroot.core.enums.TodoLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
@@ -29,9 +29,10 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
+@Service @Slf4j
 public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroker {
-	private final Logger logger = LoggerFactory.getLogger(LogsAndNotificationsBrokerImpl.class);
+
+    private static final int MAX_PUBLIC_LOGS = 100;
 
 	private final NotificationRepository notificationRepository;
 	private final GroupLogRepository groupLogRepository;
@@ -44,7 +45,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 	@Autowired
 	public LogsAndNotificationsBrokerImpl(NotificationRepository notificationRepository, GroupLogRepository groupLogRepository,
-										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository) {
+                                          UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository, CacheManager cacheManager) {
 		this.notificationRepository = notificationRepository;
 		this.groupLogRepository = groupLogRepository;
 		this.userLogRepository = userLogRepository;
@@ -53,7 +54,40 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		this.accountLogRepository = accountLogRepository;
 		this.liveWireLogRepository = liveWireLogRepository;
 		this.campaignLogRepository = campaignLogRepository;
-	}
+    }
+
+    @Override
+    public List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs) {
+        // todo : definitely need to add caching, pseudonyms
+        List<PublicActivityLog> logs = new ArrayList<>();
+        int largestPage = numberLogs == null ? MAX_PUBLIC_LOGS : Math.min(numberLogs, MAX_PUBLIC_LOGS);
+        Pageable pageable = new PageRequest(0, largestPage);
+        // check, in order: campaign logs, group logs, event logs, account logs (for broadcasts), livewire logs
+        Map<GroupLogType, PublicActivityType> types = new HashMap<>();
+        types.put(GroupLogType.GROUP_ADDED, PublicActivityType.CREATED_GROUP);
+        types.put(GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE, PublicActivityType.JOINED_GROUP);
+        types.put(GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN, PublicActivityType.JOINED_GROUP);
+        List<PublicActivityLog> groupLogs = groupLogRepository.findByGroupLogTypeIn(types.keySet(), pageable)
+                .stream().map(gl -> new PublicActivityLog(types.get(gl.getGroupLogType()),
+                        gl.getUserNameSafe(),
+                        gl.getCreatedDateTime().toEpochMilli())).collect(Collectors.toList());
+        logs.addAll(groupLogs);
+
+        List<PublicActivityLog> campaignLogs = campaignLogRepository.findByCampaignLogType(CampaignLogType.CAMPAIGN_PETITION_SIGNED, pageable)
+                .stream().map(cl -> new PublicActivityLog(PublicActivityType.SIGNED_PETITION, cl.getUser().getName(), cl.getCreationTime().toEpochMilli()))
+                .collect(Collectors.toList());
+        logs.addAll(campaignLogs);
+
+        List<PublicActivityLog> broadcastLogs = accountLogRepository.findByAccountLogType(AccountLogType.BROADCAST_MESSAGE_SENT, pageable)
+                .stream().map(al -> new PublicActivityLog(PublicActivityType.SENT_BROADCAST, al.getUser().getName(), al.getCreationTime().toEpochMilli()))
+                .collect(Collectors.toList());
+        logs.addAll(broadcastLogs);
+
+        // todo : add in the event logs
+
+        logs.sort(Comparator.comparing(PublicActivityLog::getActionTimeMillis).reversed());
+        return logs;
+    }
 
 	@Override
 	@Transactional
@@ -69,13 +103,13 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 		Set<ActionLog> logs = bundle.getLogs();
 		if (!logs.isEmpty()) {
-			logger.info("Storing {} logs", logs.size());
+			log.info("Storing {} logs", logs.size());
 		}
 
 		Set<Group> groupsToUpdateLogTimestamp = new HashSet<>();
 		Set<Group> groupsToUpdateTaskTimestamp = new HashSet<>();
 		for (ActionLog log : logs) {
-			logger.debug("Saving log {}", log);
+			this.log.debug("Saving log {}", log);
 			saveLog(log);
 			checkForGroupLogUpdate(log, groupsToUpdateLogTimestamp);
 			checkForTaskUpdate(log, groupsToUpdateTaskTimestamp);
@@ -83,7 +117,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 		Set<Notification> notifications = bundle.getNotifications();
 		if (!notifications.isEmpty()) {
-			logger.info("Storing {} notifications", notifications.size());
+			log.info("Storing {} notifications", notifications.size());
 		}
 
 		notificationRepository.save(notifications);
@@ -142,7 +176,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		List<CampaignLog> campaignLogs = campaignLogRepository.findAll(Specifications.where(campaignGroup).and(forUserCampaign));
 		actionLogs.addAll(campaignLogs);
 
-		logger.info("log sweep done, {} event logs, {} todo logs, {} live wire logs, {} campaign logs",
+		log.info("log sweep done, {} event logs, {} todo logs, {} live wire logs, {} campaign logs",
 				eventLogs.size(), todoLogs.size(), liveWireLogs.size(), campaignLogs);
 
 		return actionLogs.stream().sorted(Comparator.comparing(ActionLog::getCreationTime, Comparator.reverseOrder()))

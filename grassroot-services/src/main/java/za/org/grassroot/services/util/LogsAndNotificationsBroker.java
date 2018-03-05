@@ -16,4 +16,6 @@ public interface LogsAndNotificationsBroker {
 
 	List<ActionLog> fetchMembershipLogs(Membership membership);
 
+	List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs);
+
 }

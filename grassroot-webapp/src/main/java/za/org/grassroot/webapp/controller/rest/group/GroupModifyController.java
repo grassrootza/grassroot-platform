@@ -31,6 +31,7 @@ import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
 import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.group.GroupImageBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.services.group.GroupStatsBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -54,12 +55,15 @@ public class GroupModifyController extends GroupBaseController {
     private final GroupFetchBroker groupFetchBroker;
     private final GroupImageBroker groupImageBroker;
     private final AccountGroupBroker accountGroupBroker;
+    private final GroupStatsBroker groupStatsBroker;
 
-    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, GroupFetchBroker groupFetchBroker, GroupImageBroker groupImageBroker, AccountGroupBroker accountGroupBroker) {
+    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, GroupFetchBroker groupFetchBroker,
+                                 GroupImageBroker groupImageBroker, AccountGroupBroker accountGroupBroker, GroupStatsBroker groupStatsBroker) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.groupImageBroker = groupImageBroker;
         this.accountGroupBroker = accountGroupBroker;
+        this.groupStatsBroker = groupStatsBroker;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
@@ -94,10 +98,11 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "/topics/set/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Set topics for a group", notes = "To avoid possible confusion and duplication, always pass " +
             "the full set of topics that should be on the group (i.e., this is a set method, not an add method)")
-    public ResponseEntity addTopicsToGroup(HttpServletRequest request, @PathVariable String groupUid,
+    public ResponseEntity<Map<String, Integer>> addTopicsToGroup(HttpServletRequest request, @PathVariable String groupUid,
                                            @RequestParam Set<String> topics) {
         groupBroker.updateTopics(getUserIdFromRequest(request), groupUid, topics);
-        return ResponseEntity.ok().build();
+        Map<String, Integer> topicStats = groupStatsBroker.getTopicInterestStatsRaw(groupUid, true);
+        return ResponseEntity.ok(topicStats);
     }
 
     @RequestMapping(value = "/joincodes/list/active", method = RequestMethod.GET)
@@ -237,6 +242,7 @@ public class GroupModifyController extends GroupBaseController {
             groupBroker.assignMembershipTopics(getUserIdFromRequest(request), groupUid, memberUid, new HashSet<>(topics),
                     onlyAdd != null && onlyAdd);
         }
+        groupStatsBroker.getTopicInterestStatsRaw(groupUid, true);
         return ResponseEntity.ok().build();
     }
 
@@ -246,6 +252,7 @@ public class GroupModifyController extends GroupBaseController {
                                                               @RequestParam List<String> memberUids,
                                                               @RequestParam List<String> topics) {
         groupBroker.removeTopicFromMembers(getUserIdFromRequest(request), groupUid, topics, new HashSet<>(memberUids));
+        groupStatsBroker.getTopicInterestStatsRaw(groupUid, true);
         return ResponseEntity.ok().build();
     }
 

@@ -34,6 +34,8 @@ public interface CampaignBroker {
 
     Set<String> getActiveCampaignCodes();
 
+    boolean isCodeTaken(String proposedCode, String campaignUid);
+
     Set<String> getActiveCampaignJoinTopics();
 
     void signPetition(String campaignUid, String userUid, UserInterfaceType channel);
@@ -55,14 +57,13 @@ public interface CampaignBroker {
     Campaign updateMasterGroup(String campaignUid, String groupUid, String userUid);
 
     void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid,
-                               Instant endDate, String landingUrl, String petitionApi);
-
-    // new code is in case the old one has been taken in the meantime
-    void reactivateCampaign(String userUid, String campaignUid, Instant newEndDate, String newCode);
+                               boolean removeImage, Instant endDate, String newCode, String landingUrl, String petitionApi, List<String> joinTopics);
 
     void alterSmsSharingSettings(String userUid, String campaignUid, boolean smsEnabled, Long smsBudget,
                                  Set<CampaignMessageDTO> sharingMessages);
 
-    void changeCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessageDTO> revisedMessages);
+    void updateCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessageDTO> revisedMessages);
+
+    void setCampaignImage(String userUid, String campaignUid, String mediaFileKey);
 
 }

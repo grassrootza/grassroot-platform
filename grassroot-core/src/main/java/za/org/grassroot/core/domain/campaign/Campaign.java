@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.campaign;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
@@ -13,7 +14,6 @@ import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -21,11 +21,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Entity @Getter @Setter
+@Entity @Getter @Setter @Slf4j
 @Table(name = "campaign")
-public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
+public class Campaign implements TagHolder {
 
-    public static final String JOIN_TOPIC_PREFIX = "JOIN_TOPIC_";
+    public static final String JOIN_TOPIC_PREFIX = "JOIN_TOPIC:";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -66,7 +66,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     private Group masterGroup;
 
     @ManyToOne
-    @JoinColumn(name = "account_uid", referencedColumnName = "uid")
+    @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign")
@@ -110,9 +110,11 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         this.createdDateTime = Instant.now();
     }
 
-    public Campaign(String campaignName, String campaignCode,String campaignDescription, User createdByUser, Instant startDateTime, Instant endDateTime,CampaignType campaignType, String campaignUrl){
+    public Campaign(String campaignName, String campaignCode, String campaignDescription, User createdByUser, Instant startDateTime, Instant endDateTime, CampaignType campaignType, String campaignUrl,
+                    Account account){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
+        this.account = Objects.requireNonNull(account);
         this.name = Objects.requireNonNull(campaignName);
         this.campaignCode = Objects.requireNonNull(campaignCode);
         this.createdByUser = Objects.requireNonNull(createdByUser);
@@ -124,6 +126,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         this.sharingEnabled = false;
         this.sharingBudget = 0L;
         this.sharingSpent = 0L;
+        log.info("is the account null? {}", this.account);
     }
 
     public boolean isActive() {
@@ -149,7 +152,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
                 .map(s -> s.substring(JOIN_TOPIC_PREFIX.length())).collect(Collectors.toList());
     }
 
-    public void setJoinTopics(Set<String> joinTopics) {
+    public void setJoinTopics(List<String> joinTopics) {
         // first get all the non-affiliation tags
         List<String> tags = getTagList().stream()
                 .filter(s -> !s.startsWith(JOIN_TOPIC_PREFIX)).collect(Collectors.toList());
@@ -182,11 +185,8 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         if (o == null || !(o instanceof Campaign)) {
             return false;
         }
-
         Campaign campaign = (Campaign) o;
-
         return (getUid() != null) ? getUid().equals(campaign.getUid()) : campaign.getUid() == null;
-
     }
 
     @Override
@@ -194,15 +194,15 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         return getUid() != null ? getUid().hashCode() : 0;
     }
 
-    @Override
-    public int compareTo(Campaign campaign) {
-        if (uid.equals(campaign.getUid())) {
-            return 0;
-        } else {
-            Instant otherCreatedDateTime = campaign.getCreatedDateTime();
-            return createdDateTime.compareTo(otherCreatedDateTime);
-        }
-    }
+//    @Override
+//    public int compareTo(Campaign campaign) {
+//        if (uid.equals(campaign.getUid())) {
+//            return 0;
+//        } else {
+//            Instant otherCreatedDateTime = campaign.getCreatedDateTime();
+//            return createdDateTime.compareTo(otherCreatedDateTime);
+//        }
+//    }
 
     @Override
     public String toString() {
@@ -210,6 +210,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         sb.append("id=").append(id);
         sb.append(", uid='").append(uid).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", account='").append(account.getName()).append('\'');
         sb.append(", campaignCode='").append(campaignCode).append('\'');
         sb.append(", createdDateTime=").append(createdDateTime);
         sb.append(", createdBy=").append(createdByUser.getId());

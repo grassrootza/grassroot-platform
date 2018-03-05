@@ -35,20 +35,23 @@ public class CampaignViewDTO {
 
     private String campaignUrl;
     private boolean petitionConnected;
+    private String petitionUrl;
 
     private String masterGroupUid;
     private String masterGroupName;
 
-    private Integer totalUsers;
     private long totalJoined;
     private long totalEngaged;
 
-    private List<String> topics;
+    private List<String> joinTopics;
     private List<CampaignMessageDTO> campaignMessages;
 
     private boolean smsSharingEnabled;
-    private long smsSharingBudget;
-    private long smsSharingCost;
+    private long smsSharingLimit;
+    private long smsSharingSpent;
+    private long smsSharingUnitCost;
+
+    private String campaignImageKey;
 
     private CampaignViewDTO(String campaignUid, String campaignName, String campaignDescription, CampaignType campaignType,
                            String createUserUid, String createUserName, Instant createdDateTime,
@@ -64,7 +67,7 @@ public class CampaignViewDTO {
         this.campaignEndDate = campaignEndDate;
         this.campaignUid = campaignUid;
         this.campaignUrl = campaignUrl;
-        this.topics = campaignTags;
+        this.joinTopics = campaignTags;
     }
 
     public CampaignViewDTO(Campaign campaign){
@@ -85,10 +88,14 @@ public class CampaignViewDTO {
         this.masterGroupUid = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null;
 
         this.petitionConnected = !StringUtils.isEmpty(campaign.getPetitionApi()) && !StringUtils.isEmpty(campaign.getPetitionResultApi());
+        if (this.petitionConnected) {
+            this.petitionUrl = campaign.getPetitionApi();
+        }
 
         this.smsSharingEnabled = campaign.isSharingEnabled();
-        this.smsSharingBudget = campaign.getSharingBudget();
-        this.smsSharingCost = campaign.getSharingSpent();
+        this.smsSharingLimit = campaign.getSharingBudget();
+        this.smsSharingSpent = campaign.getSharingSpent();
+        this.smsSharingUnitCost = campaign.getAccount().getFreeFormCost();
 
         long startTime = System.currentTimeMillis();
         this.totalEngaged = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_FOUND);
@@ -98,6 +105,10 @@ public class CampaignViewDTO {
         if(!campaign.getCampaignMessages().isEmpty()){
             this.campaignMessages = groupCampaignMessages(campaign);
             log.info("campaign DTO message list: {}", campaign.getCampaignMessages());
+        }
+
+        if (campaign.getCampaignImage() != null) {
+            this.campaignImageKey = campaign.getCampaignImage().getUid();
         }
     }
 

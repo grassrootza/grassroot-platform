@@ -13,11 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignType;
-import za.org.grassroot.core.enums.MessageVariationAssignment;
-import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.campaign.CampaignBroker;
@@ -42,10 +43,14 @@ public class CampaignBrokerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private AccountRepository accountRepository;
+
+    @Autowired
     private GroupRepository groupRepository;
 
     private User testUser;
     private Group testGroup;
+    private Account testAccount;
 
     @Before
     public void setUp(){
@@ -55,6 +60,9 @@ public class CampaignBrokerTest {
         userRepository.save(testUser);
         String groupName = "testGroup";
         testGroup = groupRepository.save(new Group(groupName, testUser));
+        testAccount = accountRepository.save(new Account(testUser, "test", AccountType.ENTERPRISE, testUser, AccountPaymentType.DIRECT_DEPOSIT, AccountBillingCycle.MONTHLY));
+        testUser.setPrimaryAccount(testAccount);
+        userRepository.save(testUser);
     }
 
 

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.BroadcastSchedule;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.DeliveryRoute;
@@ -21,6 +22,7 @@ import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
+import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.broadcasts.BroadcastBroker;
 import za.org.grassroot.services.broadcasts.BroadcastComponents;
 import za.org.grassroot.services.broadcasts.BroadcastInfo;
@@ -30,6 +32,12 @@ import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,12 +49,15 @@ public class BroadcastController extends BaseRestController {
 
     private final BroadcastBroker broadcastBroker;
     private final MediaFileBroker mediaFileBroker;
+    private final AccountBillingBroker billingBroker;
 
     @Autowired
-    public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker, MediaFileBroker mediaFileBroker) {
+    public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker, MediaFileBroker mediaFileBroker,
+                               AccountBillingBroker billingBroker) {
         super(jwtService, userManagementService);
         this.broadcastBroker = broadcastBroker;
         this.mediaFileBroker = mediaFileBroker;
+        this.billingBroker = billingBroker;
     }
 
     @RequestMapping(value = "/fetch/group/{groupUid}", method = RequestMethod.GET)
@@ -161,6 +172,17 @@ public class BroadcastController extends BaseRestController {
         String broadcastUid = broadcastBroker.sendTaskBroadcast(user.getUid(), taskUid, taskType, sendToAll == null || !sendToAll, message);
 
         return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
+    }
+
+    @RequestMapping(value = "/cost-this-month", method = RequestMethod.GET)
+    public ResponseEntity<Long> getAccountCostThisMonth(HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+
+        Account primaryAccount = user.getPrimaryAccount();
+        TemporalAdjuster startOfMonth = (Temporal date) -> ((LocalDateTime)date).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+        Instant firstDayOfMonth = LocalDateTime.now().with(startOfMonth).toInstant(OffsetDateTime.now().getOffset());
+        long costSinceLastBill = billingBroker.calculateMessageCostsInPeriod(primaryAccount, firstDayOfMonth, Instant.now());
+        return ResponseEntity.ok(costSinceLastBill);
     }
 
     private void fillInContent(BroadcastCreateRequest createRequest, BroadcastComponents bc) {
