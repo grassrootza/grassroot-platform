@@ -31,11 +31,13 @@ public class BroadcastCreateRequest {
     private String facebookContent;
     private String facebookLink; // will need to think through media
     private String facebookLinkCaption;
+    private String facebookImageKey;
 
     private boolean postToTwitter;
     private String twitterContent; // as above, need to think through media more
     private String twitterLink;
     private String twitterLinkCaption;
+    private String twitterImageKey;
 
     private BroadcastSchedule sendType;
     private Long sendDateTimeMillis;

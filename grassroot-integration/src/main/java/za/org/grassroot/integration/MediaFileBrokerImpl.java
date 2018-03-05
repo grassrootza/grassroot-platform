@@ -62,7 +62,7 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
         String bucket = getBucketForFunction(Objects.requireNonNull(function));
 
         logger.info("storing a file, with function {}, bucket {}, content type: {}, passed mime type: {}, original name: {}",
-                function, file.getContentType(), mimeType, file.getOriginalFilename());
+                function, bucket, file.getContentType(), mimeType, file.getOriginalFilename());
 
         MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
         String contentType = StringUtils.isEmpty(mimeType) ? file.getContentType() : mimeType;

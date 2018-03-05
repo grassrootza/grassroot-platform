@@ -393,8 +393,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
         }
 
         if (endDate != null) {
+            campaign.setEndDateTime(endDate);
             if (campaign.isActive()) {
-                campaign.setEndDateTime(endDate);
                 bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_END_CHANGED, campaign, null, endDate.toString()));
             } else {
                 log.info("campaign inactive, reactivating with end date: ", endDate);
@@ -430,9 +430,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         } else if (activeCodes.contains(campaign.getCampaignCode())) {
             campaign.setCampaignCode(null);
         }
-
-        log.info("reactivating campaign, with new end date: {}", newEndDate);
-        campaign.setEndDateTime(newEndDate);
 
         return new CampaignLog(user, CampaignLogType.CAMPAIGN_REACTIVATED, campaign, null, newEndDate + ";" + newCode);
     }

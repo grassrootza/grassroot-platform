@@ -51,10 +51,10 @@ public class Campaign implements TagHolder {
     @Column(name = "created_date_time", insertable = true, updatable = false)
     private Instant createdDateTime;
 
-    @Column(name = "start_date_time", insertable = true, updatable = false)
+    @Column(name = "start_date_time")
     private Instant startDateTime;
 
-    @Column(name = "end_date_time", insertable = true, updatable = false)
+    @Column(name = "end_date_time")
     private Instant endDateTime;
 
     @ManyToOne()

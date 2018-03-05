@@ -221,6 +221,8 @@ public class BroadcastController extends BaseRestController {
                     .message(request.getFacebookContent())
                     .linkUrl(request.getFacebookLink())
                     .linkName(request.getFacebookLinkCaption())
+                    .imageKey(request.getFacebookImageKey())
+                    .imageMediaType(MediaFunction.BROADCAST_IMAGE)
                     .build()
         ).collect(Collectors.toList());
     }
@@ -229,7 +231,8 @@ public class BroadcastController extends BaseRestController {
         return TwitterPostBuilder.builder()
                 .postingUserUid(userUid)
                 .message(request.getTwitterContent())
-                .imageKey(request.getTwitterLink())
+                .imageKey(request.getTwitterImageKey())
+                .imageMediaFunction(MediaFunction.BROADCAST_IMAGE)
                 .build();
     }
 

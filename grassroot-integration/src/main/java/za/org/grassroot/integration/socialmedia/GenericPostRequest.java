@@ -23,12 +23,12 @@ public class GenericPostRequest {
 
         this.caption = facebookPost.getImageCaption();
 
-        this.pictureUrl = imageUrlBase + facebookPost.getImageKey();
+        this.pictureUrl = imageUrlBase + "/" + facebookPost.getImageMediaType() + "/" + facebookPost.getImageKey();
     }
 
     protected GenericPostRequest(TwitterPostBuilder twitterPost, String imageUrlBase) {
         this.message = twitterPost.getMessage();
-        this.pictureUrl = imageUrlBase + twitterPost.getImageKey();
+        this.pictureUrl = imageUrlBase + "/" + twitterPost.getImageMediaFunction() + "/" + twitterPost.getImageKey();
     }
 
 }

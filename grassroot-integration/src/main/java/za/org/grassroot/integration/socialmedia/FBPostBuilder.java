@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import za.org.grassroot.core.domain.media.MediaFunction;
 
 @Getter @Setter @Builder @ToString @ApiModel
 public class FBPostBuilder {
@@ -15,6 +16,7 @@ public class FBPostBuilder {
     private String linkUrl;
     private String linkName;
     private String imageKey;
+    private MediaFunction imageMediaType;
     private String imageCaption;
 
 }
