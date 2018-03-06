@@ -286,16 +286,16 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
     @Override
     public List<Membership> filterGroupMembers(User user, String groupUid,
-                                                      Collection<Province> provinces,
-                                                      Collection<String> taskTeamsUids,
-                                                      Collection<String> topics,
-                                                      Collection<String> affiliations,
-                                                      Collection<GroupJoinMethod> joinMethods,
-                                                      Collection<String> joinedCampaignsUids,
-                                                      Integer joinDaysAgo,
-                                                      LocalDate joinDate,
-                                                      JoinDateCondition joinDateCondition,
-                                                      String namePhoneOrEmail) {
+                                               Collection<Province> provinces,
+                                               Collection<String> taskTeamsUids,
+                                               Collection<String> topics,
+                                               Collection<String> affiliations,
+                                               Collection<GroupJoinMethod> joinMethods,
+                                               Collection<String> joinedCampaignsUids,
+                                               Integer joinDaysAgo,
+                                               LocalDate joinDate,
+                                               JoinDateCondition joinDateCondition,
+                                               String namePhoneOrEmail, Collection<String> languages) {
 
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -308,7 +308,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         log.info("filtering on, provinces: {}, taskTeams: {}", provinces, taskTeamsUids);
         List<Membership> members = membershipRepository.findAll(
-                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail)
+                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail, languages)
         );
 
         log.info("post-filtering, have {} members", members.size());

@@ -415,7 +415,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         if (bc.hasFilter()) {
             membersToReceive = groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(), provinceResrictions, taskTeamUids,
-                    topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition, bc.getNamePhoneEmailFilter());
+                    topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition, bc.getNamePhoneEmailFilter(), null);
         } else if (bc.hasTask()) {
             membersToReceive = taskBroker.fetchMembersAssignedToTask(bc.getCreatedByUser().getUid(),
                     bc.getTaskUid(), bc.getTaskType(), bc.taskOnlyPositive());

@@ -54,6 +54,7 @@ public interface GroupFetchBroker {
                                         Integer joinDaysAgo,
                                         LocalDate joinDate,
                                         JoinDateCondition joinDaysAgoCondition,
-                                        String namePhoneOrEmail);
+                                        String namePhoneOrEmail,
+                                        Collection<String> languages);
 
 }
