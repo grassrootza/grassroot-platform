@@ -6,6 +6,7 @@ import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.WriterProperties;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -170,8 +171,9 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
             String flyerToLoad = folderPath + "/" + chooseFlyerToLoad(color, language);
 
-            // todo: compression (important)
-            pdfDocument = new PdfDocument(new PdfReader(flyerToLoad), new PdfWriter(fileToReturn.getAbsolutePath()));
+            // todo: compression (though none of these are working ...)
+            PdfWriter pdfWriter = new PdfWriter(fileToReturn.getAbsolutePath(), new WriterProperties().setFullCompressionMode(true));
+            pdfDocument = new PdfDocument(new PdfReader(flyerToLoad), pdfWriter);
 
             PdfAcroForm pdfAcroForm = PdfAcroForm.getAcroForm(pdfDocument, true);
             Map<String,PdfFormField> pdfFormFieldMap = pdfAcroForm.getFormFields();

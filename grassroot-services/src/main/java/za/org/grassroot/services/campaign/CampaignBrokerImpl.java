@@ -6,14 +6,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Broadcast;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
@@ -35,6 +34,7 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import javax.persistence.criteria.Join;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -121,10 +121,27 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Campaign> getCampaignsCreatedByUser(String userUid) {
+    public List<Campaign> getCampaignsManagedByUser(String userUid) {
         Objects.requireNonNull(userUid);
         User user = userManager.load(userUid);
-        return campaignRepository.findByCreatedByUser(user, new Sort("createdDateTime"));
+        long startTime = System.currentTimeMillis();
+        List<Campaign> campaigns = fetchCampaignsUserCanManage(user);
+        log.info("time to execute cmapaign fetch: {} msecs", System.currentTimeMillis() - startTime);
+        return campaigns;
+    }
+
+    private List<Campaign> fetchCampaignsUserCanManage(User user) {
+        Specification<Campaign> createdByUser = (root, query, cb) -> cb.equal(root.get(Campaign_.createdByUser), user);
+        Specification<Campaign> userIsOrganizerInGroup = (root, query, cb) -> {
+            Join<Campaign, Group> masterGroupJoin = root.join(Campaign_.masterGroup);
+            Join<Group, Membership> memberJoin = masterGroupJoin.join(Group_.memberships);
+            Join<Membership, Role> roleJoin = memberJoin.join(Membership_.role);
+            query.distinct(true);
+            return cb.and(cb.equal(memberJoin.get(Membership_.user), user),
+                    cb.equal(roleJoin.get(Role_.name), BaseRoles.ROLE_GROUP_ORGANIZER));
+        };
+
+        return campaignRepository.findAll(Specifications.where(createdByUser).or(userIsOrganizerInGroup), new Sort("createdDateTime"));
     }
 
     @Override
@@ -545,7 +562,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     private void validateUserCanModifyCampaign(User user, Campaign campaign) {
-        // for the moment
         if (!campaign.getCreatedByUser().equals(user)) {
             permissionBroker.validateGroupPermission(user, campaign.getMasterGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
