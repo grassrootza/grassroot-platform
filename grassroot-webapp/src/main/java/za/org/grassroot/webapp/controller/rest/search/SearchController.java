@@ -21,6 +21,7 @@ import za.org.grassroot.services.group.*;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -31,6 +32,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -47,6 +49,8 @@ public class SearchController extends BaseRestController {
     private final GeoLocationBroker geoLocationBroker;
     private final GroupJoinRequestService groupJoinRequestService;
     private final GroupBroker groupBroker;
+    private final CacheUtilService cacheUtilService;
+    private int attemptsCounter = 0;
 
     @Autowired
     public SearchController(TaskBroker taskBroker,
@@ -57,6 +61,7 @@ public class SearchController extends BaseRestController {
                             GroupBroker groupBroker,
                             GroupJoinRequestService groupJoinRequestService,
                             JwtService jwtService,
+                            CacheUtilService cacheUtilService,
                             UserManagementService userManagementService){
         super(jwtService, userManagementService);
         this.taskBroker = taskBroker;
@@ -66,6 +71,7 @@ public class SearchController extends BaseRestController {
         this.geoLocationBroker = geoLocationBroker;
         this.groupJoinRequestService = groupJoinRequestService;
         this.groupBroker = groupBroker;
+        this.cacheUtilService = cacheUtilService;
     }
 
     @RequestMapping(value = "/tasks/user", method = RequestMethod.GET)
@@ -137,17 +143,24 @@ public class SearchController extends BaseRestController {
             groupBroker.addMemberViaJoinCode(getUserIdFromRequest(request),groupUid,joinCode, UserInterfaceType.WEB);
             return new ResponseEntity<ResponseWrapper>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS),HttpStatus.OK);
         }catch (Exception e){
-            return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEMBER_ALREADY_SET);
+            return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.GROUP_JOIN_REQUEST_CANCELLED);
         }
     }
 
-
     @RequestMapping(value = "/group",method = RequestMethod.GET)
     @ApiOperation(value = "Searches for a group and returns ref DTO")
-    public ResponseEntity<GroupRefDTO> findGroup(@RequestParam String joinCode){
+    public ResponseEntity<GroupRefDTO> findGroup(@RequestParam String joinCode,
+                                                 HttpServletRequest request){
         ResponseEntity<GroupRefDTO> dtoResponseEntity;
         Optional<Group> groupByToken = groupQueryBroker.findGroupFromJoinCode(joinCode);
         if(groupByToken.isPresent()){
+            attemptsCounter += 1;
+            cacheUtilService.putJoinAttempt(getUserIdFromRequest(request),attemptsCounter);
+            if(cacheUtilService.fetchJoinAttempts(getUserIdFromRequest(request)) == 5){
+                log.info("Not allowed to join more than 5 groups within 30 minutes");
+                attemptsCounter = 0;
+
+            }
             GroupRefDTO groupRefDTO = new GroupRefDTO(groupByToken.get().getUid(),
                     groupByToken.get().getGroupName(),groupByToken.get().getMembers().size());
             log.info("Group ref.............",groupRefDTO);

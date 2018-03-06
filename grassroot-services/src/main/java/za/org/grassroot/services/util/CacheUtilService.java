@@ -34,6 +34,10 @@ public interface CacheUtilService {
 
     void putUserLanguage(String phoneNumber, String language);
 
+    void putJoinAttempt(String userUid,int attempt);
+
+    int fetchJoinAttempts(String userUid);
+
     /**
      * Returns whether an entry is stored in the cache indicating the user has accessed the given interface type in the last hour
      * @param userUid The uid of the user

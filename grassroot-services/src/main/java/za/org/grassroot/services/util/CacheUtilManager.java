@@ -165,6 +165,29 @@ public class CacheUtilManager implements CacheUtilService {
     }
 
     @Override
+    public void putJoinAttempt(String userUid,int attempt){
+        try{
+            Cache cache = cacheManager.getCache("user_join_group");
+            cache.put(new Element(userUid,attempt));
+        }catch (Exception e){
+            log.error(e.toString());
+        }
+    }
+
+    @Override
+    public int fetchJoinAttempts(String userUid){
+        int attempts = 0;
+        Cache cache = cacheManager.getCache("user_join_group");
+        if (cache.isKeyInCache(userUid)) {
+            log.info("found user in cache, returning what's stored");
+            return (int) cache.get(userUid).getObjectValue();
+        } else {
+            log.info("nothing in cache, returning 0");
+            return 0;
+        }
+    }
+
+    @Override
     public boolean checkSessionStatus(String userUid, UserInterfaceType interfaceType) {
         try {
             Cache cache = cacheManager.getCache("user_session");
