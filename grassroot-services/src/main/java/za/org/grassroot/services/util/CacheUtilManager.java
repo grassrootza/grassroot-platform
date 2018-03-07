@@ -134,7 +134,7 @@ public class CacheUtilManager implements CacheUtilService {
         try {
             Cache cache = cacheManager.getCache("userUSSDMenu");
             cache.remove(phoneNumber);
-        } catch (Exception e) {
+        } catch (NullPointerException e) {
             log.error(e.toString());
         }
     }
@@ -147,7 +147,7 @@ public class CacheUtilManager implements CacheUtilService {
         log.info("fetchUssdMenuForUser ...cacheKey... " + phoneNumber);
         try {
             menuToReturn = (String) cache.get(phoneNumber).getObjectValue();
-        } catch (Exception e) {
+        } catch (NullPointerException e) {
             log.debug("Could not find a stored USSD menu for phone number ..." + phoneNumber);
             menuToReturn = null;
         }
@@ -156,33 +156,25 @@ public class CacheUtilManager implements CacheUtilService {
 
     @Override
     public void putUserLanguage(String inputNumber, String language) {
-        try {
-            Cache cache = cacheManager.getCache("user_language");
-            cache.put(new Element(inputNumber, language));
-        } catch (Exception e) {
-            log.error(e.toString());
-        }
+        Cache cache = cacheManager.getCache("user_language");
+        cache.put(new Element(inputNumber, language));
     }
 
     @Override
-    public void putJoinAttempt(String userUid,int attempt){
-        try{
-            Cache cache = cacheManager.getCache("user_join_group");
-            cache.put(new Element(userUid,attempt));
-        }catch (Exception e){
-            log.error(e.toString());
-        }
+    public void putJoinAttempt(String userUid, int attempt){
+        Cache cache = cacheManager.getCache("user_join_group");
+        cache.put(new Element(userUid,attempt));
     }
 
     @Override
     public int fetchJoinAttempts(String userUid){
-        int attempts = 0;
         Cache cache = cacheManager.getCache("user_join_group");
-        if (cache.isKeyInCache(userUid)) {
-            log.info("found user in cache, returning what's stored");
+        Element cacheElement = cache.get(userUid);
+        if (cacheElement != null) {
+            log.debug("found user in cache, returning what's stored");
             return (int) cache.get(userUid).getObjectValue();
         } else {
-            log.info("nothing in cache, returning 0");
+            log.debug("nothing in cache, returning 0");
             return 0;
         }
     }

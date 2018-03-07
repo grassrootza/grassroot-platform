@@ -34,7 +34,7 @@ public interface CacheUtilService {
 
     void putUserLanguage(String phoneNumber, String language);
 
-    void putJoinAttempt(String userUid,int attempt);
+    void putJoinAttempt(String userUid, int attempt);
 
     int fetchJoinAttempts(String userUid);
 
