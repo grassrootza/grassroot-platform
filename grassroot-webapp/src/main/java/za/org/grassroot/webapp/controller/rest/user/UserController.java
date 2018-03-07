@@ -20,10 +20,10 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.MediaFileBroker;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.storage.StorageBroker;
@@ -86,7 +86,7 @@ public class UserController extends BaseRestController {
         // store the media, depending on its function (if task image stick in there so analysis etc is triggered)
         log.info("storing a media file, with imageKey = {}, and mediaFunction = {}", imageKey, mediaFunction);
 
-        String storedFileUid = mediaFileBroker.storeFile(photo, mediaFunction, null, imageKey);
+        String storedFileUid = mediaFileBroker.storeFile(photo, mediaFunction, null, imageKey, photo.getName());
         return RestUtil.okayResponseWithData(RestMessage.UPLOADED, storedFileUid);
     }
 

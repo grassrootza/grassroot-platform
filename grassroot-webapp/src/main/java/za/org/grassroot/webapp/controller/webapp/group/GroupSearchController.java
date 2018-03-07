@@ -16,7 +16,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.task.Meeting;
-import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.LearningService;
@@ -210,7 +209,7 @@ public class GroupSearchController extends BaseController {
 
 	@RequestMapping(value = "join/token", method = RequestMethod.POST)
 	public String joinGroup(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String token, HttpServletRequest request) {
-		groupBroker.addMemberViaJoinCode(getUserProfile().getUid(), groupUid, token, UserInterfaceType.WEB);
+		groupBroker.addMemberViaJoinCode(getUserProfile().getUid(), groupUid, token, UserInterfaceType.WEB, false);
 		addMessage(attributes, MessageType.SUCCESS, "group.join.success", request);
 		attributes.addAttribute("groupUid", groupUid);
 		return "redirect:/group/view";

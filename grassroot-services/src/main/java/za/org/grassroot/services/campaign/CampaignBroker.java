@@ -26,7 +26,7 @@ public interface CampaignBroker {
 
     List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale);
 
-    List<Campaign> getCampaignsCreatedByUser(String userUid);
+    List<Campaign> getCampaignsManagedByUser(String userUid);
 
     List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid);
 

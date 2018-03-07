@@ -106,7 +106,7 @@ public class USSDGroupController extends USSDBaseController {
         if (searchResult.isPresent()) {
             Group group = searchResult.get();
             log.info("adding user via join code ...");
-            groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD);
+            groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD, false);
             String prompt = (group.hasName()) ?
                     getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
                     getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);

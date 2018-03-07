@@ -94,7 +94,7 @@ public class USSDCampaignController extends USSDBaseController {
                                               @RequestParam String messageUid) throws URISyntaxException{
         User user = userManager.findByInputNumber(inputNumber);
         CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
-        campaignBroker.signPetition(message.getUid(), user.getUid(), UserInterfaceType.USSD);
+        campaignBroker.signPetition(message.getCampaign().getUid(), user.getUid(), UserInterfaceType.USSD);
         final String promptStart = message.getMessage() + (StringUtils.isEmpty(message.getMessage()) ? "" : ". ");
         return menuBuilder(joinGroupOrFinalOptionsMenu(message.getCampaign(), user, promptStart, message.getLocale()));
     }

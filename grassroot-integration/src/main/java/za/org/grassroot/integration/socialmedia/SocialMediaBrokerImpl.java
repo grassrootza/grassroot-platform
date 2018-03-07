@@ -37,7 +37,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     @Value("${grassroot.integration.useruid.param:authuser_uid}")
     private String userUidParam;
 
-    @Value("${grassroot.integration.image.baseurl:http://localhost/images/")
+    @Value("${grassroot.integration.image.baseurl:http://localhost:8080/image}")
     private String imageBaseUri;
 
     @Value("${grassroot.broadcast.mocksm.enabled:false}")

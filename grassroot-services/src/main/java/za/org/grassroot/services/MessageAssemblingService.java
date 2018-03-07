@@ -61,6 +61,8 @@ public interface MessageAssemblingService {
 
     String createGroupJoinResultMessage(GroupJoinRequest request, boolean approved);
 
+    String createGroupJoinedMessage(User user, Group group);
+
     String createReplyFailureMessage(User user);
 
     /**

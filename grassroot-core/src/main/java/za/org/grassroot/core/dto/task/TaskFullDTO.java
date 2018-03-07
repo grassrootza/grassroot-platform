@@ -14,8 +14,10 @@ import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Getter @Slf4j
@@ -89,6 +91,11 @@ public class TaskFullDTO {
             Todo todo = (Todo) task;
             this.todoType = todo.getType();
         } else this.todoType = null;
+    }
+
+    // for Thymeleaf, will deprecate in time
+    public LocalDateTime getDeadlineDateTime() {
+        return Instant.ofEpochMilli(deadlineMillis).atZone(DateTimeUtil.getSAST()).toLocalDateTime();
     }
 
 }

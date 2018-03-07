@@ -105,6 +105,15 @@ public class GroupModifyController extends GroupBaseController {
         return ResponseEntity.ok(topicStats);
     }
 
+    @RequestMapping(value = "/topics/join/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Set join topics for a group")
+    public ResponseEntity setGroupJoinTopics(HttpServletRequest request, @PathVariable String groupUid,
+                                             @RequestParam List<String> joinTopics) {
+        log.info("okay, adding a list of join topics, as: {}", joinTopics);
+        groupBroker.setJoinTopics(getUserIdFromRequest(request), groupUid, joinTopics);
+        return ResponseEntity.ok().build();
+    }
+
     @RequestMapping(value = "/joincodes/list/active", method = RequestMethod.GET)
     @ApiOperation(value = "List all the active join words (to prevent duplicates")
     public ResponseEntity<Set<String>> listJoinCodes() {

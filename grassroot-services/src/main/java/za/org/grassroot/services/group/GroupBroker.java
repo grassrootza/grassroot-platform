@@ -41,6 +41,9 @@ public interface GroupBroker {
 
     void updateTopics(String userUid, String groupUid, Set<String> topics);
 
+    // these are a special set of topics that are presented to the user
+    void setJoinTopics(String userUid, String groupUid, List<String> joinTopics);
+
     /** METHODS FOR DEALING WITH MEMBERS AND PERMISSIONS **/
 
     boolean canAddMember(String groupUid);
@@ -60,7 +63,7 @@ public interface GroupBroker {
 
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
 
-    void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
+    void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification);
 
     String addMemberViaJoinPage(String groupUid, String code, String broadcastId, String userUid, String name, String phone, String email,
                                 Province province, List<String> topics, UserInterfaceType interfaceType);

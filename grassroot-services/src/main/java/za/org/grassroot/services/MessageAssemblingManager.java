@@ -308,6 +308,12 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 : messageSourceAccessor.getMessage("sms.group.join.denied", fields, getUserLocale(request.getRequestor()));
     }
 
+    @Override
+    public String createGroupJoinedMessage(User user, Group group) {
+        return messageSourceAccessor.getMessage("text.group.join.word.done", new String[]{
+                group.getName(), group.getGroupTokenCode()}, getUserLocale(user));
+    }
+
 
     @Override
     public String createReplyFailureMessage(User user) {

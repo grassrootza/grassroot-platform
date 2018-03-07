@@ -3,14 +3,17 @@ package za.org.grassroot.core.dto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by luke on 2016/10/24.
  */
-@Getter @Setter @NoArgsConstructor
+@Getter @Setter @NoArgsConstructor @Slf4j
 public class GrassrootEmail {
 
     private String from;
@@ -23,6 +26,8 @@ public class GrassrootEmail {
     private File attachment;
     private String attachmentName;
 
+    private Map<String, String> attachmentUidsAndNames;
+
     public static class EmailBuilder {
         private String address;
         private String from;
@@ -32,6 +37,8 @@ public class GrassrootEmail {
         private String htmlContent;
         private File attachment;
         private String attachmentName;
+
+        @Getter private Map<String, String> attachmentUidsAndNames;
 
         public EmailBuilder() { }
 
@@ -75,11 +82,24 @@ public class GrassrootEmail {
             return this;
         }
 
+        public EmailBuilder attachmentByKey(String attachmentName, String attachmentUid) {
+            if (this.attachmentUidsAndNames == null) {
+                this.attachmentUidsAndNames = new HashMap<>();
+            }
+            this.attachmentUidsAndNames.put(attachmentName, attachmentUid);
+            log.info("added a uid and name, map now: {}", this.getAttachmentUidsAndNames());
+            return this;
+        }
+
         public GrassrootEmail build() {
             GrassrootEmail email = new GrassrootEmail(this.from, this.fromAddress, this.address, this.subject, this.content, this.htmlContent);
             if (this.attachment != null) {
                 email.attachment = this.attachment;
                 email.attachmentName = this.attachmentName;
+            }
+            log.info("attachment UID map now = {}", this.getAttachmentUidsAndNames());
+            if (this.attachmentUidsAndNames != null) {
+                email.attachmentUidsAndNames = this.attachmentUidsAndNames;
             }
             return email;
         }
@@ -98,6 +118,7 @@ public class GrassrootEmail {
         GrassrootEmail email = new GrassrootEmail(this.getFrom(), this.getFromAddress(),
                 toAddress, this.getSubject(), this.getContent(), this.getHtmlContent());
         email.setAttachment(this.getAttachment());
+        email.setAttachmentUidsAndNames(this.getAttachmentUidsAndNames());
         email.setAttachmentName(toAddress);
         return email;
     }

@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class MembershipSpecifications {
@@ -65,7 +64,8 @@ public class MembershipSpecifications {
                                                                   Integer joinDaysAgo,
                                                                   LocalDate joinDate,
                                                                   JoinDateCondition joinDaysAgoCondition,
-                                                                  String namePhoneOrEmail){
+                                                                  String namePhoneOrEmail,
+                                                                  Collection<String> languages){
 
         return (Root<Membership> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
 
@@ -121,6 +121,10 @@ public class MembershipSpecifications {
                             nameSearchPredicates.add(cb.or(byName, byEmail, byPhone));
                         });
                 restrictions.add(cb.or(nameSearchPredicates.toArray(new Predicate[0])));
+            }
+
+            if (languages != null && languages.size() > 0) {
+                restrictions.add(root.get(Membership_.user).get(User_.languageCode).in(languages));
             }
 
             log.debug("predicates: {}", restrictions);

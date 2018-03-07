@@ -1,0 +1,1 @@
+alter table media_file add column file_name text;
