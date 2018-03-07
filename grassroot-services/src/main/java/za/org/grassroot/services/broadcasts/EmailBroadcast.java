@@ -8,6 +8,8 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.dto.GrassrootEmail;
 
+import java.util.List;
+
 @Getter @Setter @Builder
 public class EmailBroadcast {
 
@@ -17,6 +19,7 @@ public class EmailBroadcast {
     private String fromName;
     private String fromAddress;
     private DeliveryRoute deliveryRoute;
+    private List<String> attachmentFileRecordUids;
 
     public void setFromFieldsIfEmpty(User fromUser) {
         if (StringUtils.isEmpty(fromName)) {
@@ -34,6 +37,7 @@ public class EmailBroadcast {
                 .subject(subject)
                 .content(content)
                 .htmlContent(content)
+                .attachmentRecordUids(attachmentFileRecordUids)
                 .build();
     }
 

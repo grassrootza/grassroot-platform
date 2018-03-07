@@ -237,10 +237,12 @@ public class CampaignManagerController extends BaseRestController {
         String userUid = getUserIdFromRequest(request);
         log.info("altering campaign, setting fields: name = {}, desc = {}, image = {}, endDate = {}, landing = {}, petition = {}",
                 name, description, mediaFileUid, endDateMillis, landingUrl, petitionApi);
+
         Instant endDate = endDateMillis != null ? Instant.ofEpochMilli(endDateMillis) : null;
         log.info("and end date instant = {}", endDate);
         campaignBroker.updateCampaignDetails(userUid, campaignUid, name, description, mediaFileUid, removeImage != null && removeImage,
                 endDate, newCode, landingUrl, petitionApi, joinTopics);
+
         // doing this separately as is more important than other changes but not quite important enough for own method
         if (!StringUtils.isEmpty(newMasterGroupUid)) {
             Campaign priorUpdate = campaignBroker.load(campaignUid);
@@ -254,10 +256,7 @@ public class CampaignManagerController extends BaseRestController {
         Campaign updatedCampaign = campaignBroker.load(campaignUid);
         log.info("updated campaign group name: {}", updatedCampaign.getMasterGroup().getName());
         clearCaches(campaignUid, userUid, updatedCampaign.getMasterGroup().getUid());
-        CampaignViewDTO revisedDTO = new CampaignViewDTO(updatedCampaign);
-        log.info("revised campaign: {}", updatedCampaign);
-        log.info("and revised DTO: {}", revisedDTO);
-        return ResponseEntity.ok(revisedDTO);
+        return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign));
     }
 
     @RequestMapping(value = "/update/sharing/{campaignUid}", method = RequestMethod.POST)

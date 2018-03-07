@@ -32,6 +32,7 @@ public class Broadcast implements GrassrootEntity, TagHolder {
 
     public static final int MAX_MESSAGES = 3;
 
+    // filters
     private static final String NAME_FILTER_PREFIX = "NAME_FILTER:";
     private static final String PROVINCE_PREFIX = "PROVINCE:";
     private static final String TASK_TEAM_PREFIX = "TASK_TEAM:";
@@ -39,9 +40,12 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     private static final String JOIN_METHOD_PREFIX = "JOIN_METHOD:";
     private static final String JOIN_DATE_CONDITION_PREFIX = "JOIN_DATE_CONDITION:";
     private static final String JOIN_DATE_PREFIX = "JOIN_DATE_VALUE:";
+    private static final String LANGUAGE_PREFIX = "LANGUAGE_FILTER:";
 
     private static final String TASK_PREFIX = "TASK:";
     public static final String TASK_FIELD_SEP = ";";
+
+    private static final String EMAIL_ATTACHMENT_PREFIX = "EMAIL_ATTACH:";
 
     public static String NAME_FIELD_TEMPLATE = "{__name__}";
     public static String CONTACT_FIELD_TEMPALTE = "{__contact__}";
@@ -258,32 +262,36 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     }
 
     public List<Province> getProvinces() {
-        return getFilterEntitiesFromTag(PROVINCE_PREFIX)
+        return getAssociatedEntities(PROVINCE_PREFIX)
                 .map(Province::valueOf)
                 .collect(Collectors.toList());
     }
 
     public List<String> getTaskTeams() {
-        return getFilterEntitiesFromTag(TASK_TEAM_PREFIX).collect(Collectors.toList());
+        return getAssociatedEntities(TASK_TEAM_PREFIX).collect(Collectors.toList());
     }
 
     public List<GroupJoinMethod> getJoinMethods() {
-        return getFilterEntitiesFromTag(JOIN_METHOD_PREFIX).map(GroupJoinMethod::valueOf).collect(Collectors.toList());
+        return getAssociatedEntities(JOIN_METHOD_PREFIX).map(GroupJoinMethod::valueOf).collect(Collectors.toList());
     }
 
     public List<String> getAffiliations() {
-        return getFilterEntitiesFromTag(AFFIL_PREFIX).collect(Collectors.toList());
+        return getAssociatedEntities(AFFIL_PREFIX).collect(Collectors.toList());
+    }
+
+    public List<String> getFilterLanguages() {
+        return getAssociatedEntities(LANGUAGE_PREFIX).collect(Collectors.toList());
     }
 
     public Optional<JoinDateCondition> getJoinDateCondition() {
-        return getFilterEntitiesFromTag(JOIN_DATE_CONDITION_PREFIX).findFirst().map(JoinDateCondition::valueOf);
+        return getAssociatedEntities(JOIN_DATE_CONDITION_PREFIX).findFirst().map(JoinDateCondition::valueOf);
     }
 
     public Optional<LocalDate> getJoinDate() {
-        return getFilterEntitiesFromTag(JOIN_DATE_PREFIX).findFirst().map(s -> LocalDate.parse(s, DateTimeFormatter.ISO_DATE));
+        return getAssociatedEntities(JOIN_DATE_PREFIX).findFirst().map(s -> LocalDate.parse(s, DateTimeFormatter.ISO_DATE));
     }
 
-    private Stream<String> getFilterEntitiesFromTag(String prefix) {
+    private Stream<String> getAssociatedEntities(String prefix) {
         return getTagList().stream().filter(s -> s.startsWith(prefix)).map(s -> s.substring(prefix.length()));
     }
 
@@ -293,36 +301,40 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     }
 
     public void setNameFilter(String namePhoneOrEmail) {
-        setFilterEntities(NAME_FILTER_PREFIX, Stream.of(namePhoneOrEmail));
+        setAssociatedEntities(NAME_FILTER_PREFIX, Stream.of(namePhoneOrEmail));
     }
 
     public void setProvinces(Collection<Province> provinces) {
-        setFilterEntities(PROVINCE_PREFIX, provinces.stream().map(Enum::name));
+        setAssociatedEntities(PROVINCE_PREFIX, provinces.stream().map(Enum::name));
     }
 
     public void setTaskTeams(Collection<String> taskTeamUids) {
-        setFilterEntities(TASK_TEAM_PREFIX, taskTeamUids.stream());
+        setAssociatedEntities(TASK_TEAM_PREFIX, taskTeamUids.stream());
     }
 
     public void setJoinMethods(Collection<GroupJoinMethod> joinMethods) {
-        setFilterEntities(JOIN_METHOD_PREFIX, joinMethods.stream().map(Enum::name));
+        setAssociatedEntities(JOIN_METHOD_PREFIX, joinMethods.stream().map(Enum::name));
     }
 
     public void setAffiliations(Collection<String> affiliations) {
-        setFilterEntities(AFFIL_PREFIX, affiliations.stream());
+        setAssociatedEntities(AFFIL_PREFIX, affiliations.stream());
     }
 
     public void setJoinDateCondition(JoinDateCondition condition) {
-        setFilterEntities(JOIN_DATE_CONDITION_PREFIX, Stream.of(condition.name()));
+        setAssociatedEntities(JOIN_DATE_CONDITION_PREFIX, Stream.of(condition.name()));
     }
 
     public void setJoinDateValue(LocalDate joinDateValue) {
-        setFilterEntities(JOIN_DATE_PREFIX, Stream.of(String.valueOf(joinDateValue.format(DateTimeFormatter.ISO_DATE))));
+        setAssociatedEntities(JOIN_DATE_PREFIX, Stream.of(String.valueOf(joinDateValue.format(DateTimeFormatter.ISO_DATE))));
+    }
+
+    public void setLanguages(Collection<Locale> languages) {
+        setAssociatedEntities(LANGUAGE_PREFIX, languages.stream().map(Locale::getISO3Language));
     }
 
     public void setTask(String taskUid, TaskType taskType, boolean onlyPositive) {
         final String collatedDetails = taskUid + TASK_FIELD_SEP + taskType + TASK_FIELD_SEP + onlyPositive;
-        setFilterEntities(TASK_PREFIX, Stream.of(collatedDetails));
+        setAssociatedEntities(TASK_PREFIX, Stream.of(collatedDetails));
     }
 
     public boolean hasTask() {
@@ -330,21 +342,31 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     }
 
     public String getTaskUid() {
-        return getFilterEntitiesFromTag(TASK_PREFIX).findFirst()
+        return getAssociatedEntities(TASK_PREFIX).findFirst()
                 .map(details -> details.split(TASK_FIELD_SEP)[0]).orElseThrow(IllegalArgumentException::new);
     }
 
     public TaskType getTaskType() {
-        return getFilterEntitiesFromTag(TASK_PREFIX).findFirst().map(details -> details.split(TASK_FIELD_SEP)[1])
+        return getAssociatedEntities(TASK_PREFIX).findFirst().map(details -> details.split(TASK_FIELD_SEP)[1])
                 .map(TaskType::valueOf).orElseThrow(IllegalArgumentException::new);
     }
 
     public boolean taskOnlyPositive() {
-        return getFilterEntitiesFromTag(TASK_PREFIX).findFirst().map(details -> details.split(TASK_FIELD_SEP)[2])
+        return getAssociatedEntities(TASK_PREFIX).findFirst().map(details -> details.split(TASK_FIELD_SEP)[2])
                 .map(Boolean::valueOf).orElseThrow(IllegalArgumentException::new);
     }
 
-    private void setFilterEntities(String prefix, Stream<String> entities) {
+    public void setEmailAttachments(List<String> mediaFileUids) {
+        if (mediaFileUids != null) {
+            this.setAssociatedEntities(EMAIL_ATTACHMENT_PREFIX, mediaFileUids.stream());
+        }
+    }
+
+    public List<String> getEmailAttachments() {
+        return this.getAssociatedEntities(EMAIL_ATTACHMENT_PREFIX).collect(Collectors.toList());
+    }
+
+    private void setAssociatedEntities(String prefix, Stream<String> entities) {
         List<String> nonPrefixTags = getTagList().stream()
                 .filter(s -> !s.startsWith(prefix)).collect(Collectors.toList());
         nonPrefixTags.addAll(entities.map(s -> prefix + s).collect(Collectors.toList()));

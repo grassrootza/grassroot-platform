@@ -14,6 +14,7 @@ import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 @Getter @Builder
 public class BroadcastComponents {
@@ -46,6 +47,7 @@ public class BroadcastComponents {
     private List<String> affiliations;
     private List<GroupJoinMethod> joinMethods;
     private JoinDateCondition joinDateCondition;
+    private List<Locale> filterLanguages;
     private String filterNamePhoneOrEmail;
     private @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     LocalDate joinDate;

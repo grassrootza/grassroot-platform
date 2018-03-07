@@ -56,7 +56,7 @@ public class IncomingImageFetchController {
     public ResponseEntity<byte[]> fetchImage(@PathVariable MediaFunction mediaFunction,
                                              @PathVariable String imageKey) throws IOException {
         MediaFileRecord record = mediaFileBroker.load(mediaFunction, imageKey);
-        log.info("media record retrieved: {}", record.getFileName());
+        log.info("record retrieved: {}", record);
         return convertRecordToResponse(record);
     }
 

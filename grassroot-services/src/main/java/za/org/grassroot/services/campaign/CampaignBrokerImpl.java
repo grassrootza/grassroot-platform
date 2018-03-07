@@ -390,6 +390,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         validateUserCanModifyCampaign(user, campaign);
 
+        log.info("campaign account: ", campaign.getAccount());
+
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         if (!StringUtils.isEmpty(name) && !campaign.getName().trim().equalsIgnoreCase(name)) {
             campaign.setName(name);

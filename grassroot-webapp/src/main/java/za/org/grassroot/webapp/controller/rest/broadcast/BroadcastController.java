@@ -10,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.BroadcastSchedule;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
@@ -88,7 +87,6 @@ public class BroadcastController extends BaseRestController {
         return ResponseEntity.ok(info);
     }
 
-    // todo : this should definitely be async, it's a very heavy operation
     @RequestMapping(value = "/create/group/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Create a broadcast on the group", notes = "NB : this will be a heavy operation, so do it async")
     public ResponseEntity<BroadcastDTO> createGroupBroadcast(HttpServletRequest request,
@@ -113,6 +111,7 @@ public class BroadcastController extends BaseRestController {
                 .joinMethods(createRequest.getJoinMethods())
                 .joinDateCondition(createRequest.getJoinDateCondition())
                 .joinDate(createRequest.getJoinDate())
+                .filterLanguages(createRequest.getFilterLanguages())
                 .filterNamePhoneOrEmail(createRequest.getFilterNamePhoneEmail())
                 .skipSmsIfEmail(createRequest.isSkipSmsIfEmail())
                 .build();
@@ -149,15 +148,6 @@ public class BroadcastController extends BaseRestController {
         return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
     }
 
-    @RequestMapping(value = "/create/image/upload", method = RequestMethod.POST)
-    @ApiOperation(value = "Upload an image for a broadcast", notes = "Will pass back an image key")
-    public ResponseEntity uploadImage(@RequestBody MultipartFile image) {
-        // todo : rate limiting?
-        log.info("do we have a file? : ", image);
-        String imageKey = mediaFileBroker.storeFile(image, MediaFunction.BROADCAST_IMAGE, image.getContentType(), null, image.getName());
-        return ResponseEntity.ok(imageKey);
-    }
-
     @RequestMapping(value = "/create/task/{taskType}/{taskUid}", method = RequestMethod.POST)
     public ResponseEntity<BroadcastDTO> sendTaskBroadcast(HttpServletRequest request, @PathVariable TaskType taskType,
                                                              @PathVariable String taskUid,
@@ -191,6 +181,7 @@ public class BroadcastController extends BaseRestController {
 
         if (createRequest.isSendEmail()) {
             bc.setEmail(generateEmail(createRequest));
+            log.info("attachment keys: {}", bc.getEmail().getAttachmentFileRecordUids());
         }
 
         if (createRequest.isPostToFacebook()) {
@@ -208,6 +199,7 @@ public class BroadcastController extends BaseRestController {
                 .subject(request.getTitle())
                 .content(request.getEmailContent())
                 .deliveryRoute(DeliveryRoute.EMAIL_USERACCOUNT) // for the moment, default
+                .attachmentFileRecordUids(request.getEmailAttachmentKeys())
                 .build();
     }
 

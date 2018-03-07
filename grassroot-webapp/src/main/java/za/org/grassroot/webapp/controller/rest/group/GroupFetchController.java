@@ -188,10 +188,11 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false)  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)  LocalDate joinDate,
                                                       @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
                                                       @RequestParam (required = false) String namePhoneOrEmail,
+                                                      @RequestParam (required = false) Collection<String> languages,
                                                       HttpServletRequest request) {
         return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
-                joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail).stream().map(MembershipFullDTO::new).collect(Collectors.toList());
+                joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages).stream().map(MembershipFullDTO::new).collect(Collectors.toList());
     }
 
     @RequestMapping(value = "/members/new", method = RequestMethod.GET)
