@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.MembershipInfo;
@@ -434,14 +436,14 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType) {
+    public void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
 
         validateJoinCode(group, tokenPassed);
         recordJoinCodeInbound(group, tokenPassed);
 
-        selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null);
+        selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null, sendJoiningNotification);
     }
 
     @Override
@@ -498,11 +500,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                     String.format("name: %s, province: %s", name, province), interfaceType));
         }
 
-        selfJoinViaCode(joiningUser, group, GroupJoinMethod.URL_JOIN_WORD, code, topics, userLogs);
+        selfJoinViaCode(joiningUser, group, GroupJoinMethod.URL_JOIN_WORD, code, topics, userLogs, false);
         return joiningUser.getUid();
     }
 
-    private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs) {
+    private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs,
+                                 boolean sendJoiningNotification) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, joinMethod, code);
         if (topics != null) {
@@ -524,7 +527,21 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         if (userLogs != null && !userLogs.isEmpty()) {
             bundle.addLogs(userLogs.stream().map(u -> (ActionLog) u).collect(Collectors.toSet()));
         }
+
+        if (sendJoiningNotification && group.isPaidFor()) {
+            final String userMessage = messageAssemblingService.createGroupJoinedMessage(user, group);
+            final Account groupAccount = accountGroupBroker.findAccountForGroup(group.getUid());
+            if (groupAccount != null) {
+                AccountLog accountLog = new AccountLog.Builder(groupAccount).accountLogType(AccountLogType.MESSAGE_SENT)
+                        .user(user).group(group).build();
+                Notification notification = new GroupWelcomeNotification(user, userMessage, accountLog);
+                bundle.addLog(accountLog);
+                bundle.addNotification(notification);
+            }
+        }
+
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
+
         storeBundleAfterCommit(bundle);
     }
 
@@ -1444,6 +1461,27 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         group.setTopics(topics);
+    }
+
+    @Override
+    @Transactional
+    public void setJoinTopics(String userUid, String groupUid, List<String> joinTopics) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(joinTopics);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        group.setJoinTopics(joinTopics);
+
+        // by definition, join topics get copied across as general topics
+        Set<String> newTopics = new HashSet<>(joinTopics);
+        newTopics.removeAll(group.getTopics());
+        logger.info("any join topics not in main ? : {}", newTopics);
+        group.addTopics(newTopics);
     }
 
     @Override

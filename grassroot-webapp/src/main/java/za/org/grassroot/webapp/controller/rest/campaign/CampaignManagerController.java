@@ -98,7 +98,7 @@ public class CampaignManagerController extends BaseRestController {
         if (cachedCampaigns != null) {
             return ResponseEntity.ok(cachedCampaigns);
         } else {
-            List<CampaignViewDTO> dbCampaigns = campaignBroker.getCampaignsCreatedByUser(getUserIdFromRequest(request))
+            List<CampaignViewDTO> dbCampaigns = campaignBroker.getCampaignsManagedByUser(getUserIdFromRequest(request))
                     .stream().map(CampaignViewDTO::new).collect(Collectors.toList());
             cacheUserCampaigns(userUid, dbCampaigns);
             return ResponseEntity.ok(dbCampaigns);
@@ -237,8 +237,12 @@ public class CampaignManagerController extends BaseRestController {
         String userUid = getUserIdFromRequest(request);
         log.info("altering campaign, setting fields: name = {}, desc = {}, image = {}, endDate = {}, landing = {}, petition = {}",
                 name, description, mediaFileUid, endDateMillis, landingUrl, petitionApi);
+
+        Instant endDate = endDateMillis != null ? Instant.ofEpochMilli(endDateMillis) : null;
+        log.info("and end date instant = {}", endDate);
         campaignBroker.updateCampaignDetails(userUid, campaignUid, name, description, mediaFileUid, removeImage != null && removeImage,
-                endDateMillis != null ? Instant.ofEpochMilli(endDateMillis) : null, newCode, landingUrl, petitionApi, joinTopics);
+                endDate, newCode, landingUrl, petitionApi, joinTopics);
+
         // doing this separately as is more important than other changes but not quite important enough for own method
         if (!StringUtils.isEmpty(newMasterGroupUid)) {
             Campaign priorUpdate = campaignBroker.load(campaignUid);

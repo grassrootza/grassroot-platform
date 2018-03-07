@@ -12,7 +12,7 @@ public interface MediaFileBroker {
 
     boolean doesFileExist(MediaFunction function, String imageKey);
 
-    String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey);
+    String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey, String fileName);
 
 
 }

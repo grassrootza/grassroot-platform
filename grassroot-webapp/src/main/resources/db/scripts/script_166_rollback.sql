@@ -1,0 +1,1 @@
+alter table media_file drop column file_name;

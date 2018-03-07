@@ -137,9 +137,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             throw new NoPaidAccountException();
         }
 
-        log.info("creating broadcast with Id: {}", bc.getBroadcastId());
+        // prepersist is not working as reliably as hoped (or is happening in wrong sequence), to generate this if blank, hence
+        final String uid = StringUtils.isEmpty(bc.getBroadcastId()) ? UIDGenerator.generateId() : bc.getBroadcastId();
+        log.info("creating broadcast, incoming ID {}, set id: {}", bc.getBroadcastId(), uid);
         Broadcast broadcast = Broadcast.builder()
-                .uid(bc.getBroadcastId())
+                .uid(uid)
                 .createdByUser(user)
                 .account(account)
                 .title(bc.getTitle())
@@ -264,14 +266,18 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private void sendScheduledBroadcast(Broadcast bc) {
 
-        if (bc.hasFbPost() && !bc.getFbPostSucceeded()) {
-            List<GenericPostResponse> fbResponse = socialMediaBroker.postToFacebook(extractFbFromBroadcast(bc));
-            bc.setFbPostSucceeded(fbResponse.stream().anyMatch(GenericPostResponse::isPostSuccessful));
-        }
+        try {
+            if (bc.hasFbPost() && !bc.getFbPostSucceeded()) {
+                List<GenericPostResponse> fbResponse = socialMediaBroker.postToFacebook(extractFbFromBroadcast(bc));
+                bc.setFbPostSucceeded(fbResponse.stream().anyMatch(GenericPostResponse::isPostSuccessful));
+            }
 
-        if (bc.hasTwitterPost() && !bc.getTwitterSucceeded()) {
-            GenericPostResponse twResponse = socialMediaBroker.postToTwitter(extractTweetFromBroadcast(bc));
-            bc.setTwitterSucceeded(twResponse.isPostSuccessful());
+            if (bc.hasTwitterPost() && !bc.getTwitterSucceeded()) {
+                GenericPostResponse twResponse = socialMediaBroker.postToTwitter(extractTweetFromBroadcast(bc));
+                bc.setTwitterSucceeded(twResponse.isPostSuccessful());
+            }
+        } catch (NullPointerException e) {
+            log.error("Strange null point error in sending scedhuled broadcast");
         }
 
         try {
@@ -514,7 +520,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .and(scheduledTimePast).and(notSent));
         log.info("found {} broadcasts to send", scheduledBroadcasts.size());
         // avoiding send for now, juuuust in case ...
-        if (!scheduledBroadcasts.isEmpty() && !environment.acceptsProfiles("production")) {
+        if (!scheduledBroadcasts.isEmpty()) {
             scheduledBroadcasts.forEach(this::sendScheduledBroadcast);
         }
     }

@@ -47,6 +47,7 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public MediaFileRecord load(MediaFunction function, String imageKey) {
         return recordRepository.findByBucketAndKey(getBucketForFunction(function), imageKey);
     }
@@ -58,16 +59,17 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
 
     @Override
     @Transactional
-    public String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey) {
+    public String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey, String fileName) {
         String bucket = getBucketForFunction(Objects.requireNonNull(function));
 
-        logger.info("storing a file, with function {}, bucket {}, content type: {}, passed mime type: {}, original name: {}",
-                function, file.getContentType(), mimeType, file.getOriginalFilename());
+        logger.info("storing a file, with function {}, bucket {}, content type: {}, passed mime type: {}, file name: {}, original name: {}",
+                function, bucket, file.getContentType(), mimeType, fileName, file.getOriginalFilename());
 
         MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
         String contentType = StringUtils.isEmpty(mimeType) ? file.getContentType() : mimeType;
+        String nameToUse = StringUtils.isEmpty(fileName) ? file.getOriginalFilename() : fileName;
         if (record == null)
-            record = new MediaFileRecord(bucket, contentType, imageKey);
+            record = new MediaFileRecord(bucket, contentType, imageKey, nameToUse);
 
         boolean fileStored = false;
         try {

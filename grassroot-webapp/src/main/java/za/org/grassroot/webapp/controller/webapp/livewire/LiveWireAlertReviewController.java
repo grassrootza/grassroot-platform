@@ -153,7 +153,8 @@ public class LiveWireAlertReviewController extends BaseController {
 
     @RequestMapping(value = "modify/images/add", method = RequestMethod.POST)
     public @ResponseBody String addImage(@RequestParam String alertUid, @RequestParam MultipartFile image) {
-        String mediaRecordUid = mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, "image/jpeg", null); // means UID will be used for key
+        String mediaRecordUid = mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, image.getContentType(), null,
+                image.getName()); // null in key means UID will be used for key
         liveWireAlertBroker.addMediaFile(getUserProfile().getUid(), alertUid, mediaFileBroker.load(mediaRecordUid));
         logger.info("added media file, returning UID = {}", mediaRecordUid);
         return mediaRecordUid;

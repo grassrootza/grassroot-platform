@@ -13,10 +13,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -26,6 +23,8 @@ import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
 @DynamicUpdate
 public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group>, TagHolder {
+
+    public static final String JOIN_TOPIC_PREFIX = "JOIN_TOPIC:";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -381,6 +380,20 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         Objects.requireNonNull(user);
         Membership membership = getMembership(user.getUid());
         return membership != null;
+    }
+
+    public List<String> getJoinTopics() {
+        return this.getTagList().stream().filter(s -> s.startsWith(JOIN_TOPIC_PREFIX))
+                .map(s -> s.substring(JOIN_TOPIC_PREFIX.length())).collect(Collectors.toList());
+    }
+
+    public void setJoinTopics(List<String> joinTopics) {
+        // first get all the non-affiliation tags
+        List<String> tags = getTagList().stream()
+                .filter(s -> !s.startsWith(JOIN_TOPIC_PREFIX)).collect(Collectors.toList());
+        // then add the topics
+        tags.addAll(joinTopics.stream().map(s -> JOIN_TOPIC_PREFIX + s).collect(Collectors.toSet()));
+        setTags(tags);
     }
 
     public Group getParent() {

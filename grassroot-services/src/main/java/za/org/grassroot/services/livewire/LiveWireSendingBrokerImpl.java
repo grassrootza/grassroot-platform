@@ -87,13 +87,17 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         List<String> alertEmails = new ArrayList<>(systemEmailAddresses);
         switch (alert.getDestinationType()) {
             case SINGLE_LIST:
-                alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                if (alert.getTargetSubscriber() != null) {
+                    alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                }
                 break;
             case PUBLIC_LIST:
                 alertEmails.addAll(collectPublicEmailAddresses(alert));
                 break;
             case SINGLE_AND_PUBLIC:
-                alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                if (alert.getTargetSubscriber() != null) {
+                    alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                }
                 alertEmails.addAll(collectPublicEmailAddresses(alert));
                 break;
         }
@@ -105,11 +109,11 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     private void sendEmails(LiveWireAlert alert, List<GrassrootEmail> emails) {
         DebugUtil.transactionRequired("");
         List<String> toAddresses = new ArrayList<>();
+        logger.info("attachment map in first mail: {}", emails.get(0).getAttachmentUidsAndNames());
         emails.forEach(e -> {
             e.setFromAddress(livewireEmailAddress);
             toAddresses.add(e.getAddress());
         });
-
         messagingServiceBroker.sendEmail(toAddresses, emails.get(0));
         alert.setSent(true);
     }
@@ -163,13 +167,16 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
                 .from("Grassroot LiveWire")
                 .subject(messageSource.getMessage(subject, new String[] {alert.getHeadline()}));
 
-        if (alert.getMediaFiles() != null && !alert.getMediaFiles().isEmpty()) {
-            // for the moment, we basically are just sending one as attachment (to change when gallery etc working)
-            logger.debug("trying to fetch the image ....");
-            File attachment = storageBroker.fetchFileFromRecord(alert.getMediaFiles().iterator().next());
-            logger.debug("fetched the image, adding it to email ...");
-            builder.attachment("image.jpg", attachment);
-        }
+//        if (alert.getMediaFiles() != null && !alert.getMediaFiles().isEmpty()) {
+//            // for the moment, we basically are just sending one as attachment (to change when gallery etc working)
+//            logger.debug("trying to fetch the image ....");
+//            File attachment = storageBroker.fetchFileFromRecord(alert.getMediaFiles().iterator().next());
+//            logger.debug("fetched the image, adding it to email ...");
+//            builder.attachment("image.jpg", attachment);
+//        }
+
+        alert.getMediaFiles().forEach(record -> builder.attachmentByKey(record.getUid(), record.getFileName()));
+        logger.info("added {} media files, map looks like {}", alert.getMediaFiles().size(), builder.getAttachmentUidsAndNames());
 
         final Context ctx = new Context(Locale.ENGLISH);
 

@@ -4,6 +4,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,15 +18,12 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.repository.GroupLogRepository;
-import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -47,11 +46,11 @@ public class IncomingSMSController {
     private final UserResponseBroker userResponseBroker;
     private final UserManagementService userManager;
 
-    private final NotificationService notificationService;
-
     private final GroupBroker groupBroker;
     private final CampaignBroker campaignBroker;
 
+    private final MessageSourceAccessor messageSource;
+    private final NotificationService notificationService;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     private static final String FROM_PARAMETER_REPLY ="fn";
@@ -64,11 +63,13 @@ public class IncomingSMSController {
 
     @Autowired
     public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker, MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
-                                 NotificationService notificationService, CampaignBroker campaignBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+                                 NotificationService notificationService, CampaignBroker campaignBroker,
+                                 @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSource, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userResponseBroker = userResponseBroker;
 
         this.userManager = userManager;
         this.groupBroker = groupBroker;
+        this.messageSource = messageSource;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.notificationService = notificationService;
         this.campaignBroker = campaignBroker;
@@ -87,8 +88,7 @@ public class IncomingSMSController {
     }
 
     @RequestMapping(value = "initiated/group", method = RequestMethod.GET)
-    @ApiOperation(value = "Incoming SMS, under the 'group' short code",
-            notes = "For when we receive an out of the blue SMS, on the group number")
+    @ApiOperation(value = "Incoming SMS, under the 'group' short code", notes = "For when we receive an out of the blue SMS, on the group number")
     public void receiveGroupSms(@RequestParam(value = FROM_PARAMETER_NEW) String phoneNumber,
                                 @RequestParam(value = MSG_TEXT_PARAM_NEW) String message) {
         log.info("Inside receiving a message on group list, received {} as message", message);
@@ -98,22 +98,15 @@ public class IncomingSMSController {
                 .filter(entry -> entry.getKey().toLowerCase().equalsIgnoreCase(message))
                 .map(Map.Entry::getValue).collect(Collectors.toSet());
 
-        if (groupMatches.size() == 1) {
+        if (!groupMatches.isEmpty()) {
+            // disambiguate somehow ... for the moment, just adding the first
             User user = userManager.loadOrCreateUser(phoneNumber);
-            // as above, work through and strip out various words
-            groupBroker.addMemberViaJoinCode(user.getUid(), groupMatches.iterator().next(), message,
-                    UserInterfaceType.INCOMING_SMS);
-        } else if (groupMatches.size() > 1) {
-            // disambiguate somehow
-            User user = userManager.loadOrCreateUser(phoneNumber);
-            // for the moment, just adding the first
-            groupBroker.addMemberViaJoinCode(user.getUid(), groupMatches.iterator().next(), message,
-                    UserInterfaceType.INCOMING_SMS);
+            final String groupUid = groupMatches.iterator().next();
+            groupBroker.addMemberViaJoinCode(user.getUid(), groupUid, message, UserInterfaceType.INCOMING_SMS, true);
         } else {
             log.info("received a join word but don't know what to do with it");
         }
     }
-
 
     @RequestMapping(value = "reply", method = RequestMethod.GET)
     @ApiOperation(value = "Send in an incoming SMS, replying to one of our messages", notes = "For when an end-user SMSs a reply to the platform. " +
@@ -194,7 +187,6 @@ public class IncomingSMSController {
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
-
     }
 
 }

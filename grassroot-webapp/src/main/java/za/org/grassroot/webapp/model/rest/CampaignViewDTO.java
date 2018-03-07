@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.model.rest;
 
 import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -19,7 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Getter @Slf4j
+@Getter @Slf4j @ToString
 public class CampaignViewDTO {
 
     private String campaignUid;

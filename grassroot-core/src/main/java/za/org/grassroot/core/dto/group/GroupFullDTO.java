@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipDTO;
@@ -28,6 +29,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
     @Setter private List<MembershipRecordDTO> memberHistory;
     @Setter private List<GroupMembersDTO> subGroups = new ArrayList<>();
     @Setter private List<String> topics = new ArrayList<>();
+    @Setter private List<String> joinTopics = new ArrayList<>();
     @Setter private List<String> affiliations = new ArrayList<>();
     @Setter private List<JoinWordDTO> joinWords = new ArrayList<>();
     @Setter private int joinWordsLeft;
@@ -37,6 +39,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
         super(group, membership);
         this.joinCode = group.getGroupTokenCode();
         this.topics.addAll(group.getTopics());
+        this.joinTopics.addAll(group.getJoinTopics());
         this.paidFor = group.isPaidFor();
         this.reminderMinutes = group.getReminderMinutes();
         this.joinWords.addAll(group.getGroupJoinCodes().stream()
