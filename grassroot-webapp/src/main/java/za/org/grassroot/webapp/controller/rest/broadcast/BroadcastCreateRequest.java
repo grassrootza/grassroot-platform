@@ -13,6 +13,7 @@ import za.org.grassroot.core.enums.Province;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 @NoArgsConstructor @Getter @Setter @ToString
 public class BroadcastCreateRequest {
@@ -25,6 +26,7 @@ public class BroadcastCreateRequest {
 
     private boolean sendEmail;
     private String emailContent;
+    private List<String> emailAttachmentKeys;
 
     private boolean postToFacebook;
     private List<String> facebookPages;
@@ -47,6 +49,7 @@ public class BroadcastCreateRequest {
     private List<String> affiliations;
     private List<String> taskTeams;
     private List<GroupJoinMethod> joinMethods;
+    private List<Locale> filterLanguages;
 
     private String filterNamePhoneEmail;
 

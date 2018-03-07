@@ -140,6 +140,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         // prepersist is not working as reliably as hoped (or is happening in wrong sequence), to generate this if blank, hence
         final String uid = StringUtils.isEmpty(bc.getBroadcastId()) ? UIDGenerator.generateId() : bc.getBroadcastId();
         log.info("creating broadcast, incoming ID {}, set id: {}", bc.getBroadcastId(), uid);
+        log.info("broadcast email attachments? : {}", bc.getEmail().getAttachmentFileRecordUids());
+
         Broadcast broadcast = Broadcast.builder()
                 .uid(uid)
                 .createdByUser(user)
@@ -215,6 +217,10 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         if (bc.getJoinDateCondition() != null) {
             broadcast.setJoinDateCondition(bc.getJoinDateCondition());
             broadcast.setJoinDateValue(bc.getJoinDate());
+        }
+
+        if (bc.getFilterLanguages() != null && !bc.getFilterLanguages().isEmpty()) {
+            broadcast.setLanguages(bc.getFilterLanguages());
         }
     }
 
@@ -303,6 +309,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             broadcast.setEmailImageKey(email.getImageUid());
             log.info("email delivery route: {}", email.getDeliveryRoute());
             broadcast.setEmailDeliveryRoute(email.getDeliveryRoute());
+            broadcast.setEmailAttachments(email.getAttachmentFileRecordUids());
         }
     }
 
@@ -312,6 +319,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .content(broadcast.getEmailIncludingMerge(recipient, SDF, NO_PROVINCE, Province.CANONICAL_NAMES_ZA))
                 .deliveryRoute(broadcast.getEmailDeliveryRoute())
                 .imageUid(broadcast.getEmailImageKey())
+                .attachmentFileRecordUids(broadcast.getEmailAttachments())
                 .build();
     }
 
@@ -421,7 +429,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         if (bc.hasFilter()) {
             membersToReceive = groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(), provinceResrictions, taskTeamUids,
-                    topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition, bc.getNamePhoneEmailFilter(), null);
+                    topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition,
+                    bc.getNamePhoneEmailFilter(), bc.getFilterLanguages());
         } else if (bc.hasTask()) {
             membersToReceive = taskBroker.fetchMembersAssignedToTask(bc.getCreatedByUser().getUid(),
                     bc.getTaskUid(), bc.getTaskType(), bc.taskOnlyPositive());

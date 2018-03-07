@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -79,6 +80,16 @@ public class GrassrootEmail {
         public EmailBuilder attachment(String attachmentName, File attachment) {
             this.attachmentName = attachmentName;
             this.attachment = attachment;
+            return this;
+        }
+
+        public EmailBuilder attachmentRecordUids(List<String> attachmentUids) {
+            if (attachmentUids != null) {
+                if (this.attachmentUidsAndNames == null) {
+                    this.attachmentUidsAndNames = new HashMap<>();
+                }
+                attachmentUids.forEach(uid -> this.attachmentUidsAndNames.put(uid, ""));
+            }
             return this;
         }
 
