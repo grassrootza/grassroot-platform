@@ -49,7 +49,7 @@ public class MediaController {
                                                              @RequestParam(required = false) String imageKey,
                                                              @RequestParam(required = false) String mimeType,
                                                              @RequestBody MultipartFile file) {
-        log.info("Media function: {}, File: {}", mediaFunction, file);
+        log.info("Media function: {}, File Name: {}", mediaFunction, file.getOriginalFilename());
         return storeMediaFile(mediaFunction, imageKey, mimeType, file);
     }
 
@@ -62,7 +62,7 @@ public class MediaController {
         boolean duplicate = mediaFileBroker.doesFileExist(mediaFunction, imageKey);
         String storedFileUid = duplicate ?
                 mediaFileBroker.load(mediaFunction, imageKey).getUid() :
-                mediaFileBroker.storeFile(file, mediaFunction, mimeType, imageKey, file.getName());
+                mediaFileBroker.storeFile(file, mediaFunction, mimeType, imageKey, file.getOriginalFilename());
         return RestUtil.okayResponseWithData(duplicate ? RestMessage.ALREADY_EXISTS : RestMessage.UPLOADED, storedFileUid);
     }
 

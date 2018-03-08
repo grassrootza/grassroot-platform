@@ -12,6 +12,7 @@ import za.org.grassroot.core.enums.Province;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 @Getter @Setter
 public class BroadcastDTO {
@@ -43,6 +44,7 @@ public class BroadcastDTO {
     private List<String> taskTeamNames;
     private List<String> affiliations;
     private List<GroupJoinMethod> joinMethods;
+    private List<Locale> languages;
     private JoinDateCondition joinDateCondition;
     private LocalDate joinDate;
 
