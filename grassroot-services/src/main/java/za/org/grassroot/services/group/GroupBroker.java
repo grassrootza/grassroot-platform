@@ -10,10 +10,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public interface GroupBroker {
 
@@ -66,7 +63,9 @@ public interface GroupBroker {
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification);
 
     String addMemberViaJoinPage(String groupUid, String code, String broadcastId, String userUid, String name, String phone, String email,
-                                Province province, List<String> topics, UserInterfaceType interfaceType);
+                                Province province, Locale language, List<String> topics, UserInterfaceType interfaceType);
+
+    void setMemberJoinTopics(String userUid, String groupUid, String memberUid, List<String> joinTopics);
 
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 

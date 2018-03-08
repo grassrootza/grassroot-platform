@@ -6,10 +6,7 @@ import lombok.Setter;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 
-
-@Getter
-@Setter
-@NoArgsConstructor
+@Getter @Setter @NoArgsConstructor
 public class UserFullDTO {
 
     private String uid;
@@ -21,7 +18,7 @@ public class UserFullDTO {
     private boolean enabled;
     private String languageCode;
     private Province province;
-
+    private boolean hasPassword;
 
     public UserFullDTO(User user) {
 
@@ -34,6 +31,7 @@ public class UserFullDTO {
         this.uid = user.getUid();
         this.email = user.getEmailAddress();
         this.province = user.getProvince();
+        this.hasPassword = user.hasPassword();
     }
 
 

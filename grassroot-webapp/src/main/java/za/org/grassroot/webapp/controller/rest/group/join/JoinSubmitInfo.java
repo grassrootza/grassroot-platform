@@ -7,6 +7,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.enums.Province;
 
 import java.util.List;
+import java.util.Locale;
 
 @AllArgsConstructor @Getter
 public class JoinSubmitInfo {
@@ -15,6 +16,8 @@ public class JoinSubmitInfo {
     String email;
     String phone;
     String province;
+    Locale language;
+
     List<String> topics;
 
     public Province safeProvince() {
