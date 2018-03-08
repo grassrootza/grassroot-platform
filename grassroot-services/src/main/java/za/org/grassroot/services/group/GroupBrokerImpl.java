@@ -449,7 +449,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Override
     @Transactional
     public String addMemberViaJoinPage(String groupUid, String code, String broadcastId, String userUid, String name, String phone,
-                                       String email, Province province, List<String> topics, UserInterfaceType interfaceType) {
+                                       String email, Province province, Locale language, List<String> topics, UserInterfaceType interfaceType) {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(code);
         if (StringUtils.isEmpty(userUid) && StringUtils.isEmpty(phone) && StringUtils.isEmpty(email)) {
@@ -488,6 +488,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             updatedUserDetails = userExists;
         }
 
+        if (language != null) {
+            joiningUser.setLanguageCode(language.getLanguage());
+            updatedUserDetails = userExists;
+        }
+
         if (!StringUtils.isEmpty(name)) {
             joiningUser.setDisplayName(name);
             updatedUserDetails = userExists;
@@ -504,6 +509,23 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         return joiningUser.getUid();
     }
 
+    @Override
+    @Transactional
+    public void setMemberJoinTopics(String userUid, String groupUid, String memberUid, List<String> joinTopics) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        User member = userRepository.findOneByUid(Objects.requireNonNull(memberUid));
+        Group group = groupRepository.findOneByUid(Objects.requireNonNull(groupUid));
+
+        if (!user.equals(member)) {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+
+        Membership membership = group.getMembership(member);
+        membership.addTopics(new HashSet<>(joinTopics));
+
+        logger.info("okay, adding topics at join, passed {}, got {}", joinTopics, membership.getTopics());
+    }
+
     private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs,
                                  boolean sendJoiningNotification) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
@@ -511,6 +533,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         if (topics != null) {
             membership.setTopics(new HashSet<>(topics));
         }
+        // we are going to assume this at present - but switch to a view layer toggle if user feedback implies should
+        membership.setViewPriority(GroupViewPriority.PINNED);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         // recursively add user to all parent groups

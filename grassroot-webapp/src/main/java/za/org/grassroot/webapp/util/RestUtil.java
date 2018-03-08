@@ -61,10 +61,6 @@ public class RestUtil {
         return errorResponse(HttpStatus.BAD_REQUEST, restMessage);
     }
 
-    public static ResponseEntity<ResponseWrapper> internalErrorResponse(RestMessage restMessage) {
-        return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, restMessage);
-    }
-
     public static ResponseEntity<ResponseWrapper> accessDeniedResponse() {
         return new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
     }
