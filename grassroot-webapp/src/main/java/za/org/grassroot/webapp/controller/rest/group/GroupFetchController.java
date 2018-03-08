@@ -324,6 +324,17 @@ public class GroupFetchController extends BaseRestController {
         }
     }
 
+    @RequestMapping(value = "/inbound-messages/{groupUid}", method = RequestMethod.GET)
+    public Page<GroupLogDTO> fetchInboundMessagesByGroupUid(@PathVariable String groupUid,
+                                                              @RequestParam (required = false) Long from,
+                                                              @RequestParam (required = false) Long to,
+                                                              @RequestParam (required = false) String keyword,
+                                                              Pageable pageable, HttpServletRequest request) {
+            User user = getUserFromRequest(request);
+            Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
+            return  groupBroker.getGroupLogsByGroup(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword, pageable);
+    }
+
     private FileSystemResource generateFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
         try {
             return new FileSystemResource(generatingService.generateGroupFlyer(groupUid, color, language, typeOfFile));

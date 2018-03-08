@@ -1,5 +1,6 @@
 package za.org.grassroot.core.specifications;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 
@@ -7,8 +8,15 @@ import za.org.grassroot.core.domain.*;
 
 import za.org.grassroot.core.enums.GroupLogType;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class GroupLogSpecifications {
 
@@ -51,5 +59,26 @@ public class GroupLogSpecifications {
                 .and(ofTypes(GroupLogType.targetUserAddedOrRemovedTypes))
                 .and(between(startDate, endDate));
     }
+
+    public static Specification<GroupLog> forInboundMessages(Group group, Instant from, Instant to, String keyword) {
+        return (Root<GroupLog> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
+
+            List<Predicate> restrictions = new ArrayList<>();
+
+            if(from != null && to != null) {
+                restrictions.add( cb.between(root.get(GroupLog_.createdDateTime), from, to.plus(1, ChronoUnit.DAYS)));
+            }
+
+            if(!StringUtils.isEmpty(keyword)) {
+                restrictions.add(cb.like(cb.lower(root.get(GroupLog_.description)), '%' + keyword.toLowerCase() + '%'));
+            }
+            restrictions.add(cb.equal(root.get(GroupLog_.groupLogType), GroupLogType.USER_SENT_UNKNOWN_RESPONSE));
+
+            restrictions.add(cb.equal(root.get(GroupLog_.group).get(Group_.uid), group.getUid()));
+
+            return cb.and(restrictions.toArray(new Predicate[0]));
+        };
+    }
+
 
 }
