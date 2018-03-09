@@ -9,6 +9,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,8 +25,10 @@ import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.group.GroupLogDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
@@ -1814,6 +1818,14 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             logger.info("MSG....={}",s);
             logger.info("Length....={}",s.length());
         }
+    }
+
+    @Override
+    @Transactional
+    public Page<GroupLogDTO> getGroupLogsByGroup(User user, Group group, Instant from, Instant to, String keyword, Pageable pageable) {
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        Page<GroupLog> page = groupLogRepository.findAll(Specifications.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)), pageable);
+        return page.map(GroupLogDTO::new);
     }
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
