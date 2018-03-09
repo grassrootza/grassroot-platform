@@ -152,7 +152,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.emailAddress = StringUtils.isEmpty(emailAddress) ? null : emailAddress;
         this.username = StringUtils.isEmpty(phoneNumber) ? emailAddress : phoneNumber;
         this.displayName = removeUnwantedCharacters(displayName);
-        this.languageCode = "en";
+//        this.languageCode = "en";
         this.messagingPreference = !StringUtils.isEmpty(phoneNumber) ? DeliveryRoute.SMS : DeliveryRoute.EMAIL_GRASSROOT; // as default
         this.createdDateTime = Instant.now();
         this.alertPreference = AlertPreference.NOTIFY_NEW_AND_REMINDERS;
@@ -199,6 +199,16 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
 
     public Locale getLocale() {
         return (languageCode == null || languageCode.trim().isEmpty()) ? Locale.US: new Locale(languageCode);
+    }
+
+    public String getLanguageCode() {
+        // doing this to deal with legacy of bad choice setting this in constructor and then using accessor everywhere
+        // clean up in a future refactor
+        return languageCode == null ? "en" : languageCode;
+    }
+
+    public boolean hasLanguage() {
+        return !(languageCode == null || (languageCode.equals("en") && !hasInitiatedSession));
     }
 
     public void setLanguageCode(String languageCode) {

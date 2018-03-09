@@ -3,16 +3,14 @@ package za.org.grassroot.webapp.controller.ussd;
 import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.h2.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
@@ -32,10 +30,7 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
@@ -103,23 +98,76 @@ public class USSDGroupController extends USSDBaseController {
      */
     protected USSDMenu lookForJoinCode(User user, String trailingDigits) {
         Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
-        if (searchResult.isPresent()) {
-            Group group = searchResult.get();
-            log.info("adding user via join code ...");
-            groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD, false);
-            String prompt = (group.hasName()) ?
-                    getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
-                    getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);
-            return welcomeMenu(prompt, user);
-        } else {
+        if (!searchResult.isPresent())
             return null;
+
+        Group group = searchResult.get();
+        log.debug("adding user via join code ... {}", trailingDigits);
+        Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD, false);
+        if (group.getJoinTopics() != null && !group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
+            final String prompt = getMessage(HOME, startMenu, promptKey + ".group.topics", group.getName(), user);
+            final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
+            USSDMenu menu = new USSDMenu(prompt);
+            group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + topic, topic));
+            return menu;
+        } else {
+            String promptStart = (group.hasName()) ? getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
+                    getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);
+            return setUserProfile(user, promptStart);
+        }
+    }
+
+    @RequestMapping(value = homePath + "group/join/topics")
+    @ResponseBody public Request setJoinTopics(@RequestParam(value = phoneNumber) String inputNumber,
+                                               @RequestParam String groupUid,
+                                               @RequestParam String topic) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        groupBroker.setMemberJoinTopics(user.getUid(), groupUid, user.getUid(), Collections.singletonList(topic));
+        String prompt = getMessage(HOME, startMenu, "prompt.group.topics.set", topic, user);
+        return menuBuilder(setUserProfile(user, prompt));
+    }
+
+    @RequestMapping(value = homePath + "group/join/profile")
+    @ResponseBody public Request setUserProfileMenu(@RequestParam(value = phoneNumber) String inputNumber,
+                                                    @RequestParam(value = "field") String field,
+                                                    @RequestParam(value = "province", required = false) Province province,
+                                                    @RequestParam(value = "language", required = false) Locale language,
+                                                    @RequestParam(value = userInputParam, required = false) String name) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+
+        if ("PROVINCE".equals(field)) {
+            userManager.updateUserProvince(user.getUid(), province);
+        } else if ("LANGUAGE".equals(field)) {
+            userManager.updateUserLanguage(user.getUid(), language);
+        } else if ("NAME".equals(field) && !StringUtils.isEmpty(name) && name.length() > 1) {
+            userManager.updateDisplayName(user.getUid(), user.getUid(), name);
+        }
+
+        String prompt = getMessage("home.start.profile.step", user);
+        User updatedUser = userManager.load(user.getUid());
+        log.info("updated user, now set as : {}", updatedUser);
+        return menuBuilder(setUserProfile(updatedUser, prompt));
+    }
+
+    private USSDMenu setUserProfile(User user, String promptStart) {
+        String promptSuffix;
+        log.info("does user have language ? : {}, lang code = {}", user.hasLanguage(), user.getLanguageCode());
+        if (!user.hasLanguage()) {
+            promptSuffix = getMessage("home.start.prompt.language", user);
+            return new USSDMenu(promptStart + " " + promptSuffix, languageOptions("group/join/profile?field=LANGUAGE&language="));
+        } else if (user.getProvince() == null) {
+            promptSuffix = getMessage("home.start.prompt.province", user);
+            return new USSDMenu(promptStart + " " + promptSuffix, provinceOptions(user, "group/join/profile?field=PROVINCE&province="));
+        } else {
+            return !userManager.needsToRenameSelf(user) ? welcomeMenu(promptStart, user) :
+                    new USSDMenu(getMessage(HOME, USSDBaseController.startMenu, promptKey + "-rename.short", user), "rename-start");
         }
     }
 
     /*
     Pagination helper
      */
-    @RequestMapping(value = homePath + "group_page")
+    @RequestMapping(value = homePath + "group_page", method = RequestMethod.GET)
     @ResponseBody
     public Request groupPaginationHelper(@RequestParam(value = phoneNumber) String inputNumber,
                                          @RequestParam(value = "prompt") String prompt,
@@ -642,7 +690,7 @@ public class USSDGroupController extends USSDBaseController {
         User user = userManager.findByInputNumber(msisdn);
         Group group = groupBroker.load(groupUid);
         Membership membership = group.getMembership(user);
-        String prompt = StringUtils.isNullOrEmpty(membership.getAlias()) ?
+        String prompt = StringUtils.isEmpty(membership.getAlias()) ?
                 getMessage(thisSection, "alias", promptKey, user) :
                 getMessage(thisSection, "alias", promptKey + ".existing", membership.getAlias(), user);
         return menuBuilder(new USSDMenu(prompt, groupMenuWithId("alias-do", groupUid)));
@@ -654,11 +702,12 @@ public class USSDGroupController extends USSDBaseController {
                                @RequestParam String groupUid,
                                @RequestParam(value = userInputParam) String input) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
-        if (!StringUtils.isNullOrEmpty(input) && !"0".equals(input) && StringUtils.isNumber(input)) {
+        // todo : double check this
+        if (!StringUtils.isEmpty(input) && !"0".equals(input) && input.matches("[0-9]")) {
             String prompt = getMessage(thisSection, "alias", promptKey + ".error", user);
             return menuBuilder(new USSDMenu(prompt, groupMenuWithId("alias-do", groupUid)));
         } else {
-            boolean resetName = StringUtils.isNullOrEmpty(input) || "0".equals(input);
+            boolean resetName = StringUtils.isEmpty(input) || "0".equals(input);
             groupBroker.updateMemberAlias(user.getUid(), groupUid, resetName ? null : input);
             String renamed = resetName ? user.getDisplayName() : input;
             String prompt = getMessage(thisSection, "alias", promptKey + ".done", renamed, user);

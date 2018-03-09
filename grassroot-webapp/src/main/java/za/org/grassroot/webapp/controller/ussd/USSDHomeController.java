@@ -210,7 +210,7 @@ public class USSDHomeController extends USSDBaseController {
                 welcomeMenu(getMessage(HOME, startMenu, promptKey + ".unknown.request", user), user);
     }
 
-    private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
+    private USSDMenu defaultStartMenu(User sessionUser) {
         String welcomeMessage = sessionUser.hasName() ?
                 getMessage(thisSection, startMenu, promptKey + "-named", sessionUser.getName(""), sessionUser) :
                 getMessage(thisSection, startMenu, promptKey, sessionUser);
@@ -237,7 +237,6 @@ public class USSDHomeController extends USSDBaseController {
 
     /*
     Section of helper methods for opening menu response handling
-    todo : move these into campaign controller, as above
      */
     private USSDMenu assembleSendMeAndroidLinkMenu(User user) {
         userManager.sendAndroidLinkSms(user.getUid());

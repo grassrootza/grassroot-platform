@@ -60,7 +60,7 @@ public interface GroupBroker {
 
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
 
-    void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification);
+    Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification);
 
     String addMemberViaJoinPage(String groupUid, String code, String broadcastId, String userUid, String name, String phone, String email,
                                 Province province, Locale language, List<String> topics, UserInterfaceType interfaceType);

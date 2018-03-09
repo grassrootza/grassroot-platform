@@ -10,6 +10,7 @@ import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
+import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -181,6 +182,14 @@ public class USSDBaseController {
         Map<String, String> options = new LinkedHashMap<>();
         Province.ZA_CANONICAL.forEach(p ->
                 options.put(url + p, getMessage("province." + p.name().substring("ZA_".length()), user)));
+        return options;
+    }
+
+    protected Map<String, String> languageOptions(String url) {
+        Map<String, String> options = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : BaseController.getImplementedLanguages().entrySet()) {
+            options.put(url + entry.getKey(), entry.getValue());
+        }
         return options;
     }
 

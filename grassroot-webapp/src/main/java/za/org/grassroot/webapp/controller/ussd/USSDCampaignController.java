@@ -50,7 +50,7 @@ public class USSDCampaignController extends USSDBaseController {
                                               @RequestParam(value = USSDCampaignConstants.LANGUAGE_PARAMETER) String languageCode) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        if(StringUtils.isEmpty(user.getLanguageCode())) {
+        if(!user.hasLanguage()) {
             userManager.updateUserLanguage(user.getUid(), new Locale(languageCode));
         }
         CampaignMessage campaignMessage = campaignBroker.getOpeningMessage(campaignUid, new Locale(languageCode), UserInterfaceType.USSD, null);

@@ -436,14 +436,14 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification) {
+    public Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
 
         validateJoinCode(group, tokenPassed);
         recordJoinCodeInbound(group, tokenPassed);
 
-        selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null, sendJoiningNotification);
+        return selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null, sendJoiningNotification);
     }
 
     @Override
@@ -526,15 +526,17 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("okay, adding topics at join, passed {}, got {}", joinTopics, membership.getTopics());
     }
 
-    private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs,
+    private Membership selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs,
                                  boolean sendJoiningNotification) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, joinMethod, code);
         if (topics != null) {
             membership.setTopics(new HashSet<>(topics));
         }
-        // we are going to assume this at present - but switch to a view layer toggle if user feedback implies should
-        membership.setViewPriority(GroupViewPriority.PINNED);
+        if (membership != null) {
+            // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
+            membership.setViewPriority(GroupViewPriority.PINNED);
+        }
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         // recursively add user to all parent groups
@@ -567,6 +569,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
 
         storeBundleAfterCommit(bundle);
+
+        return group.getMembership(user);
     }
 
     private GroupJoinMethod getJoinMethodFromInterface(UserInterfaceType interfaceType) {
