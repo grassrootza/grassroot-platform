@@ -1,6 +1,7 @@
 package za.org.grassroot.services.group;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
+import za.org.grassroot.core.dto.group.GroupLogDTO;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
@@ -192,6 +194,36 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
             log.info("email assembled, putting it in the queue");
             messageBroker.sendEmail(Collections.singletonList(emailAddress), email);
         }
+    }
+
+    @Override
+    public XSSFWorkbook exportInboundMessages(List<GroupLogDTO> inboundMessages) {
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Group inbound messages");
+
+        generateHeader(workbook, sheet, new String[]{"User name", "Phone number", "Message", "Time created"}, new int[]{5000, 5000, 15000, 5000});
+
+        //table content stuff
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+
+        //we are starting from 1 because row number 0 is header
+        int rowIndex = 1;
+        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+                .withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
+
+        for (GroupLogDTO inboundMessage : inboundMessages) {
+            addRow(sheet, rowIndex, new String[]{inboundMessage.getTargetUser().getDisplayName(),
+                    inboundMessage.getTargetUser().getPhoneNumber(), inboundMessage.getDescription(), formatter.format(inboundMessage.getCreatedDateTime())});
+            rowIndex++;
+
+        }
+
+        return workbook;
     }
 
     private void generateHeader(XSSFWorkbook workbook, XSSFSheet sheet, String[] columnNames, int[] columnWidths) {

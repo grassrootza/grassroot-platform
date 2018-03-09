@@ -1828,6 +1828,14 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         return page.map(GroupLogDTO::new);
     }
 
+    @Override
+    @Transactional
+    public List<GroupLogDTO> getGroupLogsByGroupForExport(User user, Group group, Instant from, Instant to, String keyword) {
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        List<GroupLog> list = groupLogRepository.findAll(Specifications.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)));
+        return list.stream().map(GroupLogDTO::new).collect(Collectors.toList());
+    }
+
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
         return membersLeftForGroup(group) > numberOfMembersAdding;
     }

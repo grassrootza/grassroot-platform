@@ -150,4 +150,6 @@ public interface GroupBroker {
 
     Page<GroupLogDTO> getGroupLogsByGroup(User user, Group group, Instant from, Instant to, String keyword, Pageable pageable);
 
+    List<GroupLogDTO> getGroupLogsByGroupForExport(User user, Group group, Instant from, Instant to, String keyword);
+
 }

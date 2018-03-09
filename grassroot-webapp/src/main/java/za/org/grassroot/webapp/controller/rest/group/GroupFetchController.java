@@ -335,6 +335,43 @@ public class GroupFetchController extends BaseRestController {
             return  groupBroker.getGroupLogsByGroup(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword, pageable);
     }
 
+    @RequestMapping(value = "/inbound-messages/{groupUid}/download", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> fetchInboundMessagesForDownloadByGroupUid(@PathVariable String groupUid,
+                                                            @RequestParam (required = false) Long from,
+                                                            @RequestParam (required = false) Long to,
+                                                            @RequestParam (required = false) String keyword,
+                                                            HttpServletRequest request) {
+
+        try {
+
+            User user = getUserFromRequest(request);
+            Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
+
+            String fileName = "inbound_messages.xlsx";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+            headers.add("Cache-Control", "no-cache");
+            headers.add("Pragma", "no-cache");
+            headers.add("Expires", "0");
+
+            List<GroupLogDTO> inboundMessages = groupBroker.getGroupLogsByGroupForExport(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword);
+
+            XSSFWorkbook xls = memberDataExportBroker.exportInboundMessages(inboundMessages);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            xls.write(baos);
+            return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
+        } catch (IOException e) {
+            logger.error("IO Exception generating spreadsheet!", e);
+            throw new FileCreationException();
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+
+
+    }
+
+
     private FileSystemResource generateFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
         try {
             return new FileSystemResource(generatingService.generateGroupFlyer(groupUid, color, language, typeOfFile));
