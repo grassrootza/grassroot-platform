@@ -100,9 +100,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     private String assembleUssdGatewayAccessString() {
+        if (environment.acceptsProfiles("localpg"))
+            return "permitAll";
+
         final String ussdGateways = environment.getProperty("grassroot.ussd.gateway", "127.0.0.1");
         List<String> gatewayAddresses = Arrays.asList(ussdGateways.split(";"));
-        log.info("found gateway addresses, split them as : {}", gatewayAddresses);
+        log.debug("found gateway addresses, split them as : {}", gatewayAddresses);
         String accessStringFormat = "hasIpAddress('%s')";
         String returnString = String.format(accessStringFormat, gatewayAddresses.get(0));
         if (gatewayAddresses.size() > 1) {

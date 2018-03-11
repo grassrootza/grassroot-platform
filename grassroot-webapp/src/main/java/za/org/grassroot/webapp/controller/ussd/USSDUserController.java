@@ -89,9 +89,6 @@ public class USSDUserController extends USSDBaseController {
     @ResponseBody
     public Request userChangeName(@RequestParam(value= phoneNumber, required=true) String inputNumber,
                                   @RequestParam(value= userInputParam, required=true) String newName) throws URISyntaxException {
-
-        // todo: add validation and processing of the name that is passed, as well as exception handling etc
-
         User sessionUser = userManager.findByInputNumber(inputNumber);
         userManager.updateDisplayName(sessionUser.getUid(), sessionUser.getUid(), newName);
 

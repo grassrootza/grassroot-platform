@@ -136,7 +136,7 @@ public class UserController extends BaseRestController {
                     "validation = {}", name, phone, email, language, province, validationOtp);
 
             boolean updateCompleted = userService.updateUser(user.getUid(), name, phone, email, province,
-                user.getAlertPreference(), new Locale(user.getLanguageCode()), validationOtp);
+                user.getAlertPreference(), user.getLocale(), validationOtp);
 
             if (!updateCompleted) {
                 sendOtp(user);

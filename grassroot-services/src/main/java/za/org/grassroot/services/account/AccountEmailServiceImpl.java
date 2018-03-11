@@ -9,21 +9,21 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountBillingRecord;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
 import za.org.grassroot.core.dto.GrassrootEmail;
-import za.org.grassroot.services.util.MessageUtils;
 
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
-import static za.org.grassroot.services.util.MessageUtils.getUserLocale;
-import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
+import static za.org.grassroot.services.MessageAssemblingManager.shortDateFormatter;
 
 /**
  * Created by luke on 2017/03/01.
@@ -57,7 +57,7 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         Instant nextPayDate = record.getNextPaymentDate() == null ? Instant.now().plus(7, ChronoUnit.DAYS) : record.getNextPaymentDate();
         return messageSource.getMessage("sms.statement.notification", new String[] {
                 billFormat.format((double) record.getTotalAmountToPay() / 100), formatAtSAST(nextPayDate, shortDateFormatter)
-        }, getUserLocale(record.getAccount().getBillingUser()));
+        }, record.getAccount().getBillingUser().getLocale());
     }
 
     @Override
@@ -73,7 +73,7 @@ public class AccountEmailServiceImpl implements AccountEmailService {
             throw new IllegalArgumentException("Error! Statement emails can only be generated for bill requiring payment");
         }
 
-        final Context ctx = new Context(getUserLocale(billedUser));
+        final Context ctx = new Context(billedUser.getLocale());
         ctx.setVariable("toName", StringUtils.isEmpty(billedUser.getFirstName()) ? billedUser.getFirstName() : billedUser.nameToDisplay());
         ctx.setVariable("amountToPay", billFormat.format((double) statement.getTotalAmountToPay() / 100));
         ctx.setVariable("nextPaymentDate", formatAtSAST(statement.getNextPaymentDate(), shortDateFormatter));
@@ -100,7 +100,7 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         // todo : have multiple links/types (e.g., with direct deposit) [and also campaign tracking etc]
 
         final String template = "trial_ended";
-        final Context ctx = new Context(MessageUtils.getUserLocale(adminToEmail));
+        final Context ctx = new Context(adminToEmail.getLocale());
         ctx.setVariable("toName", adminToEmail.getName());
         ctx.setVariable("paymentLink", paymentLink);
 
@@ -122,7 +122,7 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         Objects.requireNonNull(paymentLink);
 
         final String template = "account_disabled";
-        final Context ctx = new Context(MessageUtils.getUserLocale(adminToEmail));
+        final Context ctx = new Context(adminToEmail.getLocale());
 
         ctx.setVariable("toName", adminToEmail.getName());
         ctx.setVariable("paymentLink", paymentLink);
@@ -147,7 +147,7 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         final String subject = messageSource.getMessage(subjectKey, new String[]{account.getName()});
         final String amount = "R" + (new DecimalFormat("#,###.##").format(account.calculatePeriodCost() / 100));
 
-        final Context ctx = new Context(MessageUtils.getUserLocale(request.getDestination()));
+        final Context ctx = new Context(request.getDestination().getLocale());
         ctx.setVariable("toName", request.getDestination().getName());
         ctx.setVariable("fromName", requestingUser.getName());
         ctx.setVariable("requestLink", requestLink);
@@ -167,7 +167,7 @@ public class AccountEmailServiceImpl implements AccountEmailService {
 
     @Override
     public GrassrootEmail openingUserEmail(boolean alreadyOpen, final String requestLink, final String destinationName, final User openingUser) {
-        final Context ctx = new Context(MessageUtils.getUserLocale(openingUser));
+        final Context ctx = new Context(openingUser.getLocale());
         ctx.setVariable("requestorName", openingUser.getName());
         ctx.setVariable("destinationName", destinationName);
         ctx.setVariable("requestLink", requestLink);
@@ -190,7 +190,7 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         final String subject = messageSource.getMessage("email.sponsorship.denied.subject");
         // note : since the sponsorship was not approved, the billing user will still be the one that opened the account
 
-        final Context ctx = new Context(MessageUtils.getUserLocale(request.getRequestor().getBillingUser()));
+        final Context ctx = new Context(request.getRequestor().getBillingUser().getLocale());
         ctx.setVariable("request", request);
         ctx.setVariable("urlForNewRequest", urlForRequest + "?accountUid=" + request.getRequestor().getUid());
 
@@ -218,7 +218,7 @@ public class AccountEmailServiceImpl implements AccountEmailService {
     @Override
     public GrassrootEmail sponsorshipReminderEmailSponsor(AccountSponsorshipRequest request) {
         final String subject = messageSource.getMessage("email.sponsorship.aborted.subject");
-        final Context ctx = new Context(MessageUtils.getUserLocale(request.getDestination()));
+        final Context ctx = new Context(request.getDestination().getLocale());
         ctx.setVariable("toName", request.getDestination().getName());
         ctx.setVariable("fromName", request.getRequestor().getName());
         ctx.setVariable("requestLink", sponsorshipResponseUrl + "?requestUid=" + request.getUid());

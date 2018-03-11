@@ -50,7 +50,6 @@ public class MeetingRestController {
 
     private static final Logger log = LoggerFactory.getLogger(MeetingRestController.class);
 
-    // todo: consolidate in this list
     private final UserManagementService userManagementService;
     private final EventLogBroker eventLogBroker;
     private final EventBroker eventBroker;

@@ -24,7 +24,7 @@ import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 @DynamicUpdate
 public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group>, TagHolder {
 
-    public static final String JOIN_TOPIC_PREFIX = "JOIN_TOPIC:";
+    private static final String JOIN_TOPIC_PREFIX = "JOIN_TOPIC:";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -306,7 +306,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
 
     private Membership addMemberInternal(User newMember, Role role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
-
         Objects.requireNonNull(newMember);
         Objects.requireNonNull(role);
 
@@ -726,11 +725,4 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-    /* public List<Campaign> getCampaign() {
-        return campaign;
-    }*/
-
-    /* public void setCampaign(List<Campaign> campaign) {
-        this.campaign = campaign;
-    }*/
 }

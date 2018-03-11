@@ -9,6 +9,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,8 +25,10 @@ import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.group.GroupLogDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
@@ -436,14 +440,14 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification) {
+    public Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
 
         validateJoinCode(group, tokenPassed);
         recordJoinCodeInbound(group, tokenPassed);
 
-        selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null, sendJoiningNotification);
+        return selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null, sendJoiningNotification);
     }
 
     @Override
@@ -526,15 +530,17 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("okay, adding topics at join, passed {}, got {}", joinTopics, membership.getTopics());
     }
 
-    private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs,
+    private Membership selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs,
                                  boolean sendJoiningNotification) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, joinMethod, code);
         if (topics != null) {
             membership.setTopics(new HashSet<>(topics));
         }
-        // we are going to assume this at present - but switch to a view layer toggle if user feedback implies should
-        membership.setViewPriority(GroupViewPriority.PINNED);
+        if (membership != null) {
+            // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
+            membership.setViewPriority(GroupViewPriority.PINNED);
+        }
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         // recursively add user to all parent groups
@@ -567,6 +573,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
 
         storeBundleAfterCommit(bundle);
+
+        return group.getMembership(user);
     }
 
     private GroupJoinMethod getJoinMethodFromInterface(UserInterfaceType interfaceType) {
@@ -1810,6 +1818,22 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             logger.info("MSG....={}",s);
             logger.info("Length....={}",s.length());
         }
+    }
+
+    @Override
+    @Transactional
+    public Page<GroupLogDTO> getGroupLogsByGroup(User user, Group group, Instant from, Instant to, String keyword, Pageable pageable) {
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        Page<GroupLog> page = groupLogRepository.findAll(Specifications.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)), pageable);
+        return page.map(GroupLogDTO::new);
+    }
+
+    @Override
+    @Transactional
+    public List<GroupLogDTO> getGroupLogsByGroupForExport(User user, Group group, Instant from, Instant to, String keyword) {
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        List<GroupLog> list = groupLogRepository.findAll(Specifications.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)));
+        return list.stream().map(GroupLogDTO::new).collect(Collectors.toList());
     }
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {

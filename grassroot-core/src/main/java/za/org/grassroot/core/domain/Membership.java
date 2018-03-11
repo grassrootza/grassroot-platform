@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
@@ -10,10 +11,7 @@ import za.org.grassroot.core.enums.GroupViewPriority;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Getter
@@ -113,6 +111,10 @@ public class Membership implements Serializable, TagHolder {
 
     public String getDisplayName() {
         return alias == null || alias.trim().isEmpty() ? user.getName() : alias;
+    }
+
+    public boolean hasAnyTopic(@NonNull Collection<String> topics) {
+        return getTopics().stream().anyMatch(topics::contains);
     }
 
     @Override

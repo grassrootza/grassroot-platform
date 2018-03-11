@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.User;
@@ -8,14 +9,13 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Created by luke on 2016/06/09.
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL) @Getter
 public class MeetingRsvpsDTO {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingRsvpsDTO.class);
@@ -62,39 +62,11 @@ public class MeetingRsvpsDTO {
 	    details.entrySet()
                 .stream()
                 .sorted(byRsvpResponse.thenComparing(byUserName))
-                .forEach(entry -> result.put(entry.getKey().nameToDisplay(), entry.getValue().toString()));
+                .forEach(entry -> result.put(entry.getKey().getName(), entry.getValue().toString()));
 
 	    logger.debug("Sorted entry set : " + result.toString());
 
         return result;
-    }
-
-    public String getMeetingUid() {
-        return meetingUid;
-    }
-
-    public int getNumberInvited() {
-        return numberInvited;
-    }
-
-    public int getNumberYes() {
-        return numberYes;
-    }
-
-    public int getNumberNo() {
-        return numberNo;
-    }
-
-    public int getNumberNoReply() {
-        return numberNoReply;
-    }
-
-    public boolean isCanViewRsvps() {
-        return canViewRsvps;
-    }
-
-    public HashMap<String, String> getRsvpResponses() {
-        return rsvpResponses;
     }
 
     @Override
