@@ -198,13 +198,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     public void setHasSetOwnName(boolean hasSetOwnName) { this.hasSetOwnName = hasSetOwnName; }
 
     public Locale getLocale() {
-        return (languageCode == null || languageCode.trim().isEmpty()) ? Locale.US: new Locale(languageCode);
-    }
-
-    public String getLanguageCode() {
-        // doing this to deal with legacy of bad choice setting this in constructor and then using accessor everywhere
-        // clean up in a future refactor
-        return languageCode == null ? "en" : languageCode;
+        return (languageCode == null || languageCode.trim().isEmpty()) ? Locale.ENGLISH : new Locale(languageCode);
     }
 
     public boolean hasLanguage() {

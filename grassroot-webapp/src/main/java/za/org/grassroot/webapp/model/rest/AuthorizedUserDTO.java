@@ -24,7 +24,7 @@ public class AuthorizedUserDTO {
         this.userUid = user.getUid();
         this.msisdn = user.getPhoneNumber();
         this.displayName = user.getDisplayName();
-        this.languageCode = user.getLanguageCode();
+        this.languageCode = user.getLocale().getLanguage();
         this.email = user.getEmailAddress();
         this.province = user.getProvince();
 

@@ -182,6 +182,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .account(user.getPrimaryAccount())
                 .title(taskType + ": " + task.getTitle())
                 .broadcastSchedule(BroadcastSchedule.IMMEDIATE)
+                .smsTemplate1(message)
                 .scheduledSendTime(Instant.now())
                 .build();
 

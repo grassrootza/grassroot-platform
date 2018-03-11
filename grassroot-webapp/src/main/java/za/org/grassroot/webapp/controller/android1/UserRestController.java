@@ -223,7 +223,8 @@ public class UserRestController {
     @RequestMapping(value="/profile/settings/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getProfileSettings(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code){
         User user = userManagementService.findByInputNumber(phoneNumber);
-        ProfileSettingsDTO profileSettingsDTO = new ProfileSettingsDTO(user.getDisplayName(), user.getLanguageCode(), user.getAlertPreference().toString());
+        ProfileSettingsDTO profileSettingsDTO = new ProfileSettingsDTO(user.getDisplayName(),
+                user.getLocale().getLanguage(), user.getAlertPreference().toString());
         return RestUtil.okayResponseWithData(RestMessage.PROFILE_SETTINGS, profileSettingsDTO);
     }
 

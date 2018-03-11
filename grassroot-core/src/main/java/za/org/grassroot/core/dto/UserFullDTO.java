@@ -26,7 +26,7 @@ public class UserFullDTO {
         this.displayName = user.getName();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
-        this.languageCode = user.getLanguageCode();
+        this.languageCode = user.getLocale().getLanguage();
         this.enabled = user.isEnabled();
         this.uid = user.getUid();
         this.email = user.getEmailAddress();

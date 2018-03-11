@@ -74,7 +74,7 @@ public class UserProfileController extends BaseController {
             final String phone = StringUtils.isEmpty(sessionUser.getPhoneNumber()) ? null :
                     PhoneNumberUtil.convertPhoneNumber(sessionUser.getPhoneNumber());
             userManagementService.updateUser(getUserProfile().getUid(), sessionUser.getDisplayName(), phone, sessionUser.getEmailAddress(),
-                    null, sessionUser.getAlertPreference(), new Locale(sessionUser.getLanguageCode()), null);
+                    null, sessionUser.getAlertPreference(), sessionUser.getLocale(), null);
             addMessage(redirectAttributes, MessageType.SUCCESS, "user.profile.change.success", request);
             return "redirect:settings"; // using redirect to avoid reposting
         } catch (IllegalArgumentException e) {

@@ -25,6 +25,10 @@ public interface TaskBroker {
 
     TaskDTO load(String userUid, String taskUid, TaskType type);
 
+    <T extends Task> T loadEntity(String userUid, String taskUid, TaskType type, Class<T> returnType);
+
+    Map<String, String> loadResponses(String userUid, String taskUid, TaskType type);
+
     List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid);
 
     List<TaskDTO> fetchGroupTasksInPeriod(String userUid, String groupUid, Instant start, Instant end);
