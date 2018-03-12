@@ -334,10 +334,10 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             EmailBroadcast emailBroadcast = extractEmailFromBroadcast(broadcast, u);
 
             if (broadcast.getCampaign() == null) {
-                emailNotifications.add(new GroupBroadcastNotification(u, emailBroadcast.getContent(),
+                emailNotifications.add(new GroupBroadcastNotification(u, emailBroadcast.getContent(), broadcast,
                         broadcast.getEmailDeliveryRoute(), (GroupLog) actionLog));
             } else {
-                emailNotifications.add(new CampaignBroadcastNotification(u, emailBroadcast.getContent(),
+                emailNotifications.add(new CampaignBroadcastNotification(u, emailBroadcast.getContent(), broadcast,
                         broadcast.getEmailDeliveryRoute(), (CampaignLog) actionLog));
             }
 
@@ -461,7 +461,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             Set<Notification> shortMessageNotifications = new HashSet<>();
             shortMessageUsers.forEach(u -> {
                 GroupBroadcastNotification notification = new GroupBroadcastNotification(u,
-                        bc.getShortMsgIncludingMerge(u, SDF, NO_PROVINCE, Province.CANONICAL_NAMES_ZA),
+                        bc.getShortMsgIncludingMerge(u, SDF, NO_PROVINCE, Province.CANONICAL_NAMES_ZA), bc,
                         u.getMessagingPreference(), groupLog);
                 notification.setUseOnlyFreeChannels(bc.isOnlyUseFreeChannels());
                 shortMessageNotifications.add(notification);

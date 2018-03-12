@@ -23,6 +23,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.CampaignMessageRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -215,7 +216,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
         User user = userManager.load(Objects.requireNonNull(sharingUserUid));
 
-        // todo: check against budget, also increase amount spent
+//        long campaignShares = countCampaignShares(campaign);
+//        if (campaignShares > campaign.getSharingBudget()) {
+//            return;
+//        }
+
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         User targetUser = userManager.loadOrCreateUser(sharingNumber);
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_SHARED, campaign, channel, sharingNumber);
@@ -237,6 +242,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         logsAndNotificationsBroker.storeBundle(bundle);
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);
+    }
+
+    long countCampaignShares(Campaign campaign) {
+        Specifications<Notification> spec = Specifications.where(NotificationSpecifications.sharedForCampaign(campaign))
+                .and(NotificationSpecifications.wasDelivered());
+        return logsAndNotificationsBroker.countNotifications(spec);
     }
 
     @Override

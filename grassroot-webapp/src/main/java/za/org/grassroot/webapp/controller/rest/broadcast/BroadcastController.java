@@ -18,6 +18,7 @@ import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.MediaFileBroker;
+import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
@@ -46,16 +47,16 @@ import java.util.stream.Collectors;
 public class BroadcastController extends BaseRestController {
 
     private final BroadcastBroker broadcastBroker;
-    private final MediaFileBroker mediaFileBroker;
     private final AccountBillingBroker billingBroker;
+    private final UrlShortener urlShortener;
 
     @Autowired
     public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker, MediaFileBroker mediaFileBroker,
-                               AccountBillingBroker billingBroker) {
+                               AccountBillingBroker billingBroker, UrlShortener urlShortener) {
         super(jwtService, userManagementService);
         this.broadcastBroker = broadcastBroker;
-        this.mediaFileBroker = mediaFileBroker;
         this.billingBroker = billingBroker;
+        this.urlShortener = urlShortener;
     }
 
     @RequestMapping(value = "/fetch/group/{groupUid}", method = RequestMethod.GET)
@@ -85,6 +86,16 @@ public class BroadcastController extends BaseRestController {
         BroadcastInfo info = broadcastBroker.fetchGroupBroadcastParams(getUserIdFromRequest(request), groupUid);
         log.info("returning info: {}", info);
         return ResponseEntity.ok(info);
+    }
+
+    @RequestMapping(value = "/shorten/link", method = RequestMethod.GET)
+    @ApiOperation(value = "Shorten a link for use in a broadcast short message")
+    public ResponseEntity<String> shortenLink(@RequestParam String link, HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        if (user == null || user.getPrimaryAccount() == null) {
+            throw new AccessDeniedException("Only users, and ones with accounts, can shorten a link");
+        }
+        return ResponseEntity.ok(urlShortener.shortenJoinUrls(link));
     }
 
     @RequestMapping(value = "/create/group/{groupUid}", method = RequestMethod.POST)

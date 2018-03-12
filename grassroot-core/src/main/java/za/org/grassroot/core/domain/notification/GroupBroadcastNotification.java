@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.notification;
 
+import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.NotificationDetailedType;
@@ -16,9 +17,9 @@ public class GroupBroadcastNotification extends BroadcastNotification {
         // for JPA
     }
 
-    public GroupBroadcastNotification(User destination, String message, DeliveryRoute deliveryChannel,
-                                      GroupLog groupLog) {
-        super(destination, message, deliveryChannel, groupLog);
+    public GroupBroadcastNotification(User destination, String message, Broadcast broadcast,
+                                      DeliveryRoute deliveryChannel, GroupLog groupLog) {
+        super(destination, message, deliveryChannel, groupLog, broadcast);
         // todo : think about / through priority
     }
 

@@ -44,24 +44,24 @@ public class CacheUtilManager implements CacheUtilService {
     public List<Event> getOutstandingResponseForUser(String userUid) {
         Cache cache = cacheManager.getCache("userRSVP");
         log.info("getOutstandingResponseForUser... anything in cache : {}", cache.isKeyInCache(userUid));
-        return cache.isKeyInCache(userUid) ? (List<Event>) cache.get(userUid).getObjectValue() : null;
+        try {
+            return cache.isKeyInCache(userUid) ? (List<Event>) cache.get(userUid).getObjectValue() : null;
+        } catch (NullPointerException|ClassCastException e) {
+            return null;
+        }
     }
 
     @Override
     public List<SafetyEvent> getOutstandingSafetyEventResponseForUser(User user) {
-        List<SafetyEvent> outstandingSafetyEvents = null;
         Cache cache = cacheManager.getCache("userSafetyEvents");
         String cacheKey = user.getUid();
-        try{
-            if(cache.isKeyInCache(cacheKey)) {
-                outstandingSafetyEvents = (List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
-            }
+        try {
+            return cache.isKeyInCache(cacheKey) ? (List<SafetyEvent>) cache.get(cacheKey).getObjectValue() : null;
         }
-        catch (Exception e){
+        catch (NullPointerException|ClassCastException e){
            log.info("Could not retrieve outstanding events for user {}", user.getPhoneNumber());
+           return null;
         }
-
-        return outstandingSafetyEvents;
     }
 
     @Override
@@ -74,7 +74,7 @@ public class CacheUtilManager implements CacheUtilService {
         try{
             safetyEventsUserToRespondTo =(List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
         }
-        catch (Exception e){
+        catch (NullPointerException|ClassCastException e){
             log.info("No list of outstanding safety events to respond to, creating list for user {}", user.getPhoneNumber());
             safetyEventsUserToRespondTo = new ArrayList<>();
         }

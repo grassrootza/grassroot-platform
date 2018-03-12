@@ -7,6 +7,6 @@ public interface UrlShortener {
 
     String shortenImageUrl(String bucket, String imageUrl);
 
-    String shortenGroupJoinUrls(String joinUrl);
+    String shortenJoinUrls(String joinUrl);
 
 }

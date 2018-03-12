@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.notification;
 
+import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.enums.DeliveryRoute;
@@ -16,9 +17,9 @@ public class CampaignBroadcastNotification extends BroadcastNotification {
         // for JPA
     }
 
-    public CampaignBroadcastNotification(User destination, String message, DeliveryRoute deliveryChannel,
+    public CampaignBroadcastNotification(User destination, String message, Broadcast broadcast, DeliveryRoute deliveryChannel,
                                          CampaignLog campaignLog) {
-        super(destination, message, deliveryChannel, campaignLog);
+        super(destination, message, deliveryChannel, campaignLog, broadcast);
         // todo : think about / through priority
     }
 

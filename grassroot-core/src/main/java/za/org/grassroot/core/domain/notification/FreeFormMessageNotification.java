@@ -13,6 +13,11 @@ import javax.persistence.Entity;
 @DiscriminatorValue("FREE_FORM_MESSAGE")
 public class FreeFormMessageNotification extends AccountNotification {
 
+	@Override
+	public User getSender() {
+		return getAccountLog().getUser();
+	}
+
 	protected FreeFormMessageNotification() {
 	}
 
