@@ -158,8 +158,9 @@ public class BroadcastController extends BaseRestController {
             throw new AccessDeniedException("Task broadcasts are only allowed for paid accounts");
         }
 
-        String broadcastUid = broadcastBroker.sendTaskBroadcast(user.getUid(), taskUid, taskType, sendToAll == null || !sendToAll, message);
+        log.info("sending a task broadcast, sendToAll = {}, message = {}", sendToAll, message);
 
+        String broadcastUid = broadcastBroker.sendTaskBroadcast(user.getUid(), taskUid, taskType, sendToAll == null || !sendToAll, message);
         return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
     }
 

@@ -132,6 +132,45 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
+    @Transactional(readOnly = true)
+    public <T extends Task> T loadEntity(String userUid, String taskUid, TaskType type, Class<T> returnType) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Task task = TaskType.TODO.equals(type) ? todoBroker.load(taskUid) : eventBroker.load(taskUid);
+
+        if (task.getAncestorGroup().getMembership(user) == null) {
+            throw new AccessDeniedException("Error! Only users within ancestor group can see task");
+        }
+
+        try {
+            return (T) task;
+        } catch (ClassCastException e) {
+            throw new IllegalArgumentException("Error! Return type does not match task type");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, String> loadResponses(String userUid, String taskUid, TaskType type) {
+        if (TaskType.VOTE.equals(type)) {
+            throw new IllegalArgumentException("Cannot call individual votes");
+        }
+
+        Map<String, String> responses = new LinkedHashMap<>();
+
+        if (TaskType.MEETING.equals(type)) {
+            Meeting meeting = loadEntity(userUid, taskUid, TaskType.MEETING, Meeting.class);
+            eventBroker.getRSVPResponses(meeting).forEach((user, response) ->
+                    responses.put(user.getName(), response.name()));
+        } else if (TaskType.TODO.equals(type)) {
+            List<TodoAssignment> todoAssignmentList = todoBroker.fetchAssignedUserResponses(userUid, taskUid, false, true, false);
+            todoAssignmentList.forEach(assignment -> responses.put(assignment.getUser().getName(), assignment.getResponseText()));
+        }
+
+        return responses;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid) {
         Objects.requireNonNull(userUid);

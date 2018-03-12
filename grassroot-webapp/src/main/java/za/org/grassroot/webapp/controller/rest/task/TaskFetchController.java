@@ -68,14 +68,27 @@ public class TaskFetchController extends BaseRestController {
             return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
     }
 
-    @Timed
     @RequestMapping(value = "/specified", method = RequestMethod.POST)
-    @ApiOperation(value = "Full details on specified task", notes = "Fetches full details on tasks specified in the " +
+    @ApiOperation(value = "Full details on specified tasks", notes = "Fetches full details on tasks specified in the " +
             "map of tasks and their type")
     public ResponseEntity<List<TaskFullDTO>> fetchSpecificTasks(@RequestBody Map<String, TaskType> taskUidsAndTypes,
                                                                 HttpServletRequest request) {
         String userUid = getUserIdFromRequest(request);
         return ResponseEntity.ok(taskBroker.fetchSpecifiedTasks(userUid, taskUidsAndTypes, TaskSortType.TIME_CREATED));
+    }
+
+    @RequestMapping(value = "/{taskType}/{taskUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Full details on a single, specified task")
+    public ResponseEntity<TaskFullDTO> fetchTask(@PathVariable TaskType taskType, @PathVariable String taskUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        return ResponseEntity.ok(taskBroker.fetchSpecifiedTasks(userUid, Collections.singletonMap(taskUid, taskType),
+                null).get(0));
+    }
+
+    @RequestMapping(value = "/meeting/rsvps/{taskUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetch the RSVPs for a meeting")
+    public ResponseEntity<Map<String, String>> fetchMeetingRsvps(HttpServletRequest request, @PathVariable String taskUid) {
+        return ResponseEntity.ok(taskBroker.loadResponses(getUserIdFromRequest(request), taskUid, TaskType.MEETING));
     }
 
     @Timed
@@ -93,7 +106,6 @@ public class TaskFetchController extends BaseRestController {
         } else
             return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
     }
-
 
     @Timed
     @RequestMapping(value = "/upcoming/user/{userUid}", method = RequestMethod.GET)

@@ -105,6 +105,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         User userToSave;
+        log.info("about to try use & convert phone & email : {}", userProfile.getPhoneNumber(), userProfile.getEmailAddress());
         String phoneNumber = StringUtils.isEmpty(userProfile.getPhoneNumber()) ? null : PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         String emailAddress = userProfile.getEmailAddress();
         long start = System.nanoTime();
@@ -118,7 +119,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             log.info("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
 
             User userToUpdate = findByNumberOrEmail(phoneNumber, emailAddress);
-            if (!StringUtils.isEmpty(userToUpdate.getPassword())) {
+            if (userToUpdate.hasPassword()) {
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a password protected profile!");
             }
 
@@ -457,15 +458,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         } catch (NullPointerException e) {
             return false;
         }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public UserProfileStatus fetchUserProfileStatus(String userUid) {
-        Objects.requireNonNull(userUid);
-        User user = userRepository.findOneByUid(userUid);
-        return !StringUtils.isEmpty(user.getPassword()) ? UserProfileStatus.HAS_PASSWORD :
-                user.isHasInitiatedSession() ? UserProfileStatus.HAS_USED_USSD : UserProfileStatus.ONLY_EXISTS;
     }
 
     @Override

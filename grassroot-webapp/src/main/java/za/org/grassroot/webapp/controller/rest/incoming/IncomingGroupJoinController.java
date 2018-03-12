@@ -4,21 +4,24 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserFullDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.services.user.UserProfileStatus;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.group.join.JoinInfoExternal;
 import za.org.grassroot.webapp.controller.rest.group.join.JoinSubmitInfo;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 @RestController @Grassroot2RestController
 @Api("/api/group/outside/join/") @Slf4j
@@ -27,11 +30,13 @@ public class IncomingGroupJoinController extends BaseRestController {
 
     private final GroupBroker groupBroker;
     private final UserManagementService userManager;
+    private final PasswordTokenService tokenService;
 
-    public IncomingGroupJoinController(JwtService jwtService, UserManagementService userManagementService, GroupBroker groupBroker) {
+    public IncomingGroupJoinController(JwtService jwtService, UserManagementService userManagementService, GroupBroker groupBroker, PasswordTokenService tokenService) {
         super(jwtService, userManagementService);
         this.groupBroker = groupBroker;
         this.userManager = userManagementService;
+        this.tokenService = tokenService;
     }
 
     @RequestMapping(value = "/start/{groupUid}", method = RequestMethod.GET)
@@ -62,17 +67,39 @@ public class IncomingGroupJoinController extends BaseRestController {
     }
 
     @RequestMapping(value = "/complete/{groupUid}", method = RequestMethod.POST)
-    @ApiOperation(value = "Complete the use of the join code", notes = "Returns a user status depending on whether " +
-            "they have an active web profile or not")
-    public ResponseEntity<UserProfileStatus> completeUseOfJoinWord(HttpServletRequest request,
-                                                                   @PathVariable String groupUid,
-                                                                   @RequestParam(required = false) String code,
-                                                                   @RequestParam(required = false) String broadcastId,
-                                                                   @RequestBody JoinSubmitInfo joinSubmitInfo) {
-        String joinedUserUid = groupBroker.addMemberViaJoinPage(groupUid, code, null, getUserIdFromRequest(request),
+    @ApiOperation(value = "Complete the use of the join code", notes = "Returns a DTO with the details of the user, either " +
+            "as created by this join or already existing")
+    public ResponseEntity<JoinResponse> completeUseOfJoinWord(HttpServletRequest request,
+                                                                 @PathVariable String groupUid,
+                                                                 @RequestParam(required = false) String code,
+                                                                 @RequestParam(required = false) String broadcastId,
+                                                                 @RequestBody JoinSubmitInfo joinSubmitInfo) {
+        String joinedUserUid = groupBroker.addMemberViaJoinPage(groupUid, code, broadcastId, getUserIdFromRequest(request),
                 joinSubmitInfo.getName(), joinSubmitInfo.getPhone(), joinSubmitInfo.getEmail(),
-                joinSubmitInfo.safeProvince(), joinSubmitInfo.getTopics(), UserInterfaceType.WEB_2);
-        return ResponseEntity.ok(userManager.fetchUserProfileStatus(joinedUserUid));
+                joinSubmitInfo.safeProvince(), joinSubmitInfo.getLanguage(), joinSubmitInfo.getTopics(), UserInterfaceType.WEB_2);
+        User user = userManager.load(joinedUserUid);
+        // since the next call has to be unprotected, we need a way to prevent spoofing & strafing
+        final String tokenForSubequent = tokenService.generateShortLivedOTP(user.getUsername()).getCode();
+        return ResponseEntity.ok(new JoinResponse(tokenForSubequent, new UserFullDTO(user)));
+    }
+
+    @RequestMapping(value = "/topics/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Set the join topics for the user who just joined (pass back generated code to validate it is same user")
+    public ResponseEntity setJoinTopics(HttpServletRequest request, @PathVariable String groupUid,
+                                                      @RequestParam String joinedUserUid,
+                                                      @RequestParam String validationCode,
+                                                      @RequestParam List<String> joinTopics) {
+        String requestUserUid = getUserIdFromRequest(request);
+        if (!StringUtils.isEmpty(requestUserUid) && requestUserUid.equals(joinedUserUid)) {
+            throw new AccessDeniedException("Spoofing attempt, inserting another user UID");
+        }
+
+        User user = userManager.load(joinedUserUid);
+        tokenService.validateOtp(user.getUsername(), validationCode);
+
+        log.debug("okay, all validated, setting topics = {}", joinTopics);
+        groupBroker.setMemberJoinTopics(joinedUserUid, groupUid, joinedUserUid, joinTopics);
+        return ResponseEntity.ok().build();
     }
 
 }
