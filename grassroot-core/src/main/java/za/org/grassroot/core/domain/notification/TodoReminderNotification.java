@@ -1,7 +1,7 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 
 import javax.persistence.DiscriminatorValue;
@@ -13,6 +13,12 @@ public class TodoReminderNotification extends TodoNotification {
 	private TodoReminderNotification() {
 		// for JPA
 	}
+
+	@Override
+	public User getSender() {
+		return getTodoLog().getTodo().getCreatedByUser();
+	}
+
 	@Override
 	public NotificationDetailedType getNotificationDetailedType() {
 		return NotificationDetailedType.TODO_REMINDER;

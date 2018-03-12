@@ -16,6 +16,11 @@ public class MeetingThankYouNotification extends EventNotification {
 		return NotificationDetailedType.MEETING_THANKYOU;
 	}
 
+	@Override
+	public User getSender() {
+		return getEventLog().getUser();
+	}
+
 	private MeetingThankYouNotification() {
 		// for JPA
 	}

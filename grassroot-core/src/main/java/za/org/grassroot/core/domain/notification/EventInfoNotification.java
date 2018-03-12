@@ -23,6 +23,11 @@ public class EventInfoNotification extends EventNotification {
 		// for JPA
 	}
 
+	@Override
+	public User getSender() {
+		return getEventLog().getUser();
+	}
+
 	public EventInfoNotification(User target, String message, GroupLog groupLog, Event event) {
         super(target, message, groupLog, event);
         this.priority = AlertPreference.NOTIFY_ONLY_NEW.getPriority();

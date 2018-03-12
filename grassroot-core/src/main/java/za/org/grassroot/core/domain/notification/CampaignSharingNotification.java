@@ -16,6 +16,11 @@ public class CampaignSharingNotification extends CampaignNotification {
         // for JPA
     }
 
+    @Override
+    public User getSender() {
+        return getCampaignLog().getUser();
+    }
+
     public CampaignSharingNotification(User destination, String message, CampaignLog campaignLog) {
         super(destination, message, campaignLog);
         this.priority = AlertPreference.NOTIFY_ONLY_NEW.getPriority(); // since this is important by default
