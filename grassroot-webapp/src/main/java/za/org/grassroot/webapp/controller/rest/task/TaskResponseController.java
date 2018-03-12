@@ -66,6 +66,7 @@ public class TaskResponseController extends BaseRestController {
         try {
             voteBroker.recordUserVote(getUserIdFromRequest(request), taskUid, vote.trim());
             TaskFullDTO taskDto = new TaskFullDTO(voteBroker.load(taskUid), getUserFromRequest(request), Instant.now(), vote);
+            taskDto.setVoteResults(voteBroker.fetchVoteResults(getUserIdFromRequest(request), taskUid, true));
             return ResponseEntity.ok(taskDto); // so it goes back with latest results
         } catch (IllegalArgumentException e) {
             return RestUtil.errorResponse(RestMessage.USER_NOT_PART_OF_VOTE);

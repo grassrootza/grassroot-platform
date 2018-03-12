@@ -140,7 +140,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         // prepersist is not working as reliably as hoped (or is happening in wrong sequence), to generate this if blank, hence
         final String uid = StringUtils.isEmpty(bc.getBroadcastId()) ? UIDGenerator.generateId() : bc.getBroadcastId();
         log.info("creating broadcast, incoming ID {}, set id: {}", bc.getBroadcastId(), uid);
-        log.info("broadcast email attachments? : {}", bc.getEmail().getAttachmentFileRecordUids());
+        if (bc.getEmail() != null) {
+            log.info("broadcast email attachments? : {}", bc.getEmail().getAttachmentFileRecordUids());
+        }
 
         Broadcast broadcast = Broadcast.builder()
                 .uid(uid)
