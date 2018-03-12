@@ -26,6 +26,7 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import java.time.Instant;
 import java.util.Set;
 
 @RestController
@@ -77,7 +78,8 @@ public class LiveWireController {
                 .description(description)
                 .contactName(contactName)
                 .contactNumber(contactNumber)
-                .type(type);
+                .type(type)
+                .sendTime(Instant.now());
 
         logger.info("do we have mediaFiles? {}", mediaFileKeys);
 
