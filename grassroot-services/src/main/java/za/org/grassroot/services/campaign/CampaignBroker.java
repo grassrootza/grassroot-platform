@@ -50,7 +50,7 @@ public interface CampaignBroker {
 
     // modifying and adding
     Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate,
-                    Instant endDate, List<String> joinTopics, CampaignType campaignType, String url);
+                    Instant endDate, List<String> joinTopics, CampaignType campaignType, String url, boolean smsShare, long smsLimit, String imageKey);
 
     Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages);
 

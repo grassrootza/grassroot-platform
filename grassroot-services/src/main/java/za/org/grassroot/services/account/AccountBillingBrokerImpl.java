@@ -558,8 +558,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         log.info("counting notifications between {} and {}", startTime, billingPeriodEnd);
         Specifications<Notification> notificationCounter = Specifications
-                .where(wasDelivered())
-                .and(createdTimeBetween(startTime, billingPeriodEnd))
+                .where(createdTimeBetween(startTime, billingPeriodEnd))
+                .and(wasDelivered())
                 .and(belongsToAccount(account));
 
         long numberOfMessages = logsAndNotificationsBroker.countNotifications(notificationCounter);
@@ -567,9 +567,10 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         log.info("number of notifications for account in period = {}", numberOfMessages);
 
-        for (PaidGroup paidGroup : paidGroups) {
-            costAccumulator += (countMessagesForPaidGroup(paidGroup, startTime, billingPeriodEnd) * messageCost);
-        }
+        // this is causing huge DB load, so am removing for now
+//        for (PaidGroup paidGroup : paidGroups) {
+//            costAccumulator += (countMessagesForPaidGroup(paidGroup, startTime, billingPeriodEnd) * messageCost);
+//        }
 
         return costAccumulator;
     }

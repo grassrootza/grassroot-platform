@@ -94,7 +94,7 @@ public class CampaignViewDTO {
         }
 
         this.smsSharingEnabled = campaign.isSharingEnabled();
-        this.smsSharingLimit = campaign.getSharingBudget();
+        this.smsSharingLimit = campaign.getSharingBudget() / campaign.getAccount().getFreeFormCost();
         this.smsSharingSpent = campaign.getSharingSpent();
         this.smsSharingUnitCost = campaign.getAccount().getFreeFormCost();
 
@@ -103,7 +103,7 @@ public class CampaignViewDTO {
         this.totalJoined = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
         log.info("time to count campaign messages: {} msecs", System.currentTimeMillis() - startTime);
 
-        if(!campaign.getCampaignMessages().isEmpty()){
+        if (!campaign.getCampaignMessages().isEmpty()){
             this.campaignMessages = groupCampaignMessages(campaign);
             log.info("campaign DTO message list: {}", campaign.getCampaignMessages());
         }

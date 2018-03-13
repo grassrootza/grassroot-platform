@@ -69,14 +69,28 @@ public class IncomingGroupJoinController extends BaseRestController {
     @RequestMapping(value = "/complete/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Complete the use of the join code", notes = "Returns a DTO with the details of the user, either " +
             "as created by this join or already existing")
-    public ResponseEntity<JoinResponse> completeUseOfJoinWord(HttpServletRequest request,
+    public ResponseEntity completeUseOfJoinWord(HttpServletRequest request,
                                                                  @PathVariable String groupUid,
                                                                  @RequestParam(required = false) String code,
                                                                  @RequestParam(required = false) String broadcastId,
-                                                                 @RequestBody JoinSubmitInfo joinSubmitInfo) {
-        String joinedUserUid = groupBroker.addMemberViaJoinPage(groupUid, code, broadcastId, getUserIdFromRequest(request),
+                                                                 @RequestParam(required = false) List<String> joinTopics,
+                                                                 @RequestBody(required = false) JoinSubmitInfo joinSubmitInfo) {
+        String userUid = getUserIdFromRequest(request);
+        if (userUid == null && joinSubmitInfo == null) {
+            log.error("Error! Join request called without logged in user and without join info");
+            return ResponseEntity.badRequest().build();
+        }
+
+        String joinedUserUid;
+        if (joinSubmitInfo != null) {
+            joinedUserUid = groupBroker.addMemberViaJoinPage(groupUid, code, broadcastId, getUserIdFromRequest(request),
                 joinSubmitInfo.getName(), joinSubmitInfo.getPhone(), joinSubmitInfo.getEmail(),
                 joinSubmitInfo.safeProvince(), joinSubmitInfo.getLanguage(), joinSubmitInfo.getTopics(), UserInterfaceType.WEB_2);
+        } else {
+            groupBroker.addMemberViaJoinPage(groupUid, code, broadcastId, userUid, null, null, null, null, null,
+                    joinTopics, UserInterfaceType.WEB_2);
+            joinedUserUid = userUid;
+        }
         User user = userManager.load(joinedUserUid);
         // since the next call has to be unprotected, we need a way to prevent spoofing & strafing
         final String tokenForSubequent = tokenService.generateShortLivedOTP(user.getUsername()).getCode();

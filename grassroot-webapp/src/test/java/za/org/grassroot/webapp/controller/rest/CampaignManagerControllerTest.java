@@ -12,14 +12,12 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.campaign.CampaignManagerController;
-import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageActionRequest;
 import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageRequest;
 import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequest;
 
@@ -52,7 +50,6 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     private List<Campaign> campaignList;
     private Campaign testCampaign;
     private CreateCampaignMessageRequest createCampaignMessageRequest;
-    private CreateCampaignMessageActionRequest createCampaignMessageActionRequest;
     private User testUser;
 
 
@@ -65,7 +62,6 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         campaignList.add(testCampaign);
         createCampaignRequest = createTestWrapper();
         createCampaignMessageRequest = createMessageWrapper();
-        createCampaignMessageActionRequest = createCampaignMessageActionWrapper();
         wrapperList = new ArrayList<>();
         wrapperList.add(createCampaignRequest);
         mockMvc = MockMvcBuilders.standaloneSetup(campaignManagerController).build();
@@ -83,7 +79,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     @Test
     public void testCreateCampaign() throws Exception{
         when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false), eq(UserInterfaceType.USSD))).thenReturn(null);
-        when(campaignBroker.create(anyString(), anyString(),anyString(),anyString(), anyString(), any(Instant.class), any(Instant.class), anyList(),any(CampaignType.class),anyString())).thenReturn(testCampaign);
+        when(campaignBroker.create(anyString(), anyString(),anyString(),anyString(), anyString(), any(Instant.class), any(Instant.class), anyList(),any(CampaignType.class),anyString(), anyBoolean(), anyLong(), anyString())).thenReturn(testCampaign);
         when(campaignBroker.updateMasterGroup(anyString(),anyString(),anyString())).thenReturn(testCampaign);
 
         ObjectMapper mapper = new ObjectMapper();
@@ -123,16 +119,6 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         messageWrapper.setLanguage(Locale.ENGLISH);
         messageWrapper.setMessage("test message");
         return messageWrapper;
-    }
-
-    private CreateCampaignMessageActionRequest createCampaignMessageActionWrapper(){
-        CreateCampaignMessageActionRequest wrapper = new CreateCampaignMessageActionRequest();
-        wrapper.setCampaignCode("123");
-        wrapper.setAction(CampaignActionType.SIGN_PETITION);
-        wrapper.setMessageUid("234-567-88");
-        wrapper.setUserUid("23456");
-        wrapper.setActionMessage(createMessageWrapper());
-        return wrapper;
     }
 
 }

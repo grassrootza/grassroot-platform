@@ -51,7 +51,6 @@ import java.util.Map;
 @RequestMapping(value = "/api/account")
 public class AccountSettingsController extends BaseRestController {
 
-    private final UserManagementService userService;
     private final AccountBroker accountBroker;
     private final AccountGroupBroker accountGroupBroker;
     private final AccountBillingBroker billingBroker;
@@ -64,7 +63,6 @@ public class AccountSettingsController extends BaseRestController {
                                      AccountBillingBroker billingBroker, PermissionBroker permissionBroker, JwtService jwtService,
                                      PdfGeneratingService pdfGeneratingService) {
         super(jwtService, userService);
-        this.userService = userService;
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
         this.accountGroupBroker = accountGroupBroker;

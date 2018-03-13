@@ -38,6 +38,8 @@ public interface UserManagementService {
 
     boolean userExist(String phoneNumber);
 
+    boolean emailTaken(String userUid, String email);
+
     List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
 
     // username can be msisdn or pwd
