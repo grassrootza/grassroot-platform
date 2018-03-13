@@ -467,7 +467,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         Broadcast broadcast = StringUtils.isEmpty(broadcastId) ? null : broadcastRepository.findOneByUid(broadcastId);
-        if (StringUtils.isEmpty(broadcastId) && (broadcast == null || !broadcast.getGroup().equals(group))) {
+        if (!StringUtils.isEmpty(broadcastId) && (broadcast == null || !broadcast.getGroup().equals(group))) {
             throw new AccessDeniedException("Error! Trying to join a different group off of a broadcast");
         }
 
@@ -541,12 +541,16 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                                        boolean sendJoiningNotification) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, joinMethod, code);
-        if (topics != null) {
-            membership.setTopics(new HashSet<>(topics));
-        }
         if (membership != null) {
             // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
             membership.setViewPriority(GroupViewPriority.PINNED);
+        } else {
+            // means user was already part of group, so we will just add topics etc.
+            membership = group.getMembership(user);
+        }
+
+        if (topics != null) {
+            membership.addTopics(new HashSet<>(topics));
         }
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();

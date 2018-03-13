@@ -169,7 +169,10 @@ public class CampaignManagerController extends BaseRestController {
                 campaignEndDate,
                 createCampaignRequest.getJoinTopics(),
                 createCampaignRequest.getType(),
-                createCampaignRequest.getUrl());
+                createCampaignRequest.getUrl(),
+                createCampaignRequest.isSmsShare(),
+                createCampaignRequest.getSmsLimit() == null ? 0 : createCampaignRequest.getSmsLimit(),
+                createCampaignRequest.getImageKey());
 
         clearCaches(campaign.getUid(), userUid, campaign.getMasterGroup().getUid());
         return ResponseEntity.ok(new CampaignViewDTO(campaign));

@@ -178,16 +178,17 @@ public class VoteBrokerImpl implements VoteBroker {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Long> fetchVoteResults(String userUid, String voteUid, boolean swallowMemberException) {
-        Objects.requireNonNull(voteUid);
-        Objects.requireNonNull(userUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Vote vote = voteRepository.findOneByUid(voteUid);
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Vote vote = voteRepository.findOneByUid(Objects.requireNonNull(voteUid));
 
         try {
             validateUserPartOfVote(user, vote, false);
-            return StringArrayUtil.isAllEmptyOrNull(vote.getVoteOptions()) ?
+            long sizeOfVote = vote.isAllGroupMembersAssigned() ? vote.getParent().getMembers().size() :
+                    vote.getAssignedMembers().size();
+            Map<String, Long> resultMap = StringArrayUtil.isAllEmptyOrNull(vote.getVoteOptions()) ?
                     calculateYesNoResults(vote) : calculateMultiOptionResults(vote, vote.getVoteOptions());
+            resultMap.put("TOTAL_VOTE_MEMBERS", sizeOfVote);
+            return resultMap;
         } catch (AccessDeniedException e) {
             if (swallowMemberException) {
                 return new HashMap<>();

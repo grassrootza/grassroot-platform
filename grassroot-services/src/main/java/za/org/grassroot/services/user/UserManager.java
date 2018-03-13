@@ -488,6 +488,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean emailTaken(String userUid, String email) {
+        User user = userRepository.findByEmailAddressAndEmailAddressNotNull(email);
+        return user != null && !user.getUid().equals(userUid);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public void sendAndroidLinkSms(String userUid) {
         User user = userRepository.findOneByUid(userUid);
         String message = messageAssemblingService.createAndroidLinkSms(user);

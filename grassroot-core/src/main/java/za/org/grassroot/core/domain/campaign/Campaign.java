@@ -137,6 +137,14 @@ public class Campaign implements TagHolder {
         return isActive() && !StringUtils.isEmpty(landingUrl);
     }
 
+    public void addToSharingSpent(long amount) {
+        this.sharingSpent += amount;
+    }
+
+    public long sharingBudgetLeft() {
+        return this.sharingBudget - this.sharingSpent;
+    }
+
     @Override
     public String[] getTags(){
         return tags;
