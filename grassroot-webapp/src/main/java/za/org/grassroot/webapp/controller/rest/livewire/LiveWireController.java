@@ -78,8 +78,7 @@ public class LiveWireController {
                 .description(description)
                 .contactName(contactName)
                 .contactNumber(contactNumber)
-                .type(type)
-                .sendTime(Instant.now());
+                .type(type);
 
         logger.info("do we have mediaFiles? {}", mediaFileKeys);
 
