@@ -23,6 +23,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.CampaignMessageRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -243,6 +244,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);
 
         campaign.addToSharingSpent(campaign.getAccount().getFreeFormCost());
+    }
+
+    long countCampaignShares(Campaign campaign) {
+        Specifications<Notification> spec = Specifications.where(NotificationSpecifications.sharedForCampaign(campaign))
+                .and(NotificationSpecifications.wasDelivered());
+        return logsAndNotificationsBroker.countNotifications(spec);
     }
 
     @Override
