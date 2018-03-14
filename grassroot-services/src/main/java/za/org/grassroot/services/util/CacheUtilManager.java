@@ -199,6 +199,29 @@ public class CacheUtilManager implements CacheUtilService {
         }
     }
 
+    @Override
+    public List<PublicActivityLog> getCachedPublicActivity(PublicActivityType activityType) {
+        try {
+            Cache cache = cacheManager.getCache("public_activity_logs");
+            Element cachedElement = cache.get(activityType);
+            return cachedElement == null ? null : (List<PublicActivityLog>) cache.get(activityType).getObjectValue();
+        } catch (NullPointerException|ClassCastException e) {
+            log.error("Error retrieving from cache: {}", e.getMessage());
+            return null;
+        }
+
+    }
+
+    @Override
+    public void putCachedPublicActivity(PublicActivityType activityType, List<PublicActivityLog> activityLogs) {
+        try {
+            Cache cache = cacheManager.getCache("public_activity_logs");
+            cache.put(new Element(activityType, activityLogs));
+        } catch (CacheException e) {
+            log.error("Error putting element in cache");
+        }
+    }
+
     private String formSessionKey(String userUid, UserInterfaceType interfaceType) {
         return String.join(userUid, "+", interfaceType.toString());
     }

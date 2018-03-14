@@ -455,8 +455,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             boolean skipUsersWithEmail = bc.isSkipSmsIfEmail() && bc.hasEmail();
             log.info("sending short message ... skipping emails? {}", skipUsersWithEmail);
             Set<User> shortMessageUsers = skipUsersWithEmail ?
-                    membersToReceive.stream().map(Membership::getUser).filter(u -> !u.hasEmailAddress()).collect(Collectors.toSet()) :
-                    membersToReceive.stream().map(Membership::getUser).collect(Collectors.toSet());
+                    membersToReceive.stream().map(Membership::getUser).filter(u -> !u.hasEmailAddress() && u.hasPhoneNumber()).collect(Collectors.toSet()) :
+                    membersToReceive.stream().map(Membership::getUser).filter(User::hasPhoneNumber).collect(Collectors.toSet());
             log.info("now generating {} notifications", shortMessageUsers.size());
             Set<Notification> shortMessageNotifications = new HashSet<>();
             shortMessageUsers.forEach(u -> {

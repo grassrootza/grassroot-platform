@@ -38,7 +38,7 @@
     <cache name="public_activity_logs"
            maxEntriesLocalHeap="100"
            eternal="false"
-           timeToLiveSeconds="60" />
+           timeToLiveSeconds="300" />
 
     <cache name="group_stats_member_count"
            maxEntriesLocalHeap="2000"
