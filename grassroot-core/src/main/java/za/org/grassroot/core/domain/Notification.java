@@ -132,6 +132,10 @@ public abstract class Notification implements Serializable {
 
 	public abstract NotificationDetailedType getNotificationDetailedType();
 
+	public User getSender() {
+		return null;
+	}
+
 	protected Notification() {
 		// for JPA
 	}
@@ -200,7 +204,6 @@ public abstract class Notification implements Serializable {
 	 * @return group relevant for action that triggered this notification
 	 */
 	public Group getRelevantGroup() {
-
 		if (this.eventLog != null)
 			return eventLog.getEvent().getAncestorGroup();
 
@@ -218,7 +221,6 @@ public abstract class Notification implements Serializable {
 
 		else return null;
 	}
-
 
 	public boolean isRead() {
 		return this.status == NotificationStatus.READ;

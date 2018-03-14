@@ -152,7 +152,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.emailAddress = StringUtils.isEmpty(emailAddress) ? null : emailAddress;
         this.username = StringUtils.isEmpty(phoneNumber) ? emailAddress : phoneNumber;
         this.displayName = removeUnwantedCharacters(displayName);
-        this.languageCode = "en";
+//        this.languageCode = "en";
         this.messagingPreference = !StringUtils.isEmpty(phoneNumber) ? DeliveryRoute.SMS : DeliveryRoute.EMAIL_GRASSROOT; // as default
         this.createdDateTime = Instant.now();
         this.alertPreference = AlertPreference.NOTIFY_NEW_AND_REMINDERS;
@@ -198,7 +198,11 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     public void setHasSetOwnName(boolean hasSetOwnName) { this.hasSetOwnName = hasSetOwnName; }
 
     public Locale getLocale() {
-        return (languageCode == null || languageCode.trim().isEmpty()) ? Locale.US: new Locale(languageCode);
+        return (languageCode == null || languageCode.trim().isEmpty()) ? Locale.ENGLISH : new Locale(languageCode);
+    }
+
+    public boolean hasLanguage() {
+        return !(languageCode == null || (languageCode.equals("en") && !hasInitiatedSession));
     }
 
     public void setLanguageCode(String languageCode) {

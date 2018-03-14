@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -59,9 +60,9 @@ public class USSDUserController extends USSDBaseController {
 
         thisMenu.addMenuOption(userMenus + keyName, getMessage(thisSection, startMenu, optionsKey + keyName, sessionUser));
         thisMenu.addMenuOption(userMenus + keyLanguage, getMessage(thisSection, startMenu, optionsKey + keyLanguage, sessionUser));
+        thisMenu.addMenuOption(userMenus + "email", getMessage(thisSection, startMenu, optionsKey + "email", sessionUser));
         thisMenu.addMenuOption(userMenus+keyLink+doSuffix, getMessage(thisSection,startMenu,optionsKey+keyLink,sessionUser));
         thisMenu.addMenuOption(keyStart, getMessage(thisSection, startMenu, optionsKey + "back", sessionUser));
-
 
         return menuBuilder(thisMenu);
     }
@@ -71,10 +72,7 @@ public class USSDUserController extends USSDBaseController {
     public Request userDisplayName(@RequestParam(value= phoneNumber, required=true) String inputNumber) throws URISyntaxException {
 
         USSDMenu thisMenu = new USSDMenu("", userMenus + keyName + doSuffix);
-
-        User sessionUser;
-        try { sessionUser = userManager.findByInputNumber(inputNumber); }
-        catch (NoSuchElementException e) { return noUserError; }
+        User sessionUser = userManager.findByInputNumber(inputNumber);
 
         if (sessionUser.hasName()) {
             thisMenu.setPromptMessage(getMessage(thisSection, keyName, promptKey + ".named", sessionUser.getDisplayName(), sessionUser));
@@ -89,9 +87,6 @@ public class USSDUserController extends USSDBaseController {
     @ResponseBody
     public Request userChangeName(@RequestParam(value= phoneNumber, required=true) String inputNumber,
                                   @RequestParam(value= userInputParam, required=true) String newName) throws URISyntaxException {
-
-        // todo: add validation and processing of the name that is passed, as well as exception handling etc
-
         User sessionUser = userManager.findByInputNumber(inputNumber);
         userManager.updateDisplayName(sessionUser.getUid(), sessionUser.getUid(), newName);
 
@@ -117,8 +112,8 @@ public class USSDUserController extends USSDBaseController {
 
     @RequestMapping(value = homePath + userMenus + keyLanguage + doSuffix)
     @ResponseBody
-    public Request userChangeLanguage(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                                      @RequestParam(value="language", required=true) String language) throws URISyntaxException {
+    public Request userChangeLanguage(@RequestParam(value= phoneNumber) String inputNumber,
+                                      @RequestParam String language) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
         user.setLanguageCode(language); // so next prompt shows up without needing repeat DB query
@@ -126,10 +121,10 @@ public class USSDUserController extends USSDBaseController {
 
         return menuBuilder(new USSDMenu(getMessage(thisSection, keyLanguage + doSuffix, promptKey, user), optionsHomeExit(user, false)));
     }
+
     @RequestMapping(value = homePath + userMenus + "link" + doSuffix)
     @ResponseBody
-    public Request userSendAndroidLink(@RequestParam(value= phoneNumber, required=true) String inputNumber) throws URISyntaxException {
-
+    public Request userSendAndroidLink(@RequestParam(value= phoneNumber) String inputNumber) throws URISyntaxException {
         User sessionUser;
         try {
             sessionUser = userManager.findByInputNumber(inputNumber);
@@ -138,6 +133,30 @@ public class USSDUserController extends USSDBaseController {
         catch (NoSuchElementException e) { return noUserError; }
         return menuBuilder(new USSDMenu(getMessage(thisSection, keyLink + doSuffix, promptKey, sessionUser),
                 optionsHomeExit(sessionUser, false)));
+    }
+
+    @RequestMapping(value = homePath + userMenus + "email")
+    @ResponseBody public Request alterEmailPrompt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        final String prompt = !user.hasEmailAddress() ? getMessage("user.email.prompt.none", user) :
+                getMessage(thisSection, "email", "prompt.set", user.getEmailAddress(), user);
+        return menuBuilder(new USSDMenu(prompt, userMenus + "email/set"));
+    }
+
+    @RequestMapping(value = homePath + userMenus + "email/set")
+    @ResponseBody public Request setEmail(@RequestParam(value = phoneNumber) String inputNumber,
+                                          @RequestParam(value = userInputParam) String email) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu;
+        if (!EmailValidator.getInstance().isValid(email)) {
+            menu = new USSDMenu(getMessage("user.email.prompt.invalid", user), userMenus + "email/set");
+        } else if (userManager.emailTaken(user.getUid(), email)) {
+            menu = new USSDMenu(getMessage("user.email.prompt.taken", user), userMenus + "email/set");
+        } else {
+            userManager.updateEmailAddress(user.getUid(), user.getUid(), email);
+            menu = new USSDMenu(getMessage("user.email.prompt.done", user), optionsHomeExit(user, false));
+        }
+        return menuBuilder(menu);
     }
 
 }

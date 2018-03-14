@@ -154,16 +154,17 @@ public class AuthenticationController {
         }
     }
 
-    @RequestMapping(value = "web/register", method = RequestMethod.GET)
+    @RequestMapping(value = "/web/register", method = RequestMethod.GET)
     public AuthorizationResponseDTO registerWebUser(@RequestParam String name,
                                                     @RequestParam(required = false) String phone,
                                                     @RequestParam(required = false) String email,
                                                     @RequestParam String password) {
         checkRegistrationOpen(UserInterfaceType.WEB_2);
+        logger.info("registering, phone = {}, email = {}", phone, email);
         try {
             if (StringUtils.isEmpty(name))
                 return new AuthorizationResponseDTO(RestMessage.INVALID_DISPLAYNAME);
-            else if (StringUtils.isEmpty(email) && StringUtils.isEmpty(email))
+            else if (StringUtils.isEmpty(email) && StringUtils.isEmpty(phone))
                 new AuthorizationResponseDTO(RestMessage.INVALID_MSISDN);
             else if (StringUtils.isEmpty(password))
                 return new AuthorizationResponseDTO(RestMessage.INVALID_PASSWORD);

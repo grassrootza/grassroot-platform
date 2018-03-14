@@ -210,7 +210,7 @@ public class USSDHomeController extends USSDBaseController {
                 welcomeMenu(getMessage(HOME, startMenu, promptKey + ".unknown.request", user), user);
     }
 
-    private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
+    private USSDMenu defaultStartMenu(User sessionUser) {
         String welcomeMessage = sessionUser.hasName() ?
                 getMessage(thisSection, startMenu, promptKey + "-named", sessionUser.getName(""), sessionUser) :
                 getMessage(thisSection, startMenu, promptKey, sessionUser);
@@ -237,7 +237,6 @@ public class USSDHomeController extends USSDBaseController {
 
     /*
     Section of helper methods for opening menu response handling
-    todo : move these into campaign controller, as above
      */
     private USSDMenu assembleSendMeAndroidLinkMenu(User user) {
         userManager.sendAndroidLinkSms(user.getUid());
@@ -250,7 +249,7 @@ public class USSDHomeController extends USSDBaseController {
         if(supportedCampaignLanguages.size() == 1) {
             return assembleCampaignResponse(campaign, supportedCampaignLanguages.iterator().next());
         } else if(!StringUtils.isEmpty(user.getLanguageCode()) && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))){
-            return assembleCampaignResponse(campaign, new Locale(user.getLanguageCode()));
+            return assembleCampaignResponse(campaign, user.getLocale());
         } else {
             return assembleCampaignResponseForSupportedLanguage(campaign, user);
         }
@@ -275,12 +274,11 @@ public class USSDHomeController extends USSDBaseController {
     }
 
     private USSDMenu assembleCampaignResponseForSupportedLanguage(Campaign campaign, User user) {
-        Locale userLocale = (user.getLanguageCode() != null)? new Locale(user.getLanguageCode()):Locale.ENGLISH;
-        String promptMessage = getMessage("user.language.prompt", userLocale.getLanguage());
+        String promptMessage = getMessage("user.language.prompt", user.getLocale().getLanguage());
         Map<String, String> linksMap = new HashMap<>();
         Set<Locale> localeSet = campaignBroker.getCampaignLanguages(campaign.getUid());
         for(Locale locale : localeSet) {
-            String option = getMessage("language." + locale.getLanguage(), userLocale.getLanguage());
+            String option = getMessage("language." + locale.getLanguage(), user.getLocale().getLanguage());
             String url = "campaign/set-lang?campaignUid=" + campaign.getUid() +
                     USSDCampaignConstants.LANG_SUFFIX + locale.getLanguage();
             linksMap.put(url, option);

@@ -86,7 +86,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         logger.info("Opening new group join request: requestor={}, group={}, description={}", requestor, group, description);
 
         Instant time = Instant.now();
-        GroupJoinRequest request = new GroupJoinRequest(requestor, group, (description != null) ? description : null);
+        GroupJoinRequest request = new GroupJoinRequest(requestor, group, description);
         groupJoinRequestRepository.save(request);
 
         String message = messageAssemblingService.createGroupJoinRequestMessage(group.getJoinApprover(), request);

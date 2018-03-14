@@ -28,6 +28,11 @@ public abstract class BroadcastNotification extends Notification {
     @Override
     public abstract NotificationDetailedType getNotificationDetailedType();
 
+    @Override
+    public User getSender() {
+        return broadcast != null ? broadcast.getCreatedByUser() : null;
+    }
+
     protected BroadcastNotification() {
         // for JPA
     }
@@ -38,9 +43,10 @@ public abstract class BroadcastNotification extends Notification {
     }
 
     protected BroadcastNotification(User destination, String message, DeliveryRoute deliveryChannel,
-                                    ActionLog actionLog) {
+                                    ActionLog actionLog, Broadcast broadcast) {
         super(destination, message, actionLog);
         this.deliveryChannel = deliveryChannel;
+        this.broadcast = broadcast;
     }
 
 }

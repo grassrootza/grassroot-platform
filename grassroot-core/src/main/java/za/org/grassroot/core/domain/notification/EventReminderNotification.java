@@ -16,6 +16,11 @@ public class EventReminderNotification extends EventNotification {
 		return null;
 	}
 
+	@Override
+	public User getSender() {
+		return getEventLog().getUser();
+	}
+
 	private EventReminderNotification() {
 		// for JPA
 	}

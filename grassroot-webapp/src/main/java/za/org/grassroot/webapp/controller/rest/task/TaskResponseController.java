@@ -15,6 +15,7 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.TaskFinishedException;
 import za.org.grassroot.services.task.EventLogBroker;
+import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -33,26 +34,27 @@ import java.time.Instant;
 @RequestMapping(value = "/api/task/respond")
 public class TaskResponseController extends BaseRestController {
 
+    private final TaskBroker taskBroker;
     private final EventLogBroker eventLogBroker;
     private final VoteBroker voteBroker;
     private final TaskImageBroker taskImageBroker;
 
     @Autowired
-    public TaskResponseController(JwtService jwtService, UserManagementService userManager, EventLogBroker eventLogBroker, VoteBroker voteBroker, TaskImageBroker taskImageBroker) {
+    public TaskResponseController(JwtService jwtService, UserManagementService userManager, TaskBroker taskBroker, EventLogBroker eventLogBroker, VoteBroker voteBroker, TaskImageBroker taskImageBroker) {
         super(jwtService, userManager);
+        this.taskBroker = taskBroker;
         this.eventLogBroker = eventLogBroker;
         this.voteBroker = voteBroker;
         this.taskImageBroker = taskImageBroker;
     }
 
-    @RequestMapping(value = "/meeting/{userUid}/{taskUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/meeting/{taskUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Respond to a meeting invite, with RSVP options YES, NO, MAYBE (upper case)")
-    public ResponseEntity respondToMeeting(@PathVariable String userUid,
-                                           @PathVariable String taskUid,
+    public ResponseEntity respondToMeeting(HttpServletRequest request, @PathVariable String taskUid,
                                            @RequestParam EventRSVPResponse response) {
-        eventLogBroker.rsvpForEvent(taskUid, userUid, response);
+        eventLogBroker.rsvpForEvent(taskUid, getUserIdFromRequest(request), response);
         try {
-            return RestUtil.messageOkayResponse(RestMessage.RSVP_SENT);
+            return ResponseEntity.ok(taskBroker.loadResponses(getUserIdFromRequest(request), taskUid, TaskType.MEETING));
         } catch (TaskFinishedException e) {
             return RestUtil.errorResponse(RestMessage.MEETING_PAST);
         }
@@ -66,6 +68,7 @@ public class TaskResponseController extends BaseRestController {
         try {
             voteBroker.recordUserVote(getUserIdFromRequest(request), taskUid, vote.trim());
             TaskFullDTO taskDto = new TaskFullDTO(voteBroker.load(taskUid), getUserFromRequest(request), Instant.now(), vote);
+            taskDto.setVoteResults(voteBroker.fetchVoteResults(getUserIdFromRequest(request), taskUid, true));
             return ResponseEntity.ok(taskDto); // so it goes back with latest results
         } catch (IllegalArgumentException e) {
             return RestUtil.errorResponse(RestMessage.USER_NOT_PART_OF_VOTE);

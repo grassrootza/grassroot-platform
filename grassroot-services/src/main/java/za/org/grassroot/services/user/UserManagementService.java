@@ -38,12 +38,12 @@ public interface UserManagementService {
 
     boolean userExist(String phoneNumber);
 
+    boolean emailTaken(String userUid, String email);
+
     List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
 
     // username can be msisdn or pwd
     boolean doesUserHaveStandardRole(String userName, String roleName);
-
-    UserProfileStatus fetchUserProfileStatus(String userUid);
 
     /*
     Methods to create a user, for various interfaces

@@ -26,7 +26,7 @@ public class AuthWrapper extends GenericResponseWrapper {
                 new TokenDTO(token),
                 user.getUid(),
                 user.nameToDisplay(),
-                user.getLanguageCode(),
+                user.getLocale().getLanguage(),
                 hasGroups);
         wrapper.setUnreadNotificationCount(unreadNotificationCount);
         return wrapper;

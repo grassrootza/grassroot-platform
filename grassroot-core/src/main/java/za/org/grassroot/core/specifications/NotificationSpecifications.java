@@ -6,8 +6,12 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.AccountLog_;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.campaign.CampaignLog_;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.DeliveryRoute;
 
 import javax.persistence.criteria.Join;
@@ -41,6 +45,14 @@ public final class NotificationSpecifications {
         return (root, query, cb) -> {
             Join<Notification, AccountLog> accountLogJoin = root.join(Notification_.accountLog);
             return cb.equal(accountLogJoin.get(AccountLog_.account), account);
+        };
+    }
+
+    public static Specification<Notification> sharedForCampaign(final Campaign campaign) {
+        return (root, query, cb) -> {
+            Join<Notification, CampaignLog> campaignLogJoin = root.join(Notification_.campaignLog);
+            return cb.and(cb.equal(campaignLogJoin.get(CampaignLog_.campaignLogType), CampaignLogType.CAMPAIGN_SHARED),
+                cb.equal(campaignLogJoin.get(CampaignLog_.campaign), campaign));
         };
     }
 

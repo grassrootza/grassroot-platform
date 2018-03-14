@@ -16,6 +16,11 @@ public class EventCancelledNotification extends EventNotification {
 		return NotificationDetailedType.EVENT_CANCELLED;
 	}
 
+	@Override
+	public User getSender() {
+		return getEventLog().getUser();
+	}
+
 	private EventCancelledNotification() {
 		// for JPA
 	}

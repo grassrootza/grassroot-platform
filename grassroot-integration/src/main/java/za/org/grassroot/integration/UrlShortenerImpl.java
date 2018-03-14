@@ -56,7 +56,7 @@ public class UrlShortenerImpl implements UrlShortener {
     }
 
     @Override
-    public String shortenGroupJoinUrls(String joinUrl) {
+    public String shortenJoinUrls(String joinUrl) {
         try {
             long startTime = System.currentTimeMillis();
             URIBuilder builder = new URIBuilder(shortenerApi)

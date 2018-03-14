@@ -29,6 +29,7 @@ public enum EventRSVPResponse {
                 case "maybe":
                 case "Abstain":
                 case "abstain":
+                case "MAYBE":
                     return MAYBE;
                 case "Invalid RSVP":
                     return INVALID_RESPONSE;

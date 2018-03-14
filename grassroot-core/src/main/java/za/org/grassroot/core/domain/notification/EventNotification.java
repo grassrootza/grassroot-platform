@@ -27,6 +27,11 @@ public abstract class EventNotification extends Notification {
 	@Override
 	public abstract NotificationDetailedType getNotificationDetailedType();
 
+	@Override
+	public User getSender() {
+		return null;
+	}
+
 	protected EventNotification() {
 		// for JPA
 	}

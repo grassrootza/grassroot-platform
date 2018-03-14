@@ -1,7 +1,7 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 
@@ -13,6 +13,11 @@ import javax.persistence.Entity;
 public class TodoInfoNotification extends TodoNotification {
 	private TodoInfoNotification() {
 		// for JPA
+	}
+
+	@Override
+	public User getSender() {
+		return getTodoLog().getUser();
 	}
 
 	@Override

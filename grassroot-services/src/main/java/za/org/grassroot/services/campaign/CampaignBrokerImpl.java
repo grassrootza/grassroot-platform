@@ -23,6 +23,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.CampaignMessageRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -215,7 +216,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
         User user = userManager.load(Objects.requireNonNull(sharingUserUid));
 
-        // todo: check against budget, also increase amount spent
+        if (campaign.getSharingSpent() > campaign.getSharingBudget()) {
+            log.error("Error! Got to sharing even though campaign spent is above budget");
+            return;
+        }
+
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         User targetUser = userManager.loadOrCreateUser(sharingNumber);
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_SHARED, campaign, channel, sharingNumber);
@@ -237,6 +242,14 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         logsAndNotificationsBroker.storeBundle(bundle);
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);
+
+        campaign.addToSharingSpent(campaign.getAccount().getFreeFormCost());
+    }
+
+    long countCampaignShares(Campaign campaign) {
+        Specifications<Notification> spec = Specifications.where(NotificationSpecifications.sharedForCampaign(campaign))
+                .and(NotificationSpecifications.wasDelivered());
+        return logsAndNotificationsBroker.countNotifications(spec);
     }
 
     @Override
@@ -250,7 +263,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate, Instant endDate, List<String> joinTopics, CampaignType campaignType, String url){
+    public Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate, Instant endDate, List<String> joinTopics, CampaignType campaignType, String url, boolean smsShare, long smsLimit, String imageKey){
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(masterGroupUid);
         Objects.requireNonNull(campaignType);
@@ -273,15 +286,20 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate,campaignType, url, user.getPrimaryAccount());
         newCampaign.setMasterGroup(masterGroup);
 
+        if (smsShare) {
+            newCampaign.setSharingEnabled(true);
+            newCampaign.setSharingBudget(smsLimit * user.getPrimaryAccount().getFreeFormCost());
+        }
+
         if(joinTopics != null && !joinTopics.isEmpty()){
             newCampaign.setJoinTopics(joinTopics.stream().map(String::trim).collect(Collectors.toList()));
             log.info("set campaign join topics ... {}", newCampaign.getJoinTopics());
         }
 
-        Campaign perstistedCampaign = campaignRepository.saveAndFlush(newCampaign);
+        Campaign persistedCampaign = campaignRepository.saveAndFlush(newCampaign);
         CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser(), CampaignLogType.CREATED_IN_DB, newCampaign, null, null);
         persistCampaignLog(campaignLog);
-        return perstistedCampaign;
+        return persistedCampaign;
     }
 
     @Override

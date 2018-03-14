@@ -16,6 +16,11 @@ public class EventChangedNotification extends EventNotification {
 		return NotificationDetailedType.EVENT_CHANGED;
 	}
 
+	@Override
+	public User getSender() {
+		return getEventLog().getUser();
+	}
+
 	private EventChangedNotification() {
 		// for JPA
 	}

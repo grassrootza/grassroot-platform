@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.model.rest.wrappers;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.util.StringUtils;
@@ -10,7 +11,6 @@ import za.org.grassroot.core.domain.campaign.CampaignType;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.List;
-import java.util.Set;
 
 
 @ApiModel(value = "CreateCampaignRequest") @Setter
@@ -39,7 +39,14 @@ public class CreateCampaignRequest implements Serializable {
     @ApiModelProperty(value = "topics for campaign", required = false)
     private List<String> joinTopics;
 
-    public CreateCampaignRequest(){}
+    @Getter private boolean smsShare;
+    @Getter private Long smsLimit;
+
+    @Getter private String imageKey;
+
+    public CreateCampaignRequest(){
+
+    }
 
     @NotBlank(message = "campaign.name.required")
     public String getName() {

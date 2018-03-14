@@ -50,7 +50,7 @@ public class USSDCampaignController extends USSDBaseController {
                                               @RequestParam(value = USSDCampaignConstants.LANGUAGE_PARAMETER) String languageCode) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        if(StringUtils.isEmpty(user.getLanguageCode())) {
+        if(!user.hasLanguage()) {
             userManager.updateUserLanguage(user.getUid(), new Locale(languageCode));
         }
         CampaignMessage campaignMessage = campaignBroker.getOpeningMessage(campaignUid, new Locale(languageCode), UserInterfaceType.USSD, null);
@@ -166,7 +166,7 @@ public class USSDCampaignController extends USSDBaseController {
         } else if (!user.hasName()) {
             final String prompt = promptStart + getMessage("campaign.joined.name", user);
             menu = new USSDMenu(prompt, campaignMenus + "/user/name?campaignUid=" + campaign.getUid());
-        } else if (campaign.isSharingEnabled()) {
+        } else if (campaign.isSharingEnabled() && campaign.sharingBudgetLeft() > 0) {
             menu = buildSharingMenu(campaign.getUid(), locale);
         } else {
             menu = genericPositiveExit(campaign.getUid(), locale);
