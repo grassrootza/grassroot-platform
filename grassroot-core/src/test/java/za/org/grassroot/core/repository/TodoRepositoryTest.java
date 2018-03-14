@@ -128,7 +128,7 @@ public class TodoRepositoryTest {
         List<TaskTimeChangedDTO> todosWithTimeChanged = todoRepository.fetchTodosWithTimeChanged(todoUids);
         assertNotNull(todosWithTimeChanged);
         assertEquals(2, todosWithTimeChanged.size());
-        List<Instant> creationTimes = Arrays.asList(createdLog.getCreationTime(), createdLog1.getCreatedDateTime());
+        List<Instant> creationTimes = Arrays.asList(createdLog.getCreationTime(), createdLog1.getCreationTime());
         assertTrue(creationTimes.contains(todosWithTimeChanged.get(0).getLastTaskChange()));
     }
 }

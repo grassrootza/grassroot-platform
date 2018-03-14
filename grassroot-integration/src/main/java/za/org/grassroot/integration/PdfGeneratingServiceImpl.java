@@ -198,9 +198,12 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
                 pd = PDDocument.load(fileToReturn);
                 fileToReturn = generateImage(pd);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            if (pdfDocument != null && !pdfDocument.isClosed()) {
+                pdfDocument.close();
+            }
         }
 
         // return the pdf as a java File
