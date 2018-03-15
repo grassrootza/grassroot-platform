@@ -44,7 +44,7 @@ public class USSDUserController extends USSDBaseController {
             welcomeMessage = getMessage(USSDSection.HOME, startMenu, promptKey, sessionUser);
             userLogger.recordUserLog(sessionUser.getUid(), UserLogType.USER_SKIPPED_NAME, "");
         } else {
-            userManager.updateDisplayName(sessionUser.getUid(), sessionUser.getUid(), userName);
+            userManager.updateDisplayName(sessionUser.getUid(), sessionUser.getUid(), userName.trim());
             welcomeMessage = getMessage(USSDSection.HOME, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
         }
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
@@ -88,8 +88,7 @@ public class USSDUserController extends USSDBaseController {
     public Request userChangeName(@RequestParam(value= phoneNumber, required=true) String inputNumber,
                                   @RequestParam(value= userInputParam, required=true) String newName) throws URISyntaxException {
         User sessionUser = userManager.findByInputNumber(inputNumber);
-        userManager.updateDisplayName(sessionUser.getUid(), sessionUser.getUid(), newName);
-
+        userManager.updateDisplayName(sessionUser.getUid(), sessionUser.getUid(), newName.trim());
         return menuBuilder(new USSDMenu(getMessage(thisSection, keyName + doSuffix, promptKey, sessionUser), optionsHomeExit(sessionUser, false)));
     }
 

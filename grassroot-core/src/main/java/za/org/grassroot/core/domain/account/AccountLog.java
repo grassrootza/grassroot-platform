@@ -62,7 +62,7 @@ public class AccountLog implements ActionLog {
 
     @Override
     public User getUser() {
-        return null;
+        return user;
     }
 
     public static class Builder {

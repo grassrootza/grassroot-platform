@@ -711,8 +711,8 @@ public class TaskBrokerImpl implements TaskBroker {
         } else {
             // to be honest, it can be that some change (CHANGED log) didn't affect the information that was presented before on UI,
             // but it is no big harm to return same data again compared to benefits in code simplicity
-            TodoLog lastChangeLog = todoLogRepository.findFirstByTodoAndTypeOrderByCreatedDateTimeDesc(todo, TodoLogType.CHANGED);
-            return (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince));
+            TodoLog lastChangeLog = todoLogRepository.findFirstByTodoAndTypeOrderByCreationTimeDesc(todo, TodoLogType.CHANGED);
+            return (lastChangeLog != null && lastChangeLog.getCreationTime().isAfter(changedSince));
         }
     }
 

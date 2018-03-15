@@ -21,6 +21,7 @@ import za.org.grassroot.core.domain.account.AccountBillingRecord;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
@@ -31,7 +32,6 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.PdfGeneratingService;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -583,7 +583,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         Specifications<Notification> specifications = Specifications.where(wasDelivered())
                 .and(createdTimeBetween(start, end))
-                .and(ancestorGroupIs(group));
+                .and(ancestorGroupIsTimeLimited(group, periodStart));
 
         return logsAndNotificationsBroker.countNotifications(specifications);
     }

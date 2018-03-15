@@ -4,8 +4,10 @@ import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.CacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
@@ -29,10 +31,12 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static za.org.grassroot.services.util.PublicActivityType.*;
+
 @Service @Slf4j
 public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroker {
 
-    private static final int MAX_PUBLIC_LOGS = 100;
+    private static final int MAX_PUBLIC_LOGS = 20;
 
 	private final NotificationRepository notificationRepository;
 	private final GroupLogRepository groupLogRepository;
@@ -42,10 +46,11 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	private final AccountLogRepository accountLogRepository;
 	private final LiveWireLogRepository liveWireLogRepository;
 	private final CampaignLogRepository campaignLogRepository;
+	private final CacheUtilService cacheService;
 
 	@Autowired
 	public LogsAndNotificationsBrokerImpl(NotificationRepository notificationRepository, GroupLogRepository groupLogRepository,
-                                          UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository, CacheManager cacheManager) {
+										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository, CacheManager cacheManager, CacheUtilService cacheService) {
 		this.notificationRepository = notificationRepository;
 		this.groupLogRepository = groupLogRepository;
 		this.userLogRepository = userLogRepository;
@@ -54,40 +59,89 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		this.accountLogRepository = accountLogRepository;
 		this.liveWireLogRepository = liveWireLogRepository;
 		this.campaignLogRepository = campaignLogRepository;
-    }
+		this.cacheService = cacheService;
+	}
 
     @Override
     public List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs) {
-        // todo : definitely need to add caching, pseudonyms
-        List<PublicActivityLog> logs = new ArrayList<>();
         int largestPage = numberLogs == null ? MAX_PUBLIC_LOGS : Math.min(numberLogs, MAX_PUBLIC_LOGS);
-        Pageable pageable = new PageRequest(0, largestPage);
         // check, in order: campaign logs, group logs, event logs, account logs (for broadcasts), livewire logs
-        Map<GroupLogType, PublicActivityType> types = new HashMap<>();
-        types.put(GroupLogType.GROUP_ADDED, PublicActivityType.CREATED_GROUP);
-        types.put(GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE, PublicActivityType.JOINED_GROUP);
-        types.put(GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN, PublicActivityType.JOINED_GROUP);
-        List<PublicActivityLog> groupLogs = groupLogRepository.findByGroupLogTypeIn(types.keySet(), pageable)
-                .stream().map(gl -> new PublicActivityLog(types.get(gl.getGroupLogType()),
-                        gl.getUserNameSafe(),
-                        gl.getCreatedDateTime().toEpochMilli())).collect(Collectors.toList());
-        logs.addAll(groupLogs);
 
-        List<PublicActivityLog> campaignLogs = campaignLogRepository.findByCampaignLogType(CampaignLogType.CAMPAIGN_PETITION_SIGNED, pageable)
-                .stream().map(cl -> new PublicActivityLog(PublicActivityType.SIGNED_PETITION, cl.getUser().getName(), cl.getCreationTime().toEpochMilli()))
-                .collect(Collectors.toList());
-        logs.addAll(campaignLogs);
-
-        List<PublicActivityLog> broadcastLogs = accountLogRepository.findByAccountLogType(AccountLogType.BROADCAST_MESSAGE_SENT, pageable)
-                .stream().map(al -> new PublicActivityLog(PublicActivityType.SENT_BROADCAST, al.getUser().getName(), al.getCreationTime().toEpochMilli()))
-                .collect(Collectors.toList());
-        logs.addAll(broadcastLogs);
-
-        // todo : add in the event logs
-
-        logs.sort(Comparator.comparing(PublicActivityLog::getActionTimeMillis).reversed());
-        return logs;
+        return Arrays.stream(PublicActivityType.values())
+				.map(this::activityLogList).flatMap(List::stream)
+				.sorted(Comparator.comparing(PublicActivityLog::getActionTimeMillis).reversed())
+				.limit(largestPage)
+				.collect(Collectors.toList());
     }
+
+    @Cacheable(value = "public_activity_logs", key = "activityType")
+	public List<PublicActivityLog> activityLogList(PublicActivityType activityType) {
+		// todo pseudonyms
+		List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
+		if (activityLogs != null) {
+			log.info("returning logs from cache, not hitting DB");
+			return activityLogs;
+		}
+		log.info("calling DB for activity type: {}", activityType);
+		final List<PublicActivityType> oldTypes = Arrays.asList(CALLED_MEETING, CALLED_VOTE, CREATED_GROUP, JOINED_GROUP);
+		Pageable pageable = new PageRequest(0, MAX_PUBLIC_LOGS, Sort.Direction.DESC,
+				oldTypes.contains(activityType) ? "createdDateTime" : "creationTime");
+		switch (activityType) {
+			case SIGNED_PETITION:
+				activityLogs = campaignLogRepository
+						.findByCampaignLogType(CampaignLogType.CAMPAIGN_PETITION_SIGNED, pageable)
+						.stream().map(cl -> new PublicActivityLog(activityType, cl.getUser().getName(), cl.getCreationTime().toEpochMilli()))
+						.collect(Collectors.toList());
+				break;
+			case JOINED_GROUP:
+				List<GroupLogType> types = Arrays.asList(GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
+						GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN);
+				activityLogs = groupLogRepository.findByGroupLogTypeIn(types, pageable)
+						.stream().map(gl -> new PublicActivityLog(activityType, gl.getUserNameSafe(), gl.getCreatedDateTime().toEpochMilli()))
+						.collect(Collectors.toList());
+				break;
+			case CALLED_MEETING:
+				activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.MEETING, pageable)
+						.stream().map(el -> new PublicActivityLog(activityType, el.getUser().getName(), el.getCreatedDateTime().toEpochMilli()))
+						.collect(Collectors.toList());
+				break;
+			case CALLED_VOTE:
+				activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.MEETING, pageable)
+						.stream().map(el -> new PublicActivityLog(activityType, el.getUser().getName(), el.getCreatedDateTime().toEpochMilli()))
+						.collect(Collectors.toList());
+				break;
+			case CREATED_TODO:
+				activityLogs = todoLogRepository.findByType(TodoLogType.CREATED, pageable)
+						.stream().map(tl -> new PublicActivityLog(activityType, tl.getUser().getName(), tl.getCreationTime().toEpochMilli()))
+						.collect(Collectors.toList());
+				break;
+			case CREATED_GROUP:
+				activityLogs = groupLogRepository.findByGroupLogTypeIn(Collections.singleton(GroupLogType.GROUP_ADDED), pageable)
+						.stream().map(gl -> new PublicActivityLog(activityType, gl.getUserNameSafe(), gl.getCreatedDateTime().toEpochMilli()))
+						.collect(Collectors.toList());
+				break;
+			case CREATED_ALERT:
+				activityLogs = liveWireLogRepository.findByType(LiveWireLogType.ALERT_COMPLETED, pageable)
+						.stream().map(lwl -> new PublicActivityLog(activityType, lwl.getUser().getName(), lwl.getCreationTime().toEpochMilli()))
+						.collect(Collectors.toList());
+				break;
+			case SENT_BROADCAST:
+				activityLogs = accountLogRepository.findByAccountLogType(AccountLogType.BROADCAST_MESSAGE_SENT, pageable)
+						.stream().map(al -> new PublicActivityLog(activityType, al.getUser().getName(), al.getCreationTime().toEpochMilli()))
+						.collect(Collectors.toList());
+				break;
+			case CREATED_CAMPAIGN:
+				activityLogs = campaignLogRepository.findByCampaignLogType(CampaignLogType.CREATED_IN_DB, pageable)
+						.stream().map(cl -> new PublicActivityLog(activityType, cl.getUser().getName(), cl.getCreationTime().toEpochMilli()))
+						.collect(Collectors.toList());
+				break;
+			default:
+				activityLogs = new ArrayList<>();
+		}
+		cacheService.putCachedPublicActivity(activityType, activityLogs);
+		return activityLogs;
+	}
+
 
 	@Override
 	@Transactional
