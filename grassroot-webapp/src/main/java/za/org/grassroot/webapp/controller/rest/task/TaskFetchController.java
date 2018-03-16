@@ -4,24 +4,32 @@ import com.codahale.metrics.annotation.Timed;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.ChangedSinceData;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.exception.FileCreationException;
 import za.org.grassroot.webapp.model.rest.ImageRecordDTO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,13 +44,15 @@ public class TaskFetchController extends BaseRestController {
 
     private final TaskBroker taskBroker;
     private final TaskImageBroker taskImageBroker;
+    private final MemberDataExportBroker dataExportBroker;
 
     @Autowired
     public TaskFetchController(TaskBroker taskBroker, TaskImageBroker taskImageBroker,
-                               JwtService jwtService, UserManagementService userManagementService) {
+                               JwtService jwtService, UserManagementService userManagementService, MemberDataExportBroker dataExportBroker) {
         super(jwtService, userManagementService);
         this.taskBroker = taskBroker;
         this.taskImageBroker = taskImageBroker;
+        this.dataExportBroker = dataExportBroker;
     }
 
     @Timed
@@ -89,6 +99,34 @@ public class TaskFetchController extends BaseRestController {
     @ApiOperation(value = "Fetch the RSVPs for a meeting")
     public ResponseEntity<Map<String, String>> fetchMeetingRsvps(HttpServletRequest request, @PathVariable String taskUid) {
         return ResponseEntity.ok(taskBroker.loadResponses(getUserIdFromRequest(request), taskUid, TaskType.MEETING));
+    }
+
+    @RequestMapping(value = "/todo/responses/{taskUid}", method = RequestMethod.GET)
+    public ResponseEntity<Map<String, String>> fetchTodoResponses(HttpServletRequest request, @PathVariable String taskUid) {
+        return ResponseEntity.ok(taskBroker.loadResponses(getUserIdFromRequest(request), taskUid, TaskType.TODO));
+    }
+
+    @RequestMapping(value = "/todo/download/{taskUid}", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> downloadTodoResponses(HttpServletRequest request, @PathVariable String taskUid) {
+        try {
+            Todo todo = taskBroker.loadEntity(getUserIdFromRequest(request), taskUid, TaskType.TODO, Todo.class);
+            String fileName = todo.getName().replaceAll(" ", "_").toLowerCase() + ".xlsx";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+            headers.add("Cache-Control", "no-cache");
+            headers.add("Pragma", "no-cache");
+            headers.add("Expires", "0");
+
+            XSSFWorkbook xls = dataExportBroker.exportTodoData(getUserIdFromRequest(request), taskUid);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            xls.write(baos);
+            return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
+        } catch (IOException e) {
+            log.error("Could not generate todo spreadsheet", e);
+            throw new FileCreationException();
+        }
     }
 
     @Timed

@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.task;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 
@@ -78,4 +79,16 @@ public class TodoAssignment {
 
     public boolean canConfirm() { return isValidator(); }
 
+    public boolean emptyResponse() {
+        return StringUtils.isEmpty(responseText);
+    }
+
+    @Override
+    public String toString() {
+        return "TodoAssignment{" +
+                "user=" + user.getName() +
+                ", hasResponded=" + hasResponded +
+                ", responseText='" + responseText + '\'' +
+                '}';
+    }
 }

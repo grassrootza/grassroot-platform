@@ -1,19 +1,19 @@
 package za.org.grassroot.services.group;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.task.TodoBroker;
@@ -136,13 +136,26 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
         Todo todo = todoBroker.load(todoUid);
         List<TodoAssignment> todoAssignments = todoBroker.fetchAssignedUserResponses(userUid, todoUid, false, true, false);
+        log.info("pre-sort assignments: {}", todoAssignments);
+        todoAssignments.sort((t1, t2) -> {
+            if (t1.isHasResponded() != t2.isHasResponded()) {
+                return t1.isHasResponded() ? -1 : 1;
+            } else if (t1.emptyResponse() || t2.emptyResponse()) { // shouldn't happen, but in case
+                return !t1.emptyResponse() && t2.emptyResponse() ? 1 : !t2.emptyResponse() ? 0 : -1;
+            } else {
+                return t1.getResponseText().compareTo(t2.getResponseText());
+            }
+        });
+        log.info("post-sort assignments: {}", todoAssignments);
 
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("TodoResponses");
 
+        final String responseHeader = StringUtils.isEmpty(todo.getResponseTag()) ? "Response"
+                : "Response ('" + todo.getResponseTag() + "')";
         generateHeader(workbook, sheet, new String[]{
-                "Member name", "Phone number", "Responded?", "Response ('" + todo.getResponseTag() + "')", "Date of response"},
-                new int[]{7000, 5000, 3000, 7000, 10000});
+                "Member name", "Phone number", "Email", "Responded?", responseHeader, "Date of response"},
+                new int[]{7000, 5000, 7000, 5000, 7000, 10000});
 
         //table content stuff
         XSSFCellStyle contentStyle = workbook.createCellStyle();
@@ -157,10 +170,10 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
                 .withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
         for (TodoAssignment assignment : todoAssignments) {
-
             addRow(sheet, rowIndex, new String[]{
                     assignment.getUser().getName(),
                     assignment.getUser().getPhoneNumber(),
+                    assignment.getUser().getEmailAddress(),
                     String.valueOf(assignment.isHasResponded()),
                     assignment.getResponseText(),
                     assignment.getResponseTime() == null ? "" : formatter.format(assignment.getResponseTime()) }); // todo: format

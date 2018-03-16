@@ -343,7 +343,6 @@ public class GroupFetchController extends BaseRestController {
                                                             HttpServletRequest request) {
 
         try {
-
             User user = getUserFromRequest(request);
             Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
 
