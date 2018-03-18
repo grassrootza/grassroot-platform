@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -131,7 +132,12 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, true);
         logger.info("Searching term: {}", tsQuery);
 
-        return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
+        try {
+            return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
+        } catch (JpaSystemException e) {
+            logger.error("Curious empty result set error (non-replicable locally) thrown, returning empty list");
+            return new ArrayList<>();
+        }
     }
 
     @Override

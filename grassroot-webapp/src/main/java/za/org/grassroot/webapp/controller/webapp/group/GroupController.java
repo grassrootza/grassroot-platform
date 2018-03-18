@@ -839,7 +839,6 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "temp")
     public String redirectToMessaging() {
-
         return "group/temp";
     }
 

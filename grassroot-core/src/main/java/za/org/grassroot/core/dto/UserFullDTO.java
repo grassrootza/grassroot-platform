@@ -19,9 +19,10 @@ public class UserFullDTO {
     private String languageCode;
     private Province province;
     private boolean hasPassword;
+    private boolean hasImage;
+    private boolean contactError;
 
     public UserFullDTO(User user) {
-
         this.phoneNumber = user.getPhoneNumber();
         this.displayName = user.getName();
         this.firstName = user.getFirstName();
@@ -32,7 +33,8 @@ public class UserFullDTO {
         this.email = user.getEmailAddress();
         this.province = user.getProvince();
         this.hasPassword = user.hasPassword();
+        this.hasImage = user.isHasImage();
+        this.contactError = user.isContactError();
     }
-
 
 }

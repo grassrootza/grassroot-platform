@@ -10,8 +10,8 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -25,8 +25,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/group/roles/")
 public class GroupRolesController extends BaseController {
 
-	@Autowired
-	GroupBroker groupBroker;
+	final GroupBroker groupBroker;
 
 	private final static List<Permission> permissionsToDisplay = Arrays.asList(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
 			Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
@@ -40,6 +39,11 @@ public class GroupRolesController extends BaseController {
 			Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
 			Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
 			Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
+
+	@Autowired
+	public GroupRolesController(GroupBroker groupBroker) {
+		this.groupBroker = groupBroker;
+	}
 
 	/**
 	 * Group role view pages

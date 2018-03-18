@@ -6,23 +6,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.TodoTypeMismatchException;
 import za.org.grassroot.services.task.TodoBroker;
+import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
+
 @Slf4j
 @RestController @Grassroot2RestController
 @Api("/api/task/respond/todo")
 @RequestMapping("/api/task/respond/todo")
-public class TodoResponseController {
+public class TodoResponseController extends BaseRestController {
 
     private final TodoBroker todoBroker;
 
     @Autowired
-    public TodoResponseController(TodoBroker todoBroker) {
+    public TodoResponseController(JwtService jwtService, UserManagementService userManagementService, TodoBroker todoBroker) {
+        super(jwtService, userManagementService);
         this.todoBroker = todoBroker;
     }
 
@@ -30,12 +36,12 @@ public class TodoResponseController {
     User is responding to a request for information to-do
     todo: validation
      */
-    @RequestMapping(value = "information/{todoUid}/{userUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "information/{todoUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Record a user responding to a todo that requests information")
-    public ResponseEntity recordUserInformationResponse(@PathVariable String todoUid,
-                                                        @PathVariable String userUid,
+    public ResponseEntity recordUserInformationResponse(HttpServletRequest request,
+                                                        @PathVariable String todoUid,
                                                         @RequestParam String response) {
-        todoBroker.recordResponse(userUid, todoUid, response, false);
+        todoBroker.recordResponse(getUserIdFromRequest(request), todoUid, response, false);
         return ResponseEntity.ok(RestMessage.TODO_RESPONSE_RECORDED);
     }
 
