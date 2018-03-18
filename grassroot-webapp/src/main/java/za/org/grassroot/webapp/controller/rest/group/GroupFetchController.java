@@ -75,7 +75,8 @@ public class GroupFetchController extends BaseRestController {
             .put(Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE, 8)
             .put(Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK, 9)
             .put(Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS, 10)
-            .put(Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS, 11)
+            .put(Permission.GROUP_PERMISSION_SEND_BROADCAST, 11)
+            .put(Permission.GROUP_PERMISSION_CREATE_CAMPAIGN, 12)
             .build();
 
 
@@ -301,7 +302,6 @@ public class GroupFetchController extends BaseRestController {
 
     @RequestMapping(value = "/permissions-displayed", method = RequestMethod.GET)
     public ResponseEntity<Set<Permission>> fetchPermissionsDisplayed(HttpServletRequest request) {
-
         User user = getUserFromRequest(request);
         Set<Permission> permissions = new HashSet<>();
         if (user != null) {
@@ -332,7 +332,7 @@ public class GroupFetchController extends BaseRestController {
                                                               Pageable pageable, HttpServletRequest request) {
             User user = getUserFromRequest(request);
             Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
-            return  groupBroker.getGroupLogsByGroup(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword, pageable);
+            return  groupFetchBroker.getInboundMessageLogs(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword, pageable);
     }
 
     @RequestMapping(value = "/inbound-messages/{groupUid}/download", method = RequestMethod.GET)
@@ -354,7 +354,7 @@ public class GroupFetchController extends BaseRestController {
             headers.add("Pragma", "no-cache");
             headers.add("Expires", "0");
 
-            List<GroupLogDTO> inboundMessages = groupBroker.getGroupLogsByGroupForExport(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword);
+            List<GroupLogDTO> inboundMessages = groupFetchBroker.getInboundMessagesForExport(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword);
 
             XSSFWorkbook xls = memberDataExportBroker.exportInboundMessages(inboundMessages);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

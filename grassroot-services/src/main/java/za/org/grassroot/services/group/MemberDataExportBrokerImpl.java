@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
@@ -48,9 +49,9 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public XSSFWorkbook exportGroup(String groupUid, String userUid) {
 
-        // todo : include tags where consistent
         Group group = groupBroker.load(groupUid);
         User exporter = userRepository.findOneByUid(userUid);
 
@@ -59,7 +60,8 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Group members");
 
-        generateHeader(workbook, sheet, new String[]{"Name", "Phone number", "Email"}, new int[]{2000, 5000, 5000});
+        generateHeader(workbook, sheet, new String[]{"Name", "Phone number", "Email", "Topics", "Affiliations"},
+                new int[]{7000, 5000, 7000, 7000, 7000});
 
         //table content stuff
         XSSFCellStyle contentStyle = workbook.createCellStyle();
@@ -72,8 +74,13 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         //we are starting from 1 because row number 0 is header
         int rowIndex = 1;
 
-        for (User user : group.getMembers()) {
-            addRow(sheet, rowIndex, new String[]{user.getDisplayName(), user.getPhoneNumber(), user.getEmailAddress()});
+        for (Membership member : group.getMemberships()) {
+            addRow(sheet, rowIndex, new String[]{
+                    member.getDisplayName(),
+                    member.getUser().getPhoneNumber(),
+                    member.getUser().getEmailAddress(),
+                    String.join(", ", member.getTopics()),
+                    String.join(", ", member.getAffiliations())});
             rowIndex++;
         }
 

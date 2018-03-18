@@ -17,7 +17,6 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
-import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -389,11 +388,6 @@ public class GroupRestController extends GroupAbstractRestController {
             }
         }
         return ImmutableMap.of("ADDED", permissionsAdded, "REMOVED", permissionsRemoved);
-    }
-
-    @ExceptionHandler(GroupChatSettingNotFoundException.class)
-    public ResponseEntity<ResponseWrapper> messageSettingNotFound() {
-        return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.MESSAGE_SETTING_NOT_FOUND);
     }
 
 }

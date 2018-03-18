@@ -45,7 +45,6 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-
         if (request.getMethod().equalsIgnoreCase(RequestMethod.OPTIONS.toString()))
             return true;
 

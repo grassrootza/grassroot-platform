@@ -18,6 +18,7 @@ public class AuthorizedUserDTO {
     private String languageCode;
     private String systemRoleName;
     private Province province;
+    private boolean hasImage;
     private String token;
 
     public AuthorizedUserDTO(User user, String token) {
@@ -27,10 +28,9 @@ public class AuthorizedUserDTO {
         this.languageCode = user.getLocale().getLanguage();
         this.email = user.getEmailAddress();
         this.province = user.getProvince();
+        this.hasImage = user.isHasImage();
 
-        Optional<Role> highestSystemRole = user.getStandardRoles().stream()
-                .sorted(BaseRoles.sortSystemRole.reversed())
-                .findFirst();
+        Optional<Role> highestSystemRole = user.getStandardRoles().stream().max(BaseRoles.sortSystemRole);
 
         this.systemRoleName = highestSystemRole.isPresent() ? highestSystemRole.get().getName() : "";
         this.token = token;

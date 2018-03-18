@@ -44,6 +44,10 @@ public interface GroupFetchBroker {
 
     List<ActionLog> fetchUserActivityDetails(String queryingUserUid, String groupUid, String memberUid);
 
+    Page<GroupLogDTO> getInboundMessageLogs(User user, Group group, Instant from, Instant to, String keyword, Pageable pageable);
+
+    List<GroupLogDTO> getInboundMessagesForExport(User user, Group group, Instant from, Instant to, String keyword);
+
     List<Membership> filterGroupMembers(User user, String groupUid,
                                         Collection<Province> provinces,
                                         Collection<String> taskTeams,
