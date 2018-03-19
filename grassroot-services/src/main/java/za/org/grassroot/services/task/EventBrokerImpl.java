@@ -104,6 +104,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	public Meeting loadMeeting(String meetingUid) {
+		logger.info("looking for meeting with UID: {}", meetingUid);
 		return meetingRepository.findOneByUid(meetingUid);
 	}
 

@@ -67,7 +67,7 @@ public interface LiveWireAlertBroker {
     Methods for loading, tagging, and releasing alerts
      */
 
-    @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
+    //@PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
     Page<LiveWireAlert> loadAlerts(String userUid, boolean unreviewedOnly, Pageable pageable);
 
     boolean canUserTag(String userUid);

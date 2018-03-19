@@ -94,6 +94,8 @@ public class LiveWireAlertDTO {
 
         if (alert.hasMediaFiles()) {
             this.mediaFileUids = alert.getMediaFiles().stream().map(MediaFileRecord::getUid).collect(Collectors.toList());
+        }else{
+            this.mediaFileUids = new ArrayList<>();
         }
     }
 

@@ -19,6 +19,7 @@ import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.group.GroupBroker;
@@ -48,12 +49,14 @@ public class LiveWireController extends BaseRestController{
 
     private final LiveWireAlertBroker liveWireAlertBroker;
     private final DataSubscriberBroker subscriberBroker;
+    private final MediaFileBroker mediaFileBroker;
 
     @Autowired
     public LiveWireController(UserManagementService userManagementService,
                               GroupBroker groupBroker,
                               EventBroker eventBroker,
                               StorageBroker storageBroker,
+                              MediaFileBroker mediaFileBroker,
                               LiveWireAlertBroker liveWireAlertBroker,
                               DataSubscriberBroker subscriberBroker,
                               JwtService jwtService) {
@@ -64,6 +67,7 @@ public class LiveWireController extends BaseRestController{
         this.storageBroker = storageBroker;
         this.liveWireAlertBroker = liveWireAlertBroker;
         this.subscriberBroker = subscriberBroker;
+        this.mediaFileBroker = mediaFileBroker;
     }
 
     @RequestMapping(value = "/create/{userUid}", method = RequestMethod.POST)
@@ -92,11 +96,12 @@ public class LiveWireController extends BaseRestController{
                 .contactNumber(contactNumber)
                 .type(type);
 
-        log.info("do we have mediaFiles? {}", mediaFileKeys);
+        log.info("do we have mediaFiles? {}, task uid {}", mediaFileKeys,taskUid);
 
         if (LiveWireAlertType.INSTANT.equals(type)) {
             builder.group(groupBroker.load(groupUid));
         } else if (LiveWireAlertType.MEETING.equals(type)) {
+            log.info("meeting entity: {}", eventBroker.loadMeeting(taskUid));
             builder.meeting(eventBroker.loadMeeting(taskUid));
         }
 
@@ -125,7 +130,43 @@ public class LiveWireController extends BaseRestController{
     @RequestMapping(value = "/list",method = RequestMethod.GET)
     public Page<LiveWireAlertDTO> getLiveWireAlerts(HttpServletRequest request,
                                                     Pageable pageable){
-        log.info("User uid.......................... {}",getUserIdFromRequest(request));
         return liveWireAlertBroker.loadAlerts(getUserIdFromRequest(request),false,pageable).map(LiveWireAlertDTO::new);
+    }
+
+    @RequestMapping(value = "/view",method = RequestMethod.GET)
+    public ResponseEntity<LiveWireAlertDTO> loadAlert(@RequestParam String serverUid){
+        return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(serverUid)));
+    }
+
+    @RequestMapping(value = "/modify/headline",method = RequestMethod.POST)
+    public ResponseEntity<LiveWireAlertDTO> updateHeadline(@RequestParam String alertUid,
+                                                           @RequestParam String headline,
+                                                           HttpServletRequest request){
+        liveWireAlertBroker.updateHeadline(getUserIdFromRequest(request),alertUid,headline);
+        return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid)));
+    }
+
+    @RequestMapping(value = "/modify/description",method = RequestMethod.POST)
+    public ResponseEntity<LiveWireAlertDTO> updateDescription(@RequestParam String alertUid,
+                                                              @RequestParam String description,
+                                                              HttpServletRequest request){
+        liveWireAlertBroker.updateDescription(getUserIdFromRequest(request),alertUid,description);
+        return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid)));
+    }
+
+    @PostMapping(value = "modify/images/add")
+    public ResponseEntity<LiveWireAlertDTO> addImages(@RequestParam String alertUid,
+                                                      @RequestParam Set<String> mediaFileKeys){
+        LiveWireAlert liveWireAlert = liveWireAlertBroker.load(alertUid);
+        Set<MediaFileRecord> records = storageBroker.retrieveMediaRecordsForFunction(MediaFunction.LIVEWIRE_MEDIA, mediaFileKeys);
+        liveWireAlert.getMediaFiles().addAll(records);
+        return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid)));
+    }
+
+    @PostMapping(value = "modify/images/delete")
+    public ResponseEntity<LiveWireAlertDTO> deleteImages(@RequestParam String imageUid,
+                                                         @RequestParam String alertUid){
+        mediaFileBroker.deleteFile(liveWireAlertBroker.load(alertUid),imageUid,MediaFunction.LIVEWIRE_MEDIA);
+        return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid)));
     }
 }
