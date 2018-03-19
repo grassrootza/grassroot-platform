@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.dto.task.TaskDTO;
@@ -177,21 +178,25 @@ public class TaskFetchController extends BaseRestController {
             return new ResponseEntity<>((ChangedSinceData<TaskDTO>) null, HttpStatus.FORBIDDEN);
     }
 
-    @RequestMapping(value = "/posts/{userUid}/{taskType}/{taskUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/posts/{taskType}/{taskUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch posts for a task", notes = "Fetch posts against a task, sorted by date created", response = ImageRecordDTO.class)
-    public ResponseEntity<List<ImageRecordDTO>> fetchTaskPosts(@PathVariable String userUid,
-                                                               @PathVariable TaskType taskType,
+    public ResponseEntity<List<ImageRecordDTO>> fetchTaskPosts(@PathVariable TaskType taskType,
                                                                @PathVariable String taskUid,
                                                                HttpServletRequest request) {
 
         String loggedInUserUid = getUserIdFromRequest(request);
-        if (userUid.equals(loggedInUserUid)) {
-            return ResponseEntity.ok(taskImageBroker.fetchTaskPosts(userUid, taskUid, taskType).entrySet().stream()
-                    .map(entry -> new ImageRecordDTO(entry.getKey(), entry.getValue()))
-                    .sorted(Comparator.comparing(ImageRecordDTO::getCreationTime, Comparator.reverseOrder()))
-                    .collect(Collectors.toList()));
-        } else
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
+        return ResponseEntity.ok(taskImageBroker.fetchTaskPosts(loggedInUserUid, taskUid, taskType).entrySet().stream()
+                .map(entry -> new ImageRecordDTO(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(ImageRecordDTO::getCreationTime, Comparator.reverseOrder()))
+                .collect(Collectors.toList()));
+    }
+
+    @RequestMapping(value = "/image/{taskType}/{taskUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetch primary image for a task")
+    public ResponseEntity<String> fetchTaskImage(@PathVariable TaskType taskType, @PathVariable String taskUid,
+                                                 HttpServletRequest request) {
+        final String imageKey = taskImageBroker.fetchImageKeyForCreationImage(getUserIdFromRequest(request), taskUid, taskType);
+        return StringUtils.isEmpty(imageKey) ? ResponseEntity.ok().build() : ResponseEntity.ok(imageKey);
     }
 
     @RequestMapping(value = "/upcoming/group/{groupUid}", method = RequestMethod.GET)

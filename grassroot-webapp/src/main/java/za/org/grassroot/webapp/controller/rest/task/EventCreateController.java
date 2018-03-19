@@ -24,8 +24,6 @@ import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
-import za.org.grassroot.webapp.enums.VoteType;
-import za.org.grassroot.webapp.model.web.VoteWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -34,8 +32,6 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 
 @Slf4j
 @RestController @Grassroot2RestController
@@ -119,24 +115,23 @@ public class EventCreateController extends BaseRestController{
                                                   @RequestParam(required = false) List<String> voteOptions,
                                                   @RequestParam(required = false) String description,
                                                   @RequestParam long time,
+                                                  @RequestParam(required = false) String mediaFileUid,
                                                   @RequestParam(required = false)
                                                       @ApiParam(value = "UIDs of assigned members, if left blank all " +
                                                               "members of the parent are assigned") Set<String> assignedMemberUids){
 
         String userUid = getUserIdFromRequest(request);
         LocalDateTime eventStartDateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault()).toLocalDateTime();
-        VoteWrapper voteWrapper = VoteWrapper.makeEmpty();
 
-        try{
+        try {
             User user = userService.load(userUid);
-            voteWrapper.setParentUid(parentUid);
 
             assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
 
-            log.info("title={}, description={}, time={}, members={}, options={}",title,description,time,assignedMemberUids, voteOptions);
+            log.info("title={}, description={}, time={}, members={}, options={}", title, description, time, assignedMemberUids, voteOptions);
 
             Vote vote = eventBroker.createVote(user.getUid(), parentUid, parentType, title, eventStartDateTime,
-                    false, description, assignedMemberUids, voteOptions);
+                    false, description, mediaFileUid, assignedMemberUids, voteOptions);
 
             log.debug("Vote={},User={}",vote,user);
             return ResponseEntity.ok(new TaskFullDTO(vote, user,vote.getCreatedDateTime(), null));
