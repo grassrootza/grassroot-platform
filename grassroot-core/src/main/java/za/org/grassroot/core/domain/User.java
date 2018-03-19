@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -126,6 +127,16 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Basic
     @Column(name = "livewire_contact")
     private boolean liveWireContact;
+
+    // both of these could be done by looking up logs and image records, but this entity is already
+    // quite encumbered, and booleans are light, so trade-off runs in favour of denormalizing here
+    @Basic
+    @Column(name = "has_image")
+    @Getter @Setter private boolean hasImage;
+
+    @Basic
+    @Column(name = "contact_error")
+    @Getter @Setter private boolean contactError;
 
     // note: keep an eye on this in profiling, make sure it is super lazy (i.e., join table not hit at all), else drop on this side
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "administrators")

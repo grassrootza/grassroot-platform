@@ -35,26 +35,26 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificat
     List<Todo> findByAssignmentsUserAndActionByDateBetweenAndCompletedTrue(User user, Instant start, Instant end, Sort sort);
 
     @Query("select new za.org.grassroot.core.dto.task.TaskTimeChangedDTO(" +
-            "t.uid, 'TODO', tl.createdDateTime) from " +
+            "t.uid, 'TODO', tl.creationTime) from " +
             "TodoLog tl inner join tl.todo t " +
             "inner join t.ancestorGroup g inner join g.memberships m " +
             "where m.user = ?1 and " +
-            "(tl.createdDateTime = (select max(tll.createdDateTime) from TodoLog tll where tll.todo = t))")
+            "(tl.creationTime = (select max(tll.creationTime) from TodoLog tll where tll.todo = t))")
     List<TaskTimeChangedDTO> fetchTodosWithTimeChangedForUser(User user);
 
 
     @Query("select new za.org.grassroot.core.dto.task.TaskTimeChangedDTO(" +
-            "t.uid, 'TODO', tl.createdDateTime) from " +
+            "t.uid, 'TODO', tl.creationTime) from " +
             "TodoLog tl inner join tl.todo t " +
             "where t.ancestorGroup = ?1 and " +
-            "(tl.createdDateTime = (select max(tll.createdDateTime) from TodoLog tll where tll.todo = t))")
+            "(tl.creationTime = (select max(tll.creationTime) from TodoLog tll where tll.todo = t))")
     List<TaskTimeChangedDTO> fetchGroupTodosWithTimeChanged(Group group);
 
     @Query("select new za.org.grassroot.core.dto.task.TaskTimeChangedDTO(" +
-            "t.uid, 'TODO', tl.createdDateTime) from " +
+            "t.uid, 'TODO', tl.creationTime) from " +
             "TodoLog tl inner join tl.todo t " +
             "where t.uid in ?1 and " +
-            "(tl.createdDateTime = (select max(tll.createdDateTime) from TodoLog tll where tll.todo = t))")
+            "(tl.creationTime = (select max(tll.creationTime) from TodoLog tll where tll.todo = t))")
     List<TaskTimeChangedDTO> fetchTodosWithTimeChanged(Set<String> taskUids);
 
 }

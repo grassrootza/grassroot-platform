@@ -95,7 +95,7 @@ public class NotificationManager implements NotificationService{
         Instant toInstant = DateTimeUtil.convertToSystemTime(to, ZoneId.systemDefault());
         Specification<Notification> recently = NotificationSpecifications.createdTimeBetween(fromInstant, toInstant);
         Specification<Notification> isFailed = NotificationSpecifications.isInFailedStatus();
-        Specification<Notification> forGroup = NotificationSpecifications.ancestorGroupIs(group);
+        Specification<Notification> forGroup = NotificationSpecifications.ancestorGroupIsTimeLimited(group, fromInstant);
         Specifications<Notification> specs = Specifications.where(recently).and(isFailed).and(forGroup);
         return notificationRepository.findAll(specs);
     }

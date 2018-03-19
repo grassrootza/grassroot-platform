@@ -56,7 +56,9 @@ public class PermissionBrokerImpl implements PermissionBroker {
                     Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
                     Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER,
                     Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
-                    Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
+                    Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE,
+                    Permission.GROUP_PERMISSION_SEND_BROADCAST,
+                    Permission.GROUP_PERMISSION_CREATE_CAMPAIGN);
 
     // closed group structure ... again, externalize
     private static final Set<Permission> closedOrdinaryMemberPermissions =
@@ -86,7 +88,9 @@ public class PermissionBrokerImpl implements PermissionBroker {
                     Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
                     Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER,
                     Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
-                    Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
+                    Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE,
+                    Permission.GROUP_PERMISSION_SEND_BROADCAST,
+                    Permission.GROUP_PERMISSION_CREATE_CAMPAIGN);
 
     // a couple of permissions that we don't let users remove from organizers (since then no one can change them)
     private static final Set<Permission> protectedOrganizerPermissions =

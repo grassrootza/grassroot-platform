@@ -37,7 +37,9 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     private static final int TOKEN_LIFE_SPAN_MINUTES = 5;
     private static final int TOKEN_LIFE_SPAN_DAYS = 30;
-    private static final int REFRESH_WINDOW_DAYS = 5;
+    // making it very long as old device will be discontinued within next few months and several devices
+    // have not had a proper refresh (and/or don't have latest client)
+    private static final int OLD_TOKEN_REFRESH_WINDOW_DAYS = 365;
 
     private static final Logger log = LoggerFactory.getLogger(PasswordTokenManager.class);
 
@@ -122,7 +124,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         Objects.requireNonNull(code);
 
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(phoneNumber, VerificationCodeType.LONG_AUTH);
-        if (token != null && Instant.now().plus(REFRESH_WINDOW_DAYS, ChronoUnit.DAYS).isAfter(token.getExpiryDateTime())) {
+        if (token != null && Instant.now().plus(OLD_TOKEN_REFRESH_WINDOW_DAYS, ChronoUnit.DAYS).isAfter(token.getExpiryDateTime())) {
             Instant oldExpiry = token.getExpiryDateTime();
             token.setExpiryDateTime(oldExpiry.plus(TOKEN_LIFE_SPAN_DAYS, ChronoUnit.DAYS));
             return true;

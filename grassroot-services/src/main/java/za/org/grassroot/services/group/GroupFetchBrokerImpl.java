@@ -184,6 +184,10 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                     .stream().map(GroupMembersDTO::new).collect(Collectors.toList()));
         }
 
+        if (hasMemberDetailsPerm) {
+            groupFullDTO.setHasInboundMessages(groupLogRepository.count(GroupLogSpecifications.forInboundMessages(group, group.getCreatedDateTime(), Instant.now(), null)) > 0);
+        }
+
         log.info("heavy group info fetch, for group {}, members: {}, subgroups: {}, m history: {}, took {} msecs",
                 group.getName(), includeAllMembers, includeAllSubgroups, includeMemberHistory, System.currentTimeMillis() - startTime);
         return groupFullDTO;
@@ -250,6 +254,22 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .map(log -> new MembershipRecordDTO(membershipMap.get(log.getTargetUser().getId()), log))
                 .sorted(Comparator.comparing(MembershipRecordDTO::getChangeDateTimeMillis, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public Page<GroupLogDTO> getInboundMessageLogs(User user, Group group, Instant from, Instant to, String keyword, Pageable pageable) {
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        Page<GroupLog> page = groupLogRepository.findAll(Specifications.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)), pageable);
+        return page.map(GroupLogDTO::new);
+    }
+
+    @Override
+    @Transactional
+    public List<GroupLogDTO> getInboundMessagesForExport(User user, Group group, Instant from, Instant to, String keyword) {
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        List<GroupLog> list = groupLogRepository.findAll(Specifications.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)));
+        return list.stream().map(GroupLogDTO::new).collect(Collectors.toList());
     }
 
     @Timed

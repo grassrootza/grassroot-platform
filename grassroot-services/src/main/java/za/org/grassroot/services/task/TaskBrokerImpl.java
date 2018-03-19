@@ -67,13 +67,15 @@ public class TaskBrokerImpl implements TaskBroker {
     private final EventRepository eventRepository;
     private final EventLogRepository eventLogRepository;
     private final TodoLogRepository todoLogRepository;
+    private final TodoAssignmentRepository todoAssignmentRepository;
+
     private final MembershipRepository membershipRepository;
 
     private final VoteBroker voteBroker;
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, UidIdentifiableRepository genericRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, MembershipRepository membershipRepository, PermissionBroker permissionBroker, VoteBroker voteBroker) {
+    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, UidIdentifiableRepository genericRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, TodoAssignmentRepository todoAssignmentRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, VoteBroker voteBroker) {
         this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
@@ -82,6 +84,7 @@ public class TaskBrokerImpl implements TaskBroker {
         this.eventRepository = eventRepository;
         this.eventLogRepository = eventLogRepository;
         this.todoLogRepository = todoLogRepository;
+        this.todoAssignmentRepository = todoAssignmentRepository;
         this.membershipRepository = membershipRepository;
         this.permissionBroker = permissionBroker;
         this.voteBroker = voteBroker;
@@ -299,7 +302,7 @@ public class TaskBrokerImpl implements TaskBroker {
         Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
         Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
 
-        List<Todo> todos = todoBroker.fetchTodosForUser(userUid, true, true, todoStart, todoEnd, null);
+        List<Todo> todos = todoBroker.fetchTodosForUser(userUid, true, false, todoStart, todoEnd, null);
         log.info("number of todos fetched for user: {}", todos.size());
 
         todos.forEach(todo -> taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), getUserResponse(todo, user))));
@@ -645,8 +648,8 @@ public class TaskBrokerImpl implements TaskBroker {
                 EventLog voteResponse = findMostRecentResponseLog(user, (Event) task);
                 return voteResponse != null  ? voteResponse.getTag() : null;
             case TODO:
-                // hack, but going to change in to-do refactor anyway
-                return ((Todo) task).hasUserResponded(user) ? "COMPLETE" : null;
+                TodoAssignment assignment = todoAssignmentRepository.findByTodoAndUser((Todo) task, user);
+                return assignment == null ? null : assignment.getResponseText();
             default:
                 return null;
         }
@@ -711,8 +714,8 @@ public class TaskBrokerImpl implements TaskBroker {
         } else {
             // to be honest, it can be that some change (CHANGED log) didn't affect the information that was presented before on UI,
             // but it is no big harm to return same data again compared to benefits in code simplicity
-            TodoLog lastChangeLog = todoLogRepository.findFirstByTodoAndTypeOrderByCreatedDateTimeDesc(todo, TodoLogType.CHANGED);
-            return (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince));
+            TodoLog lastChangeLog = todoLogRepository.findFirstByTodoAndTypeOrderByCreationTimeDesc(todo, TodoLogType.CHANGED);
+            return (lastChangeLog != null && lastChangeLog.getCreationTime().isAfter(changedSince));
         }
     }
 

@@ -13,9 +13,11 @@ import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.MessagingProvider;
 
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -85,17 +87,28 @@ public final class NotificationSpecifications {
         };
     }
 
+    public static Specification<Notification> ancestorGroupIsTimeLimited(final Group group, Instant fromTime) {
+        return (root, query, cb) -> {
+            Predicate timeBase = cb.greaterThan(root.get(Notification_.createdDateTime), fromTime);
+            Join<Notification, EventLog> eventLogJoin = root.join(Notification_.eventLog, JoinType.LEFT).on(timeBase);
+            Join<EventLog, Event> eventJoin = eventLogJoin.join(EventLog_.event, JoinType.LEFT).on(timeBase);
+            Join<Notification, TodoLog> todoLogJoin = root.join(Notification_.todoLog, JoinType.LEFT).on(timeBase);
+            Join<TodoLog, Todo> todoJoin = todoLogJoin.join(TodoLog_.todo, JoinType.LEFT).on(timeBase);
+            Join<Notification, AccountLog> accountLogJoin = root.join(Notification_.accountLog, JoinType.LEFT).on(timeBase);
+            Join<Notification, GroupLog> groupLogJoin = root.join(Notification_.groupLog, JoinType.LEFT).on(timeBase);
+
+            return cb.or(cb.or(cb.or(cb.equal(eventJoin.get(Event_.ancestorGroup), group),
+                    cb.equal(todoJoin.get(Todo_.ancestorGroup), group)), cb.equal(accountLogJoin.get(AccountLog_.group), group)),
+                    cb.equal(groupLogJoin.get(GroupLog_.group), group));
+        };
+    }
+
     public static Specification<Notification> forGroupBroadcast(Broadcast broadcast) {
         return (root, query, cb) -> {
           Join<Notification, GroupLog> groupLogJoin = root.join(Notification_.groupLog);
           return cb.equal(groupLogJoin.get(GroupLog_.broadcast), broadcast);
         };
     }
-
-    public static Specification<Notification> getBySendingKey(String sendingKey) {
-        return (root, query, cb) -> cb.equal(root.get(Notification_.sendingKey), sendingKey);
-    }
-
 
     public static Specification<Notification> isInFailedStatus() {
         return (root, query, cb) -> root.get(Notification_.status).in(Arrays.asList(NotificationStatus.DELIVERY_FAILED,
@@ -114,6 +127,33 @@ public final class NotificationSpecifications {
         return Specifications.where(toUser(target))
                 .and(createdTimeBetween(Instant.now().minus(3, ChronoUnit.DAYS), Instant.now()))
                 .and(Specifications.not(wasDelivered()));
+    }
+
+    public static Specifications<Notification> notificationsForSending() {
+
+        Specification<Notification> readyStatus = (root, query, cb) -> cb.equal(root.get("status"), NotificationStatus.READY_FOR_SENDING);
+
+        Instant now = Instant.now();
+        Specification<Notification> sendOnlyAfterIsNull = (root, query, cb) -> cb.isNull(root.get("sendOnlyAfter"));
+        Specification<Notification> sendOnlyAfterIsInPast = (root, query, cb) -> cb.lessThan(root.get("sendOnlyAfter"), now);
+        Specifications<Notification> sendOnlyAfterOK = Specifications.where(sendOnlyAfterIsNull).or(sendOnlyAfterIsInPast);
+
+        return Specifications.where(readyStatus).and(readyStatus).and(sendOnlyAfterOK);
+    }
+
+    public static Specifications<Notification> unreadAndroidNotifications() {
+
+        Specification<Notification> messageNotRead = (root, query, cb) -> cb.notEqual(root.get("status"), NotificationStatus.READ);
+        Specification<Notification> messageNotUndeliverable = (root, query, cb) -> cb.notEqual(root.get("status"), NotificationStatus.UNDELIVERABLE);
+        Specification<Notification> messageNotReadyForSending = (root, query, cb) -> cb.notEqual(root.get("status"), NotificationStatus.READY_FOR_SENDING);
+        Specification<Notification> androidChannel = (root, query, cb) -> cb.equal(root.get("deliveryChannel"), DeliveryRoute.ANDROID_APP);
+        Specification<Notification> notSentByAat = (root, query, cb) -> cb.notEqual(root.get("sentViaProvider"), MessagingProvider.AAT);
+
+        return Specifications
+                .where(messageNotRead)
+                .and(messageNotUndeliverable)
+                .and(messageNotReadyForSending)
+                .and(androidChannel); // since sometimes routing header can be GCM but defaults into AAT
     }
 
 
