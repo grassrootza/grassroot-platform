@@ -450,6 +450,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional
     public void setTagsForAlert(String userUid, String alertUid, List<String> tags) {
+        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid),"ROLE_LIVEWIRE_USER");
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
@@ -478,6 +479,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional
     public void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send, List<String> publicListUids) {
+        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid),"ROLE_LIVEWIRE_USER");
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 

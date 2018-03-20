@@ -97,10 +97,6 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
         MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
 
         liveWireAlert.getMediaFiles().remove(record);
-
-        recordRepository.delete(record.getId());
-
-        storageBroker.deleteImage(imageKey);
     }
 
     private String getBucketForFunction(MediaFunction function) {
