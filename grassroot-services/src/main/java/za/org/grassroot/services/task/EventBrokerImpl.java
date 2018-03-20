@@ -120,8 +120,10 @@ public class EventBrokerImpl implements EventBroker {
 		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class,
 				helper.getParentType(), helper.getParentUid());
 
-		Event possibleDuplicate = checkForDuplicate(helper.getUserUid(), helper.getParentUid(), helper.getName(), helper.getStartInstant());
+		Event possibleDuplicate = checkForDuplicate(helper.getUserUid(), helper.getParentUid(),
+                helper.getName(), helper.getStartInstant(), helper.getAssignedMemberUids());
 		if (possibleDuplicate != null) { // todo : hand over to update meeting if anything different in parameters
+			logger.info("detected a duplicate meeting, subject {}, returning it", helper.getName());
 			return (Meeting) possibleDuplicate;
 		}
 
@@ -173,7 +175,8 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	// introducing so that we can check catch & handle duplicate requests (e.g., from malfunctions on Android client offline->queue->sync function)
-	private Event checkForDuplicate(String userUid, String parentGroupUid, String name, Instant startDateTime) {
+    @SuppressWarnings("unchecked") // the getAssignedMembers has a strange behavior on type check warnings, hence suppressing
+    private Event checkForDuplicate(String userUid, String parentGroupUid, String name, Instant startDateTime, Set<String> assignedMemberUids) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentGroupUid);
 		Objects.requireNonNull(name);
@@ -185,7 +188,22 @@ public class EventBrokerImpl implements EventBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Group parentGroup = groupRepository.findOneByUid(parentGroupUid);
 
-		return eventRepository.findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(user, parentGroup, name, intervalStart, intervalEnd);
+		Event possibleEvent = eventRepository.findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(user, parentGroup, name, intervalStart, intervalEnd);
+		if (possibleEvent == null)
+		    return null;
+
+		boolean priorHasAssigned = !possibleEvent.isAllGroupMembersAssigned();
+		boolean newHasAssigned = assignedMemberUids != null && !assignedMemberUids.isEmpty();
+
+		if (!priorHasAssigned && !newHasAssigned) {
+		    return possibleEvent;
+        } else if (priorHasAssigned && newHasAssigned) {
+		    Set<User> users = possibleEvent.getAssignedMembers();
+		    Set<String> priorUids = users.stream().map(User::getUid).collect(Collectors.toSet());
+		    return priorUids.equals(assignedMemberUids) ? possibleEvent : null;
+        } else {
+		    return null; // because they must be different, by definition (one is full assigned, other is not)
+        }
 	}
 
 	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog, Set<User> usersToNotify) {
@@ -381,7 +399,7 @@ public class EventBrokerImpl implements EventBroker {
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
 
 		if (parentType.equals(JpaEntityType.GROUP)) {
-			Event possibleDuplicate = checkForDuplicate(userUid, parentUid, name, convertedClosingDateTime);
+			Event possibleDuplicate = checkForDuplicate(userUid, parentUid, name, convertedClosingDateTime, assignMemberUids);
 			if (possibleDuplicate != null && possibleDuplicate.getEventType().equals(EventType.VOTE)) {
 				logger.info("Detected duplicate vote creation, returning the already-created one ... ");
 				return (Vote) possibleDuplicate;
