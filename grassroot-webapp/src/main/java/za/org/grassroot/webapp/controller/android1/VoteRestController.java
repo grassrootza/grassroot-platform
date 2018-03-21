@@ -186,7 +186,7 @@ public class VoteRestController {
         Event event = eventBroker.load(voteUid);
         ResponseEntity<ResponseWrapper> responseWrapper;
         if (!event.isCanceled()){
-            eventBroker.cancel(userUid,voteUid);
+            eventBroker.cancel(userUid,voteUid, true);
             responseWrapper = RestUtil.messageOkayResponse(RestMessage.VOTE_CANCELLED);
         }else{
             responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.VOTE_ALREADY_CLOSED);

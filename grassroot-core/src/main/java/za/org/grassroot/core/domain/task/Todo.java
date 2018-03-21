@@ -69,6 +69,10 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Column(name = "recurring_interval")
     @Getter @Setter private Long recurInterval;
 
+    // we use these just to simplify some internal methods, hence transient - actual logic is to persist via eventlogs
+    @Transient
+    @Getter @Setter private String imageUrl;
+
     private Todo() {
         // for JPA
     }
@@ -126,6 +130,11 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Override
     public JpaEntityType getJpaEntityType() {
         return JpaEntityType.TODO;
+    }
+
+    @Override
+    public boolean hasImage() {
+        return !StringUtils.isEmpty(imageUrl);
     }
 
     @Override

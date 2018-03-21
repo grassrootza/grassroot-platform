@@ -571,6 +571,22 @@ public class TaskBrokerImpl implements TaskBroker {
         return tasks;
     }
 
+    @Override
+    @Transactional
+    public void cancelTask(String userUid, String taskUid, TaskType taskType, boolean notifyMembers, String attachedReason) {
+        switch (taskType) {
+            case MEETING:
+            case VOTE:
+                eventBroker.cancel(userUid, taskUid, true);
+                break;
+            case TODO:
+                todoBroker.cancel(userUid, taskUid, notifyMembers, attachedReason);
+                break;
+            default:
+                log.error("Error! Unknown task type");
+        }
+    }
+
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {
         return t-> {
             TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), getUserResponse(t, user));

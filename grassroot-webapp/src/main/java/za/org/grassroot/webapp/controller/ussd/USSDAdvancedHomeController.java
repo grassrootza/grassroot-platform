@@ -137,7 +137,7 @@ public class USSDAdvancedHomeController extends USSDBaseController {
         publicMeetings.stream()
                 .skip(pageNumber * PAGE_SIZE)
                 .limit(PAGE_SIZE)
-                .forEach(pm -> ussdMenu.addMenuOption(moreMenus + "/public/mtgs/details?meetingUid=" + pm.getUid(),
+                .forEach(pm -> ussdMenu.addMenuOption(moreMenus + "public/mtgs/details?meetingUid=" + pm.getUid(),
                     assembleDescription(pm)));
         if (publicMeetings.size() > (pageNumber + 1) * PAGE_SIZE) {
             ussdMenu.addMenuOption(moreMenus + "public/mtgs?page=" + (pageNumber + 1), getMessage(optionsKey + "more", user));

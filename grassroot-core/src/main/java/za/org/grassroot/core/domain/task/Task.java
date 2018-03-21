@@ -31,6 +31,8 @@ public interface Task<P extends UidIdentifiable> extends EntityForUserResponse {
 	Instant getCreatedDateTime();
 	Instant getDeadlineTime();
 
+	boolean hasImage();
+
 	default LocalDateTime getDeadlineTimeAtSAST() {
 		return getDeadlineTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
 	}

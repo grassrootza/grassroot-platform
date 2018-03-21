@@ -25,10 +25,12 @@ public interface NotificationService {
 
 	void updateNotificationsViewedAndRead(Set<String> notificationUids);
 
+	void markAllUserNotificationsRead(String userUid, Instant sinceTime); // need this else can be enormous query
+
 	int countUnviewedAndroidNotifications(String targetUid);
 
 	List<Notification> loadRecentFailedNotificationsInGroup(LocalDateTime from, LocalDateTime to, Group group);
 
-	List<Notification> fetchUnreadUserNotifications(User target, Sort sort);
+	List<Notification> fetchUnreadUserNotifications(User target, Instant since, Sort sort);
 
 }

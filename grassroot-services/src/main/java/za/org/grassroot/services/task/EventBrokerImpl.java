@@ -151,7 +151,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		if (!StringUtils.isEmpty(helper.getTaskImageKey())) {
 			taskImageBroker.recordImageForTask(helper.getUserUid(), meeting.getUid(), TaskType.MEETING,
-					helper.getTaskImageKey(), EventLogType.IMAGE_AT_CREATION);
+					Collections.singleton(helper.getTaskImageKey()), EventLogType.IMAGE_AT_CREATION, null);
 			meeting.setImageUrl(taskImageBroker.getShortUrl(helper.getTaskImageKey()));
 		}
 
@@ -426,8 +426,7 @@ public class EventBrokerImpl implements EventBroker {
 		voteRepository.save(vote);
 
 		if (!StringUtils.isEmpty(taskImageKey)) {
-			taskImageBroker.recordImageForTask(userUid, vote.getUid(), TaskType.VOTE,
-					taskImageKey, EventLogType.IMAGE_AT_CREATION);
+			taskImageBroker.recordImageForTask(userUid, vote.getUid(), TaskType.VOTE, Collections.singleton(taskImageKey), EventLogType.IMAGE_AT_CREATION, null);
 			vote.setImageUrl(taskImageBroker.getShortUrl(taskImageKey));
 		}
 
@@ -561,7 +560,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void cancel(String userUid, String eventUid) {
+	public void cancel(String userUid, String eventUid, boolean notifyMembers) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
 
@@ -585,13 +584,13 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(user, event, CANCELLED);
 		bundle.addLog(eventLog);
 
-		List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
-		for (User member : getAllEventMembers(event)) {
-			if (!rsvpWithNoMembers.contains(member)) {
+		if (notifyMembers) {
+			List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
+			getAllEventMembers(event).stream().filter(member -> !rsvpWithNoMembers.contains(member)).forEach(member -> {
 				String message = messageAssemblingService.createEventCancelledMessage(member, event);
 				Notification notification = new EventCancelledNotification(member, message, eventLog);
 				bundle.addNotification(notification);
-			}
+			});
 		}
 
 		logsAndNotificationsBroker.storeBundle(bundle);

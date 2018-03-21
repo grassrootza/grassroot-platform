@@ -278,7 +278,7 @@ public class MeetingController extends BaseController {
 
     @RequestMapping(value = "cancel", method=RequestMethod.POST)
     public String cancelMeeting(@RequestParam String eventUid, RedirectAttributes redirectAttributes, HttpServletRequest request) {
-        eventBroker.cancel(getUserProfile().getUid(), eventUid);
+        eventBroker.cancel(getUserProfile().getUid(), eventUid, true);
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.cancel.success", request);
         return "redirect:/home"; // todo : send to group if came from group
     }

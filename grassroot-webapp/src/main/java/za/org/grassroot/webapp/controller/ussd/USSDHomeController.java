@@ -80,7 +80,7 @@ public class USSDHomeController extends USSDBaseController {
 
     // todo : think about how to do dynamically
     private final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
-            new AbstractMap.SimpleEntry<>("11", "IZWE_LAMI_CONS")
+            new AbstractMap.SimpleEntry<>("1", "IZWE_LAMI_CONS")
     ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
     @Autowired

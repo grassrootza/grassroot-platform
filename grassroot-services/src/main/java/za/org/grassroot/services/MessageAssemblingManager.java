@@ -66,8 +66,8 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         VariationAssignment assignment = !optimizelyActive ? null : experimentBroker.assignUser("test_experiment_meetings", user.getUid(), null);
         String messageKey;
         if (event instanceof Vote) {
-            messageKey = event.isHasImage() ? "text.vote.send.image" : "sms.vote.send.new";
-        } else if (event.isHasImage()) {
+            messageKey = event.hasImage() ? "text.vote.send.image" : "sms.vote.send.new";
+        } else if (event.hasImage()) {
             messageKey = "sms.mtg.send.image";
         } else if (event.isHighImportance() || (assignment != null && assignment.equals(VariationAssignment.EXPERIMENT))) {
             messageKey = "sms.mtg.send.special";
@@ -125,26 +125,17 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createTodoRecordedNotificationMessage(User target, Todo todo) {
-        Locale locale = target.getLocale();
-        String[] args = populateTodoFields(todo);
-        String messageKey = todo.isAllGroupMembersAssigned() ? "sms.todo.new.notassigned" :
-                (todo.getAssignedMembers().size()) == 1 ? "sms.todo.new.assigned.one"
-                        : "sms.todo.new.assigned.many";
-        return messageSourceAccessor.getMessage(messageKey, args, locale);
-    }
-
-    @Override
     public String createTodoAssignedMessage(User user, Todo todo) {
         final Locale locale = user.getLocale();
         final String[] todoFields = new String[] {
                 todo.getAncestorGroup().getName(),
                 todo.getCreatedByUser().getName(),
                 todo.getMessage(),
-                sdf.format(todo.getActionByDateAtSAST())
+                sdf.format(todo.getActionByDateAtSAST()),
+                todo.getImageUrl()
         };
-        final String messageKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey) + ".new" +
-                (todo.getActionByDate().isBefore(Instant.now().plus(1, ChronoUnit.HOURS)) ? ".instant" : "");
+        final String messageKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey) + (todo.hasImage() ? ".image" :
+                        ".new" + (todo.getActionByDate().isBefore(Instant.now().plus(1, ChronoUnit.HOURS)) ? ".instant" : ""));
         return messageSourceAccessor.getMessage(messageKey, todoFields, locale);
     }
 
@@ -154,9 +145,10 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         final String[] todoFields = new String[] {
                 todo.getAncestorGroup().getName(),
                 todo.getCreatedByUser().getName(),
-                todo.getMessage()
+                todo.getMessage(),
+                todo.getImageUrl()
         };
-        return messageSourceAccessor.getMessage("text.todo.conf.confirms.new", todoFields, locale);
+        return messageSourceAccessor.getMessage("text.todo.conf.confirms." + (todo.hasImage() ? "image" : "new"), todoFields, locale);
     }
 
     @Override
@@ -360,7 +352,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String userAlias = event.getAncestorGroup().getMembership(event.getCreatedByUser()).getDisplayName();
 
         String[] eventVariables;
-        if (event.isHasImage()) {
+        if (event.hasImage()) {
             eventVariables = new String[] {
                     salutation,
                     userAlias,

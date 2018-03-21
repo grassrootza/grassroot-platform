@@ -178,7 +178,8 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
         }
 	}
 
-    public boolean isHasImage() {
+	@Override
+    public boolean hasImage() {
         return !StringUtils.isEmpty(imageUrl);
     }
 
