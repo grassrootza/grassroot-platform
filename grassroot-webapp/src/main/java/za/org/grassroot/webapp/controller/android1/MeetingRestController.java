@@ -222,7 +222,7 @@ public class MeetingRestController {
         Event event = eventBroker.load(meetingUid);
         ResponseEntity<ResponseWrapper> responseWrapper;
         if(!event.isCanceled()){
-            eventBroker.cancel(userUid,meetingUid);
+            eventBroker.cancel(userUid,meetingUid, true);
             responseWrapper = RestUtil.messageOkayResponse(RestMessage.MEETING_CANCELLED);
         }else{
             responseWrapper = RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEETING_ALREADY_CANCELLED);

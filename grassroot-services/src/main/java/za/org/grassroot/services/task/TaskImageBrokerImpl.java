@@ -27,10 +27,7 @@ import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
@@ -119,21 +116,37 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
     @Override
     @Transactional
-    public void recordImageForTask(String userUid, String taskUid, TaskType taskType, String imageKey, EventLogType logType) {
+    public void recordImageForTask(String userUid, String taskUid, TaskType taskType, Collection<String> imageKeys, EventLogType eventLogType, TodoLogType todoLogType) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(taskUid);
-        Objects.requireNonNull(imageKey);
+        Objects.requireNonNull(imageKeys);
 
         DebugUtil.transactionRequired("Image log storing needs transaction");
 
+        User user = userRepository.findOneByUid(userUid);
         if (TaskType.MEETING.equals(taskType) || TaskType.VOTE.equals(taskType)) {
-            User user = userRepository.findOneByUid(userUid);
-            Event meeting = eventRepository.findOneByUid(taskUid);
-            EventLog imageLog = new EventLog(user, meeting, logType == null ? IMAGE_RECORDED : logType);
-            imageLog.setTag(imageKey); // slight abuse of usage, but no other possible tag here
-            logger.info("recording event log with image: {}", imageLog);
-            eventLogRepository.save(imageLog);
+            Event event = eventRepository.findOneByUid(taskUid);
+            eventLogRepository.save(generateEventLogs(imageKeys, user, event, eventLogType));
+        } else {
+            Todo todo = todoRepository.findOneByUid(taskUid);
+            logger.info("recording todo logs with image keys: {}", imageKeys);
+            todoLogRepository.save(generateTodoLogs(imageKeys, user, todo, todoLogType));
         }
+    }
+
+    private List<EventLog> generateEventLogs(Collection<String> imageKeys, User user, Event event, EventLogType eventLogType) {
+        return imageKeys.stream().map(key -> {
+            EventLog imageLog = new EventLog(user, event, eventLogType == null ? IMAGE_RECORDED : eventLogType);
+            imageLog.setTag(key); // slight abuse of usage, but no other possible tag here
+            logger.info("recording event log with image: {}", imageLog);
+            return imageLog;
+        }).collect(Collectors.toList());
+    }
+
+    private List<TodoLog> generateTodoLogs(Collection<String> imageKeys, User user, Todo todo, TodoLogType logType) {
+        return imageKeys.stream()
+                .map(key -> new TodoLog(logType == null ? TodoLogType.IMAGE_RECORDED : logType, user, todo, key))
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -792,7 +792,7 @@ public class USSDMeetingController extends USSDBaseController {
                                           @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         String menuPrompt = getMessage(thisSection, modifyConfirm, "cancel.done", sessionUser);
-        eventBroker.cancel(sessionUser.getUid(), eventUid);
+        eventBroker.cancel(sessionUser.getUid(), eventUid, true);
         return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(sessionUser, false)));
     }
 

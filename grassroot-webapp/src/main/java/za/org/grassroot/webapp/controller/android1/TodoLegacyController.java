@@ -137,7 +137,7 @@ public class TodoLegacyController {
 
         try {
             User user = userManagementService.findByInputNumber(phoneNumber);
-            todoBroker.cancel(user.getUid(), todoUid, null);
+            todoBroker.cancel(user.getUid(), todoUid, false, null);
             return RestUtil.messageOkayResponse(RestMessage.TODO_CANCELLED);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();

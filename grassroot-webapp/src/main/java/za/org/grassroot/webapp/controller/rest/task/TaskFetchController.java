@@ -147,19 +147,14 @@ public class TaskFetchController extends BaseRestController {
     }
 
     @Timed
-    @RequestMapping(value = "/upcoming/user/{userUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/upcoming/user", method = RequestMethod.GET)
     @ApiOperation(value = "Upcoming user tasks", notes = "Fetches full details on upcoming user's tasks, with an option parameter" +
             " for sort type (defaults to sorting by last change")
-    public ResponseEntity<List<TaskFullDTO>> fetchUpcomingUserTasks(@PathVariable String userUid,
-                                                                    @RequestParam(required = false) TaskSortType taskSortType,
+    public ResponseEntity<List<TaskFullDTO>> fetchUpcomingUserTasks(@RequestParam(required = false) TaskSortType taskSortType,
                                                                     HttpServletRequest request) {
-        String loggedInUserUid = getUserIdFromRequest(request);
-        if (userUid.equals(loggedInUserUid)) {
-            List<TaskFullDTO> tasks = taskBroker.fetchUpcomingUserTasksFull(userUid);
-            log.info("found {} tasks for user", tasks.size());
-            return ResponseEntity.ok(tasks);
-        } else
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
+        List<TaskFullDTO> tasks = taskBroker.fetchUpcomingUserTasksFull(getUserIdFromRequest(request));
+        log.info("found {} tasks for user", tasks.size());
+        return ResponseEntity.ok(tasks);
     }
 
     @RequestMapping(value = "/group/{userUid}/{groupUid}", method = RequestMethod.GET)

@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.TodoType;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -28,7 +29,8 @@ public class TodoHelper {
 
     @Setter private Set<String> assignedMemberUids;
     @Setter private Set<String> confirmingMemberUids;
-    @Setter private Set<String> mediaFileUids; // todo : actually, use taskImage, since we'll want to analyze
+
+    @Setter private List<String> mediaFileUids;
 
     private boolean requireImagesForConfirm;
 

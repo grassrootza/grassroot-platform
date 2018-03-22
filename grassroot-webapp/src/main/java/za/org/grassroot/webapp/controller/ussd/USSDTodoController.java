@@ -589,7 +589,7 @@ public class USSDTodoController extends USSDBaseController {
                                        @RequestParam(value = yesOrNoParam) boolean confirmed) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, null);
         if (confirmed) {
-            todoBroker.cancel(user.getUid(), todoUid, null);
+            todoBroker.cancel(user.getUid(), todoUid, false, null);
             USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.cancel.prompt", user));
             menu.addMenuOption(REL_PATH + "/start", messageAssembler.getMessage("todo.cancel.done.todos", user));
             menu.addMenuOptions(optionsHomeExit(user, true));
