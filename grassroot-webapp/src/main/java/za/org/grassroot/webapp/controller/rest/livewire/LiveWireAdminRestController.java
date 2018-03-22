@@ -16,6 +16,7 @@ import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
+import za.org.grassroot.services.livewire.LiveWireSendingBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.model.LiveWireAlertDTO;
@@ -33,10 +34,12 @@ public class LiveWireAdminRestController extends BaseRestController {
     private final LiveWireAlertBroker liveWireAlertBroker;
     private final MediaFileBroker mediaFileBroker;
     private final DataSubscriberBroker dataSubscriberBroker;
+    private final LiveWireSendingBroker liveWireSendingBroker;
 
     public LiveWireAdminRestController(UserManagementService userManagementService,
                                        StorageBroker storageBroker,
                                        MediaFileBroker mediaFileBroker,
+                                       LiveWireSendingBroker liveWireSendingBroker,
                                        DataSubscriberBroker dataSubscriberBroker,
                                        LiveWireAlertBroker liveWireAlertBroker,
                                        JwtService jwtService){
@@ -45,6 +48,7 @@ public class LiveWireAdminRestController extends BaseRestController {
         this.liveWireAlertBroker = liveWireAlertBroker;
         this.mediaFileBroker = mediaFileBroker;
         this.dataSubscriberBroker = dataSubscriberBroker;
+        this.liveWireSendingBroker = liveWireSendingBroker;
     }
 
     @RequestMapping(value = "/list",method = RequestMethod.GET)
@@ -126,9 +130,13 @@ public class LiveWireAdminRestController extends BaseRestController {
 
     @PostMapping(value = "/release")
     public ResponseEntity<LiveWireAlertDTO> releaseAlert(@RequestParam String alertUid,
-                                                         @RequestParam(required = false) String publicLists,
+                                                         @RequestParam List<String> publicLists,
                                                          HttpServletRequest request){
-
-        return null;
+        log.info("Data subscriber list.....{}",publicLists);
+        liveWireAlertBroker.reviewAlert(getUserIdFromRequest(request), alertUid, null, true, publicLists);
+        LiveWireAlert alert = liveWireAlertBroker.load(alertUid);
+        log.info("alert lists? : {}", alert.getPublicListsUids());
+        liveWireSendingBroker.sendLiveWireAlerts(Collections.singleton(alertUid));
+        return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid)));
     }
 }
