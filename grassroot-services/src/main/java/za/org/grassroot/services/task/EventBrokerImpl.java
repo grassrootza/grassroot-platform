@@ -57,6 +57,9 @@ public class EventBrokerImpl implements EventBroker {
 
 	private final Logger logger = LoggerFactory.getLogger(EventBrokerImpl.class);
 
+	// for present
+	private static final int MAX_NAME_LENGTH = 50;
+
 	@Value("${grassroot.events.limit.enabled:false}")
 	private boolean eventMonthlyLimitActive;
 
@@ -232,7 +235,7 @@ public class EventBrokerImpl implements EventBroker {
 			throw new AccessDeniedException("Error! Only meeting caller can change meeting");
 		}
 
-		if (!StringUtils.isEmpty(name) && name.length() > 40) {
+		if (!StringUtils.isEmpty(name) && name.length() > MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 
@@ -303,7 +306,7 @@ public class EventBrokerImpl implements EventBroker {
 			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
 		}
 
-		if (name.length() > 40) {
+		if (name.length() > MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 
@@ -365,7 +368,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional
 	public Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-                           boolean includeSubGroups, String description, Set<String> assignMemberUids, List<String> options) {
+						   boolean includeSubGroups, String description, String taskImageKey, Set<String> assignMemberUids, List<String> options) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentUid);
 		Objects.requireNonNull(parentType);
@@ -390,7 +393,7 @@ public class EventBrokerImpl implements EventBroker {
 			}
 		}
 
-		if (name.length() > 40) {
+		if (name.length() > MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 
@@ -404,6 +407,12 @@ public class EventBrokerImpl implements EventBroker {
 		}
 
 		voteRepository.save(vote);
+
+		if (!StringUtils.isEmpty(taskImageKey)) {
+			taskImageBroker.recordImageForTask(userUid, vote.getUid(), TaskType.VOTE,
+					taskImageKey, EventLogType.IMAGE_AT_CREATION);
+			vote.setImageUrl(taskImageBroker.getShortUrl(taskImageKey));
+		}
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 

@@ -90,7 +90,7 @@ public class VoteRestController {
             LocalDateTime eventStartDateTime = LocalDateTime.parse(time.trim(), getPreferredRestFormat());
             List<String> voteOptions = StringArrayUtil.isAllEmptyOrNull(options) ? null : options;
             Vote vote = eventBroker.createVote(user.getUid(), groupUid, JpaEntityType.GROUP, title, eventStartDateTime,
-                    false, description, membersUid, voteOptions);
+                    false, description, null, membersUid, voteOptions);
             eventBroker.updateReminderSettings(user.getUid(), vote.getUid(), EventReminderType.CUSTOM,
                     RestUtil.getReminderMinutes(reminderMinutes));
             TaskDTO voteCreated = taskBroker.load(user.getUid(), vote.getUid(), TaskType.VOTE);

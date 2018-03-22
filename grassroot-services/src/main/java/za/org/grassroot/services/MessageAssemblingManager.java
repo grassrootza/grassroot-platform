@@ -66,7 +66,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         VariationAssignment assignment = !optimizelyActive ? null : experimentBroker.assignUser("test_experiment_meetings", user.getUid(), null);
         String messageKey;
         if (event instanceof Vote) {
-            messageKey = "sms.vote.send.new";
+            messageKey = event.isHasImage() ? "text.vote.send.image" : "sms.vote.send.new";
         } else if (event.isHasImage()) {
             messageKey = "sms.mtg.send.image";
         } else if (event.isHighImportance() || (assignment != null && assignment.equals(VariationAssignment.EXPERIMENT))) {

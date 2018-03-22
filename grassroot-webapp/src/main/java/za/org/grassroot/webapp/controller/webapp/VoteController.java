@@ -112,7 +112,7 @@ public class VoteController extends BaseController {
             // since user might have added options then switched back to yes/no, can't just pass getOptions
             List<String> voteOptions = VoteType.YES_NO.equals(vote.getType()) ? null : vote.getOptions();
             eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
-                    vote.isIncludeSubGroups(), vote.getDescription(), Collections.emptySet(), voteOptions);
+                    vote.isIncludeSubGroups(), vote.getDescription(), null, Collections.emptySet(), voteOptions);
             addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
             redirectAttributes.addAttribute("groupUid", groupUid);
             return "redirect:/group/view";

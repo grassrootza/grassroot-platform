@@ -20,10 +20,12 @@ public interface TaskImageBroker {
     String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file,
                              String caption, Double latitude, Double longitude);
 
-    // use this one for where image has previously been uploaded (e.g., via microservice)
+    // use this one for where image has previously been uploaded (e.g., via media service)
     void recordImageForTask(String userUid, String taskUid, TaskType taskType, String imageKey, EventLogType logType);
 
     String getShortUrl(String imageKey);
+
+    String fetchImageKeyForCreationImage(String userUid, String taskUid, TaskType taskType);
 
     List<ImageRecord> fetchImagesForTask(String userUid, String taskUid, TaskType taskType);
 
