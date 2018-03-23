@@ -97,7 +97,8 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
                 .excludePathPatterns("/api/language/test/**")
                 .excludePathPatterns("/api/jwt/public/credentials")
                 .excludePathPatterns("/api/news/list")
-                .excludePathPatterns("/api/user/profile/image/**");
+                .excludePathPatterns("/api/user/profile/image/**")
+                .excludePathPatterns("/api/activity/list");
     }
 
     @Override
