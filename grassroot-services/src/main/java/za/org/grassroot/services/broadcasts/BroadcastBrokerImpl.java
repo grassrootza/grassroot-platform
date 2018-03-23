@@ -37,7 +37,6 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,9 +49,6 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private boolean mockSocialMediaBroadcasts;
 
     // note, make configurable, possibly, and/or use i18n
-    private static final DateTimeFormatter SDF = DateTimeFormatter.ofPattern("EEE d MMM");
-    private static final String NO_PROVINCE = "your province";
-
     private final BroadcastRepository broadcastRepository;
     private final UserRepository userRepository;
 
@@ -140,10 +136,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         // prepersist is not working as reliably as hoped (or is happening in wrong sequence), to generate this if blank, hence
         final String uid = StringUtils.isEmpty(bc.getBroadcastId()) ? UIDGenerator.generateId() : bc.getBroadcastId();
         log.info("creating broadcast, incoming ID {}, set id: {}", bc.getBroadcastId(), uid);
-        if (bc.getEmail() != null) {
-            log.info("broadcast email attachments? : {}", bc.getEmail().getAttachmentFileRecordUids());
-        }
-
+        
         Broadcast broadcast = Broadcast.builder()
                 .uid(uid)
                 .createdByUser(user)
@@ -152,7 +145,6 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .broadcastSchedule(bc.getBroadcastSchedule())
                 .scheduledSendTime(bc.getScheduledSendTime())
                 .build();
-
 
         if (bc.isCampaignBroadcast()) {
             broadcast.setCampaign(campaignRepository.findOneByUid(bc.getCampaignUid()));
@@ -309,64 +301,44 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private void recordEmailContent(EmailBroadcast email, Broadcast broadcast) {
         if (email != null) {
             broadcast.setEmailContent(email.getContent());
-            broadcast.setEmailImageKey(email.getImageUid());
             log.info("email delivery route: {}", email.getDeliveryRoute());
             broadcast.setEmailDeliveryRoute(email.getDeliveryRoute());
             broadcast.setEmailAttachments(email.getAttachmentFileRecordUids());
         }
     }
 
-    private EmailBroadcast extractEmailFromBroadcast(Broadcast broadcast, User recipient) {
-        return EmailBroadcast.builder()
-                .subject(broadcast.getTitle())
-                .content(broadcast.getEmailIncludingMerge(recipient, SDF, NO_PROVINCE, Province.CANONICAL_NAMES_ZA))
-                .deliveryRoute(broadcast.getEmailDeliveryRoute())
-                .imageUid(broadcast.getEmailImageKey())
-                .attachmentFileRecordUids(broadcast.getEmailAttachments())
-                .build();
-    }
-
     private void handleBroadcastEmails(Broadcast broadcast, ActionLog actionLog, Set<User> recipients,
                                        LogsAndNotificationsBundle bundle) {
-        Set<Notification> emailNotifications = new HashSet<>();
 
-        recipients.stream().filter(User::hasEmailAddress).forEach(u -> {
-            EmailBroadcast emailBroadcast = extractEmailFromBroadcast(broadcast, u);
+        Set<String> recipientUids = recipients.stream().map(User::getUid).collect(Collectors.toSet());
+        EmailBroadcast emailBc = EmailBroadcast.builder()
+                .broadcastUid(broadcast.getUid())
+                .subject(broadcast.getTitle())
+                .content(broadcast.getEmailContent())
+                .deliveryRoute(broadcast.getEmailDeliveryRoute())
+                .attachmentFileRecordUids(broadcast.getEmailAttachments())
+                .build();
 
-            if (broadcast.getCampaign() == null) {
-                emailNotifications.add(new GroupBroadcastNotification(u, emailBroadcast.getContent(), broadcast,
-                        broadcast.getEmailDeliveryRoute(), (GroupLog) actionLog));
-            } else {
-                emailNotifications.add(new CampaignBroadcastNotification(u, emailBroadcast.getContent(), broadcast,
-                        broadcast.getEmailDeliveryRoute(), (CampaignLog) actionLog));
-            }
+        emailBc.setFromFieldsIfEmpty(broadcast.getCreatedByUser());
+        GrassrootEmail email = emailBc.toGrassrootEmail();
+        email.setToUserUids(recipientUids);
+        log.info("email, with base ID = {}", email.getBaseId());
 
+        messagingServiceBroker.sendEmail(email);
 
-            log.info("handling delivery, route = {}", emailBroadcast.getDeliveryRoute());
-            if (!DeliveryRoute.EMAIL_GRASSROOT.equals(emailBroadcast.getDeliveryRoute())) {
+        bundle.addNotifications(recordEmailNotifications(broadcast, recipients, emailBc, actionLog));
+    }
 
-                emailBroadcast.setFromFieldsIfEmpty(broadcast.getCreatedByUser());
-                GrassrootEmail email = emailBroadcast.toGrassrootEmail();
-                // note: for now we are going to use this method to do a rest call to cut
-                // what will probably be heavy load on persistence layer (and these getting in way of short messages etc)
-                // but re-evaluate in the future). also, storing notifications for counts, status update, etc.
-                // in future we will scan for bounced emails etc to flag some as non-delivered
-                messagingServiceBroker.sendEmail(Collections.singletonList(u.getEmailAddress()), email);
-                emailNotifications.forEach(n -> {
-                    n.setSendAttempts(1);
-                    n.setStatus(NotificationStatus.DELIVERED);
-                });
-
-                try {
-                    Thread.sleep(100); // adding some friction so we don't overload messaging (or here)
-                } catch (InterruptedException e) {
-                    log.info("strange, thread exception in email sending");
-                }
-            }
-
-        });
-
-        bundle.addNotifications(emailNotifications);
+    // for counting / auditing purposes
+    private Set<Notification> recordEmailNotifications(Broadcast broadcast, Set<User> recipients, EmailBroadcast emailBc, ActionLog actionLog) {
+        boolean isCampaign = broadcast.getCampaign() != null;
+        return recipients.stream().map(user -> {
+            Notification n = isCampaign ? new CampaignBroadcastNotification(user, emailBc.getContent(), broadcast, broadcast.getEmailDeliveryRoute(), (CampaignLog) actionLog) :
+                    new GroupBroadcastNotification(user, emailBc.getContent(), broadcast, broadcast.getEmailDeliveryRoute(), (GroupLog) actionLog);
+            n.setSendAttempts(1);
+            n.setStatus(NotificationStatus.DELIVERED);
+            return n;
+        }).collect(Collectors.toSet());
     }
 
     private void recordFbPosts(List<FBPostBuilder> posts, Broadcast broadcast) {
@@ -411,7 +383,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private LogsAndNotificationsBundle generateGroupBroadcastBundle(Broadcast bc) {
-        log.info("generating notifications for group broadcast ...");
+        log.debug("generating notifications for group broadcast ...");
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         Group group = bc.getGroup();
@@ -446,7 +418,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         if (bc.hasEmail()) {
             Set<User> emailUsers = membersToReceive.stream().map(Membership::getUser)
                     .filter(User::hasEmailAddress).collect(Collectors.toSet());
-            log.info("broadcast has an email, sending it to {} users", emailUsers.size());
+            log.info("broadcast has an email, sending it to {} users, bc ID = {}", emailUsers.size(), bc.getUid());
             handleBroadcastEmails(bc, groupLog, emailUsers, bundle);
         }
 
@@ -461,7 +433,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             Set<Notification> shortMessageNotifications = new HashSet<>();
             shortMessageUsers.forEach(u -> {
                 GroupBroadcastNotification notification = new GroupBroadcastNotification(u,
-                        bc.getShortMsgIncludingMerge(u, SDF, NO_PROVINCE, Province.CANONICAL_NAMES_ZA), bc,
+                        bc.getShortMsgIncludingMerge(u), bc,
                         u.getMessagingPreference(), groupLog);
                 notification.setUseOnlyFreeChannels(bc.isOnlyUseFreeChannels());
                 shortMessageNotifications.add(notification);

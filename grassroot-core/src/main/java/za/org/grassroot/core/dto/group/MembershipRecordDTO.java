@@ -8,15 +8,15 @@ import za.org.grassroot.core.enums.GroupLogType;
 @Getter
 public class MembershipRecordDTO {
 
-    final Long groupLogId;
-    final String groupUid;
-    final String userUid;
-    final String memberName;
-    final String roleName;
-    final long changeDateTimeMillis;
-    final GroupLogType changeType;
-    final String changingUserName;
-    final String description;
+    private final Long groupLogId;
+    private final String groupUid;
+    private final String userUid;
+    private final String memberName;
+    private final String roleName;
+    private final long changeDateTimeMillis;
+    private final GroupLogType changeType;
+    private final String changingUserName;
+    private final String description;
 
     public MembershipRecordDTO(Membership membership, GroupLog groupLog) {
         this.groupLogId = groupLog.getId(); // since no UID on group log ...

@@ -24,7 +24,6 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.storage.StorageBroker;
 
-import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.time.format.DateTimeFormatter;
@@ -108,11 +107,11 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
 
     private void sendEmails(LiveWireAlert alert, List<GrassrootEmail> emails) {
         DebugUtil.transactionRequired("");
-        List<String> toAddresses = new ArrayList<>();
+        Map<String, String> toAddresses = new HashMap<>();
         logger.info("attachment map in first mail: {}", emails.get(0).getAttachmentUidsAndNames());
         emails.forEach(e -> {
             e.setFromAddress(livewireEmailAddress);
-            toAddresses.add(e.getAddress());
+            toAddresses.put(e.getToAddress(), null);
         });
         messagingServiceBroker.sendEmail(toAddresses, emails.get(0));
         alert.setSent(true);
@@ -164,7 +163,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         }
 
         GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder()
-                .from("Grassroot LiveWire")
+                .fromName("Grassroot LiveWire")
                 .subject(messageSource.getMessage(subject, new String[] {alert.getHeadline()}));
 
 //        if (alert.getMediaFiles() != null && !alert.getMediaFiles().isEmpty()) {
@@ -202,7 +201,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
 
         ctx.setVariables(emailVars);
         return builder
-                .address(emailAddress)
+                .toAddress(emailAddress)
                 .content(templateEngine.process("text/" + template, ctx))
                 .htmlContent(templateEngine.process("html/" + template, ctx))
                 .build();

@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/group/roles/")
 public class GroupRolesController extends BaseController {
 
-	final GroupBroker groupBroker;
+	private final GroupBroker groupBroker;
 
 	private final static List<Permission> permissionsToDisplay = Arrays.asList(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
 			Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,

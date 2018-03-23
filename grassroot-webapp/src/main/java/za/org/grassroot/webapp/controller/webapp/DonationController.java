@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.util.Collections;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -177,7 +176,8 @@ public class DonationController extends BaseController {
     }
 
     private void sendSuccessEmail(String name, String email, int amount) {
-        messageBroker.sendEmail(Collections.singletonList(resultsEmail), new GrassrootEmail.EmailBuilder("Successful donation")
+        messageBroker.sendEmail(new GrassrootEmail.EmailBuilder("Successful donation")
+                .toAddress(resultsEmail).toName("Grassroot")
                 .content("Successful donation received from " + name  + " (" + email + "), for R" + amount + ",")
                 .build());
     }
@@ -192,8 +192,9 @@ public class DonationController extends BaseController {
             final String htmlContent = templateEngine.process("donate/share_email", ctx);
             log.info("processed template ... firing off mail");
             log.debug("email template processed looks like: {}", htmlContent);
-            messageBroker.sendEmail(Collections.singletonList(toEmail), new GrassrootEmail.EmailBuilder(subject)
-                    .from("Grassroot").htmlContent(htmlContent).content(htmlContent).build());
+            messageBroker.sendEmail(new GrassrootEmail.EmailBuilder(subject)
+                    .toAddress(toEmail).toName(toName).fromName("Grassroot")
+                    .htmlContent(htmlContent).content(htmlContent).build());
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -3,8 +3,6 @@ package za.org.grassroot.core.repository;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
@@ -12,10 +10,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountType;
 
@@ -37,8 +35,6 @@ import static org.junit.Assert.*;
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class AccountRepositoryTest {
-
-    private static final Logger log = LoggerFactory.getLogger(AccountRepositoryTest.class);
 
     private static final String accountName = "Paying institution";
     private static final String billingEmail = "accounts@institution.com";

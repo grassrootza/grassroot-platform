@@ -338,6 +338,8 @@ public class TodoBrokerImpl implements TodoBroker {
             case VOLUNTEERS_NEEDED:
                 notifications.addAll(notifyCreatorOfVolunteer(todoAssignment, response, todoLog));
                 break;
+            default:
+                throw new IllegalArgumentException("Error! Todo with non-standard type passed");
         }
 
         storeLogAndNotifications(todoLog, notifications);

@@ -32,19 +32,19 @@ public class TodoAssignment {
 
     @Basic
     @Column(name = "assigned_action")
-    @Setter boolean assignedAction;
+    @Setter private boolean assignedAction;
 
     @Basic
     @Column(name = "assigned_witness")
-    @Setter boolean validator;
+    @Setter private boolean validator;
 
     @Basic
     @Column(name = "should_respond")
-    @Setter boolean shouldRespond;
+    @Setter private boolean shouldRespond;
 
     @Basic
     @Column(name = "has_responded")
-    @Setter boolean hasResponded;
+    @Setter private boolean hasResponded;
 
     @Column(name = "response_date_time")
     @Setter private Instant responseTime;

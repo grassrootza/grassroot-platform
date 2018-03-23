@@ -15,10 +15,10 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.PaidGroup;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
@@ -229,8 +229,8 @@ public class AccountSignUpController extends BaseController {
         mailBody.append("\n\n Account details: \n");
         mailBody.append(account == null ? "Null account" : account.toString());
 
-        messageBroker.sendEmail(Collections.singletonList("contact@grassroot.org.za"),
-                new GrassrootEmail.EmailBuilder("Account 'Contact Us' Query").content(mailBody.toString()).build());
+        messageBroker.sendEmail(new GrassrootEmail.EmailBuilder("Account 'Contact Us' Query")
+                .toAddress("contact@grassroot.org.za").toName("Grassroot").content(mailBody.toString()).build());
 
         addMessage(attributes, MessageType.SUCCESS, "account.contact.done", request);
         return "redirect:/account/";

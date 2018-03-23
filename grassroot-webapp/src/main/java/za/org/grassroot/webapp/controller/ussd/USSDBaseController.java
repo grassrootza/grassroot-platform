@@ -47,16 +47,6 @@ public class USSDBaseController {
     protected USSDMessageAssembler messageAssembler;
     protected USSDMenuUtil ussdMenuUtil;
 
-    @Autowired
-    protected void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) {
-        this.ussdMenuUtil = ussdMenuUtil;
-    }
-
-    @Autowired
-    protected void setMessageAssembler(USSDMessageAssembler messageAssembler) {
-        this.messageAssembler = messageAssembler;
-    }
-
     /**
      * SECTION: Constants used throughout the code
      */
@@ -125,6 +115,20 @@ public class USSDBaseController {
 
     private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
             MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, MORE);
+
+    /*
+    Field setters
+     */
+
+    @Autowired
+    protected void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) {
+        this.ussdMenuUtil = ussdMenuUtil;
+    }
+
+    @Autowired
+    protected void setMessageAssembler(USSDMessageAssembler messageAssembler) {
+        this.messageAssembler = messageAssembler;
+    }
 
     /*
     Methods that form the menu objects

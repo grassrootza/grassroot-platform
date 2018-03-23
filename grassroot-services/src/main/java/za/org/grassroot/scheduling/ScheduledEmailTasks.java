@@ -7,13 +7,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.dto.GrassrootEmail;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AnalyticalService;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2016/10/25.
@@ -85,8 +87,9 @@ public class ScheduledEmailTasks {
 
             final String emailBody = "Good morning,\n" + userLine + taskLine + groupLine + safetyLine + "\nGrassroot";
 
-            messagingServiceBroker.sendEmail(Arrays.asList(systemEmailAddress.split(",")),
-                    new GrassrootEmail.EmailBuilder("System Email").content(emailBody).build());
+            Map<String, String> recipients = Arrays.stream(systemEmailAddress.split(","))
+                    .collect(Collectors.toMap(add -> add, add -> null));
+            messagingServiceBroker.sendEmail(recipients, new GrassrootEmail.EmailBuilder("System Email").content(emailBody).build());
         }
     }
 
