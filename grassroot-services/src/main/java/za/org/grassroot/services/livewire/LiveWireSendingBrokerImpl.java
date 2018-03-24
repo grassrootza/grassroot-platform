@@ -99,6 +99,9 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
                 }
                 alertEmails.addAll(collectPublicEmailAddresses(alert));
                 break;
+            default:
+                logger.error("invalid livewire destination type used");
+                break;
         }
         sendEmails(alert, generateEmailsForAlert(alert, alertEmails));
         logger.info("LiveWire of type {} sent to {} emails! Headline : {}. Setting to sent ...",
@@ -133,7 +136,9 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     }
 
     private List<GrassrootEmail> generateEmailsForAlert(LiveWireAlert alert, List<String> emailAddresses) {
-        String subject, template;
+        String subject;
+        String template;
+
         Map<String, Object> emailVars = new HashedMap<>();
 
         emailVars.put("contactName", alert.getContactNameNullSafe());
@@ -165,14 +170,6 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder()
                 .fromName("Grassroot LiveWire")
                 .subject(messageSource.getMessage(subject, new String[] {alert.getHeadline()}));
-
-//        if (alert.getMediaFiles() != null && !alert.getMediaFiles().isEmpty()) {
-//            // for the moment, we basically are just sending one as attachment (to change when gallery etc working)
-//            logger.debug("trying to fetch the image ....");
-//            File attachment = storageBroker.fetchFileFromRecord(alert.getMediaFiles().iterator().next());
-//            logger.debug("fetched the image, adding it to email ...");
-//            builder.attachment("image.jpg", attachment);
-//        }
 
         alert.getMediaFiles().forEach(record -> builder.attachmentByKey(record.getUid(), record.getFileName()));
         logger.info("added {} media files, map looks like {}", alert.getMediaFiles().size(), builder.getAttachmentUidsAndNames());

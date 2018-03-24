@@ -34,7 +34,7 @@ public class TodoHelper {
 
     private boolean requireImagesForConfirm;
 
-    void validateMinimumFields() {
+    protected void validateMinimumFields() {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(parentUid);
         Objects.requireNonNull(parentType);

@@ -205,7 +205,7 @@ public class AccountSignUpController extends BaseController {
             accountBroker.changeAccountType(getUserProfile().getUid(), accountUid, newType, new HashSet<>(splitUids));
             addMessage(attributes, MessageType.SUCCESS, "account.changetype.success", request);
             return "redirect:/account/view";
-        } catch (NullPointerException|AccountLimitExceededException e) {
+        } catch (AccountLimitExceededException e) {
             addMessage(attributes, MessageType.ERROR, "account.changetype.error", request);
             return "redirect:/account/type";
         }

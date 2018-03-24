@@ -318,10 +318,10 @@ public class USSDMeetingController extends USSDBaseController {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
         log.info("event request uid: {}", passedRequestUid);
-        groupUid = groupUid != null ? groupUid :
+        String mtgGroupUid = groupUid != null ? groupUid :
                 ((MeetingRequest) eventRequestBroker.load(passedRequestUid)).getParent().getUid();
         int eventsLeft = eventMonthlyLimitActive ?
-                accountGroupBroker.numberEventsLeftForGroup(groupUid) : 99;
+                accountGroupBroker.numberEventsLeftForGroup(mtgGroupUid) : 99;
 
         String mtgRequestUid;
 

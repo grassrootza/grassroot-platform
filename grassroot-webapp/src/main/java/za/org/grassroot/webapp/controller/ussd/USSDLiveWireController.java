@@ -134,13 +134,13 @@ public class USSDLiveWireController extends USSDBaseController {
     public Request selectContactForMeeting(@RequestParam String msisdn,
                                            @RequestParam(required = false) String mtgUid,
                                            @RequestParam(required = false) String alertUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(msisdn);
-        if (StringUtils.isNullOrEmpty(alertUid)) {
+        if (StringUtils.isNullOrEmpty(alertUid))
             Objects.requireNonNull(mtgUid);
-            alertUid = liveWireAlertBroker.create(user.getUid(), MEETING, mtgUid);
-            cacheManager.putUssdMenuForUser(msisdn, menuUri("mtg", alertUid));
-        }
-        return menuBuilder(assembleContactChoiceMenu(user, alertUid, MEETING));
+        User user = userManager.findByInputNumber(msisdn);
+        String loadAlertUid = !StringUtils.isNullOrEmpty(alertUid) ? alertUid :
+                liveWireAlertBroker.create(user.getUid(), MEETING, mtgUid);
+        cacheManager.putUssdMenuForUser(msisdn, menuUri("mtg", loadAlertUid));
+        return menuBuilder(assembleContactChoiceMenu(user, loadAlertUid, MEETING));
     }
 
     @RequestMapping("instant")

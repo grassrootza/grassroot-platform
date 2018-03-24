@@ -13,9 +13,9 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.core.specifications.NotificationSpecifications;
 
 import javax.persistence.EntityManager;
 import java.time.Instant;
@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.core.util.DateTimeUtil.*;
 import static za.org.grassroot.core.specifications.UserSpecifications.*;
+import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 /**
  * Created by luke on 2016/12/12.
@@ -41,7 +41,7 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     private static final Logger logger = LoggerFactory.getLogger(AnalyticalServiceImpl.class);
 
     @Value("${grassroot.keywords.excluded:''}")
-    String listOfWordsToExcludeFromStat;
+    private String listOfWordsToExcludeFromStat;
 
     private final UserRepository userRepository;
     private final UserLogRepository userLogRepository;
