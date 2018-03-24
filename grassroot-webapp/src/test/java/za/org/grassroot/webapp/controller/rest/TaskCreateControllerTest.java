@@ -5,8 +5,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
@@ -17,20 +15,16 @@ import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
-import za.org.grassroot.webapp.controller.rest.RestAbstractUnitTest;
 import za.org.grassroot.webapp.controller.rest.task.EventCreateController;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 
 @Slf4j
 public class TaskCreateControllerTest extends RestAbstractUnitTest {
@@ -91,35 +85,5 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
 
         verify(eventBrokerMock,times(1)).createMeeting(helper);
     }
-
-
-    // terribly written test is failing for spurious reasons. no time to fix. do so in future.
-//    @Test
-//    public void createVoteShouldWork() throws Exception{
-//        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-//        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
-//
-//        when(jwtServiceMock.getUserIdFromJwtToken("testing")).thenReturn(sessionTestUser.getUid());
-//        when(eventBrokerMock.createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
-//                testEventTitle, testDateTime, false, testEventDescription,
-//                Collections.emptySet(), null)).thenReturn(testVote);
-//
-//        mockMvc.perform(post(path + "/vote/{parentType}/{parentUid}",
-//                JpaEntityType.GROUP, testGroup.getUid())
-//                .header("Authorization", "bearer_testing")
-//                        .param("title",""+ testEventTitle)
-//                        .param("description",""+testEventDescription)
-//                        .param("time", "" + testDateTimeEpochMillis))
-//                .andExpect(status().is2xxSuccessful());
-//
-//        verify(userManagementServiceMock,times(1)).load(sessionTestUser.getUid());
-//        verify(eventBrokerMock,times(1)).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, testVote.getName(),
-//                testDateTime, false, testEventDescription, Collections.emptySet(), null);
-//    }
-
-    Vote createVote(String[] options) {
-        Vote voteEvent = new Vote(testEventTitle, testInstant, sessionTestUser, testGroup, true, testEventDescription);
-        voteEvent.setTags(options);
-        return voteEvent;
-    }
+    
 }
