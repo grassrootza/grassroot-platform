@@ -7,12 +7,12 @@ import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.MessagingProvider;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
-import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -124,7 +124,6 @@ public abstract class Notification implements Serializable {
 	@CollectionTable(name = "notification_error", joinColumns = @JoinColumn(name = "notification_id"))
 	private List<NotificationSendError> sendingErrors = new ArrayList<>();
 
-
 	@Transient
 	public int priority;
 
@@ -220,6 +219,10 @@ public abstract class Notification implements Serializable {
 			return this.liveWireLog.getAlert().getGroup();
 
 		else return null;
+	}
+
+	public Task getTask() {
+		return null;
 	}
 
 	public boolean isRead() {

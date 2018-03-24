@@ -5,17 +5,17 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.dto.GrassrootEmail;
+import za.org.grassroot.core.enums.DeliveryRoute;
 
 import java.util.List;
 
 @Getter @Setter @Builder
 public class EmailBroadcast {
 
+    private String broadcastUid;
     private String subject;
     private String content;
-    private String imageUid;
     private String fromName;
     private String fromAddress;
     private DeliveryRoute deliveryRoute;
@@ -32,12 +32,13 @@ public class EmailBroadcast {
 
     public GrassrootEmail toGrassrootEmail() {
         return new GrassrootEmail.EmailBuilder()
-                .from(fromName)
+                .fromName(fromName)
                 .fromAddress(fromAddress)
                 .subject(subject)
                 .content(content)
                 .htmlContent(content)
                 .attachmentRecordUids(attachmentFileRecordUids)
+                .baseId(broadcastUid)
                 .build();
     }
 

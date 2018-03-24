@@ -128,6 +128,7 @@ public class TaskBrokerImpl implements TaskBroker {
                 break;
             default:
                 taskToReturn = null;
+                break;
         }
 
         log.debug("Task created by user: {}", taskToReturn.isCreatedByUser());

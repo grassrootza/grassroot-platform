@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Tolerate;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.GrassrootTemplate;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.enums.DeliveryRoute;
@@ -16,7 +17,6 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 @Entity
 @Table(name = "broadcast")
 @Getter @Builder
-public class Broadcast implements GrassrootEntity, TagHolder {
+public class Broadcast implements GrassrootEntity, TagHolder, GrassrootTemplate {
 
     public static final int MAX_MESSAGES = 3;
 
@@ -46,13 +46,6 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     public static final String TASK_FIELD_SEP = ";";
 
     private static final String EMAIL_ATTACHMENT_PREFIX = "EMAIL_ATTACH:";
-
-    public static String NAME_FIELD_TEMPLATE = "{__name__}";
-    public static String CONTACT_FIELD_TEMPALTE = "{__contact__}";
-    public static String DATE_FIELD_TEMPLATE = "{__date__}";
-    public static String PROVINCE_FIELD_TEMPLATE = "{__province__}";
-    public static String INBOUND_FIELD_TEMPLATE = "{__inbound__}";
-    public static String ENTITY_FIELD_TEMPLATE = "{__entity_name__}";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -200,33 +193,8 @@ public class Broadcast implements GrassrootEntity, TagHolder {
         return title;
     }
 
-    public String getEmailIncludingMerge(User destination, DateTimeFormatter dtf, String noProvince,
-                                         Map<Province, String> provinceNames) {
-        if (StringUtils.isEmpty(emailContent)) {
-            return "";
-        }
-
-        return mergeTemplate(destination, emailContent, dtf, noProvince, provinceNames);
-    }
-
-    public String getShortMsgIncludingMerge(User dest, DateTimeFormatter dtf, String noProvince, Map<Province, String> provinceNames) {
-        if (StringUtils.isEmpty(smsTemplate1)) {
-            return "";
-        }
-
-        return mergeTemplate(dest, smsTemplate1, dtf, noProvince, provinceNames);
-    }
-
-    private String mergeTemplate(User destination, String template, DateTimeFormatter dtf, String noProvince, Map<Province, String> provinceNames) {
-        final String formatString = template
-                .replace(NAME_FIELD_TEMPLATE, "%1$s")
-                .replace(CONTACT_FIELD_TEMPALTE, "%2$s")
-                .replace(DATE_FIELD_TEMPLATE, "%3$s")
-                .replace(PROVINCE_FIELD_TEMPLATE, "%4$s");
-
-        return String.format(formatString, destination.getName(), destination.getUsername(), dtf.format(LocalDateTime.now()),
-                destination.getProvince() == null ? noProvince : provinceNames.getOrDefault(destination.getProvince(), noProvince))
-                .trim().replaceAll(" +", " ");
+    public String getShortMsgIncludingMerge(User dest) {
+        return StringUtils.isEmpty(smsTemplate1) ? "" : mergeTemplate(dest, smsTemplate1);
     }
 
     // using this to preserve builder pattern (note: deviates from prior style of setting these in constructor,

@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 
@@ -31,6 +32,9 @@ public abstract class EventNotification extends Notification {
 	public User getSender() {
 		return null;
 	}
+
+	@Override
+	public Task getTask() { return event; }
 
 	protected EventNotification() {
 		// for JPA

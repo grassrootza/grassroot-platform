@@ -48,9 +48,9 @@ public final class BaseRoles {
                     return t1.getName().equals(ROLE_SYSTEM_ADMIN) ? -1 : 1;
                 case ROLE_NEW_USER: // we know it's not equal, and t1 is not null, so must be greater
                     return -1;
+                default: // should never happen, but in case something strange added in future, put it last
+                    return -1;
             }
-
-            return 0; // shouldn't get here, but return 0 to be safe
         }
     };
 

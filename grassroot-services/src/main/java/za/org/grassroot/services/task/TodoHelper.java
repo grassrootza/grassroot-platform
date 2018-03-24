@@ -34,7 +34,7 @@ public class TodoHelper {
 
     private boolean requireImagesForConfirm;
 
-    void validateMinimumFields() {
+    protected void validateMinimumFields() {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(parentUid);
         Objects.requireNonNull(parentType);
@@ -44,15 +44,15 @@ public class TodoHelper {
         Objects.requireNonNull(dueDateTime);
     }
 
-    boolean isInformationTodo() {
+    public boolean isInformationTodo() {
         return TodoType.INFORMATION_REQUIRED.equals(todoType);
     }
 
-    boolean hasAssignedMembers() {
+    public boolean hasAssignedMembers() {
         return assignedMemberUids != null && !assignedMemberUids.isEmpty();
     }
 
-    boolean hasConfirmationMembers() {
+    public boolean hasConfirmationMembers() {
         return confirmingMemberUids != null && !confirmingMemberUids.isEmpty();
     }
 

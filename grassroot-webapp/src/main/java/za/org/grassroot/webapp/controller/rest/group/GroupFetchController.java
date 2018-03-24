@@ -200,12 +200,12 @@ public class GroupFetchController extends BaseRestController {
     @ApiOperation(value = "Returns members joined recently to groups where logged in user has permission to see member details")
     public ResponseEntity<Page<MembershipFullDTO>> getRecentlyJoinedUsers(@RequestParam(required = false) Integer howRecentInDays, HttpServletRequest request, Pageable pageable) {
 
-        howRecentInDays = howRecentInDays != null ? howRecentInDays : 7;
+        int daysLimit = howRecentInDays != null ? howRecentInDays : 7;
         User loggedInUser = getUserFromRequest(request);
         if (loggedInUser != null) {
             log.info("fetching users with pageable: {}", pageable);
             Page<MembershipFullDTO> page = groupFetchBroker
-                    .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(howRecentInDays, ChronoUnit.DAYS), pageable)
+                    .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(daysLimit, ChronoUnit.DAYS), pageable)
                     .map(MembershipFullDTO::new);
             log.info("number users back: {}", page.getSize());
             return ResponseEntity.ok(page);

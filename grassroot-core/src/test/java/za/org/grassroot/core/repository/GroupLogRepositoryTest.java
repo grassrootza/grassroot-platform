@@ -31,13 +31,13 @@ public class GroupLogRepositoryTest {
     private Logger log = Logger.getLogger(getClass().getName());
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    GroupLogRepository groupLogRepository;
+    private GroupLogRepository groupLogRepository;
 
 
     @Test
