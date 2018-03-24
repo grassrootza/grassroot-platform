@@ -18,4 +18,6 @@ public interface LogsAndNotificationsBroker {
 
 	List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs);
 
+	void updateCache(ActionLog actionLog);
+
 }

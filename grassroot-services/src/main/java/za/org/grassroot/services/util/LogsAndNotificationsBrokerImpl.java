@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -67,7 +68,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         int largestPage = numberLogs == null ? MAX_PUBLIC_LOGS : Math.min(numberLogs, MAX_PUBLIC_LOGS);
         // check, in order: campaign logs, group logs, event logs, account logs (for broadcasts), livewire logs
 
-        return Arrays.stream(PublicActivityType.values())
+		return Arrays.stream(PublicActivityType.values())
 				.map(this::activityLogList).flatMap(List::stream)
 				.sorted(Comparator.comparing(PublicActivityLog::getActionTimeMillis).reversed())
 				.limit(largestPage)
@@ -106,7 +107,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 						.collect(Collectors.toList());
 				break;
 			case CALLED_VOTE:
-				activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.MEETING, pageable)
+				activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.VOTE, pageable)
 						.stream().map(el -> new PublicActivityLog(activityType, el.getUser().getName(), el.getCreatedDateTime().toEpochMilli()))
 						.collect(Collectors.toList());
 				break;
@@ -142,6 +143,58 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		return activityLogs;
 	}
 
+	@Override
+	@Async
+	public void updateCache(ActionLog actionLog) {
+		PublicActivityType activityType = null;
+		if(actionLog instanceof CampaignLog){
+			CampaignLogType campaignLogType = ((CampaignLog) actionLog).getCampaignLogType();
+			switch (campaignLogType) {
+				case CREATED_IN_DB: activityType = PublicActivityType.CREATED_CAMPAIGN;break;
+				case CAMPAIGN_PETITION_SIGNED: activityType = PublicActivityType.SIGNED_PETITION;
+			}
+		} else if (actionLog instanceof GroupLog) {
+			GroupLogType groupLogType = ((GroupLog) actionLog).getGroupLogType();
+			switch (groupLogType) {
+				case GROUP_MEMBER_ADDED_VIA_JOIN_CODE:
+				case GROUP_MEMBER_ADDED_VIA_CAMPAIGN: activityType = PublicActivityType.JOINED_GROUP;break;
+				case GROUP_ADDED: activityType = PublicActivityType.CREATED_GROUP;break;
+			}
+		} else if(actionLog instanceof EventLog) {
+			EventLog eventLog = ((EventLog) actionLog);
+			EventLogType eventLogType = eventLog.getEventLogType();
+			if(eventLogType.equals(EventLogType.CREATED)) {
+				if(eventLog.getEvent().getType().equals(EventType.MEETING))
+					activityType = PublicActivityType.CALLED_MEETING;
+				else if(eventLog.getEvent().getType().equals(EventType.VOTE))
+					activityType = PublicActivityType.CALLED_VOTE;
+			}
+		} else if(actionLog instanceof TodoLog) {
+			TodoLogType todoLogType = ((TodoLog) actionLog).getType();
+			if(todoLogType.equals(TodoLogType.CREATED)) {
+				activityType = PublicActivityType.CREATED_TODO;
+			}
+		} else if(actionLog instanceof LiveWireLog) {
+			LiveWireLogType liveWireLogType = ((LiveWireLog) actionLog).getType();
+			if(liveWireLogType.equals(LiveWireLogType.ALERT_COMPLETED)) {
+				activityType = PublicActivityType.CREATED_ALERT;
+			}
+		} else if(actionLog instanceof AccountLog) {
+			AccountLogType accountLogType = ((AccountLog) actionLog).getAccountLogType();
+			if(accountLogType.equals(AccountLogType.BROADCAST_MESSAGE_SENT)) {
+				activityType = PublicActivityType.SENT_BROADCAST;
+			}
+		}
+		List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
+		if (activityLogs == null) {
+			activityLogs = new ArrayList<>();
+		}
+
+		activityLogs.add(new PublicActivityLog(activityType, actionLog.getUser().getName(), actionLog.getCreationTime().toEpochMilli()));
+		cacheService.putCachedPublicActivity(activityType, activityLogs);
+
+	}
+
 
 	@Override
 	@Transactional
@@ -167,6 +220,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 			saveLog(log);
 			checkForGroupLogUpdate(log, groupsToUpdateLogTimestamp);
 			checkForTaskUpdate(log, groupsToUpdateTaskTimestamp);
+			updateCache(log);
 		}
 
 		Set<Notification> notifications = bundle.getNotifications();
@@ -179,6 +233,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		Instant now = Instant.now();
 		groupsToUpdateLogTimestamp.forEach(g -> g.setLastGroupChangeTime(now));
 		groupsToUpdateTaskTimestamp.forEach(g -> g.setLastTaskCreationTime(now));
+
 	}
 
     @Override
