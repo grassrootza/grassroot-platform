@@ -68,9 +68,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
-                                                        Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
+                Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS)).thenReturn(true);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
-                                                        Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)).thenReturn(true);
+                Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
+        when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
+                Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)).thenReturn(true);
 
         when(taskBrokerMock.fetchUpcomingIncompleteGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid())).
                 thenReturn(dummyTasks);
