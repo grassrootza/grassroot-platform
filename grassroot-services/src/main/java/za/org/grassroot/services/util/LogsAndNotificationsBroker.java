@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Notification;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface LogsAndNotificationsBroker {
@@ -18,6 +19,6 @@ public interface LogsAndNotificationsBroker {
 
 	List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs);
 
-	void updateCache(ActionLog actionLog);
+	void updateCache(Collection<ActionLog> actionLogs);
 
 }

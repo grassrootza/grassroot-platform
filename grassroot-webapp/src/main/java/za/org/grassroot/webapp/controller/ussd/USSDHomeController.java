@@ -55,6 +55,7 @@ public class USSDHomeController extends USSDBaseController {
     private USSDGeoApiController geoApiController;
 
     private final CampaignBroker campaignBroker;
+    private final UserResponseBroker userResponseBroker;
 
     private static final USSDSection thisSection = HOME;
 
