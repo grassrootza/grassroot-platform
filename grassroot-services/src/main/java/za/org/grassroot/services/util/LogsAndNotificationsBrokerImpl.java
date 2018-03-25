@@ -25,7 +25,6 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.TodoLogSpecifications;
-import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
