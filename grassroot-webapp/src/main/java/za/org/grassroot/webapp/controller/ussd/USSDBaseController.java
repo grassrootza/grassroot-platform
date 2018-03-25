@@ -7,7 +7,6 @@ import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
-import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
@@ -44,9 +43,6 @@ public class USSDBaseController {
 
     @Autowired
     protected CacheUtilService cacheManager;
-
-    @Autowired
-    protected UserResponseBroker userResponseBroker;
 
     protected USSDMessageAssembler messageAssembler;
     protected USSDMenuUtil ussdMenuUtil;
