@@ -59,6 +59,7 @@ public class EventCreateController extends BaseRestController{
                                                      @RequestParam String subject,
                                                      @RequestParam String location,
                                                      @RequestParam long dateTimeEpochMillis,
+                                                     @RequestParam(required = false) String description,
                                                      @RequestParam(required = false) boolean publicMeeting,
                                                      @RequestParam(required = false) Long userLat,
                                                      @RequestParam(required = false) Long userLong,
@@ -77,6 +78,7 @@ public class EventCreateController extends BaseRestController{
                 .parentUid(parentUid)
                 .name(subject)
                 .location(location)
+                .description(description)
                 .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis));
 
         log.info("Helper={}",helper);

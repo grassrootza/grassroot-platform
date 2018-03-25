@@ -85,5 +85,4 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
 
         verify(eventBrokerMock,times(1)).createMeeting(helper);
     }
-    
 }

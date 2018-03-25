@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import za.org.grassroot.core.domain.media.MediaFunction;
 
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -20,7 +21,7 @@ public class UrlShortenerImpl implements UrlShortener {
 
     private static final Logger logger = LoggerFactory.getLogger(UrlShortenerImpl.class);
 
-    @Value("${grassroot.task.images.view.url:http://localhost:8080/image}")
+    @Value("${grassroot.images.view.url:http://localhost:8080/image}")
     private String imageViewUrl;
 
     @Value("${grassroot.shortener.images.host:https://s3.aws.com/")
@@ -38,9 +39,9 @@ public class UrlShortenerImpl implements UrlShortener {
     }
 
     @Override
-    public String shortenImageUrl(String bucket, String imageUrl) {
+    public String shortenImageUrl(MediaFunction mediaFunction, String imageKey) {
         try {
-            String longUrl = imageViewUrl + "/" + bucket + "/" + imageUrl;
+            String longUrl = imageViewUrl + "/" + mediaFunction + "/" + imageKey;
             logger.info("encoding image view URL: {}", longUrl);
             URIBuilder builder = new URIBuilder(shortenerApi)
                     .addParameter("access_token", shortenerKey)
