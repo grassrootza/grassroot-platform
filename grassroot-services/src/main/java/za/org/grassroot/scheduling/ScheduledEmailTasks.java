@@ -88,7 +88,7 @@ public class ScheduledEmailTasks {
             final String emailBody = "Good morning,\n" + userLine + taskLine + groupLine + safetyLine + "\nGrassroot";
 
             Map<String, String> recipients = Arrays.stream(systemEmailAddress.split(","))
-                    .collect(Collectors.toMap(add -> add, add -> null));
+                    .collect(Collectors.toMap(add -> add, add -> ""));
             messagingServiceBroker.sendEmail(recipients, new GrassrootEmail.EmailBuilder("System Email").content(emailBody).build());
         }
     }

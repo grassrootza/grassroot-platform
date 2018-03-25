@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.media.ImageRecord;
+import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
@@ -152,7 +153,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     @Override
     public String getShortUrl(String imageKey) {
         try {
-            return urlShortener.shortenImageUrl(taskImagesBucket, imageKey);
+            return urlShortener.shortenImageUrl(MediaFunction.TASK_IMAGE, imageKey);
         } catch (Exception e) {
             // not great to have generic catch here but need robustness or have risk of notices not going out
             logger.error("Error shortening URL! : {}", e);

@@ -151,7 +151,38 @@ public class USSDMeetingController extends USSDBaseController {
         String optionUri = meetingMenus + "rsvp" + entityUidUrlSuffix + meeting.getUid();
         USSDMenu openingMenu = new USSDMenu(defaultPrompt);
         openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(user, optionUri, optionUri)));
+
+        if (!StringUtils.isEmpty(meeting.getDescription())) {
+            openingMenu.addMenuOption(meetingMenus + "description?mtgUid=" + meeting.getUid() + "&back=respond", getMessage("home.generic.moreinfo", user));
+        }
+
         return openingMenu;
+    }
+
+    @RequestMapping(value = path + "respond")
+    public Request respondToMtg(@RequestParam(value = phoneNumber) String inputNumber,
+                                @RequestParam String mtgUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        Meeting mtg = eventBroker.loadMeeting(mtgUid);
+        return menuBuilder(assembleRsvpMenu(user, mtg));
+    }
+
+    @RequestMapping(value = path + "description")
+    public Request showMeetingDescription(@RequestParam(value = phoneNumber) String inputNumber,
+                                          @RequestParam String mtgUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        Meeting meeting = eventBroker.loadMeeting(mtgUid);
+
+        USSDMenu menu = new USSDMenu(meeting.getDescription(),
+                optionsYesNo(user, meetingMenus + "rsvp" + entityUidUrlSuffix + meeting.getUid()));
+
+        menu.addMenuOption(meetingMenus + "respond?mtgUid=" + meeting.getUid(), getMessage("options.back", user));
+
+        if (menu.getMenuCharLength() < 160) {
+            menu.addMenuOption("start_force", getMessage("options.skip", user));
+        }
+
+        return menuBuilder(menu);
     }
 
     @RequestMapping(value = path + "rsvp")
