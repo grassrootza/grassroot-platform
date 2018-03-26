@@ -242,6 +242,9 @@ public class Account implements GrassrootEntity, Serializable {
     }
 
     public Set<PaidGroup> getPaidGroups() {
+        if (paidGroups == null) {
+            paidGroups = new HashSet<>();
+        }
         return paidGroups;
     }
 

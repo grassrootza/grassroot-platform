@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.task.EventBroker;
@@ -28,7 +29,6 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -59,6 +59,7 @@ public class EventCreateController extends BaseRestController{
                                                      @RequestParam String subject,
                                                      @RequestParam String location,
                                                      @RequestParam long dateTimeEpochMillis,
+                                                     @RequestParam(required = false) String description,
                                                      @RequestParam(required = false) boolean publicMeeting,
                                                      @RequestParam(required = false) Long userLat,
                                                      @RequestParam(required = false) Long userLong,
@@ -77,7 +78,9 @@ public class EventCreateController extends BaseRestController{
                 .parentUid(parentUid)
                 .name(subject)
                 .location(location)
+                .description(description)
                 .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis));
+
         log.info("Helper={}",helper);
 
         if (publicMeeting) {
@@ -121,21 +124,22 @@ public class EventCreateController extends BaseRestController{
                                                               "members of the parent are assigned") Set<String> assignedMemberUids){
 
         String userUid = getUserIdFromRequest(request);
-        LocalDateTime eventStartDateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+        LocalDateTime eventStartDateTime = Instant.ofEpochMilli(time).atZone(DateTimeUtil.getSAST()).toLocalDateTime();
 
         try {
             User user = userService.load(userUid);
 
             assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
+            log.info("title={}, description={}, time={}, members={}, options={}", title, description, eventStartDateTime, assignedMemberUids, voteOptions);
 
-            log.info("title={}, description={}, time={}, members={}, options={}", title, description, time, assignedMemberUids, voteOptions);
 
             Vote vote = eventBroker.createVote(user.getUid(), parentUid, parentType, title, eventStartDateTime,
                     false, description, mediaFileUid, assignedMemberUids, voteOptions);
 
             log.debug("Vote={},User={}",vote,user);
             return ResponseEntity.ok(new TaskFullDTO(vote, user,vote.getCreatedDateTime(), null));
-        }catch (AccessDeniedException e){
+        } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         }
     }

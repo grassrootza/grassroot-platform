@@ -5,7 +5,9 @@ import za.org.grassroot.core.domain.media.ImageRecord;
 import za.org.grassroot.core.domain.task.TaskLog;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.enums.TodoLogType;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +23,10 @@ public interface TaskImageBroker {
                              String caption, Double latitude, Double longitude);
 
     // use this one for where image has previously been uploaded (e.g., via media service)
-    void recordImageForTask(String userUid, String taskUid, TaskType taskType, String imageKey, EventLogType logType);
+
+    // todo : add location recording
+    void recordImageForTask(String userUid, String taskUid, TaskType taskType, Collection<String> imageKeys, EventLogType eventLogType, TodoLogType todoLogType);
+
 
     String getShortUrl(String imageKey);
 

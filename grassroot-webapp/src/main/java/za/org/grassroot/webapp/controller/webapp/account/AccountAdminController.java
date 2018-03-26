@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -131,9 +130,10 @@ public class AccountAdminController extends BaseController {
         Account account = accountBroker.loadAccount(accountUid);
         if (sendEmail != null && sendEmail) {
             GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder("Grassroot Extra Account Enabled")
-                    .address(account.getBillingUser().getEmailAddress())
+                    .toAddress(account.getBillingUser().getEmailAddress())
+                    .toName(account.getBillingUser().getDisplayName())
                     .content("Hello!\nYour account is enabled. Great!\nGrassroot");
-            messagingBroker.sendEmail(Collections.singletonList(account.getBillingUser().getEmailAddress()), builder.build());
+            messagingBroker.sendEmail(builder.build());
         }
         addMessage(attributes, MessageType.INFO, "admin.accounts.enabled", request);
         return "redirect:home";

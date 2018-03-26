@@ -1,7 +1,7 @@
 allprojects  {
   apply plugin: 'maven'
   group = 'za.org.grassroot'
-  version = '1.1.1.12a'
+  version = '1.1.1.14'
 }
 
 ext.libs = [

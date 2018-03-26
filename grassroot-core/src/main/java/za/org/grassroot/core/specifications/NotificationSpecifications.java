@@ -19,7 +19,6 @@ import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Predicate;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -41,7 +40,6 @@ public final class NotificationSpecifications {
     public static Specification<Notification> createdTimeBetween(Instant start, Instant end) {
         return (root, query, cb) -> cb.between(root.get(Notification_.createdDateTime), start, end);
     }
-
 
     public static Specification<Notification> belongsToAccount(final Account account) {
         return (root, query, cb) -> {
@@ -123,9 +121,9 @@ public final class NotificationSpecifications {
         return (root, query, cb) -> root.get(Notification_.deliveryChannel).in(deliveryChannels);
     }
 
-    public static Specifications<Notification> unReadUserNotifications(User target) {
+    public static Specifications<Notification> unReadUserNotifications(User target, Instant since) {
         return Specifications.where(toUser(target))
-                .and(createdTimeBetween(Instant.now().minus(3, ChronoUnit.DAYS), Instant.now()))
+                .and(createdTimeBetween(since, Instant.now()))
                 .and(Specifications.not(wasDelivered()));
     }
 
@@ -141,16 +139,19 @@ public final class NotificationSpecifications {
         return Specifications.where(readyStatus).and(readyStatus).and(sendOnlyAfterOK);
     }
 
+    public static Specification<Notification> messageNotRead() {
+        return (root, query, cb) -> cb.notEqual(root.get(Notification_.status), NotificationStatus.READ);
+    }
+
     public static Specifications<Notification> unreadAndroidNotifications() {
 
-        Specification<Notification> messageNotRead = (root, query, cb) -> cb.notEqual(root.get("status"), NotificationStatus.READ);
         Specification<Notification> messageNotUndeliverable = (root, query, cb) -> cb.notEqual(root.get("status"), NotificationStatus.UNDELIVERABLE);
         Specification<Notification> messageNotReadyForSending = (root, query, cb) -> cb.notEqual(root.get("status"), NotificationStatus.READY_FOR_SENDING);
         Specification<Notification> androidChannel = (root, query, cb) -> cb.equal(root.get("deliveryChannel"), DeliveryRoute.ANDROID_APP);
         Specification<Notification> notSentByAat = (root, query, cb) -> cb.notEqual(root.get("sentViaProvider"), MessagingProvider.AAT);
 
         return Specifications
-                .where(messageNotRead)
+                .where(messageNotRead())
                 .and(messageNotUndeliverable)
                 .and(messageNotReadyForSending)
                 .and(androidChannel); // since sometimes routing header can be GCM but defaults into AAT

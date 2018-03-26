@@ -2,7 +2,7 @@ package za.org.grassroot.integration.messaging;
 
 import za.org.grassroot.core.dto.GrassrootEmail;
 
-import java.util.List;
+import java.util.Map;
 
 /**
  * Created by luke on 2017/05/23.
@@ -16,6 +16,8 @@ public interface MessagingServiceBroker {
 
     MessageServicePushResponse sendPrioritySMS(String message, String destinationNumber);
 
-    void sendEmail(List<String> addresses, GrassrootEmail grassrootEmail);
+    void sendEmail(Map<String, String> recipients, GrassrootEmail grassrootEmail);
+
+    void sendEmail(GrassrootEmail email);
 
 }

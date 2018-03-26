@@ -37,6 +37,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -46,8 +47,7 @@ public class AuthenticationController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
-    private static final List<UserInterfaceType> alphaInterfaces =
-            Arrays.asList(UserInterfaceType.WEB_2, UserInterfaceType.ANDROID_2);
+    private static final List<UserInterfaceType> alphaInterfaces = Collections.singletonList(UserInterfaceType.ANDROID_2);
 
     private final JwtService jwtService;
     private final PasswordTokenService passwordTokenService;

@@ -121,8 +121,10 @@ public class EventBrokerImpl implements EventBroker {
 		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class,
 				helper.getParentType(), helper.getParentUid());
 
-		Event possibleDuplicate = checkForDuplicate(helper.getUserUid(), helper.getParentUid(), helper.getName(), helper.getStartInstant());
+		Event possibleDuplicate = checkForDuplicate(helper.getUserUid(), helper.getParentUid(),
+                helper.getName(), helper.getStartInstant(), helper.getAssignedMemberUids());
 		if (possibleDuplicate != null) { // todo : hand over to update meeting if anything different in parameters
+			logger.info("detected a duplicate meeting, subject {}, returning it", helper.getName());
 			return (Meeting) possibleDuplicate;
 		}
 
@@ -150,7 +152,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		if (!StringUtils.isEmpty(helper.getTaskImageKey())) {
 			taskImageBroker.recordImageForTask(helper.getUserUid(), meeting.getUid(), TaskType.MEETING,
-					helper.getTaskImageKey(), EventLogType.IMAGE_AT_CREATION);
+					Collections.singleton(helper.getTaskImageKey()), EventLogType.IMAGE_AT_CREATION, null);
 			meeting.setImageUrl(taskImageBroker.getShortUrl(helper.getTaskImageKey()));
 		}
 
@@ -174,7 +176,8 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	// introducing so that we can check catch & handle duplicate requests (e.g., from malfunctions on Android client offline->queue->sync function)
-	private Event checkForDuplicate(String userUid, String parentGroupUid, String name, Instant startDateTime) {
+    @SuppressWarnings("unchecked") // the getAssignedMembers has a strange behavior on type check warnings, hence suppressing
+    private Event checkForDuplicate(String userUid, String parentGroupUid, String name, Instant startDateTime, Set<String> assignedMemberUids) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentGroupUid);
 		Objects.requireNonNull(name);
@@ -186,7 +189,22 @@ public class EventBrokerImpl implements EventBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Group parentGroup = groupRepository.findOneByUid(parentGroupUid);
 
-		return eventRepository.findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(user, parentGroup, name, intervalStart, intervalEnd);
+		Event possibleEvent = eventRepository.findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(user, parentGroup, name, intervalStart, intervalEnd);
+		if (possibleEvent == null)
+		    return null;
+
+		boolean priorHasAssigned = !possibleEvent.isAllGroupMembersAssigned();
+		boolean newHasAssigned = assignedMemberUids != null && !assignedMemberUids.isEmpty();
+
+		if (!priorHasAssigned && !newHasAssigned) {
+		    return possibleEvent;
+        } else if (priorHasAssigned && newHasAssigned) {
+		    Set<User> users = possibleEvent.getAssignedMembers();
+		    Set<String> priorUids = users.stream().map(User::getUid).collect(Collectors.toSet());
+		    return priorUids.equals(assignedMemberUids) ? possibleEvent : null;
+        } else {
+		    return null; // because they must be different, by definition (one is full assigned, other is not)
+        }
 	}
 
 	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog, Set<User> usersToNotify) {
@@ -382,7 +400,7 @@ public class EventBrokerImpl implements EventBroker {
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
 
 		if (parentType.equals(JpaEntityType.GROUP)) {
-			Event possibleDuplicate = checkForDuplicate(userUid, parentUid, name, convertedClosingDateTime);
+			Event possibleDuplicate = checkForDuplicate(userUid, parentUid, name, convertedClosingDateTime, assignMemberUids);
 			if (possibleDuplicate != null && possibleDuplicate.getEventType().equals(EventType.VOTE)) {
 				logger.info("Detected duplicate vote creation, returning the already-created one ... ");
 				return (Vote) possibleDuplicate;
@@ -409,8 +427,8 @@ public class EventBrokerImpl implements EventBroker {
 		voteRepository.save(vote);
 
 		if (!StringUtils.isEmpty(taskImageKey)) {
-			taskImageBroker.recordImageForTask(userUid, vote.getUid(), TaskType.VOTE,
-					taskImageKey, EventLogType.IMAGE_AT_CREATION);
+
+			taskImageBroker.recordImageForTask(userUid, vote.getUid(), TaskType.VOTE, Collections.singleton(taskImageKey), EventLogType.IMAGE_AT_CREATION, null);
 			vote.setImageUrl(taskImageBroker.getShortUrl(taskImageKey));
 		}
 
@@ -544,7 +562,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void cancel(String userUid, String eventUid) {
+	public void cancel(String userUid, String eventUid, boolean notifyMembers) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
 
@@ -568,13 +586,13 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(user, event, CANCELLED);
 		bundle.addLog(eventLog);
 
-		List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
-		for (User member : getAllEventMembers(event)) {
-			if (!rsvpWithNoMembers.contains(member)) {
+		if (notifyMembers) {
+			List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
+			getAllEventMembers(event).stream().filter(member -> !rsvpWithNoMembers.contains(member)).forEach(member -> {
 				String message = messageAssemblingService.createEventCancelledMessage(member, event);
 				Notification notification = new EventCancelledNotification(member, message, eventLog);
 				bundle.addNotification(notification);
-			}
+			});
 		}
 
 		logsAndNotificationsBroker.storeBundle(bundle);

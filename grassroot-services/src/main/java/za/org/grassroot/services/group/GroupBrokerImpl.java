@@ -536,6 +536,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     private Membership selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, Broadcast broadcast, List<String> topics, Set<UserLog> userLogs,
                                        boolean sendJoiningNotification) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
+        boolean wasAlreadyMember = false;
+
         Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, joinMethod, code);
         if (membership != null) {
             // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
@@ -543,6 +545,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         } else {
             // means user was already part of group, so we will just add topics etc.
             membership = group.getMembership(user);
+            wasAlreadyMember = true;
         }
 
         if (topics != null) {
@@ -582,7 +585,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             }
         }
 
-        notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
+        if (!wasAlreadyMember) {
+            notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
+        }
 
         storeBundleAfterCommit(bundle);
 

@@ -85,7 +85,7 @@ public class AccountEmailTest {
 
 
         GrassrootEmail email = accountEmailService.createAccountStatementEmail(record);
-        assertTrue(email.getAddress().equals(testUser.getEmailAddress()));
+        assertTrue(email.getToAddress().equals(testUser.getEmailAddress()));
         assertTrue(email.getHtmlContent().contains(TEST_STRING));
         assertTrue(email.getContent().contains(TEST_STRING));
     }
@@ -146,8 +146,8 @@ public class AccountEmailTest {
         assertNotNull(email.getHtmlContent());
         assertNotNull(email.getContent());
 
-        if (email.getAddress() != null) {
-            assertTrue(email.getAddress().equals(emailAddress));
+        if (email.getToAddress() != null) {
+            assertTrue(email.getToAddress().equals(emailAddress));
         }
         assertTrue(email.getHtmlContent().contains(TEST_STRING));
         assertTrue(email.getContent().contains(TEST_STRING));

@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.CacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -48,9 +48,11 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	private final CampaignLogRepository campaignLogRepository;
 	private final CacheUtilService cacheService;
 
+	private final ApplicationEventPublisher applicationEventPublisher;
+
 	@Autowired
 	public LogsAndNotificationsBrokerImpl(NotificationRepository notificationRepository, GroupLogRepository groupLogRepository,
-										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository, CacheManager cacheManager, CacheUtilService cacheService) {
+										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository, CacheManager cacheManager, CacheUtilService cacheService, ApplicationEventPublisher applicationEventPublisher) {
 		this.notificationRepository = notificationRepository;
 		this.groupLogRepository = groupLogRepository;
 		this.userLogRepository = userLogRepository;
@@ -60,6 +62,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		this.liveWireLogRepository = liveWireLogRepository;
 		this.campaignLogRepository = campaignLogRepository;
 		this.cacheService = cacheService;
+		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
     @Override
@@ -67,16 +70,14 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         int largestPage = numberLogs == null ? MAX_PUBLIC_LOGS : Math.min(numberLogs, MAX_PUBLIC_LOGS);
         // check, in order: campaign logs, group logs, event logs, account logs (for broadcasts), livewire logs
 
-        return Arrays.stream(PublicActivityType.values())
+		return Arrays.stream(PublicActivityType.values())
 				.map(this::activityLogList).flatMap(List::stream)
 				.sorted(Comparator.comparing(PublicActivityLog::getActionTimeMillis).reversed())
 				.limit(largestPage)
 				.collect(Collectors.toList());
     }
 
-    @Cacheable(value = "public_activity_logs", key = "activityType")
-	public List<PublicActivityLog> activityLogList(PublicActivityType activityType) {
-		// todo pseudonyms
+    public List<PublicActivityLog> activityLogList(PublicActivityType activityType) {
 		List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
 		if (activityLogs != null) {
 			log.info("returning logs from cache, not hitting DB");
@@ -106,7 +107,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 						.collect(Collectors.toList());
 				break;
 			case CALLED_VOTE:
-				activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.MEETING, pageable)
+				activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.VOTE, pageable)
 						.stream().map(el -> new PublicActivityLog(activityType, el.getUser().getName(), el.getCreatedDateTime().toEpochMilli()))
 						.collect(Collectors.toList());
 				break;
@@ -142,10 +143,68 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		return activityLogs;
 	}
 
+	@Async
+	@Override
+	public void updateCache(Collection<ActionLog> actionLogs) {
+		log.info("updating logs, should be after TX, but is not ... need to debug");
+		actionLogs.forEach(this::updateCacheSingle);
+	}
 
+	private void updateCacheSingle(ActionLog actionLog) {
+		PublicActivityType activityType = null;
+		if(actionLog instanceof CampaignLog){
+			CampaignLogType campaignLogType = ((CampaignLog) actionLog).getCampaignLogType();
+			switch (campaignLogType) {
+				case CREATED_IN_DB: activityType = CREATED_CAMPAIGN; break;
+				case CAMPAIGN_PETITION_SIGNED: activityType = SIGNED_PETITION;
+			}
+		} else if (actionLog instanceof GroupLog) {
+			GroupLogType groupLogType = ((GroupLog) actionLog).getGroupLogType();
+			switch (groupLogType) {
+				case GROUP_MEMBER_ADDED_VIA_JOIN_CODE:
+				case GROUP_MEMBER_ADDED_VIA_CAMPAIGN: activityType = JOINED_GROUP; break;
+				case GROUP_ADDED: activityType = CREATED_GROUP; break;
+			}
+		} else if(actionLog instanceof EventLog) {
+			EventLog eventLog = ((EventLog) actionLog);
+			EventLogType eventLogType = eventLog.getEventLogType();
+			if(eventLogType.equals(EventLogType.CREATED)) {
+				if(eventLog.getEvent().getType().equals(EventType.MEETING))
+					activityType = PublicActivityType.CALLED_MEETING;
+				else if(eventLog.getEvent().getType().equals(EventType.VOTE))
+					activityType = PublicActivityType.CALLED_VOTE;
+			}
+		} else if(actionLog instanceof TodoLog) {
+			TodoLogType todoLogType = ((TodoLog) actionLog).getType();
+			if(todoLogType.equals(TodoLogType.CREATED)) {
+				activityType = CREATED_TODO;
+			}
+		} else if(actionLog instanceof LiveWireLog) {
+			LiveWireLogType liveWireLogType = ((LiveWireLog) actionLog).getType();
+			if(liveWireLogType.equals(LiveWireLogType.ALERT_COMPLETED)) {
+				activityType = CREATED_ALERT;
+			}
+		} else if(actionLog instanceof AccountLog) {
+			AccountLogType accountLogType = ((AccountLog) actionLog).getAccountLogType();
+			if(accountLogType.equals(AccountLogType.BROADCAST_MESSAGE_SENT)) {
+				activityType = SENT_BROADCAST;
+			}
+		}
+		List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
+		if (activityLogs == null) {
+			activityLogs = new ArrayList<>();
+		}
+
+		if (activityType != null) {
+			activityLogs.add(new PublicActivityLog(activityType, actionLog.getUser().getName(), actionLog.getCreationTime().toEpochMilli()));
+			cacheService.putCachedPublicActivity(activityType, activityLogs);
+		}
+	}
+
+
+	@Async
 	@Override
 	@Transactional
-	@Async
 	public void asyncStoreBundle(LogsAndNotificationsBundle bundle) {
 		storeBundle(bundle);
 	}
@@ -162,11 +221,12 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 		Set<Group> groupsToUpdateLogTimestamp = new HashSet<>();
 		Set<Group> groupsToUpdateTaskTimestamp = new HashSet<>();
-		for (ActionLog log : logs) {
-			this.log.debug("Saving log {}", log);
-			saveLog(log);
-			checkForGroupLogUpdate(log, groupsToUpdateLogTimestamp);
-			checkForTaskUpdate(log, groupsToUpdateTaskTimestamp);
+		for (ActionLog actionLog : logs) {
+			log.debug("Saving log {}", actionLog);
+			saveLog(actionLog);
+			checkForGroupLogUpdate(actionLog, groupsToUpdateLogTimestamp);
+			checkForTaskUpdate(actionLog, groupsToUpdateTaskTimestamp);
+			log.info("saving log, check thread ...");
 		}
 
 		Set<Notification> notifications = bundle.getNotifications();
@@ -179,6 +239,10 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		Instant now = Instant.now();
 		groupsToUpdateLogTimestamp.forEach(g -> g.setLastGroupChangeTime(now));
 		groupsToUpdateTaskTimestamp.forEach(g -> g.setLastTaskCreationTime(now));
+
+		// getting lots of null pointers in here, method not ready, need to come back to this
+//		AfterTxCommitTask cacheUpdate = () -> this.updateCache(logs);
+//		applicationEventPublisher.publishEvent(cacheUpdate);
 	}
 
     @Override

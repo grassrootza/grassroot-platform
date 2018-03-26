@@ -98,7 +98,7 @@ public class TodoWebViewModifyController extends BaseController {
     public String cancelTodo(@RequestParam String todoUid, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         // service layer will test for permission etc and throw errors
         Todo todo = todoBroker.load(todoUid);
-        todoBroker.cancel(getUserProfile().getUid(), todoUid, null);
+        todoBroker.cancel(getUserProfile().getUid(), todoUid, false, null);
         addMessage(redirectAttributes, MessageType.INFO, "todo.cancelled.done", request);
         redirectAttributes.addAttribute("groupUid", todo.getAncestorGroup().getUid());
         return "redirect:/group/view";

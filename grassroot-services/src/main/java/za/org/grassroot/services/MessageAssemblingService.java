@@ -27,8 +27,6 @@ public interface MessageAssemblingService {
 
     String createTodoReminderMessage(User user, Todo todo);
 
-    String createTodoRecordedNotificationMessage(User target, Todo todo);
-
     String createTodoAssignedMessage(User user, Todo todo);
 
     String createTodoConfirmerMessage(User user, Todo todo);

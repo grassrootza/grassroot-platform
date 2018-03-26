@@ -13,9 +13,9 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.core.specifications.NotificationSpecifications;
 
 import javax.persistence.EntityManager;
 import java.time.Instant;
@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.core.util.DateTimeUtil.*;
 import static za.org.grassroot.core.specifications.UserSpecifications.*;
+import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 /**
  * Created by luke on 2016/12/12.
@@ -41,7 +41,7 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     private static final Logger logger = LoggerFactory.getLogger(AnalyticalServiceImpl.class);
 
     @Value("${grassroot.keywords.excluded:''}")
-    String listOfWordsToExcludeFromStat;
+    private String listOfWordsToExcludeFromStat;
 
     private final UserRepository userRepository;
     private final UserLogRepository userLogRepository;
@@ -258,10 +258,10 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     private List<KeywordDTO> processRawStats(Instant fromDate) {
         return entityManager.createNativeQuery("SELECT word as keyword, group_name_count, meeting_name_count, " +
                 "vote_name_count, todo_count, nentry AS total_occurence " +
-                "FROM ts_stat(\'SELECT to_tsvector(keyword) " +
-                "FROM (SELECT g.name as keyword FROM group_profile g where g.created_date_time > '\'" +fromDate + "\'\'" +
-                "UNION ALL SELECT e.name FROM event e where e.created_date_time > '\'" +fromDate + "\'\' " +
-                "UNION ALL SELECT t.message from action_todo t where t.created_date_time > '\'" +fromDate  +"\'\') as keywords\')" +
+                "FROM ts_stat(fromName" +
+                "" +fromDate + "" +
+                "" +fromDate + "" +
+                "" +fromDate  +")" +
                 "LEFT OUTER JOIN (SELECT word AS group_name,nentry AS group_name_count " +
                 "FROM ts_stat(\'SELECT to_tsvector(keyword) " +
                 "FROM (SELECT g.name as keyword FROM group_profile g where g.created_date_time > '\'" + fromDate + "\'\') as keywords\'))" +
@@ -271,9 +271,9 @@ public class AnalyticalServiceImpl implements AnalyticalService {
                 "left outer join (select word as vote_name,nentry as vote_name_count FROM ts_stat(\'SELECT to_tsvector(keyword) " +
                 "FROM (SELECT e.name as keyword  FROM event e where e.created_date_time > '\'"+fromDate + "\'\' and e.type=\'\'VOTE\'\' )" +
                 " as keywords\')) as votes on (word=vote_name) " +
-                "left outer join (select word as action_name,nentry  as todo_count FROM ts_stat(\'SELECT to_tsvector(keyword) " +
-                "from(select t.message as keyword from action_todo t where t.created_date_time > '\'" +fromDate + "\'\') " +
-                "as keywords\')) as todos on(word=action_name) " +
+                "left outer join (select word as action_name,nentry  as todo_count FROM ts_stat(fromName" +
+                "" +fromDate + "" +
+                ")) as todos on(word=action_name) " +
                 "ORDER BY total_occurence DESC, word limit 100", KeywordDTO.class)
                 .getResultList();
     }

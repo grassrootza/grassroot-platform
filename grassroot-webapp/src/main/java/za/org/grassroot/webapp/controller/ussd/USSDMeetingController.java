@@ -151,7 +151,38 @@ public class USSDMeetingController extends USSDBaseController {
         String optionUri = meetingMenus + "rsvp" + entityUidUrlSuffix + meeting.getUid();
         USSDMenu openingMenu = new USSDMenu(defaultPrompt);
         openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(user, optionUri, optionUri)));
+
+        if (!StringUtils.isEmpty(meeting.getDescription())) {
+            openingMenu.addMenuOption(meetingMenus + "description?mtgUid=" + meeting.getUid() + "&back=respond", getMessage("home.generic.moreinfo", user));
+        }
+
         return openingMenu;
+    }
+
+    @RequestMapping(value = path + "respond")
+    public Request respondToMtg(@RequestParam(value = phoneNumber) String inputNumber,
+                                @RequestParam String mtgUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        Meeting mtg = eventBroker.loadMeeting(mtgUid);
+        return menuBuilder(assembleRsvpMenu(user, mtg));
+    }
+
+    @RequestMapping(value = path + "description")
+    public Request showMeetingDescription(@RequestParam(value = phoneNumber) String inputNumber,
+                                          @RequestParam String mtgUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        Meeting meeting = eventBroker.loadMeeting(mtgUid);
+
+        USSDMenu menu = new USSDMenu(meeting.getDescription(),
+                optionsYesNo(user, meetingMenus + "rsvp" + entityUidUrlSuffix + meeting.getUid()));
+
+        menu.addMenuOption(meetingMenus + "respond?mtgUid=" + meeting.getUid(), getMessage("options.back", user));
+
+        if (menu.getMenuCharLength() < 160) {
+            menu.addMenuOption("start_force", getMessage("options.skip", user));
+        }
+
+        return menuBuilder(menu);
     }
 
     @RequestMapping(value = path + "rsvp")
@@ -318,10 +349,10 @@ public class USSDMeetingController extends USSDBaseController {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
         log.info("event request uid: {}", passedRequestUid);
-        groupUid = groupUid != null ? groupUid :
+        String mtgGroupUid = groupUid != null ? groupUid :
                 ((MeetingRequest) eventRequestBroker.load(passedRequestUid)).getParent().getUid();
         int eventsLeft = eventMonthlyLimitActive ?
-                accountGroupBroker.numberEventsLeftForGroup(groupUid) : 99;
+                accountGroupBroker.numberEventsLeftForGroup(mtgGroupUid) : 99;
 
         String mtgRequestUid;
 
@@ -792,7 +823,7 @@ public class USSDMeetingController extends USSDBaseController {
                                           @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         String menuPrompt = getMessage(thisSection, modifyConfirm, "cancel.done", sessionUser);
-        eventBroker.cancel(sessionUser.getUid(), eventUid);
+        eventBroker.cancel(sessionUser.getUid(), eventUid, true);
         return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(sessionUser, false)));
     }
 

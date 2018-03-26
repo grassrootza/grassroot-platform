@@ -205,14 +205,15 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         } else {
             // todo : make body more friendly, and create a special email address (no-reply) for from
             GrassrootEmail email = new GrassrootEmail.EmailBuilder("Grassroot: todo responses")
-                    .from("no-reply@grassroot.org.za")
+                    .toAddress(emailAddress)
+                    .fromName("no-reply@grassroot.org.za")
                     .subject(todo.getName() + "todo response")
                     .attachment("todo_responses", workbookFile)
                     .content("Good day,\nKindly find the attached responses for the above mentioned todo.")
                     .build();
 
             log.info("email assembled, putting it in the queue");
-            messageBroker.sendEmail(Collections.singletonList(emailAddress), email);
+            messageBroker.sendEmail(email);
         }
     }
 

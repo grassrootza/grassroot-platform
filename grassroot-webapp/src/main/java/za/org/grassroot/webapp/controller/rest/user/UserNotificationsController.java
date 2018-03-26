@@ -18,6 +18,8 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.model.rest.NotificationDTO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 @RequestMapping(value = "/api/user/notifications")
 public class UserNotificationsController extends BaseRestController {
 
+    public static final int DAYS_PAST_TO_PING = 3;
 
     private final NotificationService notificationService;
 
@@ -46,7 +49,9 @@ public class UserNotificationsController extends BaseRestController {
         if (loggedInUser == null)
             return new ResponseEntity<>((List<NotificationDTO>) null, HttpStatus.UNAUTHORIZED);
 
-        List<Notification> notifications = notificationService.fetchUnreadUserNotifications(loggedInUser, new Sort(Sort.Direction.DESC, "createdDateTime"));
+        List<Notification> notifications = notificationService.fetchUnreadUserNotifications(loggedInUser,
+                Instant.now().minus(DAYS_PAST_TO_PING, ChronoUnit.DAYS),
+                new Sort(Sort.Direction.DESC, "createdDateTime"));
         List<NotificationDTO> dtos = notifications.stream()
                 .filter(NotificationDTO::isNotificationOfTypeForDTO) // may want to loosen this in future
                 .map(NotificationDTO::convertToDto)
@@ -79,5 +84,12 @@ public class UserNotificationsController extends BaseRestController {
         notificationService.updateNotificationsViewedAndRead(Collections.singleton(notificationUid));
         result.put("success", Boolean.TRUE);
         return ResponseEntity.ok(result);
+    }
+
+    @RequestMapping("/mark-read/all")
+    public ResponseEntity markAllRead(HttpServletRequest request) {
+        notificationService.markAllUserNotificationsRead(getUserIdFromRequest(request),
+                Instant.now().minus(DAYS_PAST_TO_PING, ChronoUnit.DAYS));
+        return ResponseEntity.ok().build();
     }
 }

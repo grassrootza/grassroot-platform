@@ -106,12 +106,11 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
         }
 
         final String requestLink = urlForResponse + "?requestUid=" + request.getUid();
-        messageBroker.sendEmail(Collections.singletonList(requestedUser.getEmailAddress()),
-                accountEmailService.createSponsorshipRequestMail(request, openingUser, messageToUser, priorRequestExists));
+        messageBroker.sendEmail(accountEmailService
+                .createSponsorshipRequestMail(request, openingUser, messageToUser, priorRequestExists));
 
         if (!StringUtils.isEmpty(openingUser.getEmailAddress())) {
-            messageBroker.sendEmail(Collections.singletonList(openingUser.getEmailAddress()),
-                    accountEmailService.openingUserEmail(priorRequestExists, requestLink, requestedUser.getName(), openingUser));
+            messageBroker.sendEmail(accountEmailService.openingUserEmail(priorRequestExists, requestLink, requestedUser.getName(), openingUser));
         }
     }
 
@@ -140,8 +139,7 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
         requestEventRepository.save(new AssociationRequestEvent(AssocRequestEventType.DECLINED, request,
                 request.getDestination(), Instant.now()));
 
-        messageBroker.sendEmail(Collections.singletonList(request.getRequestor().getBillingUser().getEmailAddress()),
-                accountEmailService.sponsorshipDeniedEmail(request));
+        messageBroker.sendEmail(accountEmailService.sponsorshipDeniedEmail(request));
     }
 
     @Override
@@ -171,10 +169,9 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
         AccountSponsorshipRequest approvedRequest = closeRequests(true, user, requests);
 
         if (approvedRequest != null) {
-            List<String> addresses = approvedRequest.getRequestor().getAdministrators()
-                    .stream()
-                    .filter(u -> !StringUtils.isEmpty(u.getEmailAddress()) && !u.equals(approvedRequest.getDestination()))
-                    .map(User::getEmailAddress).collect(Collectors.toList());
+            Map<String, String> addresses = approvedRequest.getRequestor().getAdministrators()
+                    .stream().filter(u -> !StringUtils.isEmpty(u.getEmailAddress()) && !u.equals(approvedRequest.getDestination()))
+                    .collect(Collectors.toMap(User::getEmailAddress, User::getDisplayName));
 
             messageBroker.sendEmail(addresses, accountEmailService.sponsorshipApprovedEmail(approvedRequest));
         }
@@ -215,11 +212,8 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
             requestEventRepository.save(new AssociationRequestEvent(AssocRequestEventType.ABORTED, request,
                     request.getDestination(), Instant.now()));
 
-            messageBroker.sendEmail(Collections.singletonList(request.getDestination().getEmailAddress()),
-                    accountEmailService.sponsorshipReminderEmailSponsor(request));
-
-            accountEmailService.sponsorshipReminderEmailRequestor(request)
-                    .forEach(e -> messageBroker.sendEmail(Collections.singletonList(e.getAddress()), e));
+            messageBroker.sendEmail(accountEmailService.sponsorshipReminderEmailSponsor(request));
+            accountEmailService.sponsorshipReminderEmailRequestor(request).forEach(messageBroker::sendEmail);
         }
     }
 

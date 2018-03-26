@@ -38,7 +38,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.Locale;
 
 
@@ -154,8 +153,11 @@ public class UserController extends BaseRestController {
             if (user.hasPhoneNumber()) {
                 messagingBroker.sendPrioritySMS(message, user.getPhoneNumber()); // _not_ new one, obviously
             } else {
-                messagingBroker.sendEmail(Collections.singletonList(user.getEmailAddress()),
-                        new GrassrootEmail.EmailBuilder().subject("Your Grassroot verification").content(message).build());
+                messagingBroker.sendEmail(new GrassrootEmail.EmailBuilder()
+                        .subject("Your Grassroot verification")
+                        .toAddress(user.getEmailAddress())
+                        .toName(user.getDisplayName())
+                        .content(message).build());
             }
         } catch (Exception e) {
             log.error("No message broker around, couldn't send {}", message);

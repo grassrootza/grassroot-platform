@@ -99,22 +99,68 @@ public class USSDVoteController extends USSDBaseController {
                 vote.getAncestorGroup().getMembership(vote.getCreatedByUser()).getDisplayName(),
                 vote.getName()};
 
-        final String voteUri = voteMenus + "record?voteUid=" + vote.getUid() + "&response=";
-        final String optionMsgKey = voteKey + "." + optionsKey;
 
         USSDMenu openingMenu = new USSDMenu(getMessage(USSDSection.HOME, startMenu, promptKey + "-vote", promptFields, user));
 
         if (vote.getVoteOptions().isEmpty()) {
-            openingMenu.addMenuOption(voteUri + "YES", getMessage(optionMsgKey + "yes", user));
-            openingMenu.addMenuOption(voteUri + "NO", getMessage(optionMsgKey + "no", user));
-            openingMenu.addMenuOption(voteUri + "ABSTAIN", getMessage(optionMsgKey + "abstain", user));
+            addYesNoOptions(vote, user, openingMenu);
         } else {
-            vote.getVoteOptions().forEach(o -> {
-                openingMenu.addMenuOption(voteUri + USSDUrlUtil.encodeParameter(o), o);
-            });
+            addVoteOptions(vote, user, openingMenu);
+        }
+
+        if (!StringUtils.isEmpty(vote.getDescription())) {
+            openingMenu.addMenuOption(voteMenus + "description?voteUid=" + vote.getUid() + "&back=respond",
+                    getMessage("home.generic.moreinfo", user));
         }
 
         return openingMenu;
+    }
+
+    @RequestMapping(value = path + "respond")
+    public Request respondToVote(@RequestParam(value = phoneNumber) String inputNumber,
+                                 @RequestParam String voteUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        Vote vote = voteBroker.load(voteUid);
+        return menuBuilder(assembleVoteMenu(user, vote));
+    }
+
+    @RequestMapping(value = path + "description")
+    public Request showVoteDescription(@RequestParam(value = phoneNumber) String inputNumber,
+                                       @RequestParam String voteUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        Vote vote = voteBroker.load(voteUid);
+
+        USSDMenu menu = new USSDMenu(vote.getDescription());
+        if (vote.getVoteOptions().isEmpty()) {
+            addYesNoOptions(vote, user, menu);
+        } else if (String.join("X. ", vote.getVoteOptions()).length() + 3 + vote.getDescription().length() < 160) {
+            addVoteOptions(vote, user, menu);
+        }
+
+        if (!menu.hasOptions() || menu.getMenuCharLength() < 160) {
+            menu.addMenuOption(voteMenus + "respond?voteUid=" + vote.getUid(), getMessage("options.back", user));
+        }
+
+        if (menu.getMenuCharLength() < 160) {
+            menu.addMenuOption("start_force", getMessage("options.skip", user));
+        }
+
+        return menuBuilder(menu);
+    }
+
+    private void addYesNoOptions(Vote vote, User user, USSDMenu menu) {
+        final String optionMsgKey = voteKey + "." + optionsKey;
+        final String voteUri = voteMenus + "record?voteUid=" + vote.getUid() + "&response=";
+        menu.addMenuOption(voteUri + "YES", getMessage(optionMsgKey + "yes", user));
+        menu.addMenuOption(voteUri + "NO", getMessage(optionMsgKey + "no", user));
+        menu.addMenuOption(voteUri + "ABSTAIN", getMessage(optionMsgKey + "abstain", user));
+    }
+
+    private void addVoteOptions(Vote vote, User user, USSDMenu menu) {
+        final String voteUri = voteMenus + "record?voteUid=" + vote.getUid() + "&response=";
+        vote.getVoteOptions().forEach(o -> {
+            menu.addMenuOption(voteUri + USSDUrlUtil.encodeParameter(o), o);
+        });
     }
 
     @RequestMapping(value = path + "record")

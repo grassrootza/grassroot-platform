@@ -5,39 +5,57 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.GrassrootTemplate;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by luke on 2016/10/24.
  */
 @Getter @Setter @NoArgsConstructor @Slf4j
-public class GrassrootEmail {
+public class GrassrootEmail implements GrassrootTemplate {
 
-    private String from;
-    private String address;
+    private String fromName;
+    private String fromAddress;
+
+    private String toAddress;
+    private String toName;
+
+    private Set<String> toUserUids;
+
     private String subject;
+
     private String content;
     private String htmlContent;
+    private boolean hasTemplateFields;
 
-    private String fromAddress;
     private File attachment;
     private String attachmentName;
+
+    private String messageId;
+    private String baseId; // for tracking things like broadcast ID
 
     private Map<String, String> attachmentUidsAndNames;
 
     public static class EmailBuilder {
-        private String address;
-        private String from;
+        private String toAddress;
+        private String toName;
+        private Set<String> toUserUids;
+
+        private String fromName;
         private String fromAddress;
         private String subject;
         private String content;
         private String htmlContent;
         private File attachment;
         private String attachmentName;
+
+        private String messageId; // in case set by email
+        private String baseId;
 
         @Getter private Map<String, String> attachmentUidsAndNames;
 
@@ -52,8 +70,8 @@ public class GrassrootEmail {
             return this;
         }
 
-        public EmailBuilder from(String from) {
-            this.from = from;
+        public EmailBuilder fromName(String from) {
+            this.fromName = from;
             return this;
         }
 
@@ -72,8 +90,29 @@ public class GrassrootEmail {
             return this;
         }
 
-        public EmailBuilder address(String address) {
-            this.address = address;
+        public EmailBuilder toAddress(String address) {
+            this.toAddress = address;
+            return this;
+        }
+
+        public EmailBuilder toName(String name) {
+            this.toName = name;
+            return this;
+        }
+
+        public EmailBuilder toUserUids(Set<String> userUids) {
+            this.toUserUids = userUids;
+            return this;
+
+        }
+
+        public EmailBuilder messageId(String messageId) {
+            this.messageId = messageId;
+            return this;
+        }
+
+        public EmailBuilder baseId(String baseId) {
+            this.baseId = baseId;
             return this;
         }
 
@@ -98,41 +137,53 @@ public class GrassrootEmail {
                 this.attachmentUidsAndNames = new HashMap<>();
             }
             this.attachmentUidsAndNames.put(attachmentName, attachmentUid);
-            log.info("added a uid and name, map now: {}", this.getAttachmentUidsAndNames());
             return this;
         }
 
         public GrassrootEmail build() {
-            GrassrootEmail email = new GrassrootEmail(this.from, this.fromAddress, this.address, this.subject, this.content, this.htmlContent);
+            GrassrootEmail email = new GrassrootEmail(this.fromName, this.fromAddress, this.toAddress, this.toName, this.toUserUids, this.subject, this.content, this.htmlContent);
+            if (this.messageId != null) {
+                email.messageId = this.messageId;
+            }
             if (this.attachment != null) {
                 email.attachment = this.attachment;
                 email.attachmentName = this.attachmentName;
             }
-            log.info("attachment UID map now = {}", this.getAttachmentUidsAndNames());
             if (this.attachmentUidsAndNames != null) {
                 email.attachmentUidsAndNames = this.attachmentUidsAndNames;
+            }
+            if (this.baseId != null) {
+                email.baseId = this.baseId;
             }
             return email;
         }
     }
 
-    public GrassrootEmail(String from, String fromAddress, String address, String subject, String content, String htmlContent) {
-        this.from = from;
+    public GrassrootEmail(String fromName, String fromAddress, String toAddress, String toName, Set<String> toUserUids, String subject, String content, String htmlContent) {
+        this.fromName = fromName;
         this.fromAddress = fromAddress;
-        this.address = address;
+        this.toAddress = toAddress;
+        this.toName = toName;
+        this.toUserUids = toUserUids;
         this.subject = subject;
         this.content = content;
         this.htmlContent = htmlContent;
     }
 
-    public GrassrootEmail copyIntoNew(String toAddress) {
-        GrassrootEmail email = new GrassrootEmail(this.getFrom(), this.getFromAddress(),
-                toAddress, this.getSubject(), this.getContent(), this.getHtmlContent());
+    public GrassrootEmail copyIntoNew(String toAddress, String toName) {
+        GrassrootEmail email = new GrassrootEmail(this.getFromName(), this.getFromAddress(),
+                toAddress, toName, null, this.getSubject(), this.getContent(), this.getHtmlContent());
         email.setAttachment(this.getAttachment());
         email.setAttachmentUidsAndNames(this.getAttachmentUidsAndNames());
         email.setAttachmentName(toAddress);
         return email;
     }
+
+    public Map<String, String> getAttachmentUidsAndNames() {
+        return attachmentUidsAndNames == null ? new HashMap<>() : attachmentUidsAndNames;
+    }
+
+    public boolean isMultiUser() { return toUserUids != null && !toUserUids.isEmpty(); }
 
     public boolean hasHtmlContent() { return !StringUtils.isEmpty(htmlContent); }
 
@@ -143,8 +194,8 @@ public class GrassrootEmail {
     @Override
     public String toString() {
         return "GrassrootEmail{" +
-                "from='" + from + '\'' +
-                ", address='" + address + '\'' +
+                "from='" + fromName + '\'' +
+                ", address='" + toAddress + '\'' +
                 ", subject='" + subject + '\'' +
                 ", content='" + content + '\'' +
                 ", attachmentName='" + attachmentName + '\'' +

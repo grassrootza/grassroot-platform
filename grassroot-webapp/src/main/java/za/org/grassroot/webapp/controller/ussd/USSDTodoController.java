@@ -121,12 +121,18 @@ public class USSDTodoController extends USSDBaseController {
                                        @RequestParam(required = false) String priorInput) throws URISyntaxException {
         final String userInput = StringUtils.isEmpty(priorInput) ? userResponse : priorInput;
         User user = userManager.findByInputNumber(msisdn, saveUrl("/respond/info", todoUid, userInput));
-        log.info("User input={},User={}",userInput,user);
-        USSDMenu menu = new USSDMenu(messageAssembler.getMessage(USSDSection.TODO, "info", promptKey + ".confirm", userInput, user));
-        menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid +
-                        "&response=" + USSDUrlUtil.encodeParameter(userInput), messageAssembler.getMessage("options.yes", user));
-        menu.addMenuOption(REL_PATH + "/respond/info/revise", messageAssembler.getMessage("todo.info.response.change", user));
-        return menuBuilder(menu);
+        log.debug("User input={},User={}",userInput,user);
+        if ("0".equals(userResponse)) {
+            // so user doesn't get asked on infinite loop
+            todoBroker.recordResponse(user.getUid(), todoUid, "SKIPPED", false);
+            return menuBuilder(welcomeMenu(getMessage("home.start.prompt", user), user));
+        } else {
+            USSDMenu menu = new USSDMenu(messageAssembler.getMessage(USSDSection.TODO, "info", promptKey + ".confirm", userInput, user));
+            menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid +
+                    "&response=" + USSDUrlUtil.encodeParameter(userInput), messageAssembler.getMessage("options.yes", user));
+            menu.addMenuOption(REL_PATH + "/respond/info/revise", messageAssembler.getMessage("todo.info.response.change", user));
+            return menuBuilder(menu);
+        }
     }
 
     @RequestMapping(value = FULL_PATH + "/respond/info/confirmed", method = RequestMethod.GET)
@@ -589,7 +595,7 @@ public class USSDTodoController extends USSDBaseController {
                                        @RequestParam(value = yesOrNoParam) boolean confirmed) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, null);
         if (confirmed) {
-            todoBroker.cancel(user.getUid(), todoUid, null);
+            todoBroker.cancel(user.getUid(), todoUid, false, null);
             USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.cancel.prompt", user));
             menu.addMenuOption(REL_PATH + "/start", messageAssembler.getMessage("todo.cancel.done.todos", user));
             menu.addMenuOptions(optionsHomeExit(user, true));

@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.TodoAssignmentRepository;
@@ -55,6 +56,8 @@ public class TodoBrokerImpl implements TodoBroker {
     private final MessageAssemblingService messageService;
     private final ApplicationEventPublisher eventPublisher;
 
+    private TaskImageBroker taskImageBroker;
+
     @Autowired
     public TodoBrokerImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
         this.todoRepository = todoRepository;
@@ -65,6 +68,11 @@ public class TodoBrokerImpl implements TodoBroker {
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.messageService = messageService;
         this.eventPublisher = eventPublisher;
+    }
+
+    @Autowired // we may want to make this optional in the future ...
+    public void setTaskImageBroker(TaskImageBroker taskImageBroker) {
+        this.taskImageBroker = taskImageBroker;
     }
 
     @Override
@@ -106,11 +114,26 @@ public class TodoBrokerImpl implements TodoBroker {
         Todo todo = new Todo(user, parent, todoHelper.getTodoType(), todoHelper.getSubject(), todoHelper.getDueDateTime());
         todo = todoRepository.save(todo);
 
+        if (todoHelper.getAssignedMemberUids() == null || todoHelper.getAssignedMemberUids().isEmpty()) {
+            setAllParentMembersAssigned(todo, shouldAssignedUsersRespond(todo.getType()));
+        } else {
+            setAssignedMembers(todo, todoHelper.getAssignedMemberUids(), shouldAssignedUsersRespond(todo.getType()));
+        }
+
+        if (todoHelper.getMediaFileUids() != null && !todoHelper.getMediaFileUids().isEmpty()) {
+            log.info("alright, recording todo images ...");
+            taskImageBroker.recordImageForTask(user.getUid(), todo.getUid(), TaskType.TODO, todoHelper.getMediaFileUids(),
+                    null, TodoLogType.IMAGE_AT_CREATION);
+            todo.setImageUrl(taskImageBroker.getShortUrl(todoHelper.getMediaFileUids().get(0)));
+        }
+
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         TodoLog todoLog = new TodoLog(TodoLogType.CREATED, user, todo, null);
         bundle.addLog(todoLog);
         bundle.addNotifications(wireUpTodoForType(todo, todoHelper, todoLog));
         logsAndNotificationsBroker.storeBundle(bundle);
+
+        log.info("and now we are done with todo creation ...");
 
         return todo.getUid();
     }
@@ -127,12 +150,6 @@ public class TodoBrokerImpl implements TodoBroker {
         Set<Notification> notifications = new HashSet<>();
         if (todoHelper.isInformationTodo()) {
             todo.setResponseTag(todoHelper.getResponseTag());
-        }
-
-        if (todoHelper.getAssignedMemberUids() == null || todoHelper.getAssignedMemberUids().isEmpty()) {
-            setAllParentMembersAssigned(todo, shouldAssignedUsersRespond(todo.getType()));
-        } else {
-            setAssignedMembers(todo, todoHelper.getAssignedMemberUids(), shouldAssignedUsersRespond(todo.getType()));
         }
 
         if (todoHelper.getConfirmingMemberUids() != null && !todoHelper.getConfirmingMemberUids().isEmpty()) {
@@ -185,13 +202,17 @@ public class TodoBrokerImpl implements TodoBroker {
 
     @Override
     @Transactional
-    public void cancel(String userUid, String todoUid, String reason) {
+    public void cancel(String userUid, String todoUid, boolean sendNotices, String reason) {
         Todo todo = todoRepository.findOneByUid(todoUid);
         User user = userRepository.findOneByUid(userUid);
         validateUserCanModify(user, todo);
         todo.setCancelled(true);
-        // todo : send out notifications
+        log.info("todo is cancelled, notification params: send : {}, reason: {}", sendNotices, reason);
         createAndStoreTodoLog(user, todo, TodoLogType.CANCELLED, reason);
+        if (sendNotices) {
+            log.info("send out notices ...");
+            // todo : actually send out notices
+        }
     }
 
     @Override
@@ -317,6 +338,8 @@ public class TodoBrokerImpl implements TodoBroker {
             case VOLUNTEERS_NEEDED:
                 notifications.addAll(notifyCreatorOfVolunteer(todoAssignment, response, todoLog));
                 break;
+            default:
+                throw new IllegalArgumentException("Error! Todo with non-standard type passed");
         }
 
         storeLogAndNotifications(todoLog, notifications);

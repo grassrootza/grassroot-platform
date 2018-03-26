@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.notification;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
@@ -26,9 +27,13 @@ public abstract class TodoNotification extends Notification {
 	@Override
 	public abstract NotificationDetailedType getNotificationDetailedType();
 
-
 	protected TodoNotification() {
 		// for JPA
+	}
+
+	@Override
+	public Task getTask() {
+		return todo;
 	}
 
 	@Override

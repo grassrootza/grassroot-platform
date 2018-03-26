@@ -87,4 +87,6 @@ public interface TaskBroker {
 
     @Transactional(readOnly = true)
     List<TaskFullDTO> fetchUpcomingGroupTasks(String userUid, String groupUid);
+
+    void cancelTask(String userUid, String taskUid, TaskType taskType, boolean notifyMembers, String attachedReason);
 }

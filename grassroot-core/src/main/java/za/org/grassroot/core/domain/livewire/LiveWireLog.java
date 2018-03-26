@@ -107,7 +107,7 @@ public class LiveWireLog implements ActionLog {
         // for JPA
     }
 
-    private LiveWireLog(LiveWireLogType type) {
+    public LiveWireLog(LiveWireLogType type) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.type = Objects.requireNonNull(type);

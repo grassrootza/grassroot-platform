@@ -1,11 +1,10 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
@@ -32,24 +31,21 @@ import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 /**
  * Created by Siyanda Mzam on 2016/03/22.
  */
+@Slf4j
 public class VoteRestControllerTest extends RestAbstractUnitTest {
-
-    private static final Logger log = LoggerFactory.getLogger(VoteRestControllerTest.class);
 
     private static final String path = "/api/vote";
 
-    @Mock
-    private VoteBroker voteBrokerMock;
+    private Vote voteEvent = createVote(null);
 
-    @InjectMocks
-    private VoteRestController voteRestController;
+    @Mock private VoteBroker voteBrokerMock;
+
+    @InjectMocks private VoteRestController voteRestController;
 
     @Before
     public void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(voteRestController).build();
     }
-
-    private Vote voteEvent = createVote(null);
 
     @Test
     public void creatingAVoteShouldWork() throws Exception {

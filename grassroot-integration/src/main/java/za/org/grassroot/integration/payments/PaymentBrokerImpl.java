@@ -15,9 +15,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountBillingRecord;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.util.DebugUtil;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.payments.peachp.PaymentErrorPP;
@@ -29,7 +29,6 @@ import java.net.URI;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.Objects;
 
 /**
@@ -363,8 +362,10 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
         String email = "A payment succeeded for account " + account.getAccountName() + ", with amount paid as "
                 + (record.getTotalAmountToPay() / 100) + ". Next billing date is " + account.getNextBillingDate();
-        messageBroker.sendEmail(Collections.singletonList(paymentsEmailNotification),
-                new GrassrootEmail.EmailBuilder("Payment notification: successful").content(email).build());
+        messageBroker.sendEmail(new GrassrootEmail
+                .EmailBuilder("Payment notification: successful")
+                .toAddress(paymentsEmailNotification)
+                .content(email).build());
 
     }
 
@@ -389,7 +390,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
         record.setPaymentDescription(errorDescription);
         if (errorDescription.contains("100.150.101")) {
             Account account = record.getAccount();
-            account.setPaymentRef(null); // todo: fix this (or just go with JS integration)
+            account.setPaymentRef(null);
         }
         sendFailureEmail(record, errorDescription);
     }
@@ -401,8 +402,11 @@ public class PaymentBrokerImpl implements PaymentBroker {
                     + (record.getTotalAmountToPay() / 100) + ". \n";
         }
         email += "The error body received from the server was: \n" + errorBody;
-        messageBroker.sendEmail(Collections.singletonList(paymentsEmailNotification),
-                new GrassrootEmail.EmailBuilder("Payment notification: error!").content(email).build());
+        messageBroker.sendEmail(new GrassrootEmail
+                .EmailBuilder("Payment notification: error!")
+                .toAddress(paymentsEmailNotification)
+                .toName("Grassroot")
+                .content(email).build());
     }
 
 }
