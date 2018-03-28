@@ -13,6 +13,10 @@ import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.dto.DataSubscriberDTO;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.socialmedia.FBPostBuilder;
+import za.org.grassroot.integration.socialmedia.GenericPostResponse;
+import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
+import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
@@ -35,10 +39,12 @@ public class LiveWireAdminRestController extends BaseRestController {
     private final MediaFileBroker mediaFileBroker;
     private final DataSubscriberBroker dataSubscriberBroker;
     private final LiveWireSendingBroker liveWireSendingBroker;
+    private final SocialMediaBroker socialMediaBroker;
 
     public LiveWireAdminRestController(UserManagementService userManagementService,
                                        StorageBroker storageBroker,
                                        MediaFileBroker mediaFileBroker,
+                                       SocialMediaBroker socialMediaBroker,
                                        LiveWireSendingBroker liveWireSendingBroker,
                                        DataSubscriberBroker dataSubscriberBroker,
                                        LiveWireAlertBroker liveWireAlertBroker,
@@ -49,6 +55,7 @@ public class LiveWireAdminRestController extends BaseRestController {
         this.mediaFileBroker = mediaFileBroker;
         this.dataSubscriberBroker = dataSubscriberBroker;
         this.liveWireSendingBroker = liveWireSendingBroker;
+        this.socialMediaBroker = socialMediaBroker;
     }
 
     @RequestMapping(value = "/list",method = RequestMethod.GET)
@@ -138,5 +145,46 @@ public class LiveWireAdminRestController extends BaseRestController {
         log.info("alert lists? : {}", alert.getPublicListsUids());
         liveWireSendingBroker.sendLiveWireAlerts(Collections.singleton(alertUid));
         return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid)));
+    }
+
+    @PostMapping(value = "/post/facebook")
+    public ResponseEntity<List<GenericPostResponse>> postOnFB(@RequestParam String facebookPageId,
+                                                              @RequestParam String message,
+                                                              @RequestParam String linkUrl,
+                                                              @RequestParam String linkName,
+                                                              @RequestParam String imageKey,
+                                                              @RequestParam MediaFunction imageMediaType,
+                                                              @RequestParam String imageCaption,
+                                                              HttpServletRequest request){
+        FBPostBuilder fbPostBuilder = FBPostBuilder.builder()
+                .postingUserUid(getUserIdFromRequest(request))
+                .linkName(linkName)
+                .linkUrl(linkUrl)
+                .facebookPageId(facebookPageId)
+                .imageCaption(imageCaption)
+                .imageMediaType(imageMediaType)
+                .imageKey(imageKey)
+                .message(message)
+                .build();
+
+        List<FBPostBuilder> posts = new ArrayList<>();
+        posts.add(fbPostBuilder);
+        log.info("Post to share on FB.....{}",posts);
+        log.info("List ya di posts...{}",posts);
+
+        return ResponseEntity.ok(socialMediaBroker.postToFacebook(posts));
+    }
+
+    @PostMapping(value = "/post/twitter")
+    public ResponseEntity<GenericPostResponse> tweet(@RequestParam String message,
+                                                     @RequestParam MediaFunction imageMediaFunction,
+                                                     @RequestParam String imageKey,
+                                                     HttpServletRequest request){
+        TwitterPostBuilder tweet = TwitterPostBuilder.builder()
+                .postingUserUid(getUserIdFromRequest(request))
+                .message(message)
+                .imageKey(imageKey)
+                .imageMediaFunction(imageMediaFunction).build();
+        return ResponseEntity.ok(socialMediaBroker.postToTwitter(tweet));
     }
 }

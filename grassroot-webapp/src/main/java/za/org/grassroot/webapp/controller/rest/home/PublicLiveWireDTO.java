@@ -10,13 +10,14 @@ import java.util.stream.Collectors;
 
 @Getter
 public class PublicLiveWireDTO {
-
+    private String serverUid;
     private String headline;
     private long creationTimeMillis;
     private String description;
     private List<String> imageKeys;
 
     public PublicLiveWireDTO(LiveWireAlert alert) {
+        this.serverUid = alert.getUid();
         this.headline = alert.getHeadline();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
         this.description = alert.getDescription();
