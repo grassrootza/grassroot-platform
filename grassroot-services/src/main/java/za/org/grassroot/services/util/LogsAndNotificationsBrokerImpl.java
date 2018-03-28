@@ -25,6 +25,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.TodoLogSpecifications;
+import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
@@ -37,6 +38,9 @@ import static za.org.grassroot.services.util.PublicActivityType.*;
 public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroker {
 
     private static final int MAX_PUBLIC_LOGS = 20;
+
+    private static final List<GroupLogType> joinedGroupTypes = Arrays.asList(GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
+            GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN);
 
 	private final NotificationRepository notificationRepository;
 	private final GroupLogRepository groupLogRepository;
@@ -63,142 +67,6 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		this.campaignLogRepository = campaignLogRepository;
 		this.cacheService = cacheService;
 		this.applicationEventPublisher = applicationEventPublisher;
-	}
-
-    @Override
-    public List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs) {
-        int largestPage = numberLogs == null ? MAX_PUBLIC_LOGS : Math.min(numberLogs, MAX_PUBLIC_LOGS);
-        // check, in order: campaign logs, group logs, event logs, account logs (for broadcasts), livewire logs
-
-		return Arrays.stream(PublicActivityType.values())
-				.map(this::activityLogList).flatMap(List::stream)
-				.sorted(Comparator.comparing(PublicActivityLog::getActionTimeMillis).reversed())
-				.limit(largestPage)
-				.collect(Collectors.toList());
-    }
-
-    public List<PublicActivityLog> activityLogList(PublicActivityType activityType) {
-		List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
-		if (activityLogs != null) {
-			log.info("returning logs from cache, not hitting DB");
-			return activityLogs;
-		}
-		log.info("calling DB for activity type: {}", activityType);
-		final List<PublicActivityType> oldTypes = Arrays.asList(CALLED_MEETING, CALLED_VOTE, CREATED_GROUP, JOINED_GROUP);
-		Pageable pageable = new PageRequest(0, MAX_PUBLIC_LOGS, Sort.Direction.DESC,
-				oldTypes.contains(activityType) ? "createdDateTime" : "creationTime");
-		switch (activityType) {
-			case SIGNED_PETITION:
-				activityLogs = campaignLogRepository
-						.findByCampaignLogType(CampaignLogType.CAMPAIGN_PETITION_SIGNED, pageable)
-						.stream().map(cl -> new PublicActivityLog(activityType, cl.getUser().getName(), cl.getCreationTime().toEpochMilli()))
-						.collect(Collectors.toList());
-				break;
-			case JOINED_GROUP:
-				List<GroupLogType> types = Arrays.asList(GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
-						GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN);
-				activityLogs = groupLogRepository.findByGroupLogTypeIn(types, pageable)
-						.stream().map(gl -> new PublicActivityLog(activityType, gl.getUserNameSafe(), gl.getCreatedDateTime().toEpochMilli()))
-						.collect(Collectors.toList());
-				break;
-			case CALLED_MEETING:
-				activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.MEETING, pageable)
-						.stream().map(el -> new PublicActivityLog(activityType, el.getUser().getName(), el.getCreatedDateTime().toEpochMilli()))
-						.collect(Collectors.toList());
-				break;
-			case CALLED_VOTE:
-				activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.VOTE, pageable)
-						.stream().map(el -> new PublicActivityLog(activityType, el.getUser().getName(), el.getCreatedDateTime().toEpochMilli()))
-						.collect(Collectors.toList());
-				break;
-			case CREATED_TODO:
-				activityLogs = todoLogRepository.findByType(TodoLogType.CREATED, pageable)
-						.stream().map(tl -> new PublicActivityLog(activityType, tl.getUser().getName(), tl.getCreationTime().toEpochMilli()))
-						.collect(Collectors.toList());
-				break;
-			case CREATED_GROUP:
-				activityLogs = groupLogRepository.findByGroupLogTypeIn(Collections.singleton(GroupLogType.GROUP_ADDED), pageable)
-						.stream().map(gl -> new PublicActivityLog(activityType, gl.getUserNameSafe(), gl.getCreatedDateTime().toEpochMilli()))
-						.collect(Collectors.toList());
-				break;
-			case CREATED_ALERT:
-				activityLogs = liveWireLogRepository.findByType(LiveWireLogType.ALERT_COMPLETED, pageable)
-						.stream().map(lwl -> new PublicActivityLog(activityType, lwl.getUser().getName(), lwl.getCreationTime().toEpochMilli()))
-						.collect(Collectors.toList());
-				break;
-			case SENT_BROADCAST:
-				activityLogs = accountLogRepository.findByAccountLogType(AccountLogType.BROADCAST_MESSAGE_SENT, pageable)
-						.stream().map(al -> new PublicActivityLog(activityType, al.getUser().getName(), al.getCreationTime().toEpochMilli()))
-						.collect(Collectors.toList());
-				break;
-			case CREATED_CAMPAIGN:
-				activityLogs = campaignLogRepository.findByCampaignLogType(CampaignLogType.CREATED_IN_DB, pageable)
-						.stream().map(cl -> new PublicActivityLog(activityType, cl.getUser().getName(), cl.getCreationTime().toEpochMilli()))
-						.collect(Collectors.toList());
-				break;
-			default:
-				activityLogs = new ArrayList<>();
-		}
-		cacheService.putCachedPublicActivity(activityType, activityLogs);
-		return activityLogs;
-	}
-
-	@Async
-	@Override
-	public void updateCache(Collection<ActionLog> actionLogs) {
-		log.info("updating logs, should be after TX, but is not ... need to debug");
-		actionLogs.forEach(this::updateCacheSingle);
-	}
-
-	private void updateCacheSingle(ActionLog actionLog) {
-		PublicActivityType activityType = null;
-		if(actionLog instanceof CampaignLog){
-			CampaignLogType campaignLogType = ((CampaignLog) actionLog).getCampaignLogType();
-			switch (campaignLogType) {
-				case CREATED_IN_DB: activityType = CREATED_CAMPAIGN; break;
-				case CAMPAIGN_PETITION_SIGNED: activityType = SIGNED_PETITION;
-			}
-		} else if (actionLog instanceof GroupLog) {
-			GroupLogType groupLogType = ((GroupLog) actionLog).getGroupLogType();
-			switch (groupLogType) {
-				case GROUP_MEMBER_ADDED_VIA_JOIN_CODE:
-				case GROUP_MEMBER_ADDED_VIA_CAMPAIGN: activityType = JOINED_GROUP; break;
-				case GROUP_ADDED: activityType = CREATED_GROUP; break;
-			}
-		} else if(actionLog instanceof EventLog) {
-			EventLog eventLog = ((EventLog) actionLog);
-			EventLogType eventLogType = eventLog.getEventLogType();
-			if(eventLogType.equals(EventLogType.CREATED)) {
-				if(eventLog.getEvent().getType().equals(EventType.MEETING))
-					activityType = PublicActivityType.CALLED_MEETING;
-				else if(eventLog.getEvent().getType().equals(EventType.VOTE))
-					activityType = PublicActivityType.CALLED_VOTE;
-			}
-		} else if(actionLog instanceof TodoLog) {
-			TodoLogType todoLogType = ((TodoLog) actionLog).getType();
-			if(todoLogType.equals(TodoLogType.CREATED)) {
-				activityType = CREATED_TODO;
-			}
-		} else if(actionLog instanceof LiveWireLog) {
-			LiveWireLogType liveWireLogType = ((LiveWireLog) actionLog).getType();
-			if(liveWireLogType.equals(LiveWireLogType.ALERT_COMPLETED)) {
-				activityType = CREATED_ALERT;
-			}
-		} else if(actionLog instanceof AccountLog) {
-			AccountLogType accountLogType = ((AccountLog) actionLog).getAccountLogType();
-			if(accountLogType.equals(AccountLogType.BROADCAST_MESSAGE_SENT)) {
-				activityType = SENT_BROADCAST;
-			}
-		}
-		List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
-		if (activityLogs == null) {
-			activityLogs = new ArrayList<>();
-		}
-
-		if (activityType != null) {
-			activityLogs.add(new PublicActivityLog(activityType, actionLog.getUser().getName(), actionLog.getCreationTime().toEpochMilli()));
-			cacheService.putCachedPublicActivity(activityType, activityLogs);
-		}
 	}
 
 
@@ -241,9 +109,143 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		groupsToUpdateTaskTimestamp.forEach(g -> g.setLastTaskCreationTime(now));
 
 		// getting lots of null pointers in here, method not ready, need to come back to this
-//		AfterTxCommitTask cacheUpdate = () -> this.updateCache(logs);
-//		applicationEventPublisher.publishEvent(cacheUpdate);
+		AfterTxCommitTask cacheUpdate = () -> {
+			log.info("this should execute after the method is finished, and TX committed");
+			this.updateCache(logs);
+		};
+		applicationEventPublisher.publishEvent(cacheUpdate);
+
+		log.info("executing main part of method");
 	}
+
+    @Override
+    public List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs) {
+        int largestPage = numberLogs == null ? MAX_PUBLIC_LOGS : Math.min(numberLogs, MAX_PUBLIC_LOGS);
+        // check, in order: campaign logs, group logs, event logs, account logs (for broadcasts), livewire logs
+
+        return Arrays.stream(PublicActivityType.values())
+                .map(this::activityLogList).flatMap(List::stream)
+                .sorted(Comparator.comparing(PublicActivityLog::getActionTimeMillis).reversed())
+                .limit(largestPage)
+                .collect(Collectors.toList());
+    }
+
+    public List<PublicActivityLog> activityLogList(PublicActivityType activityType) {
+        List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
+        if (activityLogs != null) {
+            log.info("returning logs from cache, not hitting DB");
+            return activityLogs;
+        }
+        log.info("calling DB for activity type: {}", activityType);
+        final List<PublicActivityType> oldTypes = Arrays.asList(CALLED_MEETING, CALLED_VOTE, CREATED_GROUP, JOINED_GROUP);
+        Pageable pageable = new PageRequest(0, MAX_PUBLIC_LOGS, Sort.Direction.DESC,
+                oldTypes.contains(activityType) ? "createdDateTime" : "creationTime");
+        switch (activityType) {
+            case SIGNED_PETITION:
+                activityLogs = campaignLogRepository
+                        .findByCampaignLogType(CampaignLogType.CAMPAIGN_PETITION_SIGNED, pageable)
+                        .stream().map(cl -> new PublicActivityLog(activityType, cl.getUser().getName(), cl.getCreationTime().toEpochMilli()))
+                        .collect(Collectors.toList());
+                break;
+            case JOINED_GROUP:
+                activityLogs = groupLogRepository.findByGroupLogTypeIn(joinedGroupTypes, pageable)
+                        .stream().map(gl -> new PublicActivityLog(activityType, gl.getUserNameSafe(), gl.getCreatedDateTime().toEpochMilli()))
+                        .collect(Collectors.toList());
+                break;
+            case CALLED_MEETING:
+                activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.MEETING, pageable)
+                        .stream().map(el -> new PublicActivityLog(activityType, el.getUser().getName(), el.getCreatedDateTime().toEpochMilli()))
+                        .collect(Collectors.toList());
+                break;
+            case CALLED_VOTE:
+                activityLogs = eventLogRepository.findByEventLogTypeAndEventType(EventLogType.CREATED, EventType.VOTE, pageable)
+                        .stream().map(el -> new PublicActivityLog(activityType, el.getUser().getName(), el.getCreatedDateTime().toEpochMilli()))
+                        .collect(Collectors.toList());
+                break;
+            case CREATED_TODO:
+                activityLogs = todoLogRepository.findByType(TodoLogType.CREATED, pageable)
+                        .stream().map(tl -> new PublicActivityLog(activityType, tl.getUser().getName(), tl.getCreationTime().toEpochMilli()))
+                        .collect(Collectors.toList());
+                break;
+            case CREATED_GROUP:
+                activityLogs = groupLogRepository.findByGroupLogTypeIn(Collections.singleton(GroupLogType.GROUP_ADDED), pageable)
+                        .stream().map(gl -> new PublicActivityLog(activityType, gl.getUserNameSafe(), gl.getCreatedDateTime().toEpochMilli()))
+                        .collect(Collectors.toList());
+                break;
+            case CREATED_ALERT:
+                activityLogs = liveWireLogRepository.findByType(LiveWireLogType.ALERT_COMPLETED, pageable)
+                        .stream().map(lwl -> new PublicActivityLog(activityType, lwl.getUser().getName(), lwl.getCreationTime().toEpochMilli()))
+                        .collect(Collectors.toList());
+                break;
+            case SENT_BROADCAST:
+                activityLogs = accountLogRepository.findByAccountLogType(AccountLogType.BROADCAST_MESSAGE_SENT, pageable)
+                        .stream().map(al -> new PublicActivityLog(activityType, al.getUser().getName(), al.getCreationTime().toEpochMilli()))
+                        .collect(Collectors.toList());
+                break;
+            case CREATED_CAMPAIGN:
+                activityLogs = campaignLogRepository.findByCampaignLogType(CampaignLogType.CREATED_IN_DB, pageable)
+                        .stream().map(cl -> new PublicActivityLog(activityType, cl.getUser().getName(), cl.getCreationTime().toEpochMilli()))
+                        .collect(Collectors.toList());
+                break;
+            default:
+                activityLogs = new ArrayList<>();
+        }
+        cacheService.putCachedPublicActivity(activityType, activityLogs);
+        return activityLogs;
+    }
+
+    @Async
+    @Override
+    public void updateCache(Collection<ActionLog> actionLogs) {
+        log.info("updating logs, should be after TX ...");
+        actionLogs.forEach(this::updateCacheSingle);
+    }
+
+    private void updateCacheSingle(ActionLog actionLog) {
+        PublicActivityType activityType = null;
+
+        switch (actionLog.getActionLogType()) {
+            case GROUP_LOG:
+                GroupLogType logType = ((GroupLog) actionLog).getGroupLogType();
+                activityType = joinedGroupTypes.contains(logType) ? JOINED_GROUP :
+                        GroupLogType.GROUP_ADDED.equals(logType) ? CREATED_GROUP : null;
+                break;
+            case EVENT_LOG:
+                EventLog eventLog = ((EventLog) actionLog);
+                EventLogType eventLogType = eventLog.getEventLogType();
+                activityType = !EventLogType.CREATED.equals(eventLogType) ? null :
+                        eventLog.getEvent().getEventType().equals(EventType.MEETING) ? CALLED_MEETING : CALLED_VOTE;
+                break;
+            case TODO_LOG:
+                activityType = TodoLogType.CREATED.equals(((TodoLog) actionLog).getType()) ? CREATED_TODO : null;
+                break;
+            case LIVEWIRE_LOG:
+                activityType = LiveWireLogType.ALERT_COMPLETED.equals(((LiveWireLog) actionLog).getType()) ? CREATED_ALERT : null;
+                break;
+            case CAMPAIGN_LOG:
+                CampaignLogType campaignLogType = ((CampaignLog) actionLog).getCampaignLogType();
+                activityType = CampaignLogType.CREATED_IN_DB.equals(campaignLogType) ? CREATED_CAMPAIGN :
+                        CampaignLogType.CAMPAIGN_PETITION_SIGNED.equals(campaignLogType) ? SIGNED_PETITION : null;
+                break;
+            case ACCOUNT_LOG:
+                activityType = AccountLogType.BROADCAST_MESSAGE_SENT.equals(((AccountLog) actionLog).getAccountLogType()) ? SENT_BROADCAST : null;
+            default:
+                break;
+        }
+
+        log.info("okay tested for type, comes out as : {}", activityType);
+
+        if (activityType != null) {
+            List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
+            if (activityLogs == null) {
+                activityLogs = new ArrayList<>();
+            }
+
+            activityLogs.add(new PublicActivityLog(activityType, actionLog.getUser().getName(), actionLog.getCreationTime().toEpochMilli()));
+            log.info("activity type positive, adding to public cache: {}", activityLogs);
+            cacheService.putCachedPublicActivity(activityType, activityLogs);
+        }
+    }
 
     @Override
     public long countNotifications(Specifications<Notification> specifications) {

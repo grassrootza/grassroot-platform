@@ -161,6 +161,8 @@ public class EventBrokerImpl implements EventBroker {
 
 		logsAndNotificationsBroker.storeBundle(bundle);
 
+		logger.info("called store bundle, exiting create mtg method ...");
+
 		return meeting;
 	}
 
