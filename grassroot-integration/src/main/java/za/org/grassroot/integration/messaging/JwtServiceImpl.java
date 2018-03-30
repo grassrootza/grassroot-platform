@@ -138,9 +138,11 @@ public class JwtServiceImpl implements JwtService {
         Date expirationTime = null;
         String newToken = null;
         String userId = null;
+        String systemRoles = null;
         try {
             Jwt<Header, Claims> jwt = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parseClaimsJwt(oldToken);
             userId = jwt.getBody().get(USER_UID_KEY, String.class);
+            systemRoles = jwt.getBody().get(SYSTEM_ROLE_KEY, String.class);
             isTokenStillValid = true;
         }
         catch (ExpiredJwtException e) {
@@ -149,7 +151,7 @@ public class JwtServiceImpl implements JwtService {
         }
         if (isTokenStillValid || expirationTime != null
                 && expirationTime.toInstant().plus(jwtTokenExpiryGracePeriodInMilliseconds, ChronoUnit.MILLIS).isAfter(new Date().toInstant())) {
-            CreateJwtTokenRequest cjtRequest = new CreateJwtTokenRequest(jwtType, shortExpiryMillis, userId);
+            CreateJwtTokenRequest cjtRequest = new CreateJwtTokenRequest(jwtType, shortExpiryMillis, userId, systemRoles);
 
             newToken = createJwt(cjtRequest);
         }

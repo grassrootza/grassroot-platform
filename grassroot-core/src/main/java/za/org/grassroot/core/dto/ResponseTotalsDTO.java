@@ -40,9 +40,9 @@ public class ResponseTotalsDTO implements Serializable {
         this.no = (int) eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.NO)).count();
         this.maybe = (int) eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.MAYBE)).count();
         this.invalid = (int) eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.INVALID_RESPONSE)).count();
-        this.numberOfUsers = event.isAllGroupMembersAssigned() || event.getAllMembers() == null ?
-                event.getAncestorGroup().getMemberships().size() :
-                event.getAllMembers().size();
+        this.numberOfUsers = event == null ? 0 :
+                event.isAllGroupMembersAssigned() || event.getAllMembers() == null ?
+                        event.getAncestorGroup().getMemberships().size() : event.getAllMembers().size();
     }
 
     public int getNumberNoRSVP() {

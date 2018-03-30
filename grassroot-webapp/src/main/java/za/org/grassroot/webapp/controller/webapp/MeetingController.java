@@ -11,7 +11,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
@@ -134,7 +137,6 @@ public class MeetingController extends BaseController {
                                 @RequestParam(value="selectedGroupUid", required=false) String selectedGroupUid,
                                 HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        // todo: move parent selection into MeetingWrapper when implement non-group meetings
         log.info("Meeting long: {}, lat: {}, public option: {}, file incl: {}", meeting.getLongitude(), meeting.getLatitude(),
                 meeting.getPublicOption(), meeting.getMeetingImage() != null);
 
@@ -160,13 +162,13 @@ public class MeetingController extends BaseController {
                     .importance(meeting.getImportance())
                     .includeSubGroups(meeting.isIncludeSubGroups());
 
-            // todo: move this into async when the user hits upload
             if (meeting.getMeetingImage() != null && meeting.getMeetingImage().getSize() > 0) {
                 log.info("meeting image not null! size: {} bytes", meeting.getMeetingImage().getSize());
                 helper.taskImageKey(taskImageBroker.storeImagePreTask(TaskType.MEETING, meeting.getMeetingImage()));
             }
 
             Meeting createdMeeting = eventBroker.createMeeting(helper);
+            log.info("back from creating meeting, cache update is blocking but 1-2 msecs, so okay for now ...");
 
             if (!EntityPublicOption.PRIVATE.equals(meeting.getPublicOption())) {
                 makeMeetingPublic(meeting, createdMeeting);

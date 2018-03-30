@@ -6,8 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.webapp.enums.RestMessage;
 
-@Getter
-@Setter
+@Getter @Setter
 public class AuthorizationResponseDTO {
 
     private RestMessage errorCode = null;

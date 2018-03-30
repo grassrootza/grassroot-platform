@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -68,6 +69,11 @@ public class UserLog implements ActionLog {
 
     public Instant getCreationTime() {
         return creationTime;
+    }
+
+    @Override
+    public ActionLogType getActionLogType() {
+        return ActionLogType.USER_LOG;
     }
 
     public void setCreationTime(Instant creationTime) { this.creationTime = creationTime; }

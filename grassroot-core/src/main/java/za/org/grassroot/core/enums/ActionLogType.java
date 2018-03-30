@@ -11,6 +11,8 @@ public enum ActionLogType {
     TODO_LOG,
     ACCOUNT_LOG,
     LIVEWIRE_LOG,
-    CAMPAIGN_LOG
+    CAMPAIGN_LOG,
+    ADDRESS_LOG,
+    TASK_LOG
 
 }

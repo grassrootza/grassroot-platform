@@ -27,6 +27,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -91,6 +92,7 @@ public class EventLogBrokerImpl implements EventLogBroker {
             } else if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
                 generateMeetingResponseMessage(event, eventLog, rsvpResponse);
             }
+            logsAndNotificationsBroker.updateCache(Collections.singleton(eventLog));
         } else {
             // allow the user to change their rsvp / vote as long as meeting is open (which it is at this stage else exception thrown above)
             EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
@@ -99,6 +101,7 @@ public class EventLogBrokerImpl implements EventLogBroker {
             if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
                 generateMeetingResponseMessage(event, eventLog, rsvpResponse);
             }
+            // not updating public activity cache, as this is just an adjustment
         }
     }
 
@@ -133,6 +136,9 @@ public class EventLogBrokerImpl implements EventLogBroker {
     @Transactional(readOnly = true)
     public ResponseTotalsDTO getResponseCountForEvent(Event event) {
         List<EventLog> responseEventLogs = eventLogRepository.findByEventAndEventLogType(event, EventLogType.RSVP);
+        if (event == null) {
+            log.error("getting responses on non-existing event (must be broken client), returning empty");
+        }
         return new ResponseTotalsDTO(responseEventLogs, event);
     }
 

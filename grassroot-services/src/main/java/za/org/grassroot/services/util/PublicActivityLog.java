@@ -1,11 +1,9 @@
 package za.org.grassroot.services.util;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
-import java.time.Instant;
-
-@Getter
+@Getter @ToString
 public class PublicActivityLog {
 
     private PublicActivityType type;
