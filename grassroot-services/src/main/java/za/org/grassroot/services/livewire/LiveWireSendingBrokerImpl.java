@@ -19,7 +19,6 @@ import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.LiveWireAlertRepository;
-import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.storage.StorageBroker;
@@ -82,42 +81,40 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
 
     private void sendAlert(LiveWireAlert alert, List<String> systemEmailAddresses) {
         logger.info("starting to send alert, uids: {}", alert.getPublicListsUids());
-        // send the alert (maybe add Twitter etc in future)
-        List<String> alertEmails = new ArrayList<>(systemEmailAddresses);
+
+        List<String> emailAddresses = new ArrayList<>(systemEmailAddresses);
+        emailAddresses.addAll(getAddressesForAlert(alert));
+
+        List<GrassrootEmail> emails = generateEmailsForAlert(alert, emailAddresses);
+        emails.forEach(messagingServiceBroker::sendEmail);
+        alert.setSent(true);
+
+        logger.info("LiveWire of type {} sent to {} emails! Headline : {}. Setting to sent ...",
+                alert.getDestinationType(), emails.size(), alert.getHeadline());
+    }
+
+    private List<String> getAddressesForAlert(LiveWireAlert alert) {
+        List<String> emailList = new ArrayList<>();
         switch (alert.getDestinationType()) {
             case SINGLE_LIST:
                 if (alert.getTargetSubscriber() != null) {
-                    alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                    emailList.addAll(alert.getTargetSubscriber().getPushEmails());
                 }
                 break;
             case PUBLIC_LIST:
-                alertEmails.addAll(collectPublicEmailAddresses(alert));
+                emailList.addAll(collectPublicEmailAddresses(alert));
                 break;
             case SINGLE_AND_PUBLIC:
                 if (alert.getTargetSubscriber() != null) {
-                    alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                    emailList.addAll(alert.getTargetSubscriber().getPushEmails());
                 }
-                alertEmails.addAll(collectPublicEmailAddresses(alert));
+                emailList.addAll(collectPublicEmailAddresses(alert));
                 break;
             default:
                 logger.error("invalid livewire destination type used");
                 break;
         }
-        sendEmails(alert, generateEmailsForAlert(alert, alertEmails));
-        logger.info("LiveWire of type {} sent to {} emails! Headline : {}. Setting to sent ...",
-                alert.getDestinationType(), alertEmails.size(), alert.getHeadline());
-    }
-
-    private void sendEmails(LiveWireAlert alert, List<GrassrootEmail> emails) {
-        DebugUtil.transactionRequired("");
-        Map<String, String> toAddresses = new HashMap<>();
-        logger.info("attachment map in first mail: {}", emails.get(0).getAttachmentUidsAndNames());
-        emails.forEach(e -> {
-            e.setFromAddress(livewireEmailAddress);
-            toAddresses.put(e.getToAddress(), null);
-        });
-        messagingServiceBroker.sendEmail(toAddresses, emails.get(0));
-        alert.setSent(true);
+        return emailList;
     }
 
     private List<String> collectPublicEmailAddresses(LiveWireAlert alert) {
@@ -136,9 +133,42 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     }
 
     private List<GrassrootEmail> generateEmailsForAlert(LiveWireAlert alert, List<String> emailAddresses) {
-        String subject;
+        final Context ctx = new Context(Locale.ENGLISH);
+
+        String subjectKey;
         String template;
 
+        Map<String, Object> emailVars = setBasicVariables(alert);
+
+        if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
+            Group group = alert.getGroup();
+            subjectKey = "email.livewire.instant.subject";
+            template = "livewire_instant";
+            populateGroupVars(group, emailVars);
+        } else {
+            Meeting meeting = alert.getMeeting();
+            subjectKey = "email.livewire.meeting.subject";
+            template = "livewire_meeting";
+            emailVars.put("mtgLocation", meeting.getEventLocation());
+            emailVars.put("dateTime", mtgFormat.format(meeting.getEventDateTimeAtSAST()));
+            emailVars.put("mtgSubject", meeting.getName());
+            populateGroupVars(meeting.getAncestorGroup(), emailVars);
+        }
+
+        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder();
+
+        final String subjectLine = messageSource.getMessage(subjectKey, new String[] {alert.getHeadline()});
+        builder.fromAddress(livewireEmailAddress)
+                .fromName("Grassroot LiveWire")
+                .subject(subjectLine);
+
+        alert.getMediaFiles().forEach(record -> builder.attachmentByKey(record.getUid(), record.getFileName()));
+
+        return emailAddresses.stream()
+                .map(a -> finishAlert(ctx, builder, emailVars, template, a)).collect(Collectors.toList());
+    }
+
+    private Map<String, Object> setBasicVariables(LiveWireAlert alert) {
         Map<String, Object> emailVars = new HashedMap<>();
 
         emailVars.put("contactName", alert.getContactNameNullSafe());
@@ -149,36 +179,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         emailVars.put("headline", alert.getHeadline());
         emailVars.put("description", alert.getDescription());
 
-        logger.debug("formatted number: {}", emailVars.get("contactNumber"));
-
-        // todo : check both for location
-        if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
-            Group group = alert.getGroup();
-            subject = "email.livewire.instant.subject";
-            template = "livewire_instant";
-            populateGroupVars(group, emailVars);
-        } else {
-            Meeting meeting = alert.getMeeting();
-            subject = "email.livewire.meeting.subject";
-            template = "livewire_meeting";
-            emailVars.put("mtgLocation", meeting.getEventLocation());
-            emailVars.put("dateTime", mtgFormat.format(meeting.getEventDateTimeAtSAST()));
-            emailVars.put("mtgSubject", meeting.getName());
-            populateGroupVars(meeting.getAncestorGroup(), emailVars);
-        }
-
-        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder()
-                .fromName("Grassroot LiveWire")
-                .subject(messageSource.getMessage(subject, new String[] {alert.getHeadline()}));
-
-        alert.getMediaFiles().forEach(record -> builder.attachmentByKey(record.getUid(), record.getFileName()));
-        logger.info("added {} media files, map looks like {}", alert.getMediaFiles().size(), builder.getAttachmentUidsAndNames());
-
-        final Context ctx = new Context(Locale.ENGLISH);
-
-        return emailAddresses.stream()
-                .map(a -> finishAlert(ctx, builder, emailVars, template, a))
-                .collect(Collectors.toList());
+        return emailVars;
     }
 
     private GrassrootEmail finishAlert(final Context ctx,
@@ -196,11 +197,16 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
             emailVars.put("unsubLink", publicInfoPath + "info"); // better than nothing
         }
 
+        final String textContent = templateEngine.process("text/" + template, ctx);
+        final String htmlContent = templateEngine.process("html/" + template, ctx);
+
+        logger.debug("exiting email creation, html content = {}", htmlContent);
+
         ctx.setVariables(emailVars);
         return builder
                 .toAddress(emailAddress)
-                .content(templateEngine.process("text/" + template, ctx))
-                .htmlContent(templateEngine.process("html/" + template, ctx))
+                .content(textContent)
+                .htmlContent(htmlContent)
                 .build();
     }
 

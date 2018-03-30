@@ -63,7 +63,7 @@ public class CampaignStatsController extends BaseRestController {
                                                                @RequestParam String datasetDivision,
                                                                @RequestParam String timePeriod) {
         CampaignActivityStatsRequest statsRequest = new CampaignActivityStatsRequest(datasetDivision, timePeriod);
-        log.info("received an activity stats request: {}", statsRequest);
+        log.debug("received an activity stats request: {}", statsRequest);
         return campaignStatsBroker.getCampaignActivityCounts(campaignUid, statsRequest);
     }
 

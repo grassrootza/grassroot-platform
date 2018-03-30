@@ -2,9 +2,13 @@ package za.org.grassroot.integration;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
+import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.notification.BroadcastNotification;
+import za.org.grassroot.core.domain.notification.EventNotification;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.DeliveryRoute;
 
 import java.time.Instant;
@@ -32,5 +36,9 @@ public interface NotificationService {
 	List<Notification> loadRecentFailedNotificationsInGroup(LocalDateTime from, LocalDateTime to, Group group);
 
 	List<Notification> fetchUnreadUserNotifications(User target, Instant since, Sort sort);
+
+	List<BroadcastNotification> loadFailedNotificationsForBroadcast(String requestorUid, Broadcast broadcast);
+
+	List<EventNotification> loadFailedNotificationForEvent(String requestorUid, Event event);
 
 }

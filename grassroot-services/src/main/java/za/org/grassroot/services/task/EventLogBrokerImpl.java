@@ -136,6 +136,9 @@ public class EventLogBrokerImpl implements EventLogBroker {
     @Transactional(readOnly = true)
     public ResponseTotalsDTO getResponseCountForEvent(Event event) {
         List<EventLog> responseEventLogs = eventLogRepository.findByEventAndEventLogType(event, EventLogType.RSVP);
+        if (event == null) {
+            log.error("getting responses on non-existing event (must be broken client), returning empty");
+        }
         return new ResponseTotalsDTO(responseEventLogs, event);
     }
 

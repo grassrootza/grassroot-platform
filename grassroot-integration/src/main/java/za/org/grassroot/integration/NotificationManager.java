@@ -12,11 +12,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.NotificationStatus;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.BroadcastNotification;
+import za.org.grassroot.core.domain.notification.BroadcastNotification_;
+import za.org.grassroot.core.domain.notification.EventNotification;
+import za.org.grassroot.core.domain.notification.EventNotification_;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.repository.BroadcastNotificationRepository;
+import za.org.grassroot.core.repository.EventNotificationRepository;
 import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -38,16 +42,22 @@ import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 public class NotificationManager implements NotificationService{
 
     private final UserRepository userRepository;
-    private final NotificationRepository notificationRepository;
     private final CacheManager cacheManager;
+
+    private final NotificationRepository notificationRepository;
+    private final BroadcastNotificationRepository broadcastNotificationRepository;
+    private final EventNotificationRepository eventNotificationRepository;
 
     @Autowired
     public NotificationManager(UserRepository userRepository,
                                NotificationRepository notificationRepository,
-                               CacheManager cacheManager) {
+                               BroadcastNotificationRepository broadcastNotificationRepository,
+                               CacheManager cacheManager, EventNotificationRepository eventNotificationRepository) {
         this.userRepository = userRepository;
         this.notificationRepository = notificationRepository;
+        this.broadcastNotificationRepository = broadcastNotificationRepository;
         this.cacheManager = cacheManager;
+        this.eventNotificationRepository = eventNotificationRepository;
     }
 
     @Override
@@ -126,5 +136,27 @@ public class NotificationManager implements NotificationService{
             return resultFromCache;
 
         return notificationRepository.findAll(unReadUserNotifications(target, since), sort);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BroadcastNotification> loadFailedNotificationsForBroadcast(String requestorUid, Broadcast broadcast) {
+        Specification<BroadcastNotification> forBroadcast = (root, query, cb) ->
+                cb.equal(root.get(BroadcastNotification_.broadcast), broadcast);
+        Specification<BroadcastNotification> isFailed = (root, query, cb) ->
+                root.get(BroadcastNotification_.status).in(FAILED_STATUS);
+        Specifications<BroadcastNotification> specs = Specifications.where(forBroadcast).and(isFailed);
+        return broadcastNotificationRepository.findAll(specs);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EventNotification> loadFailedNotificationForEvent(String requestorUid, Event event) {
+        Specification<EventNotification> forEvent = (root, query, cb) ->
+                cb.equal(root.get(EventNotification_.event), event);
+        Specification<EventNotification> isFailed = (root, query, cb) ->
+                root.get(BroadcastNotification_.status).in(FAILED_STATUS);
+        Specifications<EventNotification> specs = Specifications.where(forEvent).and(isFailed);
+        return eventNotificationRepository.findAll(specs);
     }
 }

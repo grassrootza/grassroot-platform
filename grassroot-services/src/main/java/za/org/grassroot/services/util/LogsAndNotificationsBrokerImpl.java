@@ -133,7 +133,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
     public List<PublicActivityLog> activityLogList(PublicActivityType activityType) {
         List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
         if (activityLogs != null) {
-            log.info("returning logs from cache, not hitting DB");
+            log.debug("returning logs from cache, not hitting DB");
             return activityLogs;
         }
         log.info("calling DB for activity type: {}", activityType);

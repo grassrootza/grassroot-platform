@@ -126,7 +126,7 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
     // this means duplication but getting extreme weirdness on doing generic but
     private HttpHeaders jwtHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE, null)));
+        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE)));
         return headers;
     }
 
