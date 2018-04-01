@@ -466,6 +466,12 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public Broadcast getBroadcast(String broadcastUid) {
+        return broadcastRepository.findOneByUid(broadcastUid);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, Pageable pageable) {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);

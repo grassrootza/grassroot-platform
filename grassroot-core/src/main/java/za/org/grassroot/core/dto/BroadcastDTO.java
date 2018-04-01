@@ -17,6 +17,7 @@ import java.util.Locale;
 @Getter @Setter
 public class BroadcastDTO {
 
+    private String broadcastUid;
     private String title;
     private BroadcastSchedule scheduleType;
 
@@ -51,6 +52,7 @@ public class BroadcastDTO {
     public BroadcastDTO(Broadcast broadcast, long deliveredSmsCount, long deliveredEmailCount, float costEstimate,
                         List<String> facebookPageNames, String twitterAccount) {
         // set things up
+        this.broadcastUid = broadcast.getUid();
         this.title = broadcast.getTitle();
         this.scheduleType = broadcast.getBroadcastSchedule();
 

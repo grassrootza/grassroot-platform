@@ -23,6 +23,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -368,6 +369,33 @@ public class GroupFetchController extends BaseRestController {
         }
 
 
+    }
+
+    @RequestMapping(value = "/members/error-report/{groupUid}/download", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> fetchGroupMembersWithErrorForDownloadByGroupUid(@PathVariable String groupUid,
+            HttpServletRequest request) {
+
+        try {
+            User user = getUserFromRequest(request);
+
+            String fileName = "error_report.xlsx";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+            headers.add("Cache-Control", "no-cache");
+            headers.add("Pragma", "no-cache");
+            headers.add("Expires", "0");
+
+            XSSFWorkbook xls = memberDataExportBroker.exportGroupErrorReport(groupUid, user.getUid());
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            xls.write(baos);
+            return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
+        } catch (IOException e) {
+            logger.error("IO Exception generating spreadsheet!", e);
+            throw new FileCreationException();
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
     }
 
 
