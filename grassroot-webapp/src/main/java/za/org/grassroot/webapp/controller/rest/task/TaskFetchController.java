@@ -237,7 +237,7 @@ public class TaskFetchController extends BaseRestController {
 
 			Event event = eventBroker.load(taskUid);
 			List <EventNotification> notifications = notificationService.loadFailedNotificationForEvent(user.getUid(), event);
-
+			log.info("found {} failed notifications", notifications.size());
 			XSSFWorkbook xls = dataExportBroker.exportNotificationErrorReport(notifications);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			xls.write(baos);

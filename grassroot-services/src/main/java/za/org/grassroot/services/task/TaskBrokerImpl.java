@@ -588,6 +588,12 @@ public class TaskBrokerImpl implements TaskBroker {
         }
     }
 
+    @Override
+    @Transactional
+    public void respondToTask(String userUid, String taskUid, TaskType taskType, String response) {
+
+    }
+
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {
         return t-> {
             TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), getUserResponse(t, user));

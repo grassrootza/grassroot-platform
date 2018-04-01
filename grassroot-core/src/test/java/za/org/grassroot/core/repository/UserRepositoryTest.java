@@ -71,7 +71,7 @@ public class UserRepositoryTest {
         assertThat(userRepository.count(), is(1L));
         User fromDb = userRepository.findAll().iterator().next();
         assertNotNull(fromDb.getUid());
-        assertTrue(fromDb.hasAndroidProfile());
+        assertTrue(fromDb.isHasAndroidProfile());
     }
 
     @Test

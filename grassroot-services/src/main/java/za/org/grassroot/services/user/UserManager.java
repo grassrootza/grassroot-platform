@@ -178,7 +178,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (userExists) {
 
             User userToUpdate = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
-            if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(DeliveryRoute.ANDROID_APP)) {
+            if (userToUpdate.isHasAndroidProfile() && userToUpdate.getMessagingPreference().equals(DeliveryRoute.ANDROID_APP)) {
                 log.warn("User already has android profile");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }

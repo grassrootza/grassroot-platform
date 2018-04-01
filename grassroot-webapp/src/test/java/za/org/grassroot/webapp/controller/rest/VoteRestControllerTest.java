@@ -113,13 +113,13 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     public void updatingTheVoteShouldWork() throws Exception {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription)).thenReturn(voteEvent);
+        when(voteBrokerMock.updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription)).thenReturn(voteEvent);
         mockMvc.perform(post(path + "/update/{id}/{phoneNumber}/{code}",  voteEvent.getUid(), testUserPhone,  testUserCode)
                                 .param("title", "Test_Vote")
                                 .param("closingTime", testDateTime.format(getPreferredRestFormat()))
                                 .param("description", testEventDescription))
                 .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(eventBrokerMock).updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription);
+        verify(voteBrokerMock).updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription);
     }
 }

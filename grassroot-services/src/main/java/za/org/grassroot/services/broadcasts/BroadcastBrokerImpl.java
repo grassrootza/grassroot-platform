@@ -32,6 +32,7 @@ import za.org.grassroot.integration.socialmedia.*;
 import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.task.TaskBroker;
+import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -68,6 +69,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private final Environment environment;
 
+    private PasswordTokenService tokenService;
+
     @Autowired
     public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, TaskBroker taskBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository, Environment environment) {
         this.broadcastRepository = broadcastRepository;
@@ -82,6 +85,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.accountLogRepository = accountLogRepository;
         this.environment = environment;
+    }
+
+    @Autowired
+    public void setTokenService(PasswordTokenService tokenService) {
+        this.tokenService = tokenService;
     }
 
     @Override
@@ -309,24 +317,30 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private void handleBroadcastEmails(Broadcast broadcast, ActionLog actionLog, Set<User> recipients,
                                        LogsAndNotificationsBundle bundle) {
+        if (!recipients.isEmpty()) {
 
-        Set<String> recipientUids = recipients.stream().map(User::getUid).collect(Collectors.toSet());
-        EmailBroadcast emailBc = EmailBroadcast.builder()
-                .broadcastUid(broadcast.getUid())
-                .subject(broadcast.getTitle())
-                .content(broadcast.getEmailContent())
-                .deliveryRoute(broadcast.getEmailDeliveryRoute())
-                .attachmentFileRecordUids(broadcast.getEmailAttachments())
-                .build();
+            Set<String> recipientUids = recipients.stream().map(User::getUid).collect(Collectors.toSet());
+            EmailBroadcast emailBc = EmailBroadcast.builder()
+                    .broadcastUid(broadcast.getUid())
+                    .subject(broadcast.getTitle())
+                    .content(broadcast.getEmailContent())
+                    .deliveryRoute(broadcast.getEmailDeliveryRoute())
+                    .attachmentFileRecordUids(broadcast.getEmailAttachments())
+                    .build();
 
-        emailBc.setFromFieldsIfEmpty(broadcast.getCreatedByUser());
-        GrassrootEmail email = emailBc.toGrassrootEmail();
-        email.setToUserUids(recipientUids);
-        log.info("email, with base ID = {}", email.getBaseId());
+            emailBc.setFromFieldsIfEmpty(broadcast.getCreatedByUser());
+            GrassrootEmail email = emailBc.toGrassrootEmail();
+            email.setToUserUids(recipientUids);
+            email.setGroupUid(broadcast.getGroup().getUid());
+            log.info("email, with base ID = {}", email.getBaseId());
 
-        messagingServiceBroker.sendEmail(email);
+            log.info("generating unsubscribe tokens ....");
+            tokenService.generateResponseTokens(recipientUids, broadcast.getGroup().getUid(), null);
 
-        bundle.addNotifications(recordEmailNotifications(broadcast, recipients, emailBc, actionLog));
+            messagingServiceBroker.sendEmail(email);
+
+            bundle.addNotifications(recordEmailNotifications(broadcast, recipients, emailBc, actionLog));
+        }
     }
 
     // for counting / auditing purposes

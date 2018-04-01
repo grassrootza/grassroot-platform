@@ -38,6 +38,7 @@ public class GrassrootEmail implements GrassrootTemplate {
 
     private String messageId;
     private String baseId; // for tracking things like broadcast ID
+    private String groupUid; // for unsubscribes
 
     private Map<String, String> attachmentUidsAndNames;
 
