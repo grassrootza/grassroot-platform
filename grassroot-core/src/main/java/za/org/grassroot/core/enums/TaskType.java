@@ -24,4 +24,13 @@ public enum TaskType {
             throw new IllegalArgumentException("Unimplemented task type");
         }
     }
+
+    public static Class<? extends Task> toClass(TaskType taskType) {
+        switch (taskType) {
+            case MEETING: return Meeting.class;
+            case VOTE: return Vote.class;
+            case TODO: return Todo.class;
+            default: throw new IllegalArgumentException("Unimplemented task type");
+        }
+    }
 }

@@ -21,7 +21,6 @@ import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.LiveWireAlertRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
-import za.org.grassroot.integration.storage.StorageBroker;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -53,21 +52,18 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
 
     private final MessageSourceAccessor messageSource;
     private final TemplateEngine templateEngine;
-    private final StorageBroker storageBroker;
 
     @Autowired
     public LiveWireSendingBrokerImpl(LiveWireAlertRepository alertRepository,
                                      DataSubscriberRepository subscriberRepository,
                                      MessagingServiceBroker messagingServiceBroker,
                                      @Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSource,
-                                     @Qualifier("emailTemplateEngine") TemplateEngine templateEngine,
-                                     StorageBroker storageBroker) {
+                                     @Qualifier("emailTemplateEngine") TemplateEngine templateEngine) {
         this.alertRepository = alertRepository;
         this.subscriberRepository = subscriberRepository;
         this.messagingServiceBroker = messagingServiceBroker;
         this.messageSource = messageSource;
         this.templateEngine = templateEngine;
-        this.storageBroker = storageBroker;
     }
 
     // removed async as it was causing a seriously weird bug in here
@@ -197,12 +193,15 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
             emailVars.put("unsubLink", publicInfoPath + "info"); // better than nothing
         }
 
+        ctx.setVariables(emailVars);
+
+        logger.info("about to generate mail, variables = {}", ctx.getVariableNames());
+
         final String textContent = templateEngine.process("text/" + template, ctx);
         final String htmlContent = templateEngine.process("html/" + template, ctx);
 
         logger.debug("exiting email creation, html content = {}", htmlContent);
 
-        ctx.setVariables(emailVars);
         return builder
                 .toAddress(emailAddress)
                 .content(textContent)

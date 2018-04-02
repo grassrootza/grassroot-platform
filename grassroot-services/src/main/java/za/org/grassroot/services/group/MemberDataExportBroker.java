@@ -1,6 +1,7 @@
 package za.org.grassroot.services.group;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
 
 import java.util.List;
@@ -9,6 +10,8 @@ public interface MemberDataExportBroker {
 
     XSSFWorkbook exportGroup(String groupUid, String userUid);
 
+    XSSFWorkbook exportGroupErrorReport(String groupUid, String userUid);
+
     XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupUidsToExport);
 
     XSSFWorkbook exportTodoData(String userUid, String todoUid);
@@ -16,4 +19,6 @@ public interface MemberDataExportBroker {
     void emailTodoResponses(String userUid, String todoUid, String emailAddress);
 
     XSSFWorkbook exportInboundMessages(List<GroupLogDTO> inboundMessages);
+
+    XSSFWorkbook exportNotificationErrorReport(List<? extends Notification> notifications);
 }

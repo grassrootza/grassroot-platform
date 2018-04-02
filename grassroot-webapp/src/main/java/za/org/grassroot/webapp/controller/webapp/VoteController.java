@@ -1,7 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
@@ -11,7 +10,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -19,7 +20,6 @@ import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
-import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.VoteType;
@@ -39,12 +39,10 @@ import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GR
 /**
  * Created by luke on 2015/10/30.
  */
-@Controller
+@Controller @Slf4j
 @RequestMapping("/vote/")
 @SessionAttributes("vote")
 public class VoteController extends BaseController {
-
-    private static final Logger log = LoggerFactory.getLogger(VoteController.class);
 
     private final VoteBroker voteBroker;
     private final EventBroker eventBroker;
@@ -52,8 +50,7 @@ public class VoteController extends BaseController {
     private final AccountGroupBroker accountGroupBroker;
 
     @Autowired
-    public VoteController(EventBroker eventBroker, GroupBroker groupBroker, EventLogBroker eventLogBroker,
-                          AccountGroupBroker accountGroupBroker, VoteBroker voteBroker) {
+    public VoteController(EventBroker eventBroker, GroupBroker groupBroker, AccountGroupBroker accountGroupBroker, VoteBroker voteBroker) {
         this.voteBroker = voteBroker;
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
@@ -170,7 +167,7 @@ public class VoteController extends BaseController {
     public String changeDateTime(@RequestParam String eventUid, @RequestParam LocalDateTime closingDateTime,
                                  RedirectAttributes attributes, HttpServletRequest request) {
         // note: this is pretty much the same as above, but may make it more sophisticated later, so am keeping separate
-        eventBroker.updateVoteClosingTime(getUserProfile().getUid(), eventUid, closingDateTime);
+        voteBroker.updateVoteClosingTime(getUserProfile().getUid(), eventUid, closingDateTime);
         String toDisplay = DateTimeFormatter.ofPattern("h:mm a' on 'E, d MMMM").format(closingDateTime);
         addMessage(attributes, MessageType.SUCCESS, "vote.update.closing.done", new String[] {toDisplay}, request);
         attributes.addAttribute("eventUid", eventUid);

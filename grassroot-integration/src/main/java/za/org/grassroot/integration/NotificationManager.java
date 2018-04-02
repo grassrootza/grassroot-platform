@@ -28,9 +28,8 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 
@@ -92,6 +91,8 @@ public class NotificationManager implements NotificationService{
         List<Notification> notifications = notificationRepository.findByUidIn(notificationUids);
         notifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false, false, null));
         notificationRepository.save(notifications); // TX management not being super reliable on this
+        Set<String> userUids = notifications.stream().map(n -> n.getTarget().getUid()).collect(Collectors.toSet());
+        clearUnreadCaches(userUids);
     }
 
     @Override
@@ -103,6 +104,13 @@ public class NotificationManager implements NotificationService{
         List<Notification> unreadNotifications = notificationRepository.findAll(specs);
         unreadNotifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false, false, null));
         notificationRepository.save(unreadNotifications);
+        // update cache, since this may happen & get a next call within 10 secs on front end
+        clearUnreadCaches(Collections.singleton(userUid));
+    }
+
+    private void clearUnreadCaches(Collection<String> userUids) {
+        Cache cache = cacheManager.getCache("user_notifications");
+        cache.removeAll(userUids);
     }
 
     @Override
@@ -125,7 +133,6 @@ public class NotificationManager implements NotificationService{
 
     @Override
     public List<Notification> fetchUnreadUserNotifications(User target, Instant since, Sort sort) {
-
         // cache is here just to ensure that DB will not be queried more then once in 10 second even if someone try that from client side
         Cache cache = cacheManager.getCache("user_notifications");
         String cacheKey = target.getUid();

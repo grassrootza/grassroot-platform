@@ -10,16 +10,24 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.notification.EventNotification;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.ChangedSinceData;
+import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.MemberDataExportBroker;
+import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.task.enums.TaskSortType;
@@ -43,18 +51,23 @@ import java.util.stream.Collectors;
 @RequestMapping(value = "/api/task/fetch")
 public class TaskFetchController extends BaseRestController {
 
-    private final TaskBroker taskBroker;
-    private final TaskImageBroker taskImageBroker;
-    private final MemberDataExportBroker dataExportBroker;
+	private final TaskBroker taskBroker;
+	private final TaskImageBroker taskImageBroker;
+	private final MemberDataExportBroker dataExportBroker;
+	private final NotificationService notificationService;
+	private final EventBroker eventBroker;
 
-    @Autowired
-    public TaskFetchController(TaskBroker taskBroker, TaskImageBroker taskImageBroker,
-                               JwtService jwtService, UserManagementService userManagementService, MemberDataExportBroker dataExportBroker) {
-        super(jwtService, userManagementService);
-        this.taskBroker = taskBroker;
-        this.taskImageBroker = taskImageBroker;
-        this.dataExportBroker = dataExportBroker;
-    }
+	@Autowired
+	public TaskFetchController(TaskBroker taskBroker, TaskImageBroker taskImageBroker,
+			JwtService jwtService, UserManagementService userManagementService, MemberDataExportBroker dataExportBroker,
+			NotificationService notificationService, EventBroker eventBroker) {
+		super(jwtService, userManagementService);
+		this.taskBroker = taskBroker;
+		this.taskImageBroker = taskImageBroker;
+		this.dataExportBroker = dataExportBroker;
+		this.notificationService = notificationService;
+		this.eventBroker = eventBroker;
+	}
 
     @Timed
     @RequestMapping(value = "/updated", method = RequestMethod.POST)
@@ -206,6 +219,36 @@ public class TaskFetchController extends BaseRestController {
             return new ResponseEntity<>((List<TaskFullDTO>) null, HttpStatus.UNAUTHORIZED);
         }
     }
+
+	@RequestMapping(value = "/error-report/{taskUid}/download", method = RequestMethod.GET)
+	public ResponseEntity<byte[]> fetchTaskFailedNotifications(@PathVariable String taskUid,
+			HttpServletRequest request) {
+
+		try {
+			User user = getUserFromRequest(request);
+
+			String fileName = "task_error_report.xlsx";
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+			headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+			headers.add("Cache-Control", "no-cache");
+			headers.add("Pragma", "no-cache");
+			headers.add("Expires", "0");
+
+			Event event = eventBroker.load(taskUid);
+			List <EventNotification> notifications = notificationService.loadFailedNotificationForEvent(user.getUid(), event);
+			log.info("found {} failed notifications", notifications.size());
+			XSSFWorkbook xls = dataExportBroker.exportNotificationErrorReport(notifications);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			xls.write(baos);
+			return new ResponseEntity<>( headers, HttpStatus.OK);
+		}catch (IOException e) {
+			log.error("IO Exception generating spreadsheet!", e);
+			throw new FileCreationException();
+		}catch (AccessDeniedException e) {
+			throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+		}
+	}
 
 
 }

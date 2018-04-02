@@ -9,12 +9,14 @@ import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.MappedSuperclass;
 import java.util.Objects;
 
-@MappedSuperclass
+@Entity
+@DiscriminatorValue("EVENT")
 public abstract class EventNotification extends Notification {
 	@ManyToOne
 	@JoinColumn(name = "event_id")
@@ -29,9 +31,7 @@ public abstract class EventNotification extends Notification {
 	public abstract NotificationDetailedType getNotificationDetailedType();
 
 	@Override
-	public User getSender() {
-		return null;
-	}
+	public abstract User getSender();
 
 	@Override
 	public Task getTask() { return event; }

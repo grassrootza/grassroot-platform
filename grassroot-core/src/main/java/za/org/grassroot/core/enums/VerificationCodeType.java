@@ -6,6 +6,7 @@ package za.org.grassroot.core.enums;
 public enum VerificationCodeType {
 
 	SHORT_OTP,
-	LONG_AUTH
+	LONG_AUTH,
+	RESPOND_ENTITY
 
 }
