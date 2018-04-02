@@ -86,6 +86,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         emailAddresses.addAll(getAddressesForAlert(alert));
 
         List<GrassrootEmail> emails = generateEmailsForAlert(alert, emailAddresses);
+        logger.info("emails look like: ", emails.get(0));
         emails.forEach(messagingServiceBroker::sendEmail);
         alert.setSent(true);
 
@@ -197,12 +198,15 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
             emailVars.put("unsubLink", publicInfoPath + "info"); // better than nothing
         }
 
+        ctx.setVariables(emailVars);
+
+        logger.info("about to generate mail, variables = {}", ctx.getVariableNames());
+
         final String textContent = templateEngine.process("text/" + template, ctx);
         final String htmlContent = templateEngine.process("html/" + template, ctx);
 
         logger.debug("exiting email creation, html content = {}", htmlContent);
 
-        ctx.setVariables(emailVars);
         return builder
                 .toAddress(emailAddress)
                 .content(textContent)
