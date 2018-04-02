@@ -183,11 +183,13 @@ public class EventBrokerImpl implements EventBroker {
 		return bundle;
 	}
 
-	private void generateResponseTokens(Meeting meeting) {
-		Set<String> emailMemberUids = meeting.getMembers().stream().filter(User::areNotificationsByEmail)
+	@SuppressWarnings("unchecked")
+	private void generateResponseTokens(Event event) {
+		Set<User> users = (Set<User>) event.getMembers();
+		Set<String> emailMemberUids = users.stream().filter(User::areNotificationsByEmail)
 				.map(User::getUid).collect(Collectors.toSet());
 		if (!emailMemberUids.isEmpty()) {
-			tokenService.generateResponseTokens(emailMemberUids, meeting.getAncestorGroup().getUid(), meeting.getUid());
+			tokenService.generateResponseTokens(emailMemberUids, event.getAncestorGroup().getUid(), event.getUid());
 		}
 	}
 
@@ -210,7 +212,7 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(startDateTime);
 
-		Instant intervalStart = startDateTime.minus(180, ChronoUnit.SECONDS);;
+		Instant intervalStart = startDateTime.minus(180, ChronoUnit.SECONDS);
 		Instant intervalEnd = startDateTime.plus(180, ChronoUnit.SECONDS);
 
 		User user = userRepository.findOneByUid(userUid);
@@ -467,6 +469,8 @@ public class EventBrokerImpl implements EventBroker {
 		bundle.addNotifications(notifications);
 
 		logsAndNotificationsBroker.storeBundle(bundle);
+
+		generateResponseTokens(vote);
 
 		return vote;
 	}

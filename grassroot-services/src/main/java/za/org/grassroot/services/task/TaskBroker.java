@@ -29,6 +29,8 @@ public interface TaskBroker {
 
     Map<String, String> loadResponses(String userUid, String taskUid, TaskType type);
 
+    String fetchUserResponse(String userUid, Task task);
+
     List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid);
 
     List<TaskDTO> fetchGroupTasksInPeriod(String userUid, String groupUid, Instant start, Instant end);

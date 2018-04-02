@@ -19,10 +19,7 @@ import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.enums.TodoLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -61,6 +58,7 @@ public class TaskBrokerImpl implements TaskBroker {
     private final UserRepository userRepository;
     private final GroupBroker groupBroker;
     private final EventBroker eventBroker;
+    private final EventLogBroker eventLogBroker;
     private final TodoBroker todoBroker;
 
     private final UidIdentifiableRepository genericRepository;
@@ -75,10 +73,11 @@ public class TaskBrokerImpl implements TaskBroker {
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, UidIdentifiableRepository genericRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, TodoAssignmentRepository todoAssignmentRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, VoteBroker voteBroker) {
+    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, EventLogBroker eventLogBroker, UidIdentifiableRepository genericRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, TodoAssignmentRepository todoAssignmentRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, VoteBroker voteBroker) {
         this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
+        this.eventLogBroker = eventLogBroker;
         this.genericRepository = genericRepository;
         this.todoBroker = todoBroker;
         this.eventRepository = eventRepository;
@@ -172,6 +171,13 @@ public class TaskBrokerImpl implements TaskBroker {
         }
 
         return responses;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String fetchUserResponse(String userUid, Task task) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        return getUserResponse(task, user);
     }
 
     @Override
@@ -589,9 +595,21 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     @Override
-    @Transactional
     public void respondToTask(String userUid, String taskUid, TaskType taskType, String response) {
-
+        log.info("responding to task, userUid: {}, task type: {}", userUid, taskType);
+        switch (taskType) {
+            case MEETING:
+                eventLogBroker.rsvpForEvent(taskUid, userUid, EventRSVPResponse.fromString(response));
+                break;
+            case VOTE:
+                voteBroker.recordUserVote(userUid, taskUid, response);
+                break;
+            case TODO:
+                todoBroker.recordResponse(userUid, taskUid, response, false);
+                break;
+            default:
+                throw new IllegalArgumentException("Error! Unsupported task type");
+        }
     }
 
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {
