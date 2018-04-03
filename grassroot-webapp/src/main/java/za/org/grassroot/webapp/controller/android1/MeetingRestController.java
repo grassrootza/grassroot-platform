@@ -10,7 +10,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
@@ -192,11 +194,16 @@ public class MeetingRestController {
     }
 
     @RequestMapping(value = "/rsvps/{phoneNumber}/{code}/{meetingUid}", method = RequestMethod.GET)
-    public ResponseEntity<MeetingRsvpsDTO> listRsvps(@PathVariable String phoneNumber, @PathVariable String code,
+    public ResponseEntity listRsvps(@PathVariable String phoneNumber, @PathVariable String code,
                                                      @PathVariable String meetingUid) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
+
+        if (meeting == null) {
+            log.error("Error fetching meeting, does not exist, likely broken client");
+            return RestUtil.errorResponse(RestMessage.TASK_NOT_FOUND);
+        }
 
         ResponseTotalsDTO totals = eventLogBroker.getResponseCountForEvent(meeting);
 

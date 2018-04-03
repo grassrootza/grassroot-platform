@@ -1,6 +1,7 @@
 package za.org.grassroot.services.group;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
@@ -74,18 +76,41 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         //we are starting from 1 because row number 0 is header
         int rowIndex = 1;
 
-        for (Membership member : group.getMemberships()) {
-            addRow(sheet, rowIndex, new String[]{
-                    member.getDisplayName(),
-                    member.getUser().getPhoneNumber(),
-                    member.getUser().getEmailAddress(),
-                    String.join(", ", member.getTopics()),
-                    String.join(", ", member.getAffiliations())});
-            rowIndex++;
-        }
+        addRowFromMember(group.getMemberships(), sheet, rowIndex);
 
         return workbook;
     }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public XSSFWorkbook exportGroupErrorReport(String groupUid, String userUid) {
+        Group group = groupBroker.load(groupUid);
+        User exporter = userRepository.findOneByUid(userUid);
+        permissionBroker.validateGroupPermission(exporter, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Group members");
+
+        generateHeader(workbook, sheet, new String[]{"Name", "Phone number", "Email", "Topics", "Affiliations"},
+                new int[]{7000, 5000, 7000, 7000, 7000});
+
+        //table content stuff
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+
+        //we are starting from 1 because row number 0 is header
+        int rowIndex = 1;
+
+        Set<Membership> membersWithErrorFlag = group.getMemberships().stream().filter(m -> m.getUser().isContactError()).collect(Collectors.toSet());
+        addRowFromMember(membersWithErrorFlag, sheet, rowIndex);
+
+        return workbook;
+    }
+
 
 
     @Override
@@ -247,6 +272,41 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         return workbook;
     }
 
+    @Override
+    public XSSFWorkbook exportNotificationErrorReport(List<? extends Notification> notifications) {
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Group members");
+
+        generateHeader(workbook, sheet, new String[]{"Created time", "Phone number", "Email", "Message"},
+                new int[]{7000, 5000, 7000, 7000});
+
+        //table content stuff
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+
+        //we are starting from 1 because row number 0 is header
+        int rowIndex = 1;
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+                .withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
+
+        for (Notification notification : notifications) {
+            {
+                addRow(sheet, rowIndex, new String[]{
+                        notification.getCreatedDateTime() == null ? "" : formatter.format(notification.getCreatedDateTime()) ,
+                        notification.getTarget().getPhoneNumber(),
+                        notification.getTarget().getEmailAddress(),
+                        notification.getMessage()});
+                rowIndex++;
+            }
+        }
+        return workbook;
+    }
+
     private void generateHeader(XSSFWorkbook workbook, XSSFSheet sheet, String[] columnNames, int[] columnWidths) {
 
         XSSFCellStyle headerStyle = workbook.createCellStyle();
@@ -287,6 +347,18 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
             String value = values[i];
             XSSFCell cell = row.createCell(i);
             cell.setCellValue(value);
+        }
+    }
+
+    private void addRowFromMember(Set<Membership> memberships, XSSFSheet sheet, int rowIndex) {
+        for (Membership member : memberships) {
+            addRow(sheet, rowIndex, new String[]{
+                    member.getDisplayName(),
+                    member.getUser().getPhoneNumber(),
+                    member.getUser().getEmailAddress(),
+                    String.join(", ", member.getTopics()),
+                    String.join(", ", member.getAffiliations())});
+            rowIndex++;
         }
     }
 }

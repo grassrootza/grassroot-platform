@@ -20,18 +20,24 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VoteRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskFinishedException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.security.InvalidParameterException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 
+import static za.org.grassroot.core.enums.EventLogType.CHANGE;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 import static za.org.grassroot.core.util.StringArrayUtil.joinStringList;
 import static za.org.grassroot.core.util.StringArrayUtil.listToArray;
 
@@ -69,6 +75,67 @@ public class VoteBrokerImpl implements VoteBroker {
     @Override
     public Vote load(String voteUid) {
         return voteRepository.findOneByUid(voteUid);
+    }
+
+    @Override
+    @Transactional
+    public Vote updateVote(String userUid, String voteUid, LocalDateTime eventStartDateTime, String description) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(voteUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Vote vote = voteRepository.findOneByUid(voteUid);
+
+        if (vote.isCanceled()) {
+            throw new IllegalStateException("Vote is canceled: " + vote);
+        }
+
+        if (!vote.getCreatedByUser().equals(user)) {
+            throw new AccessDeniedException("Error! Only user who created vote can update it");
+        }
+
+        Instant convertedClosingDateTime = convertToSystemTime(eventStartDateTime, getSAST());
+
+        boolean startTimeChanged = !vote.getEventStartDateTime().equals(convertedClosingDateTime);
+        if (startTimeChanged) {
+            validateVoteClosingTime(convertedClosingDateTime);
+            vote.setEventStartDateTime(convertedClosingDateTime);
+            vote.updateScheduledReminderTime();
+        }
+
+        vote.setDescription(description);
+
+        // note: as of now, we don't need to send anything, hence just do an explicit call to repo and return the Vote
+
+        Vote savedVote = voteRepository.save(vote);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        EventLog eventLog = new EventLog(user, vote, CHANGE, null, startTimeChanged);
+        bundle.addLog(eventLog);
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+
+        return savedVote;
+    }
+
+    @Override
+    @Transactional
+    public void updateVoteClosingTime(String userUid, String eventUid, LocalDateTime closingDateTime) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(eventUid);
+        Objects.requireNonNull(closingDateTime);
+
+        Vote vote = voteRepository.findOneByUid(eventUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        validateUserPermissionToModify(user, vote);
+
+        Instant convertedClosing = DateTimeUtil.convertToSystemTime(closingDateTime, DateTimeUtil.getSAST());
+        validateVoteClosingTime(convertedClosing);
+
+        vote.setEventStartDateTime(convertedClosing);
+        vote.updateScheduledReminderTime();
     }
 
     @Override
@@ -224,6 +291,14 @@ public class VoteBrokerImpl implements VoteBroker {
         results.put(NO, eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.NO)).count());
         results.put(ABSTAIN, eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.MAYBE)).count());
         return results;
+    }
+
+    private void validateVoteClosingTime(Instant closingTime) {
+        Instant now = Instant.now();
+        if (!closingTime.isAfter(now)) {
+            throw new EventStartTimeNotInFutureException("Event start time " + closingTime.toString() +
+                    " is not in the future");
+        }
     }
 
     private void validateUserPermissionToModify(User user, Vote vote) {

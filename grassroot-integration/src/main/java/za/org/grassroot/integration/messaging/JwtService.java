@@ -8,6 +8,7 @@ import za.org.grassroot.integration.PublicCredentials;
 public interface JwtService {
 
     String USER_UID_KEY = "USER_UID";
+    String SYSTEM_ROLE_KEY = "SYSTEM_ROLE_KEY";
 
     PublicCredentials getPublicCredentials();
     String createJwt(CreateJwtTokenRequest request);

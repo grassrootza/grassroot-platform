@@ -1,8 +1,7 @@
 package za.org.grassroot.webapp.controller.android1;
 
 import io.swagger.annotations.Api;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -19,7 +18,6 @@ import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.NotificationService;
-import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -38,11 +36,9 @@ import java.util.Locale;
  * Created by paballo.
  */
 @RestController
-@Api("/api/user")
+@Api("/api/user") @Slf4j
 @RequestMapping(value = "/api/user")
 public class UserRestController {
-
-    private static final Logger log = LoggerFactory.getLogger(UserRestController.class);
 
     private final UserManagementService userManagementService;
     private final PasswordTokenService passwordTokenService;
@@ -50,20 +46,18 @@ public class UserRestController {
     private final MessagingServiceBroker messagingServiceBroker;
     private final NotificationService notificationService;
     private final PermissionBroker permissionBroker;
-    private final JwtService jwtService;
     private final Environment environment;
 
     @Autowired
     public UserRestController(UserManagementService userManagementService, PasswordTokenService passwordTokenService,
                               GeoLocationBroker geoLocationBroker, MessagingServiceBroker messagingServiceBroker, NotificationService notificationService,
-                              PermissionBroker permissionBroker, JwtService jwtService, Environment environment) {
+                              PermissionBroker permissionBroker, Environment environment) {
         this.userManagementService = userManagementService;
         this.passwordTokenService = passwordTokenService;
         this.geoLocationBroker = geoLocationBroker;
         this.messagingServiceBroker = messagingServiceBroker;
         this.notificationService = notificationService;
         this.permissionBroker = permissionBroker;
-        this.jwtService = jwtService;
         this.environment = environment;
     }
 
@@ -85,9 +79,6 @@ public class UserRestController {
         }
     }
 
-
-
-
     @RequestMapping(value = "/verify/resend/{phoneNumber}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> resendOtp(@PathVariable("phoneNumber") String phoneNumber) {
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
@@ -101,8 +92,7 @@ public class UserRestController {
     }
 
     @RequestMapping(value = "/verify/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> verify(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String otpEntered)
-            throws Exception {
+    public ResponseEntity<ResponseWrapper> verify(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String otpEntered) {
 
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         if (passwordTokenService.isShortLivedOtpValid(msisdn, otpEntered)) {
@@ -145,7 +135,7 @@ public class UserRestController {
         if (passwordTokenService.isShortLivedOtpValid(phoneNumber, token)) {
             log.info("User authentication successful for user with phoneNumber={}", phoneNumber);
             User user = userManagementService.findByInputNumber(phoneNumber);
-            if (!user.hasAndroidProfile()) {
+            if (!user.isHasAndroidProfile()) {
                 userManagementService.createAndroidUserProfile(new UserDTO(user));
             }
             userManagementService.setMessagingPreference(user.getUid(), DeliveryRoute.ANDROID_APP); // todo : maybe move to gcm registration

@@ -28,6 +28,9 @@ import java.util.List;
  */
 public final class NotificationSpecifications {
 
+    public static final List<NotificationStatus> FAILED_STATUS = Arrays.asList(NotificationStatus.DELIVERY_FAILED,
+            NotificationStatus.SENDING_FAILED, NotificationStatus.UNDELIVERABLE);
+
     public static Specification<Notification> toUser(User target) {
         return (root, query, cb) -> cb.equal(root.get(Notification_.target), target);
     }
@@ -109,8 +112,7 @@ public final class NotificationSpecifications {
     }
 
     public static Specification<Notification> isInFailedStatus() {
-        return (root, query, cb) -> root.get(Notification_.status).in(Arrays.asList(NotificationStatus.DELIVERY_FAILED,
-                NotificationStatus.SENDING_FAILED, NotificationStatus.UNDELIVERABLE));
+        return (root, query, cb) -> root.get(Notification_.status).in(FAILED_STATUS);
     }
 
     public static Specification<Notification> forDeliveryChannel(DeliveryRoute deliveryChannel) {

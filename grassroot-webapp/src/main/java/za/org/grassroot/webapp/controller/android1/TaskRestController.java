@@ -9,9 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Task;
-import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.ChangedSinceData;
@@ -26,10 +24,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by paballo on 2016/03/17.
@@ -125,20 +120,22 @@ public class TaskRestController {
 	    switch (taskType) {
 		    case MEETING:
 		    case VOTE:
-			    Event event = eventBroker.load(taskUid);
-			    users = event.getAssignedMembers();
-			    task = event;
+				task = eventBroker.load(taskUid);
 			    break;
 		    case TODO:
-			    Todo todo = todoBroker.load(taskUid);
-			    users = todo.getAssignedMembers();
-			    task = todo;
+				task = todoBroker.load(taskUid);
 			    break;
 		    default:
 			    logger.error("Error! Trying to fetch assigned members for unknown task type");
 			    return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_ENTITY_TYPE);
 	    }
 
+	    if (task == null) {
+	    	logger.error("Error! Have a null task coming in, must be faulty client");
+			return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TASK_NOT_FOUND);
+		}
+
+	    users = task.getAssignedMembers();
 	    List<MembershipResponseWrapper> assignedMembers = new ArrayList<>();
 
 	    if (!users.contains(requestingUser)) {
@@ -154,7 +151,7 @@ public class TaskRestController {
 	    }
 
 	    users.stream()
-			    .sorted((u1, u2) -> u1.nameToDisplay().compareTo(u2.nameToDisplay()))
+			    .sorted(Comparator.comparing(User::nameToDisplay))
 			    .forEach(u -> assignedMembers.add(new MembershipResponseWrapper(u)));
 
 	    return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, assignedMembers);

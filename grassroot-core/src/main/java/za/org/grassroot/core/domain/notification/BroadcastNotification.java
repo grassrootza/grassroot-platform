@@ -5,15 +5,15 @@ import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
-import za.org.grassroot.core.enums.DeliveryRoute;
 
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.MappedSuperclass;
+import javax.persistence.*;
 
-@MappedSuperclass
+// NB: don't ever use this directly (only use subclasses), hence no public constructor
+@Entity
+@DiscriminatorValue("BROADCAST")
 public abstract class BroadcastNotification extends Notification {
 
     @ManyToOne
@@ -33,6 +33,7 @@ public abstract class BroadcastNotification extends Notification {
         return broadcast != null ? broadcast.getCreatedByUser() : null;
     }
 
+    // as above, don't use this outside queries
     protected BroadcastNotification() {
         // for JPA
     }

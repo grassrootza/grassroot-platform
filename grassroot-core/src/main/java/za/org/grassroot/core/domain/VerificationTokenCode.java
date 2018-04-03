@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import za.org.grassroot.core.enums.VerificationCodeType;
 
@@ -12,7 +14,9 @@ import java.util.Objects;
  * @author Lesetse Kimwaga
  */
 @Entity @Slf4j
-@Table(name = "verification_token_code")
+@Table(name = "verification_token_code",
+        indexes = {@Index(name = "idx_code_username", columnList = "username, code", unique = false),
+        @Index(name = "idx_entity_user_uid", columnList = "entity_uid, user_uid", unique = true)})
 public class VerificationTokenCode {
 
     private static final int MAX_TOKEN_ACCESS_ATTEMPTS = 5;
@@ -23,73 +27,45 @@ public class VerificationTokenCode {
     protected Long id;
 
     @Column(name = "username", nullable = false)
-    private String username;
+    @Getter private String username;
+
+    // above was needed in some legacy code, transition to this over time, as more robust
+    @Column(name = "user_uid")
+    @Getter private String userUid;
 
     @Column(name = "code", nullable = false)
-    protected String code;
+    @Getter protected String code;
 
     @Column(name = "creation_date", nullable = false)
-    private Instant createdDateTime;
+    @Getter private Instant createdDateTime;
 
     @Column(name = "expiry_date")
-    private Instant expiryDateTime;
+    @Getter @Setter private Instant expiryDateTime;
 
     @Column(name = "token_access_attempts")
     private int tokenAccessAttempts = 0;
 
     @Column(name = "token_type", nullable = false)
     @Enumerated(EnumType.STRING)
-    private VerificationCodeType type;
+    @Getter private VerificationCodeType type;
+
+    // used for responses
+    @Column(name = "entity_uid")
+    @Getter @Setter private String entityUid;
 
     private VerificationTokenCode() {
         // for JPA
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        Objects.requireNonNull(code);
-        this.code = code;
-    }
-
-    public VerificationTokenCode(String username, String code, VerificationCodeType type) {
+    public VerificationTokenCode(String username, String code, VerificationCodeType type, String userUid) {
         Objects.requireNonNull(username);
         Objects.requireNonNull(code);
 
         this.code = code;
         this.username = username;
+        this.userUid = userUid;
         this.type = type;
         this.createdDateTime = Instant.now();
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public Instant getCreatedDateTime() {
-        return createdDateTime;
-    }
-
-    public Instant getExpiryDateTime() { return expiryDateTime; }
-
-    public void setExpiryDateTime(Instant expiryDateTime) { this.expiryDateTime = expiryDateTime; }
-
-    public void incrementTokenAttempts() {
-       this.tokenAccessAttempts = this.tokenAccessAttempts + 1;
-       if (this.tokenAccessAttempts > MAX_TOKEN_ACCESS_ATTEMPTS) {
-           this.setExpiryDateTime(Instant.now());
-       }
-       log.info("token code {}, access attempts now = {}", this.code, this.tokenAccessAttempts);
-    }
-
-    public VerificationCodeType getType() {
-        return type;
-    }
-
-    public void setType(VerificationCodeType type) {
-        this.type = type;
     }
 
     @PreUpdate
@@ -103,23 +79,35 @@ public class VerificationTokenCode {
         }
     }
 
+    public void setCode(String code) {
+        Objects.requireNonNull(code);
+        this.code = code;
+    }
+
+    public void incrementTokenAttempts() {
+       this.tokenAccessAttempts = this.tokenAccessAttempts + 1;
+       if (this.tokenAccessAttempts > MAX_TOKEN_ACCESS_ATTEMPTS) {
+           this.setExpiryDateTime(Instant.now());
+       }
+       log.info("token code {}, access attempts now = {}", this.code, this.tokenAccessAttempts);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
         VerificationTokenCode that = (VerificationTokenCode) o;
-
-        return id.equals(that.id);
-
+        return Objects.equals(id, that.id) &&
+                Objects.equals(username, that.username) &&
+                Objects.equals(userUid, that.userUid) &&
+                Objects.equals(code, that.code) &&
+                Objects.equals(createdDateTime, that.createdDateTime) &&
+                type == that.type;
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + id.hashCode();
-        return result;
+        return Objects.hash(id, username, userUid, code, createdDateTime, type);
     }
 
     @Override

@@ -482,7 +482,12 @@ public class USSDMeetingController extends USSDBaseController {
         }
 
         MeetingRequest meeting = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
-        String dateString = convertToUserTimeZone(meeting.getEventStartDateTime(), getSAST()).format(dateTimeFormat);
+        if (meeting.getEventStartDateTime() == null) {
+            log.error("Error! Got to meeting confirm with null start date, somehow");
+            return handleDateTimeParseFailure(user, priorMenu, mtgRequestUid);
+        }
+
+        String dateString = meeting.getEventDateTimeAtSAST().format(dateTimeFormat);
         String[] confirmFields = new String[]{dateString, meeting.getName(), meeting.getEventLocation() };
 
         final boolean isInFuture = meeting.getEventStartDateTime().isAfter(Instant.now());

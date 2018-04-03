@@ -24,8 +24,13 @@ public class LiveWireNewsController {
         this.liveWireAlertBroker = liveWireAlertBroker;
     }
 
-    @RequestMapping(value = "/list", method = RequestMethod.GET)
+    @RequestMapping(value = "/list/headlines", method = RequestMethod.GET)
+    public Page<PublicLiveWireDTO> fetchLiveWireNewsHeadlines(Pageable pageable) {
+        return liveWireAlertBroker.findPublicAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, false));
+    }
+
+    @RequestMapping(value = "/list/full", method = RequestMethod.GET)
     public Page<PublicLiveWireDTO> fetchLiveWireNewsArticles(Pageable pageable) {
-        return liveWireAlertBroker.findPublicAlerts(pageable).map(PublicLiveWireDTO::new);
+        return liveWireAlertBroker.findPublicAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, true));
     }
 }
