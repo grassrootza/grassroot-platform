@@ -26,11 +26,13 @@ public class PublicLiveWireDTO {
 
 
     public PublicLiveWireDTO(LiveWireAlert alert, boolean includeFullDetails) {
+
         this.headline = alert.getHeadline();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
         this.description = alert.getDescription();
 
         if (includeFullDetails) {
+            this.serverUid = alert.getUid();
             this.imageKeys = alert.getMediaFiles().stream().map(MediaFileRecord::getKey).collect(Collectors.toList());
             this.contactName = alert.getContactNameNullSafe();
             this.alertType = alert.getType();
