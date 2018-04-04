@@ -241,7 +241,7 @@ public class TaskFetchController extends BaseRestController {
 			XSSFWorkbook xls = dataExportBroker.exportNotificationErrorReport(notifications);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			xls.write(baos);
-			return new ResponseEntity<>( headers, HttpStatus.OK);
+			return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
 		}catch (IOException e) {
 			log.error("IO Exception generating spreadsheet!", e);
 			throw new FileCreationException();
