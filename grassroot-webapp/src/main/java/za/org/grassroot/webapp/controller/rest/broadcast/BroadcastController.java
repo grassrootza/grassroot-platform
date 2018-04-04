@@ -227,7 +227,7 @@ public class BroadcastController extends BaseRestController {
 			XSSFWorkbook xls = memberDataExportBroker.exportNotificationErrorReport(notifications);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			xls.write(baos);
-            return new ResponseEntity<>( headers, HttpStatus.OK);
+            return new ResponseEntity<>( baos.toByteArray(), headers, HttpStatus.OK);
         }catch (IOException e) {
 			log.error("IO Exception generating spreadsheet!", e);
 			throw new FileCreationException();
