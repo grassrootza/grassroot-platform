@@ -1,12 +1,16 @@
-package za.org.grassroot.webapp.model;
+package za.org.grassroot.integration.payments.peachp;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.regex.Pattern;
+
 @Getter @Setter @NoArgsConstructor @ToString
-public class PaymentSystemResponse {
+public class PaymentCopyPayResponse {
+
+    public static final Pattern SUCCESS_MATCHER = Pattern.compile("^(000\\.000\\.|000\\.100\\.1|000\\.[36])");
 
     private String code;
 

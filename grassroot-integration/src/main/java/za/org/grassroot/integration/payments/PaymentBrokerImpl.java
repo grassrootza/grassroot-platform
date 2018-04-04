@@ -20,6 +20,7 @@ import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
+import za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse;
 import za.org.grassroot.integration.payments.peachp.PaymentErrorPP;
 import za.org.grassroot.integration.payments.peachp.PaymentResponsePP;
 
@@ -62,6 +63,9 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     private UriComponentsBuilder baseUriBuilder;
     private HttpHeaders stdHeaders;
+
+    @Value("${grassroot.payments.url:http://paymentsurl.com}")
+    private String paymentUrl;
 
     @Value("${grassroot.payments.host:localhost}")
     private String paymentsRestHost;
@@ -110,7 +114,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
     @Value("${grassroot.payments.values.channelId:testChannel}")
     private String channelId;
     @Value("${grassroot.payments.values.channelId3d:testChannel2}")
-    private String channelId3d;
+    private String entityId;
     @Value("${grassroot.payments.values.currency:ZAR}")
     private String currency;
 
@@ -144,6 +148,35 @@ public class PaymentBrokerImpl implements PaymentBroker {
     }
 
     @Override
+    public PaymentCopyPayResponse initiateCopyPayCheckout(int amountZAR) {
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(paymentUrl + "/v1/checkouts")
+                .queryParam("authentication.userId", userId)
+                .queryParam("authentication.password", password)
+                .queryParam("authentication.entityId", entityId)
+                .queryParam("amount", amountZAR + ".00")
+                .queryParam("currency", "ZAR")
+                .queryParam("paymentType", "DB");
+
+        HttpHeaders stdHeaders = new HttpHeaders();
+        stdHeaders.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+
+        logger.info("initiating a checkout, URL: {}", builder.build().toUri().toString());
+
+        ResponseEntity<PaymentCopyPayResponse> response = restTemplate.exchange(
+                builder.build().toUri(), HttpMethod.POST, new HttpEntity<>(stdHeaders), PaymentCopyPayResponse.class);
+        return response.getBody();
+    }
+
+    @Override
+    public PaymentCopyPayResponse getPaymentResult(String resourcePath) {
+        URI requestUri = UriComponentsBuilder.fromUriString(paymentUrl + resourcePath).build().toUri();
+        logger.info("requesting payment result via URI: {}", requestUri.toString());
+        ResponseEntity<PaymentCopyPayResponse> response = restTemplate.getForEntity(requestUri, PaymentCopyPayResponse.class);
+        return response.getBody();
+    }
+
+    @Override
     @Transactional
     public PaymentResponse asyncPaymentInitiate(String accountUid, PaymentMethod method, AccountBillingRecord amountToPay, String returnToUrl) {
         Objects.requireNonNull(accountUid);
@@ -152,7 +185,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
         try {
             UriComponentsBuilder uriToCall = generateInitialPaymentUri(method, amountToPay.getTotalAmountToPay())
-                    .queryParam(paymentsAuthChannelIdParam, channelId3d)
+                    .queryParam(paymentsAuthChannelIdParam, entityId)
                     .queryParam(paymentTransIdParam, amountToPay.getUid())
                     .queryParam("shopperResultUrl", returnToUrl);
             HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
@@ -228,7 +261,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
                 .path(resourcePath)
                 .queryParam(paymentsAuthUserIdParam, userId)
                 .queryParam(paymentsAuthPasswordParam, password)
-                .queryParam(paymentsAuthChannelIdParam, channelId3d);
+                .queryParam(paymentsAuthChannelIdParam, entityId);
 
         logger.info("Calling URI: " + builder.toUriString());
 
