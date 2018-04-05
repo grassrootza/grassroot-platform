@@ -107,6 +107,7 @@ public class MembershipSpecifications {
             }
 
             if (!StringUtils.isEmpty(namePhoneOrEmail)) {
+                log.info("adding predicates for name, phone, email: ", namePhoneOrEmail);
                 List<Predicate> nameSearchPredicates = new ArrayList<>();
                 Arrays.stream(namePhoneOrEmail.split(","))
                         .map(term -> term.trim().toLowerCase())
@@ -127,7 +128,7 @@ public class MembershipSpecifications {
                 restrictions.add(root.get(Membership_.user).get(User_.languageCode).in(languages));
             }
 
-            log.debug("predicates: {}", restrictions);
+            log.info("have generated {} predicates", restrictions.size());
             return cb.and(restrictions.toArray(new Predicate[0]));
         };
 

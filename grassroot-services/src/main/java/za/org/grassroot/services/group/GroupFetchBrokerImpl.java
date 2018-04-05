@@ -326,7 +326,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
-        log.info("filtering on, provinces: {}, taskTeams: {}", provinces, taskTeamsUids);
+        log.info("filtering on, user name: {}, provinces: {}, taskTeams: {}", namePhoneOrEmail, provinces, taskTeamsUids);
         List<Membership> members = membershipRepository.findAll(
                 MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail, languages)
         );

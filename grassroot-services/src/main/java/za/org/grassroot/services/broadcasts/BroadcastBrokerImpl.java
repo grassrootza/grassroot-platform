@@ -29,6 +29,7 @@ import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.socialmedia.*;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -60,6 +61,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     // for heavy lifting on filtering, and for getting event members
     private final GroupFetchBroker groupFetchBroker;
     private final TaskBroker taskBroker;
+    private final AccountGroupBroker accountGroupBroker;
 
     private final MessagingServiceBroker messagingServiceBroker;
     private final SocialMediaBroker socialMediaBroker;
@@ -72,7 +74,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private PasswordTokenService tokenService;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, TaskBroker taskBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository, Environment environment) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, TaskBroker taskBroker, AccountGroupBroker accountGroupBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository, Environment environment) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
@@ -80,6 +82,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         this.membershipRepository = membershipRepository;
         this.groupFetchBroker = groupFetchBroker;
         this.taskBroker = taskBroker;
+        this.accountGroupBroker = accountGroupBroker;
         this.messagingServiceBroker = messagingServiceBroker;
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
@@ -96,7 +99,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     @Transactional(readOnly = true)
     public BroadcastInfo fetchGroupBroadcastParams(String userUid, String groupUid) {
         User user = userRepository.findOneByUid(userUid);
-        Account account = user.getPrimaryAccount();
+        Group group = groupRepository.findOneByUid(groupUid);
+        Account account = findAccount(user, group.getUid());
 
         BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
         builder.broadcastId(UIDGenerator.generateId());
@@ -124,18 +128,22 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .stream().filter(Campaign::isActiveWithUrl).collect(Collectors.toMap(Campaign::getName, Campaign::getLandingUrl)));
         }
 
-        // or for campaign, extract somehow
-        Group group = groupRepository.findOneByUid(groupUid);
+
         builder.allMemberCount(membershipRepository.count((root, query, cb) -> cb.equal(root.get("group"), (group))));
 
         return builder.build();
+    }
+
+    private Account findAccount(User user, String groupUid) {
+        return user.getPrimaryAccount() != null ?
+                user.getPrimaryAccount() : accountGroupBroker.findAccountForGroup(groupUid);
     }
 
     @Override
     @Transactional
     public String sendGroupBroadcast(BroadcastComponents bc) {
         User user = userRepository.findOneByUid(bc.getUserUid());
-        Account account = user.getPrimaryAccount();
+        Account account = findAccount(user, bc.getGroupUid());
 
         if (account == null) {
             throw new NoPaidAccountException();

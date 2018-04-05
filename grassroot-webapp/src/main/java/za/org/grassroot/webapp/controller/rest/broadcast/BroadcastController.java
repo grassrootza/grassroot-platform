@@ -21,8 +21,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
-import za.org.grassroot.core.domain.notification.EventNotification;
-import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.TaskType;
@@ -45,7 +43,6 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.FileCreationException;
 
 import javax.servlet.http.HttpServletRequest;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
@@ -227,7 +224,7 @@ public class BroadcastController extends BaseRestController {
 			XSSFWorkbook xls = memberDataExportBroker.exportNotificationErrorReport(notifications);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			xls.write(baos);
-            return new ResponseEntity<>( headers, HttpStatus.OK);
+            return new ResponseEntity<>( baos.toByteArray(), headers, HttpStatus.OK);
         }catch (IOException e) {
 			log.error("IO Exception generating spreadsheet!", e);
 			throw new FileCreationException();

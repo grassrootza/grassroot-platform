@@ -175,6 +175,7 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/members", method = RequestMethod.GET)
     public Page<MembershipFullDTO> fetchGroupMembers(@RequestParam String groupUid, Pageable pageable, HttpServletRequest request) {
         User user = getUserFromRequest(request);
+        log.info("fetching users, with pageable: {}", pageable);
         return groupFetchBroker.fetchGroupMembers(user, groupUid, pageable);
     }
 
@@ -192,6 +193,7 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false) String namePhoneOrEmail,
                                                       @RequestParam (required = false) Collection<String> languages,
                                                       HttpServletRequest request) {
+        log.info("filtering, name phone or email = {}", namePhoneOrEmail);
         return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
                 joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages).stream().map(MembershipFullDTO::new).collect(Collectors.toList());

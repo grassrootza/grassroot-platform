@@ -1,5 +1,6 @@
 package za.org.grassroot.services.account;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +20,7 @@ import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -28,7 +30,7 @@ import static za.org.grassroot.services.MessageAssemblingManager.shortDateFormat
 /**
  * Created by luke on 2017/03/01.
  */
-@Service
+@Service @Slf4j
 public class AccountEmailServiceImpl implements AccountEmailService {
 
     private final MessageSourceAccessor messageSource;
@@ -258,6 +260,23 @@ public class AccountEmailServiceImpl implements AccountEmailService {
                 });
 
         return emailSet;
+    }
+
+    @Override
+    public GrassrootEmail generateDonationShareEmail(String fromName, String toAddress, String linkToDonate) {
+        final String subject = fromName + " thinks you should donate to Grassroot";
+        final Context ctx = new Context(Locale.getDefault());
+        ctx.setVariable("fromName", fromName);
+        ctx.setVariable("shareLink", linkToDonate);
+        final String htmlContent = templateEngine.process("html/donate_share_email", ctx);
+        log.debug("processed template ... firing off mail, content: {}", htmlContent);
+        return new GrassrootEmail
+                .EmailBuilder(subject)
+                .toAddress(toAddress)
+                .fromName("Grassroot")
+                .htmlContent(htmlContent)
+                .content(htmlContent)
+                .build();
     }
 
 }

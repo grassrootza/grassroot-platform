@@ -518,7 +518,8 @@ public class TodoBrokerImpl implements TodoBroker {
 
         User user = userRepository.findOneByUid(userUid);
         Group group = uidIdentifiableRepository.findOneByUid(Group.class, JpaEntityType.GROUP, groupUid);
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
+        // this is causing more trouble than it's worth, so removing it for now
+//        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
 
         Specifications<Todo> specs;
         if (limitToNeedingResponse) {

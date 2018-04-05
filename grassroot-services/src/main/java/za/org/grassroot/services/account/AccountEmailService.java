@@ -42,4 +42,6 @@ public interface AccountEmailService {
 
     Set<GrassrootEmail> sponsorshipReminderEmailRequestor(AccountSponsorshipRequest request);
 
+    GrassrootEmail generateDonationShareEmail(String fromName, String toAddress, String linkToDonate);
+
 }
