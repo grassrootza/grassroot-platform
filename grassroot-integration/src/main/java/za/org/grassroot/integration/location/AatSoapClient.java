@@ -3,6 +3,7 @@ package za.org.grassroot.integration.location;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.ws.client.core.support.WebServiceGatewaySupport;
 import org.springframework.ws.soap.SoapMessage;
 import za.org.grassroot.integration.location.aatmodels.*;
@@ -10,6 +11,7 @@ import za.org.grassroot.integration.location.aatmodels.*;
 /**
  * Created by luke on 2017/04/24.
  */
+@ConditionalOnProperty(name = "grassroot.ussd.location.service", havingValue = "aat_soap", matchIfMissing = false)
 public class AatSoapClient extends WebServiceGatewaySupport {
 
     private static final Logger logger = LoggerFactory.getLogger(AatSoapClient.class);
@@ -19,8 +21,6 @@ public class AatSoapClient extends WebServiceGatewaySupport {
 
     @Value("${grassroot.aat.lbs.password:password}")
     private String aatLbsPassword;
-
-
 
     public AddAllowedMsisdnResponse addAllowedMsisdn(final String msisdn, final int permissionType) {
         AddAllowedMsisdn addAllowedMsisdn = new AddAllowedMsisdn();

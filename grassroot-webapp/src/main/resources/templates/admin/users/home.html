@@ -38,61 +38,8 @@
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-md-4 col-md-offset-4" style="width:600px;height:250px;" id="graph"></div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-4 col-md-offset-4">
-        <table class="table table-striped">
-          <thead>
-            <th>Interval (end point)</th>
-            <th>Number users</th>
-          </thead>
-          <tbody>
-            <tr th:each="row : ${histogramData}">
-              <td th:text="${row.key}">Key</td>
-              <td th:text="${row.value}">Value</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
   </div>
 
-</div>
-
-<div class="header-container" layout:fragment="script-container">
-
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-
-  <script th:inline="javascript">
-
-    /*<![CDATA[*/
-
-    var x = [];
-    var y = [];
-    var fromTh = [[${histogramData}]];
-    for (entry in fromTh) {
-      if (fromTh[entry] != 0) {
-        x.push(entry);
-        y.push(fromTh[entry]);
-      }
-    }
-
-    var data = [
-      {
-        x: x,
-        y: y,
-        type: 'bar'
-      }
-    ];
-    Plotly.newPlot('graph', data);
-
-    /*]]>*/
-
-  </script>
 </div>
 
 </body>

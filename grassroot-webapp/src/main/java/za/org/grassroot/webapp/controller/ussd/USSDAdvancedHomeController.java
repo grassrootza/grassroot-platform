@@ -44,21 +44,24 @@ public class USSDAdvancedHomeController extends USSDBaseController {
     private static final Integer searchRadius = 5000;
     private static final USSDSection thisSection = USSDSection.HOME;
 
-    private final UssdLocationServicesBroker ussdLocationServicesBroker;
+    private UssdLocationServicesBroker ussdLocationServicesBroker;
     private final UserLocationLogRepository userLocationLogRepository; // not great, but avoiding some nasty async issues
 
     private final GeoLocationBroker geoLocationBroker;
     private final EventBroker eventBroker;
 
     @Autowired
-    public USSDAdvancedHomeController(UssdLocationServicesBroker ussdLocationServicesBroker,
-                                      UserLocationLogRepository userLocationLogRepository,
+    public USSDAdvancedHomeController(UserLocationLogRepository userLocationLogRepository,
                                       GeoLocationBroker geoLocationBroker,
                                       EventBroker eventBroker){
-        this.ussdLocationServicesBroker = ussdLocationServicesBroker;
         this.userLocationLogRepository = userLocationLogRepository;
         this.geoLocationBroker = geoLocationBroker;
         this.eventBroker = eventBroker;
+    }
+
+    @Autowired(required = false)
+    public void setUssdLocationServicesBroker(UssdLocationServicesBroker ussdLocationServicesBroker) {
+        this.ussdLocationServicesBroker = ussdLocationServicesBroker;
     }
 
     @RequestMapping(value = ROOT_PATH + startMenu)

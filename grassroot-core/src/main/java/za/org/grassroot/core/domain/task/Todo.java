@@ -78,14 +78,19 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     }
 
     public Todo(User createdByUser, TodoContainer parent, TodoType todoType, String description, Instant dueByDate) {
-        super(createdByUser, parent, todoType, description, dueByDate, parent.getTodoReminderMinutes(), true);
+        super(createdByUser, parent, todoType, description, dueByDate, parent.getTodoReminderMinutes(), false);
 
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.ancestorGroup.addDescendantTodo(this);
         this.cancelled = false;
         this.completed = false;
 
-        calculateScheduledReminderTime();
+        this.reminderActive = !EventReminderType.DISABLED.equals(parent.getReminderType()) &&
+                parent.getTodoReminderMinutes() != 0;
+
+        if (this.reminderActive) {
+            calculateScheduledReminderTime();
+        }
     }
 
     public static Todo makeEmpty() {
@@ -96,9 +101,8 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     public LocalDateTime getReminderTimeAtSAST() { return nextNotificationTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime(); }
 
-    public void calculateScheduledReminderTime() {
-        this.nextNotificationTime= reminderActive
-                ? DateTimeUtil.restrictToDaytime(actionByDate.minus(reminderMinutes, ChronoUnit.MINUTES), actionByDate,
+    private void calculateScheduledReminderTime() {
+        this.nextNotificationTime= reminderActive ? DateTimeUtil.restrictToDaytime(actionByDate.minus(reminderMinutes, ChronoUnit.MINUTES), actionByDate,
                 DateTimeUtil.getSAST()) : null;
 
         // if reminder time is already in the past (e.g., set to 1 week but deadline in 5 days), try set it to tomorrow, else set it to deadline
