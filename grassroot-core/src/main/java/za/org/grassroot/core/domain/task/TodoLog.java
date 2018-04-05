@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -69,6 +70,11 @@ public class TodoLog implements TaskLog {
 		this.message = message;
 		this.user = user;
 		this.creationTime = Instant.now();
+	}
+
+	@Override
+	public ActionLogType getActionLogType() {
+		return ActionLogType.TODO_LOG;
 	}
 
 	@Override

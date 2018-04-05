@@ -67,7 +67,6 @@ public class UserNotificationsController extends BaseRestController {
 
     @RequestMapping("/mark-read")
     public ResponseEntity<Map<String, Object>> markRead(HttpServletRequest request, @RequestParam String notificationUid) {
-
         User loggedInUser = getUserFromRequest(request);
         Map<String, Object> result = new HashMap<>();
 
@@ -88,6 +87,7 @@ public class UserNotificationsController extends BaseRestController {
 
     @RequestMapping("/mark-read/all")
     public ResponseEntity markAllRead(HttpServletRequest request) {
+        log.info("marking all notifications read ...");
         notificationService.markAllUserNotificationsRead(getUserIdFromRequest(request),
                 Instant.now().minus(DAYS_PAST_TO_PING, ChronoUnit.DAYS));
         return ResponseEntity.ok().build();

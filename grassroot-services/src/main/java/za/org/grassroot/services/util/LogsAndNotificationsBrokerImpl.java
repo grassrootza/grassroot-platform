@@ -110,12 +110,12 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 		// getting lots of null pointers in here, method not ready, need to come back to this
 		AfterTxCommitTask cacheUpdate = () -> {
-			log.info("this should execute after the method is finished, and TX committed");
+			log.debug("this should execute after the method is finished, and TX committed");
 			this.updateCache(logs);
 		};
 		applicationEventPublisher.publishEvent(cacheUpdate);
 
-		log.info("executing main part of method");
+		log.debug("executing main part of method");
 	}
 
     @Override
@@ -197,13 +197,14 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
     @Async
     @Override
     public void updateCache(Collection<ActionLog> actionLogs) {
-        log.info("updating logs, should be after TX ...");
+        log.debug("updating logs, should be after TX ...");
         actionLogs.forEach(this::updateCacheSingle);
     }
 
     private void updateCacheSingle(ActionLog actionLog) {
         PublicActivityType activityType = null;
 
+        log.info("checking for public action type, log = {}", actionLog);
         switch (actionLog.getActionLogType()) {
             case GROUP_LOG:
                 GroupLogType logType = ((GroupLog) actionLog).getGroupLogType();
