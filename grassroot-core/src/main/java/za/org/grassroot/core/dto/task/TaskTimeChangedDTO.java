@@ -7,6 +7,7 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.InstantToMilliSerializer;
 
 import java.time.Instant;
+import java.util.Objects;
 
 @Getter
 public class TaskTimeChangedDTO {
@@ -27,5 +28,19 @@ public class TaskTimeChangedDTO {
         this.taskUid = taskUid;
         this.taskType = TaskType.valueOf(taskType);
         this.lastTaskChange = lastTaskChange;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TaskTimeChangedDTO that = (TaskTimeChangedDTO) o;
+        return Objects.equals(taskUid, that.taskUid) &&
+                taskType == that.taskType;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(taskUid, taskType);
     }
 }
