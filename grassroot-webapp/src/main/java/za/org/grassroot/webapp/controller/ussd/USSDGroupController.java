@@ -24,6 +24,7 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
+import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -108,7 +109,7 @@ public class USSDGroupController extends USSDBaseController {
             final String prompt = getMessage(HOME, startMenu, promptKey + ".group.topics", group.getName(), user);
             final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
             USSDMenu menu = new USSDMenu(prompt);
-            group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + topic, topic));
+            group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));
             return menu;
         } else {
             String promptStart = (group.hasName()) ? getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
@@ -159,7 +160,8 @@ public class USSDGroupController extends USSDBaseController {
             promptSuffix = getMessage("home.start.prompt.province", user);
             return new USSDMenu(promptStart + " " + promptSuffix, provinceOptions(user, "group/join/profile?field=PROVINCE&province="));
         } else {
-            return !userManager.needsToRenameSelf(user) ? welcomeMenu(promptStart, user) :
+            promptSuffix = getMessage("home.start.prompt.choose", user);
+            return !userManager.needsToRenameSelf(user) ? welcomeMenu(promptStart + " " + promptSuffix, user) :
                     new USSDMenu(getMessage(HOME, USSDBaseController.startMenu, promptKey + "-rename.short", user), "rename-start");
         }
     }

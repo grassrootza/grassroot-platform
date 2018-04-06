@@ -19,6 +19,7 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -51,7 +52,7 @@ public class TodoCreateController extends BaseRestController {
                                                                     @RequestParam String responseTag,
                                                                     @RequestParam long dueDateTime,
                                                                     @RequestParam(required = false) Set<String> assignedUids,
-                                                                    @RequestParam(required = false) Set<String> mediaFileUids) {
+                                                                    @RequestParam(required = false) List<String> mediaFileUids) {
         String userUid = getUserIdFromRequest(request);
 
         TodoHelper todoHelper = TodoHelper.builder()
@@ -94,7 +95,7 @@ public class TodoCreateController extends BaseRestController {
                                                                       @RequestParam Set<String> confirmingMemberUids,
                                                                       @RequestParam boolean recurring,
                                                                       @RequestParam(required = false) Long recurringPeriodMillis,
-                                                                      @RequestParam(required = false) Set<String> mediaFileUids) {
+                                                                      @RequestParam(required = false) List<String> mediaFileUids) {
 
         String userUid = getUserIdFromRequest(request);
 
@@ -134,7 +135,7 @@ public class TodoCreateController extends BaseRestController {
                                                                 @RequestParam boolean recurring,
                                                                 @RequestParam(required = false) Long recurringPeriodMillis,
                                                                 @RequestParam(required = false) Set<String> assignedMemberUids,
-                                                                @RequestParam(required = false) Set<String> mediaFileUids) {
+                                                                @RequestParam(required = false) List<String> mediaFileUids) {
         String userUid = getUserIdFromRequest(request);
 
 
@@ -147,12 +148,14 @@ public class TodoCreateController extends BaseRestController {
                 .dueDateTime(Instant.ofEpochMilli(dueDateTime))
                 .recurring(recurring)
                 .recurringPeriodMillis(recurringPeriodMillis)
+                .mediaFileUids(mediaFileUids)
                 .build();
 
         if (assignedMemberUids != null && !assignedMemberUids.isEmpty()) {
             todoHelper.setAssignedMemberUids(assignedMemberUids);
         }
 
+        log.info("media file UIDs included? : {}", mediaFileUids);
         if (mediaFileUids != null && !mediaFileUids.isEmpty()) {
             todoHelper.setMediaFileUids(mediaFileUids);
         }
@@ -171,7 +174,7 @@ public class TodoCreateController extends BaseRestController {
                                                                 @RequestParam String subject,
                                                                 @RequestParam long dueDateTime,
                                                                 @RequestParam(required = false) Set<String> assignedMemberUids,
-                                                                @RequestParam(required = false) Set<String> mediaFileUids) {
+                                                                @RequestParam(required = false) List<String> mediaFileUids) {
 
         String userUid = getUserIdFromRequest(request);
 

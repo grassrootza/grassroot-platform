@@ -19,10 +19,7 @@ import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.enums.TodoLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -61,27 +58,32 @@ public class TaskBrokerImpl implements TaskBroker {
     private final UserRepository userRepository;
     private final GroupBroker groupBroker;
     private final EventBroker eventBroker;
+    private final EventLogBroker eventLogBroker;
     private final TodoBroker todoBroker;
 
     private final UidIdentifiableRepository genericRepository;
     private final EventRepository eventRepository;
     private final EventLogRepository eventLogRepository;
     private final TodoLogRepository todoLogRepository;
+    private final TodoAssignmentRepository todoAssignmentRepository;
+
     private final MembershipRepository membershipRepository;
 
     private final VoteBroker voteBroker;
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, UidIdentifiableRepository genericRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, MembershipRepository membershipRepository, PermissionBroker permissionBroker, VoteBroker voteBroker) {
+    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, EventLogBroker eventLogBroker, UidIdentifiableRepository genericRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, TodoAssignmentRepository todoAssignmentRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, VoteBroker voteBroker) {
         this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
+        this.eventLogBroker = eventLogBroker;
         this.genericRepository = genericRepository;
         this.todoBroker = todoBroker;
         this.eventRepository = eventRepository;
         this.eventLogRepository = eventLogRepository;
         this.todoLogRepository = todoLogRepository;
+        this.todoAssignmentRepository = todoAssignmentRepository;
         this.membershipRepository = membershipRepository;
         this.permissionBroker = permissionBroker;
         this.voteBroker = voteBroker;
@@ -125,6 +127,7 @@ public class TaskBrokerImpl implements TaskBroker {
                 break;
             default:
                 taskToReturn = null;
+                break;
         }
 
         log.debug("Task created by user: {}", taskToReturn.isCreatedByUser());
@@ -168,6 +171,13 @@ public class TaskBrokerImpl implements TaskBroker {
         }
 
         return responses;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String fetchUserResponse(String userUid, Task task) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        return getUserResponse(task, user);
     }
 
     @Override
@@ -299,7 +309,7 @@ public class TaskBrokerImpl implements TaskBroker {
         Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
         Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
 
-        List<Todo> todos = todoBroker.fetchTodosForUser(userUid, true, true, todoStart, todoEnd, null);
+        List<Todo> todos = todoBroker.fetchTodosForUser(userUid, true, false, todoStart, todoEnd, null);
         log.info("number of todos fetched for user: {}", todos.size());
 
         todos.forEach(todo -> taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), getUserResponse(todo, user))));
@@ -481,11 +491,16 @@ public class TaskBrokerImpl implements TaskBroker {
         Set<Event> events = eventRepository.findByUidIn(eventUids);
         Set<Todo> todos = genericRepository.findByUidIn(Todo.class, JpaEntityType.TODO, todoUids);
 
-        Stream<TaskTimeChangedDTO> taskStream =
-                todoUids.isEmpty() ? eventRepository.fetchEventsWithTimeChanged(eventUids).stream() :
-                eventUids.isEmpty() ? todoBroker.fetchTodosWithTimeChanged(todoUids).stream() :
-                Stream.concat(eventRepository.fetchEventsWithTimeChanged(eventUids).stream(),
-                        todoBroker.fetchTodosWithTimeChanged(todoUids).stream());
+
+        Stream<TaskTimeChangedDTO> taskStream;
+        if (todoUids.isEmpty()) {
+            taskStream = eventRepository.fetchEventsWithTimeChanged(eventUids).stream().distinct();
+        } else if (eventUids.isEmpty()) {
+            taskStream = todoBroker.fetchTodosWithTimeChanged(todoUids).stream().distinct();
+        } else {
+            taskStream = Stream.concat(eventRepository.fetchEventsWithTimeChanged(eventUids).stream().distinct(),
+                    todoBroker.fetchTodosWithTimeChanged(todoUids).stream().distinct());
+        }
 
         Map<String, Instant> uidTimeMap = taskStream.collect(taskTimeChangedCollector());
 
@@ -568,6 +583,40 @@ public class TaskBrokerImpl implements TaskBroker {
         return tasks;
     }
 
+    @Override
+    @Transactional
+    public void cancelTask(String userUid, String taskUid, TaskType taskType, boolean notifyMembers, String attachedReason) {
+        switch (taskType) {
+            case MEETING:
+            case VOTE:
+                eventBroker.cancel(userUid, taskUid, true);
+                break;
+            case TODO:
+                todoBroker.cancel(userUid, taskUid, notifyMembers, attachedReason);
+                break;
+            default:
+                log.error("Error! Unknown task type");
+        }
+    }
+
+    @Override
+    public void respondToTask(String userUid, String taskUid, TaskType taskType, String response) {
+        log.info("responding to task, userUid: {}, task type: {}", userUid, taskType);
+        switch (taskType) {
+            case MEETING:
+                eventLogBroker.rsvpForEvent(taskUid, userUid, EventRSVPResponse.fromString(response));
+                break;
+            case VOTE:
+                voteBroker.recordUserVote(userUid, taskUid, response);
+                break;
+            case TODO:
+                todoBroker.recordResponse(userUid, taskUid, response, false);
+                break;
+            default:
+                throw new IllegalArgumentException("Error! Unsupported task type");
+        }
+    }
+
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {
         return t-> {
             TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), getUserResponse(t, user));
@@ -645,8 +694,8 @@ public class TaskBrokerImpl implements TaskBroker {
                 EventLog voteResponse = findMostRecentResponseLog(user, (Event) task);
                 return voteResponse != null  ? voteResponse.getTag() : null;
             case TODO:
-                // hack, but going to change in to-do refactor anyway
-                return ((Todo) task).hasUserResponded(user) ? "COMPLETE" : null;
+                TodoAssignment assignment = todoAssignmentRepository.findByTodoAndUser((Todo) task, user);
+                return assignment == null ? null : assignment.getResponseText();
             default:
                 return null;
         }
@@ -711,8 +760,8 @@ public class TaskBrokerImpl implements TaskBroker {
         } else {
             // to be honest, it can be that some change (CHANGED log) didn't affect the information that was presented before on UI,
             // but it is no big harm to return same data again compared to benefits in code simplicity
-            TodoLog lastChangeLog = todoLogRepository.findFirstByTodoAndTypeOrderByCreatedDateTimeDesc(todo, TodoLogType.CHANGED);
-            return (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince));
+            TodoLog lastChangeLog = todoLogRepository.findFirstByTodoAndTypeOrderByCreationTimeDesc(todo, TodoLogType.CHANGED);
+            return (lastChangeLog != null && lastChangeLog.getCreationTime().isAfter(changedSince));
         }
     }
 

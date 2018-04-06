@@ -1,7 +1,5 @@
 package za.org.grassroot.webapp.controller.rest;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,8 +23,6 @@ import javax.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping(value = "/api/gcm")
 public class GcmRestController extends BaseRestController {
-
-    private static final Logger logger = LoggerFactory.getLogger(GcmRestController.class);
 
     private final UserManagementService userManagementService;
     private final GcmRegistrationBroker gcmRegistrationBroker;

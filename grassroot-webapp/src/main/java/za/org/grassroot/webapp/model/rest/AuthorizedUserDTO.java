@@ -6,7 +6,9 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Getter
 public class AuthorizedUserDTO {
@@ -18,7 +20,9 @@ public class AuthorizedUserDTO {
     private String languageCode;
     private String systemRoleName;
     private Province province;
+    private boolean hasImage;
     private String token;
+    private List<String> systemRoles;
 
     public AuthorizedUserDTO(User user, String token) {
         this.userUid = user.getUid();
@@ -27,10 +31,10 @@ public class AuthorizedUserDTO {
         this.languageCode = user.getLocale().getLanguage();
         this.email = user.getEmailAddress();
         this.province = user.getProvince();
+        this.hasImage = user.isHasImage();
 
-        Optional<Role> highestSystemRole = user.getStandardRoles().stream()
-                .sorted(BaseRoles.sortSystemRole.reversed())
-                .findFirst();
+        Optional<Role> highestSystemRole = user.getStandardRoles().stream().max(BaseRoles.sortSystemRole);
+        systemRoles = user.getStandardRoles().stream().map(Role::getName).collect(Collectors.toList());
 
         this.systemRoleName = highestSystemRole.isPresent() ? highestSystemRole.get().getName() : "";
         this.token = token;

@@ -4,9 +4,11 @@ import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinCode;
+import za.org.grassroot.core.domain.JoinCodeType;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.dto.MembershipDTO;
 import za.org.grassroot.core.util.DateTimeUtil;
 
@@ -33,6 +35,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
     @Setter private List<String> affiliations = new ArrayList<>();
     @Setter private List<JoinWordDTO> joinWords = new ArrayList<>();
     @Setter private int joinWordsLeft;
+    @Setter private boolean hasInboundMessages;
     private final Integer reminderMinutes;
 
     public GroupFullDTO(Group group, Membership membership) {
@@ -53,7 +56,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
                 .distinct().collect(Collectors.toList());
 
         this.members = new HashSet<>();
-
+        this.hasInboundMessages = false;
     }
 
     /*

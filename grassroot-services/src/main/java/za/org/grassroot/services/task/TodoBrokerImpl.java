@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.TodoAssignmentRepository;
@@ -30,6 +31,7 @@ import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.ResponseNotAllowedException;
 import za.org.grassroot.services.exception.TodoDeadlineNotInFutureException;
 import za.org.grassroot.services.exception.TodoTypeMismatchException;
+import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -55,6 +57,9 @@ public class TodoBrokerImpl implements TodoBroker {
     private final MessageAssemblingService messageService;
     private final ApplicationEventPublisher eventPublisher;
 
+    private TaskImageBroker taskImageBroker;
+    private PasswordTokenService tokenService;
+
     @Autowired
     public TodoBrokerImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
         this.todoRepository = todoRepository;
@@ -65,6 +70,16 @@ public class TodoBrokerImpl implements TodoBroker {
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.messageService = messageService;
         this.eventPublisher = eventPublisher;
+    }
+
+    @Autowired // we may want to make these optional in the future ...
+    public void setTaskImageBroker(TaskImageBroker taskImageBroker) {
+        this.taskImageBroker = taskImageBroker;
+    }
+
+    @Autowired
+    public void setTokenService(PasswordTokenService tokenService) {
+        this.tokenService = tokenService;
     }
 
     @Override
@@ -85,12 +100,12 @@ public class TodoBrokerImpl implements TodoBroker {
     @Transactional
     public String create(TodoHelper todoHelper) {
         todoHelper.validateMinimumFields();
+        validateTodoInFuture(todoHelper);
 
         User user = userRepository.findOneByUid(todoHelper.getUserUid());
-        TodoContainer parent = uidIdentifiableRepository.findOneByUid(TodoContainer.class,
-                todoHelper.getParentType(), todoHelper.getParentUid());
+        TodoContainer parent = uidIdentifiableRepository.findOneByUid(TodoContainer.class, todoHelper.getParentType(), todoHelper.getParentUid());
 
-        if (todoHelper.getParentType().equals(JpaEntityType.GROUP)) {
+        if (parent instanceof Group) {
             Todo possibleDuplicate = checkForDuplicate(user, (Group) parent, todoHelper);
             if (possibleDuplicate != null) {
                 return possibleDuplicate.getUid();
@@ -99,18 +114,28 @@ public class TodoBrokerImpl implements TodoBroker {
 
         validateUserCanCreate(user, parent.getThisOrAncestorGroup());
 
-        if (todoHelper.getDueDateTime().isBefore(Instant.now())) {
-            throw new TodoDeadlineNotInFutureException();
-        }
-
         Todo todo = new Todo(user, parent, todoHelper.getTodoType(), todoHelper.getSubject(), todoHelper.getDueDateTime());
         todo = todoRepository.save(todo);
 
+        if (todoHelper.getAssignedMemberUids() == null || todoHelper.getAssignedMemberUids().isEmpty()) {
+            setAllParentMembersAssigned(todo, shouldAssignedUsersRespond(todo.getType()));
+        } else {
+            setAssignedMembers(todo, todoHelper.getAssignedMemberUids(), shouldAssignedUsersRespond(todo.getType()));
+        }
+
+        todo = setTodoImage(todo, user, todoHelper);
+
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
         TodoLog todoLog = new TodoLog(TodoLogType.CREATED, user, todo, null);
         bundle.addLog(todoLog);
-        bundle.addNotifications(wireUpTodoForType(todo, todoHelper, todoLog));
+        Set<Notification> notifications = wireUpTodoForType(todo, todoHelper, todoLog);
+        bundle.addNotifications(notifications);
         logsAndNotificationsBroker.storeBundle(bundle);
+
+        generateResponseTokens(todo, notifications);
+
+        log.info("and now we are done with todo creation ...");
 
         return todo.getUid();
     }
@@ -123,16 +148,19 @@ public class TodoBrokerImpl implements TodoBroker {
                 helper.getSubject()));
     }
 
+    private Todo setTodoImage(Todo todo, User user, TodoHelper todoHelper) {
+        if (todoHelper.getMediaFileUids() != null && !todoHelper.getMediaFileUids().isEmpty()) {
+            taskImageBroker.recordImageForTask(user.getUid(), todo.getUid(), TaskType.TODO, todoHelper.getMediaFileUids(),
+                    null, TodoLogType.IMAGE_AT_CREATION);
+            todo.setImageUrl(taskImageBroker.getShortUrl(todoHelper.getMediaFileUids().get(0)));
+        }
+        return todo;
+    }
+
     private Set<Notification> wireUpTodoForType(Todo todo, TodoHelper todoHelper, TodoLog todoLog) {
         Set<Notification> notifications = new HashSet<>();
         if (todoHelper.isInformationTodo()) {
             todo.setResponseTag(todoHelper.getResponseTag());
-        }
-
-        if (todoHelper.getAssignedMemberUids() == null || todoHelper.getAssignedMemberUids().isEmpty()) {
-            setAllParentMembersAssigned(todo, shouldAssignedUsersRespond(todo.getType()));
-        } else {
-            setAssignedMembers(todo, todoHelper.getAssignedMemberUids(), shouldAssignedUsersRespond(todo.getType()));
         }
 
         if (todoHelper.getConfirmingMemberUids() != null && !todoHelper.getConfirmingMemberUids().isEmpty()) {
@@ -149,6 +177,14 @@ public class TodoBrokerImpl implements TodoBroker {
         confirmingUsers.forEach(user -> notifications.add(generateNotificationForConfirmingUsers(todo, user, todoLog)));
 
         return notifications;
+    }
+
+    private void generateResponseTokens(Todo todo, Set<Notification> notifications) {
+        Set<String> emailMemberUids = notifications.stream().map(Notification::getTarget).filter(User::areNotificationsByEmail)
+                .map(User::getUid).collect(Collectors.toSet());
+        if (!emailMemberUids.isEmpty()) {
+            tokenService.generateResponseTokens(emailMemberUids, todo.getAncestorGroup().getUid(), todo.getUid());
+        }
     }
 
     private boolean shouldAssignedUsersRespond(TodoType type) {
@@ -185,13 +221,17 @@ public class TodoBrokerImpl implements TodoBroker {
 
     @Override
     @Transactional
-    public void cancel(String userUid, String todoUid, String reason) {
+    public void cancel(String userUid, String todoUid, boolean sendNotices, String reason) {
         Todo todo = todoRepository.findOneByUid(todoUid);
         User user = userRepository.findOneByUid(userUid);
         validateUserCanModify(user, todo);
         todo.setCancelled(true);
-        // todo : send out notifications
+        log.info("todo is cancelled, notification params: send : {}, reason: {}", sendNotices, reason);
         createAndStoreTodoLog(user, todo, TodoLogType.CANCELLED, reason);
+        if (sendNotices) {
+            log.info("send out notices ...");
+            // todo : actually send out notices
+        }
     }
 
     @Override
@@ -317,6 +357,8 @@ public class TodoBrokerImpl implements TodoBroker {
             case VOLUNTEERS_NEEDED:
                 notifications.addAll(notifyCreatorOfVolunteer(todoAssignment, response, todoLog));
                 break;
+            default:
+                throw new IllegalArgumentException("Error! Todo with non-standard type passed");
         }
 
         storeLogAndNotifications(todoLog, notifications);
@@ -476,7 +518,8 @@ public class TodoBrokerImpl implements TodoBroker {
 
         User user = userRepository.findOneByUid(userUid);
         Group group = uidIdentifiableRepository.findOneByUid(Group.class, JpaEntityType.GROUP, groupUid);
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
+        // this is causing more trouble than it's worth, so removing it for now
+//        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
 
         Specifications<Todo> specs;
         if (limitToNeedingResponse) {
@@ -677,6 +720,12 @@ public class TodoBrokerImpl implements TodoBroker {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+        }
+    }
+
+    private void validateTodoInFuture(TodoHelper todoHelper) {
+        if (todoHelper.getDueDateTime().isBefore(Instant.now())) {
+            throw new TodoDeadlineNotInFutureException();
         }
     }
 

@@ -48,4 +48,8 @@ public interface CacheUtilService {
 
     void setSessionOpen(String userUid, UserInterfaceType interfaceType);
 
+    List<PublicActivityLog> getCachedPublicActivity(PublicActivityType activityType);
+
+    void putCachedPublicActivity(PublicActivityType activityType, List<PublicActivityLog> activityLogs);
+
 }

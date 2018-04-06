@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.task;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 
@@ -31,19 +32,19 @@ public class TodoAssignment {
 
     @Basic
     @Column(name = "assigned_action")
-    @Setter boolean assignedAction;
+    @Setter private boolean assignedAction;
 
     @Basic
     @Column(name = "assigned_witness")
-    @Setter boolean validator;
+    @Setter private boolean validator;
 
     @Basic
     @Column(name = "should_respond")
-    @Setter boolean shouldRespond;
+    @Setter private boolean shouldRespond;
 
     @Basic
     @Column(name = "has_responded")
-    @Setter boolean hasResponded;
+    @Setter private boolean hasResponded;
 
     @Column(name = "response_date_time")
     @Setter private Instant responseTime;
@@ -78,4 +79,16 @@ public class TodoAssignment {
 
     public boolean canConfirm() { return isValidator(); }
 
+    public boolean emptyResponse() {
+        return StringUtils.isEmpty(responseText);
+    }
+
+    @Override
+    public String toString() {
+        return "TodoAssignment{" +
+                "user=" + user.getName() +
+                ", hasResponded=" + hasResponded +
+                ", responseText='" + responseText + '\'' +
+                '}';
+    }
 }

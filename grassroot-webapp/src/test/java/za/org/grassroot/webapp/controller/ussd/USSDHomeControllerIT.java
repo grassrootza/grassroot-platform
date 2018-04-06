@@ -12,11 +12,11 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
-//import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.springframework.http.HttpStatus.OK;
+
+//import static org.hamcrest.CoreMatchers.containsString;
 
 /**
  * Created by luke on 2015/11/17.

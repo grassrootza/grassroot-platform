@@ -6,6 +6,7 @@ import lombok.Setter;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -93,6 +94,11 @@ public class CampaignLog implements ActionLog {
     @Override
     public String getUid() {
         return uid;
+    }
+
+    @Override
+    public ActionLogType getActionLogType() {
+        return ActionLogType.CAMPAIGN_LOG;
     }
 
     public void setUid(String uid) {

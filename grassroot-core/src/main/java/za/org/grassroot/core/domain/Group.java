@@ -108,10 +108,10 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     /*
     Adding a mapping from group to its calculated locations (note : watch performance, as noted elsewhere, may want
-    to start removing prior calculation results)
+    to start removing prior calculation results). Note: this is used in an HQL query, hence needs mapping.
      */
     @OneToMany(mappedBy = "group")
-    private Set<GroupLocation> locations;
+    @Getter private Set<GroupLocation> locations;
 
     @ManyToOne(optional = true)
     @JoinColumn(name= "join_approver_id", nullable = true)

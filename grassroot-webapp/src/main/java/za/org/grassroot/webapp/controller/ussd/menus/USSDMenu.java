@@ -79,6 +79,10 @@ public class USSDMenu {
         return menuOptions;
     }
 
+    public boolean hasOptions() {
+        return menuOptions != null && !menuOptions.isEmpty();
+    }
+
     public void setMenuOptions(LinkedHashMap<String, String> menuOptions) {
         this.menuOptions = menuOptions;
     }

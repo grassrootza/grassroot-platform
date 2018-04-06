@@ -3,21 +3,29 @@ package za.org.grassroot.webapp.controller.rest.broadcast;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.BroadcastSchedule;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.media.MediaFunction;
+import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.MediaFileBroker;
+import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
@@ -27,11 +35,16 @@ import za.org.grassroot.services.broadcasts.BroadcastBroker;
 import za.org.grassroot.services.broadcasts.BroadcastComponents;
 import za.org.grassroot.services.broadcasts.BroadcastInfo;
 import za.org.grassroot.services.broadcasts.EmailBroadcast;
+import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.controller.rest.exception.FileCreationException;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -49,14 +62,18 @@ public class BroadcastController extends BaseRestController {
     private final BroadcastBroker broadcastBroker;
     private final AccountBillingBroker billingBroker;
     private final UrlShortener urlShortener;
+    private final NotificationService notificationService;
+    private final MemberDataExportBroker memberDataExportBroker;
 
     @Autowired
     public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker, MediaFileBroker mediaFileBroker,
-                               AccountBillingBroker billingBroker, UrlShortener urlShortener) {
+                               AccountBillingBroker billingBroker, UrlShortener urlShortener, NotificationService notificationService, MemberDataExportBroker memberDataExportBroker) {
         super(jwtService, userManagementService);
         this.broadcastBroker = broadcastBroker;
         this.billingBroker = billingBroker;
         this.urlShortener = urlShortener;
+        this.notificationService = notificationService;
+        this.memberDataExportBroker = memberDataExportBroker;
     }
 
     @RequestMapping(value = "/fetch/group/{groupUid}", method = RequestMethod.GET)
@@ -184,6 +201,37 @@ public class BroadcastController extends BaseRestController {
         Instant firstDayOfMonth = LocalDateTime.now().with(startOfMonth).toInstant(OffsetDateTime.now().getOffset());
         long costSinceLastBill = billingBroker.calculateMessageCostsInPeriod(primaryAccount, firstDayOfMonth, Instant.now());
         return ResponseEntity.ok(costSinceLastBill);
+    }
+
+    @RequestMapping(value = "/error-report/{broadcastUid}/download", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> fetchTaskFailedNotifications(@PathVariable String broadcastUid,
+            HttpServletRequest request) {
+
+        try {
+            User user = getUserFromRequest(request);
+
+            String fileName = "task_error_report.xlsx";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+            headers.add("Cache-Control", "no-cache");
+            headers.add("Pragma", "no-cache");
+            headers.add("Expires", "0");
+
+            Broadcast broadcast = broadcastBroker.getBroadcast(broadcastUid);
+            List <BroadcastNotification> notifications = notificationService.loadFailedNotificationsForBroadcast(user.getUid(), broadcast);
+
+			XSSFWorkbook xls = memberDataExportBroker.exportNotificationErrorReport(notifications);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			xls.write(baos);
+            return new ResponseEntity<>( baos.toByteArray(), headers, HttpStatus.OK);
+        }catch (IOException e) {
+			log.error("IO Exception generating spreadsheet!", e);
+			throw new FileCreationException();
+		}
+		catch (AccessDeniedException e) {
+			throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+		}
     }
 
     private void fillInContent(BroadcastCreateRequest createRequest, BroadcastComponents bc) {

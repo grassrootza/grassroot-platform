@@ -1,9 +1,9 @@
 package za.org.grassroot.services.user;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +16,7 @@ import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
+import za.org.grassroot.core.specifications.TokenSpecifications;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -26,20 +27,24 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
  */
-@Service
+@Service @Slf4j
 public class PasswordTokenManager implements PasswordTokenService {
 
     private static final int TOKEN_LIFE_SPAN_MINUTES = 5;
     private static final int TOKEN_LIFE_SPAN_DAYS = 30;
-    private static final int REFRESH_WINDOW_DAYS = 5;
+    // making it very long as old device will be discontinued within next few months and several devices
+    // have not had a proper refresh (and/or don't have latest client)
+    private static final int OLD_TOKEN_REFRESH_WINDOW_DAYS = 365;
 
-    private static final Logger log = LoggerFactory.getLogger(PasswordTokenManager.class);
+    private static final int ENTITY_RESPONSE_TOKEN_LIFE_DAYS = 7;
 
     private final VerificationTokenCodeRepository verificationTokenCodeRepository;
 
@@ -69,13 +74,13 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         if (token == null) {
             // no OTP exists, so generate a new one and send it
-            token = new VerificationTokenCode(username, code, VerificationCodeType.SHORT_OTP);
+            token = new VerificationTokenCode(username, code, VerificationCodeType.SHORT_OTP, null);
             token.setExpiryDateTime(Instant.now().plus(TOKEN_LIFE_SPAN_MINUTES, ChronoUnit.MINUTES));
             return verificationTokenCodeRepository.save(token);
         } else if (Instant.now().isAfter(token.getExpiryDateTime())) {
             // an OTP exists but it is stale
             log.info("found an OTP, but it's stale, time now = {}, expiry time = {}", Instant.now(), token.getExpiryDateTime().toString());
-            VerificationTokenCode newToken = new VerificationTokenCode(username, code, VerificationCodeType.SHORT_OTP);
+            VerificationTokenCode newToken = new VerificationTokenCode(username, code, VerificationCodeType.SHORT_OTP, null);
             newToken.setExpiryDateTime(Instant.now().plus(TOKEN_LIFE_SPAN_MINUTES, ChronoUnit.MINUTES));
             verificationTokenCodeRepository.delete(token);
             verificationTokenCodeRepository.save(newToken);
@@ -98,7 +103,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         final String code = String.valueOf(new BigInteger(130, random));
 
         if (token == null) {
-            token = new VerificationTokenCode(user.getPhoneNumber(), code, VerificationCodeType.LONG_AUTH);
+            token = new VerificationTokenCode(user.getPhoneNumber(), code, VerificationCodeType.LONG_AUTH, null);
             token.setExpiryDateTime(Instant.now().plus(TOKEN_LIFE_SPAN_DAYS, ChronoUnit.DAYS));
         } else if (Instant.now().isAfter(token.getExpiryDateTime())) {
             token.setCode(code);
@@ -117,12 +122,56 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     @Override
     @Transactional
+    public VerificationTokenCode generateEntityResponseToken(String userUid, String entityUid, boolean forcePersist) {
+        Objects.requireNonNull(entityUid);
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+
+        VerificationTokenCode checkForPrior = verificationTokenCodeRepository.findOne(
+                TokenSpecifications.forUserAndEntity(userUid, entityUid));
+
+        Instant expiry = Instant.now().plus(ENTITY_RESPONSE_TOKEN_LIFE_DAYS, ChronoUnit.DAYS);
+        if (checkForPrior != null && checkForPrior.getExpiryDateTime().isAfter(Instant.now())) {
+            checkForPrior.setExpiryDateTime(expiry);
+            return checkForPrior;
+        } else {
+            if (checkForPrior != null)
+                verificationTokenCodeRepository.delete(checkForPrior);
+
+            VerificationTokenCode token = new VerificationTokenCode(userUid, entityUid,
+                    VerificationCodeType.RESPOND_ENTITY, user.getUid());
+
+            token.setEntityUid(entityUid);
+            token.setExpiryDateTime(expiry);
+
+            final String code = String.valueOf(new BigInteger(130, new SecureRandom()));
+            token.setCode(code);
+
+            if (forcePersist)
+                verificationTokenCodeRepository.save(token);
+
+            return token;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void generateResponseTokens(Set<String> userUids, String groupUid, String taskUid) {
+        Set<VerificationTokenCode> tokens = new HashSet<>();
+        userUids.forEach(uid -> tokens.add(generateEntityResponseToken(uid, groupUid, false)));
+        if (taskUid != null) {
+            userUids.forEach(uid -> tokens.add(generateEntityResponseToken(uid, taskUid, false)));
+        }
+        verificationTokenCodeRepository.save(tokens);
+    }
+
+    @Override
+    @Transactional
     public boolean extendAuthCodeIfExpiring(String phoneNumber, String code) {
         Objects.requireNonNull(phoneNumber);
         Objects.requireNonNull(code);
 
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(phoneNumber, VerificationCodeType.LONG_AUTH);
-        if (token != null && Instant.now().plus(REFRESH_WINDOW_DAYS, ChronoUnit.DAYS).isAfter(token.getExpiryDateTime())) {
+        if (token != null && Instant.now().plus(OLD_TOKEN_REFRESH_WINDOW_DAYS, ChronoUnit.DAYS).isAfter(token.getExpiryDateTime())) {
             Instant oldExpiry = token.getExpiryDateTime();
             token.setExpiryDateTime(oldExpiry.plus(TOKEN_LIFE_SPAN_DAYS, ChronoUnit.DAYS));
             return true;
@@ -239,4 +288,20 @@ public class PasswordTokenManager implements PasswordTokenService {
             token.setExpiryDateTime(Instant.now());
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void validateEntityResponseCode(String userUid, String entityUid, String code) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(entityUid);
+        Objects.requireNonNull(code);
+
+        VerificationTokenCode possibleToken = verificationTokenCodeRepository.findOne(
+                TokenSpecifications.forUserAndEntity(userUid, entityUid).and(TokenSpecifications.withCode(code)));
+
+        if (possibleToken == null || possibleToken.getExpiryDateTime().isBefore(Instant.now())) {
+            throw new AccessDeniedException("Error! No matching entity/code combination, or match, but expired");
+        }
+    }
+
 }

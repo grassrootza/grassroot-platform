@@ -1,11 +1,10 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
@@ -32,24 +31,21 @@ import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 /**
  * Created by Siyanda Mzam on 2016/03/22.
  */
+@Slf4j
 public class VoteRestControllerTest extends RestAbstractUnitTest {
-
-    private static final Logger log = LoggerFactory.getLogger(VoteRestControllerTest.class);
 
     private static final String path = "/api/vote";
 
-    @Mock
-    private VoteBroker voteBrokerMock;
+    private Vote voteEvent = createVote(null);
 
-    @InjectMocks
-    private VoteRestController voteRestController;
+    @Mock private VoteBroker voteBrokerMock;
+
+    @InjectMocks private VoteRestController voteRestController;
 
     @Before
     public void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(voteRestController).build();
     }
-
-    private Vote voteEvent = createVote(null);
 
     @Test
     public void creatingAVoteShouldWork() throws Exception {
@@ -59,7 +55,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(eventBrokerMock.createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
                                         voteEvent.getName(), testDateTime, false, testEventDescription,
-                                        Collections.emptySet(), null)).thenReturn(voteEvent);
+                null, Collections.emptySet(), null)).thenReturn(voteEvent);
 
         log.info("ZOG: Creating a vote, passing these parameters: userUid= {}, groupUid= {}, voteName= {}, time= {}",
                  sessionTestUser.getUid(), testGroup.getUid(), testEventTitle, testDateTime.toString());
@@ -75,7 +71,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(eventBrokerMock).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, voteEvent.getName(),
-                                           testDateTime, false, testEventDescription, Collections.emptySet(), null);
+                                           testDateTime, false, testEventDescription, null, Collections.emptySet(), null);
     }
 
     @Test
@@ -117,13 +113,13 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     public void updatingTheVoteShouldWork() throws Exception {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription)).thenReturn(voteEvent);
+        when(voteBrokerMock.updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription)).thenReturn(voteEvent);
         mockMvc.perform(post(path + "/update/{id}/{phoneNumber}/{code}",  voteEvent.getUid(), testUserPhone,  testUserCode)
                                 .param("title", "Test_Vote")
                                 .param("closingTime", testDateTime.format(getPreferredRestFormat()))
                                 .param("description", testEventDescription))
                 .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(eventBrokerMock).updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription);
+        verify(voteBrokerMock).updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription);
     }
 }

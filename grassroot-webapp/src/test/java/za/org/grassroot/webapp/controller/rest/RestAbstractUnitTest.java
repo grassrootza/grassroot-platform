@@ -89,7 +89,7 @@ public class RestAbstractUnitTest {
     protected UserLogRepository userLogRepositoryMock;
 
 
-    Vote createVote(String[] options) {
+    protected Vote createVote(String[] options) {
         Vote voteEvent = new Vote(testEventTitle, testInstant, sessionTestUser, testGroup, true, testEventDescription);
         voteEvent.setTags(options);
         return voteEvent;

@@ -23,6 +23,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -75,7 +76,8 @@ public class GroupFetchController extends BaseRestController {
             .put(Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE, 8)
             .put(Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK, 9)
             .put(Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS, 10)
-            .put(Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS, 11)
+            .put(Permission.GROUP_PERMISSION_SEND_BROADCAST, 11)
+            .put(Permission.GROUP_PERMISSION_CREATE_CAMPAIGN, 12)
             .build();
 
 
@@ -173,6 +175,7 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/members", method = RequestMethod.GET)
     public Page<MembershipFullDTO> fetchGroupMembers(@RequestParam String groupUid, Pageable pageable, HttpServletRequest request) {
         User user = getUserFromRequest(request);
+        log.info("fetching users, with pageable: {}", pageable);
         return groupFetchBroker.fetchGroupMembers(user, groupUid, pageable);
     }
 
@@ -190,6 +193,7 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false) String namePhoneOrEmail,
                                                       @RequestParam (required = false) Collection<String> languages,
                                                       HttpServletRequest request) {
+        log.info("filtering, name phone or email = {}", namePhoneOrEmail);
         return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
                 joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages).stream().map(MembershipFullDTO::new).collect(Collectors.toList());
@@ -199,12 +203,12 @@ public class GroupFetchController extends BaseRestController {
     @ApiOperation(value = "Returns members joined recently to groups where logged in user has permission to see member details")
     public ResponseEntity<Page<MembershipFullDTO>> getRecentlyJoinedUsers(@RequestParam(required = false) Integer howRecentInDays, HttpServletRequest request, Pageable pageable) {
 
-        howRecentInDays = howRecentInDays != null ? howRecentInDays : 7;
+        int daysLimit = howRecentInDays != null ? howRecentInDays : 7;
         User loggedInUser = getUserFromRequest(request);
         if (loggedInUser != null) {
             log.info("fetching users with pageable: {}", pageable);
             Page<MembershipFullDTO> page = groupFetchBroker
-                    .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(howRecentInDays, ChronoUnit.DAYS), pageable)
+                    .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(daysLimit, ChronoUnit.DAYS), pageable)
                     .map(MembershipFullDTO::new);
             log.info("number users back: {}", page.getSize());
             return ResponseEntity.ok(page);
@@ -301,7 +305,6 @@ public class GroupFetchController extends BaseRestController {
 
     @RequestMapping(value = "/permissions-displayed", method = RequestMethod.GET)
     public ResponseEntity<Set<Permission>> fetchPermissionsDisplayed(HttpServletRequest request) {
-
         User user = getUserFromRequest(request);
         Set<Permission> permissions = new HashSet<>();
         if (user != null) {
@@ -332,7 +335,7 @@ public class GroupFetchController extends BaseRestController {
                                                               Pageable pageable, HttpServletRequest request) {
             User user = getUserFromRequest(request);
             Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
-            return  groupBroker.getGroupLogsByGroup(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword, pageable);
+            return  groupFetchBroker.getInboundMessageLogs(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword, pageable);
     }
 
     @RequestMapping(value = "/inbound-messages/{groupUid}/download", method = RequestMethod.GET)
@@ -343,7 +346,6 @@ public class GroupFetchController extends BaseRestController {
                                                             HttpServletRequest request) {
 
         try {
-
             User user = getUserFromRequest(request);
             Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
 
@@ -355,7 +357,7 @@ public class GroupFetchController extends BaseRestController {
             headers.add("Pragma", "no-cache");
             headers.add("Expires", "0");
 
-            List<GroupLogDTO> inboundMessages = groupBroker.getGroupLogsByGroupForExport(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword);
+            List<GroupLogDTO> inboundMessages = groupFetchBroker.getInboundMessagesForExport(user, group, from != null ? Instant.ofEpochMilli(from) : null, to != null ? Instant.ofEpochMilli(to) : null, keyword);
 
             XSSFWorkbook xls = memberDataExportBroker.exportInboundMessages(inboundMessages);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -369,6 +371,33 @@ public class GroupFetchController extends BaseRestController {
         }
 
 
+    }
+
+    @RequestMapping(value = "/members/error-report/{groupUid}/download", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> fetchGroupMembersWithErrorForDownloadByGroupUid(@PathVariable String groupUid,
+            HttpServletRequest request) {
+
+        try {
+            User user = getUserFromRequest(request);
+
+            String fileName = "error_report.xlsx";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+            headers.add("Cache-Control", "no-cache");
+            headers.add("Pragma", "no-cache");
+            headers.add("Expires", "0");
+
+            XSSFWorkbook xls = memberDataExportBroker.exportGroupErrorReport(groupUid, user.getUid());
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            xls.write(baos);
+            return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
+        } catch (IOException e) {
+            logger.error("IO Exception generating spreadsheet!", e);
+            throw new FileCreationException();
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
     }
 
 

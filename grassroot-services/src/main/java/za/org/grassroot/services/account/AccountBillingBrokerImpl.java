@@ -21,6 +21,7 @@ import za.org.grassroot.core.domain.account.AccountBillingRecord;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
@@ -31,7 +32,6 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.PdfGeneratingService;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -201,8 +201,9 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
             String fileName = "GrassrootInvoice-" + DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDateTime.now()) + ".pdf";
             billingEmail.setAttachment(invoice);
             billingEmail.setAttachmentName(fileName);
-            messageBroker.sendEmail(Collections.singletonList(account.getBillingUser().getEmailAddress()),
-                    billingEmail);
+            billingEmail.setToAddress(account.getBillingUser().getEmailAddress());
+            billingEmail.setToName(account.getBillingUser().getName());
+            messageBroker.sendEmail(billingEmail);
         }
     }
 
@@ -568,9 +569,10 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         log.info("number of notifications for account in period = {}", numberOfMessages);
 
         // this is causing huge DB load, so am removing for now
-//        for (PaidGroup paidGroup : paidGroups) {
-//            costAccumulator += (countMessagesForPaidGroup(paidGroup, startTime, billingPeriodEnd) * messageCost);
-//        }
+
+        for (PaidGroup paidGroup : paidGroups) {
+            costAccumulator += (countMessagesForPaidGroup(paidGroup, startTime, billingPeriodEnd) * messageCost);
+        }
 
         return costAccumulator;
     }
@@ -583,7 +585,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         Specifications<Notification> specifications = Specifications.where(wasDelivered())
                 .and(createdTimeBetween(start, end))
-                .and(ancestorGroupIs(group));
+                .and(ancestorGroupIsTimeLimited(group, periodStart));
 
         return logsAndNotificationsBroker.countNotifications(specifications);
     }
@@ -603,9 +605,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         Set<Notification> notifications = new HashSet<>();
 
         account.getAdministrators().forEach(user -> notifications.add(new AccountBillingNotification(user,
-                    accountEmailService.createEndOfTrialNotification(account),
-                    bill.getAccountLog()))
-        );
+                    accountEmailService.createEndOfTrialNotification(account), bill.getAccountLog())));
 
         return notifications;
     }
@@ -613,10 +613,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private void sendTrialExpiredEmails(Account account) {
         final String formedPaymentLink = accountPaymentLink + "?accountUid=" + account.getUid();
         account.getAdministrators()
-                .stream()
-                .filter(User::hasEmailAddress)
-                .forEach(u -> messageBroker.sendEmail(Collections.singletonList(u.getEmailAddress()),
-                        accountEmailService.createEndOfTrailEmail(account, u, formedPaymentLink)));
+                .stream().filter(User::hasEmailAddress)
+                .forEach(u -> messageBroker.sendEmail(accountEmailService.createEndOfTrailEmail(account, u, formedPaymentLink)));
     }
 
     private void sendDisabledEmails(Account account) {
@@ -624,10 +622,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         // job and multiple addresses might result in junk mail, so ...
         final String formedPaymentLink = accountPaymentLink + "?accountUid=" + account.getUid();
         account.getAdministrators()
-                .stream()
-                .filter(User::hasEmailAddress)
-                .forEach(u -> messageBroker.sendEmail(Collections.singletonList(u.getEmailAddress()),
-                        accountEmailService.createDisabledEmail(u, formedPaymentLink)));
+                .stream().filter(User::hasEmailAddress)
+                .forEach(u -> messageBroker.sendEmail(accountEmailService.createDisabledEmail(u, formedPaymentLink)));
     }
 
     private Instant getPeriodStart(Account account, AccountBillingRecord lastBill) {

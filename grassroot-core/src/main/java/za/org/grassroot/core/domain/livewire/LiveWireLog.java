@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.livewire;
 
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.LiveWireLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -107,7 +108,7 @@ public class LiveWireLog implements ActionLog {
         // for JPA
     }
 
-    private LiveWireLog(LiveWireLogType type) {
+    public LiveWireLog(LiveWireLogType type) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.type = Objects.requireNonNull(type);
@@ -124,6 +125,11 @@ public class LiveWireLog implements ActionLog {
 
     public Instant getCreationTime() {
         return creationTime;
+    }
+
+    @Override
+    public ActionLogType getActionLogType() {
+        return ActionLogType.LIVEWIRE_LOG;
     }
 
     public LiveWireAlert getAlert() {

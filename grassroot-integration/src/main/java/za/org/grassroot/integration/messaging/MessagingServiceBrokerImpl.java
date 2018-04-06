@@ -4,11 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -16,10 +16,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.dto.GrassrootEmail;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2017/05/23.
@@ -88,10 +88,11 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
     }
 
     @Override
-    public void sendEmail(List<String> addresses, GrassrootEmail email) {
+    public void sendEmail(Map<String, String> recipients, GrassrootEmail email) {
         UriComponentsBuilder builder = baseUri().path("/email/send");
-        HttpEntity<Set<GrassrootEmail>> requestEntity = new HttpEntity<>(
-                addresses.stream().map(email::copyIntoNew).collect(Collectors.toSet()), jwtHeaders());
+        Set<GrassrootEmail> emails = new HashSet<>();
+        recipients.forEach((address, name) -> emails.add(email.copyIntoNew(address, name)));
+        HttpEntity<Set<GrassrootEmail>> requestEntity = new HttpEntity<>(emails, jwtHeaders());
 
         try {
             ResponseEntity<String> responseEntity = restTemplate.exchange(builder.build().toUri(), HttpMethod.POST,
@@ -103,6 +104,20 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
 
     }
 
+    @Override
+    public void sendEmail(GrassrootEmail mail) {
+        UriComponentsBuilder builder = baseUri().path("/email/send");
+        HttpEntity<Set<GrassrootEmail>> requestEntity = new HttpEntity<>(Collections.singleton(mail), jwtHeaders());
+
+        try {
+            ResponseEntity<String> responseEntity = restTemplate.exchange(builder.build().toUri(), HttpMethod.POST,
+                    requestEntity, String.class);
+            logger.info("send email: ? {}", responseEntity);
+        } catch (RestClientException e) {
+            logger.error("Error pushing out emails! {}", e);
+        }
+    }
+
     private UriComponentsBuilder baseUri() {
         return UriComponentsBuilder.fromUriString(messagingServiceUrl)
                 .port(messagingServicePort);
@@ -111,7 +126,7 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
     // this means duplication but getting extreme weirdness on doing generic but
     private HttpHeaders jwtHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE, null)));
+        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE)));
         return headers;
     }
 

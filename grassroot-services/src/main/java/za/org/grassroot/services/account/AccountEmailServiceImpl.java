@@ -1,5 +1,6 @@
 package za.org.grassroot.services.account;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +20,7 @@ import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -28,7 +30,7 @@ import static za.org.grassroot.services.MessageAssemblingManager.shortDateFormat
 /**
  * Created by luke on 2017/03/01.
  */
-@Service
+@Service @Slf4j
 public class AccountEmailServiceImpl implements AccountEmailService {
 
     private final MessageSourceAccessor messageSource;
@@ -80,7 +82,7 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         ctx.setVariable("viewAccountUrl", urlToViewAccount + statement.getAccount().getUid());
 
         final String template = "account_statement";
-        return builder.address(billedUser.getEmailAddress())
+        return builder.toAddress(billedUser.getEmailAddress())
                 .content(templateEngine.process("text/" + template, ctx))
                 .htmlContent(templateEngine.process("html/" + template, ctx))
                 .build();
@@ -97,15 +99,14 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         Objects.requireNonNull(adminToEmail);
         Objects.requireNonNull(paymentLink);
 
-        // todo : have multiple links/types (e.g., with direct deposit) [and also campaign tracking etc]
-
         final String template = "trial_ended";
         final Context ctx = new Context(adminToEmail.getLocale());
         ctx.setVariable("toName", adminToEmail.getName());
         ctx.setVariable("paymentLink", paymentLink);
 
         return new GrassrootEmail.EmailBuilder(messageSource.getMessage("email.account.trial.ended.subject"))
-                .address(adminToEmail.getEmailAddress())
+                .toAddress(adminToEmail.getEmailAddress())
+                .toName(adminToEmail.getDisplayName())
                 .content(templateEngine.process("text/" + template, ctx))
                 .htmlContent(templateEngine.process("html/" + template, ctx))
                 .build();
@@ -128,7 +129,8 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         ctx.setVariable("paymentLink", paymentLink);
 
         return new GrassrootEmail.EmailBuilder(messageSource.getMessage("email.account.disabled.subject"))
-                .address(adminToEmail.getEmailAddress())
+                .toAddress(adminToEmail.getEmailAddress())
+                .toName(adminToEmail.getDisplayName())
                 .content(templateEngine.process("text/" + template, ctx))
                 .htmlContent(templateEngine.process("html/" + template, ctx))
                 .build();
@@ -159,7 +161,8 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         final String htmlContent = templateEngine.process("html/" + templateSuffix, ctx);
 
         GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(subject)
-                .address(request.getDestination().getEmailAddress())
+                .toAddress(request.getDestination().getEmailAddress())
+                .toName(request.getDestination().getDisplayName())
                 .content(textContent)
                 .htmlContent(htmlContent);
         return builder.build();
@@ -178,7 +181,8 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         final String htmlBody = templateEngine.process("html/" + templateSuffix, ctx);
 
         return new GrassrootEmail.EmailBuilder(subject)
-                .address(openingUser.getEmailAddress())
+                .toAddress(openingUser.getEmailAddress())
+                .toName(openingUser.getDisplayName())
                 .content(body)
                 .htmlContent(htmlBody)
                 .build();
@@ -194,9 +198,10 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         ctx.setVariable("request", request);
         ctx.setVariable("urlForNewRequest", urlForRequest + "?accountUid=" + request.getRequestor().getUid());
 
-        // todo : should not be billing user ... (or, should be all admin)
+        User target = request.getRequestor().getBillingUser();
         return new GrassrootEmail.EmailBuilder(subject)
-                .address(request.getRequestor().getBillingUser().getEmailAddress())
+                .toAddress(target.getEmailAddress())
+                .toName(target.getDisplayName())
                 .content(templateEngine.process("text/sponsorship_denied", ctx))
                 .htmlContent(templateEngine.process("html/sponsorship_denied", ctx))
                 .build();
@@ -224,7 +229,8 @@ public class AccountEmailServiceImpl implements AccountEmailService {
         ctx.setVariable("requestLink", sponsorshipResponseUrl + "?requestUid=" + request.getUid());
 
         return new GrassrootEmail.EmailBuilder(subject)
-                .address(request.getDestination().getEmailAddress())
+                .toAddress(request.getDestination().getEmailAddress())
+                .toName(request.getDestination().getDisplayName())
                 .content(templateEngine.process("text/sponsor_auto_reminder", ctx))
                 .htmlContent(templateEngine.process("html/sponsor_auto_reminder", ctx))
                 .build();
@@ -246,13 +252,31 @@ public class AccountEmailServiceImpl implements AccountEmailService {
                 .forEach(u -> {
                     ctx.setVariable("toName", u.getName());
                     emailSet.add(new GrassrootEmail.EmailBuilder(subject)
-                            .address(u.getEmailAddress())
+                            .toAddress(u.getEmailAddress())
+                            .toName(u.getDisplayName())
                             .content(templateEngine.process("text/sponsor_auto_reminder_requestor", ctx))
                             .htmlContent(templateEngine.process("html/sponsor_auto_reminder_requestor", ctx))
                             .build());
                 });
 
         return emailSet;
+    }
+
+    @Override
+    public GrassrootEmail generateDonationShareEmail(String fromName, String toAddress, String linkToDonate) {
+        final String subject = fromName + " thinks you should donate to Grassroot";
+        final Context ctx = new Context(Locale.getDefault());
+        ctx.setVariable("fromName", fromName);
+        ctx.setVariable("shareLink", linkToDonate);
+        final String htmlContent = templateEngine.process("html/donate_share_email", ctx);
+        log.debug("processed template ... firing off mail, content: {}", htmlContent);
+        return new GrassrootEmail
+                .EmailBuilder(subject)
+                .toAddress(toAddress)
+                .fromName("Grassroot")
+                .htmlContent(htmlContent)
+                .content(htmlContent)
+                .build();
     }
 
 }

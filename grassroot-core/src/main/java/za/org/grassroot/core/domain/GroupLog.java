@@ -4,6 +4,7 @@ package za.org.grassroot.core.domain;
 import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 
 import javax.persistence.*;
@@ -80,6 +81,11 @@ public class GroupLog implements Serializable, ActionLog {
 
     public Instant getCreationTime() {
         return createdDateTime;
+    }
+
+    @Override
+    public ActionLogType getActionLogType() {
+        return ActionLogType.GROUP_LOG;
     }
 
     private void validateLogTypeNullTargets(GroupLogType type, User targetUser, Group targetSubGroup,

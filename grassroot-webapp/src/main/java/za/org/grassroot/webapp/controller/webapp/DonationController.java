@@ -5,68 +5,60 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
-import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.util.UriComponentsBuilder;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
+import za.org.grassroot.integration.payments.PaymentBroker;
+import za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.PaymentSystemResponse;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
 import java.net.URLEncoder;
-import java.util.Collections;
 import java.util.Locale;
 import java.util.regex.Pattern;
+
+import static za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse.SUCCESS_MATCHER;
 
 @Controller @Slf4j
 @RequestMapping("/donate")
 @PropertySource(value = "${grassroot.payments.properties}", ignoreResourceNotFound = true)
 public class DonationController extends BaseController {
 
-    private static final Pattern SUCCESS_MATCHER = Pattern.compile("^(000\\.000\\.|000\\.100\\.1|000\\.[36])");
-
     @Value("${grassroot.payments.url:http://paymentsurl.com}")
     private String paymentUrl;
 
-    private String paymentUserId;
-    private String paymentPassword;
     private String paymentEntityId;
 
     private String successUrl;
     private String resultsEmail;
     private String sharingUrl;
 
-    private final RestTemplate restTemplate;
     private final Environment environment;
     private final MessagingServiceBroker messageBroker;
+    private final PaymentBroker paymentBroker;
     private final TemplateEngine templateEngine;
 
     @Autowired
-    public DonationController(RestTemplate restTemplate, Environment environment, MessagingServiceBroker messageBroker, TemplateEngine templateEngine) {
-        this.restTemplate = restTemplate;
+    public DonationController(Environment environment, MessagingServiceBroker messageBroker, PaymentBroker paymentBroker, TemplateEngine templateEngine) {
         this.environment = environment;
         this.messageBroker = messageBroker;
+        this.paymentBroker = paymentBroker;
         this.templateEngine = templateEngine;
     }
 
     @PostConstruct
     public void init() {
         // paymentUrl = environment.getProperty("grassroot.payments.url", "https://test.oppwa.com/v1/checkouts");
-        paymentUserId = environment.getProperty("grassroot.payments.values.user", "8a8294174e735d0c014e78cf266b1794");
-        paymentPassword = environment.getProperty("grassroot.payments.values.password", "qyyfHCN83e");
         paymentEntityId = environment.getProperty("grassroot.payments.values.channelId3d", "8a8294174e735d0c014e78cf26461790");
         successUrl = environment.getProperty("grassroot.payments.success.url", "https://test.grassroot.org.za/donate/success");
         resultsEmail = environment.getProperty("grassroot.payments.donate.email", "test@grassroot.org.za");
@@ -83,7 +75,7 @@ public class DonationController extends BaseController {
     public String initiatePayment(Model model, @RequestParam int amount, @RequestParam String name, @RequestParam String email) {
         try {
             long startTime = System.currentTimeMillis();
-            PaymentSystemResponse response = initiateCheckout(amount);
+            PaymentCopyPayResponse response = paymentBroker.initiateCopyPayCheckout(amount);
             log.info("got checkout response in {} msecs, looks like {}", startTime - System.currentTimeMillis(), response);
             model.addAttribute("paymentJsUrl",
                     paymentUrl + "/v1/paymentWidgets.js?checkoutId=" + response.getId());
@@ -110,7 +102,7 @@ public class DonationController extends BaseController {
                                   @RequestParam(required = false) int amount,
                                   Model model, RedirectAttributes attributes, HttpServletRequest request) {
         try {
-            PaymentSystemResponse response = getPaymentResult(resourcePath);
+            PaymentCopyPayResponse response = paymentBroker.getPaymentResult(resourcePath);
             log.info("got this response: {}", response.toString());
             if (SUCCESS_MATCHER.matcher(response.getInternalCode()).find()) {
                 log.info("successful payment! internal code: {}", response.getInternalCode());
@@ -152,32 +144,9 @@ public class DonationController extends BaseController {
         }
     }
 
-    private PaymentSystemResponse initiateCheckout(final int amount) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(paymentUrl + "/v1/checkouts")
-                .queryParam("authentication.userId", paymentUserId)
-                .queryParam("authentication.password", paymentPassword)
-                .queryParam("authentication.entityId", paymentEntityId)
-                .queryParam("amount", amount + ".00")
-                .queryParam("currency", "ZAR")
-                .queryParam("paymentType", "DB");
-
-        HttpHeaders stdHeaders = new HttpHeaders();
-        stdHeaders.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-
-        ResponseEntity<PaymentSystemResponse> response = restTemplate.exchange(
-                builder.build().toUri(), HttpMethod.POST, new HttpEntity<>(stdHeaders), PaymentSystemResponse.class);
-        return response.getBody();
-    }
-
-    private PaymentSystemResponse getPaymentResult(String resourcePath) {
-        URI requestUri = UriComponentsBuilder.fromUriString(paymentUrl + resourcePath).build().toUri();
-        log.info("requesting payment result via URI: {}", requestUri.toString());
-        ResponseEntity<PaymentSystemResponse> response = restTemplate.getForEntity(requestUri, PaymentSystemResponse.class);
-        return response.getBody();
-    }
-
     private void sendSuccessEmail(String name, String email, int amount) {
-        messageBroker.sendEmail(Collections.singletonList(resultsEmail), new GrassrootEmail.EmailBuilder("Successful donation")
+        messageBroker.sendEmail(new GrassrootEmail.EmailBuilder("Successful donation")
+                .toAddress(resultsEmail).toName("Grassroot")
                 .content("Successful donation received from " + name  + " (" + email + "), for R" + amount + ",")
                 .build());
     }
@@ -192,10 +161,11 @@ public class DonationController extends BaseController {
             final String htmlContent = templateEngine.process("donate/share_email", ctx);
             log.info("processed template ... firing off mail");
             log.debug("email template processed looks like: {}", htmlContent);
-            messageBroker.sendEmail(Collections.singletonList(toEmail), new GrassrootEmail.EmailBuilder(subject)
-                    .from("Grassroot").htmlContent(htmlContent).content(htmlContent).build());
+            messageBroker.sendEmail(new GrassrootEmail.EmailBuilder(subject)
+                    .toAddress(toEmail).toName(toName).fromName("Grassroot")
+                    .htmlContent(htmlContent).content(htmlContent).build());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error seniding sharing mail: ", e);
         }
 
     }

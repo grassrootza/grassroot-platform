@@ -2,6 +2,7 @@ package za.org.grassroot.services.task;
 
 import za.org.grassroot.core.domain.task.Vote;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +12,11 @@ import java.util.Map;
 public interface VoteBroker {
 
     Vote load(String voteUid);
+
+    // votes cannot change topic or scope (groups included or not) after creation, just closing time & description field
+    Vote updateVote(String userUid, String voteUid, LocalDateTime eventStartDateTime, String description);
+
+    void updateVoteClosingTime(String userUid, String eventUid, LocalDateTime closingDateTime);
 
     void addVoteOption(String userUid, String voteUid, String voteOption);
 

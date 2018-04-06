@@ -178,7 +178,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (userExists) {
 
             User userToUpdate = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
-            if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(DeliveryRoute.ANDROID_APP)) {
+            if (userToUpdate.isHasAndroidProfile() && userToUpdate.getMessagingPreference().equals(DeliveryRoute.ANDROID_APP)) {
                 log.warn("User already has android profile");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }
@@ -562,6 +562,21 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional
+    public void updateHasImage(String userUid, boolean hasImage) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        user.setHasImage(hasImage);
+    }
+
+    @Override
+    @Transactional
+    public void updateContactError(String userUid, boolean hasContactError) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        user.setContactError(hasContactError);
+    }
+
+    @Override
+    @Transactional
     public User fetchUserByUsernameStrict(String username) {
         return userRepository.findByUsername(username);
     }

@@ -44,21 +44,24 @@ public class USSDAdvancedHomeController extends USSDBaseController {
     private static final Integer searchRadius = 5000;
     private static final USSDSection thisSection = USSDSection.HOME;
 
-    private final UssdLocationServicesBroker ussdLocationServicesBroker;
+    private UssdLocationServicesBroker ussdLocationServicesBroker;
     private final UserLocationLogRepository userLocationLogRepository; // not great, but avoiding some nasty async issues
 
     private final GeoLocationBroker geoLocationBroker;
     private final EventBroker eventBroker;
 
     @Autowired
-    public USSDAdvancedHomeController(UssdLocationServicesBroker ussdLocationServicesBroker,
-                                      UserLocationLogRepository userLocationLogRepository,
+    public USSDAdvancedHomeController(UserLocationLogRepository userLocationLogRepository,
                                       GeoLocationBroker geoLocationBroker,
                                       EventBroker eventBroker){
-        this.ussdLocationServicesBroker = ussdLocationServicesBroker;
         this.userLocationLogRepository = userLocationLogRepository;
         this.geoLocationBroker = geoLocationBroker;
         this.eventBroker = eventBroker;
+    }
+
+    @Autowired(required = false)
+    public void setUssdLocationServicesBroker(UssdLocationServicesBroker ussdLocationServicesBroker) {
+        this.ussdLocationServicesBroker = ussdLocationServicesBroker;
     }
 
     @RequestMapping(value = ROOT_PATH + startMenu)
@@ -137,7 +140,7 @@ public class USSDAdvancedHomeController extends USSDBaseController {
         publicMeetings.stream()
                 .skip(pageNumber * PAGE_SIZE)
                 .limit(PAGE_SIZE)
-                .forEach(pm -> ussdMenu.addMenuOption(moreMenus + "/public/mtgs/details?meetingUid=" + pm.getUid(),
+                .forEach(pm -> ussdMenu.addMenuOption(moreMenus + "public/mtgs/details?meetingUid=" + pm.getUid(),
                     assembleDescription(pm)));
         if (publicMeetings.size() > (pageNumber + 1) * PAGE_SIZE) {
             ussdMenu.addMenuOption(moreMenus + "public/mtgs?page=" + (pageNumber + 1), getMessage(optionsKey + "more", user));

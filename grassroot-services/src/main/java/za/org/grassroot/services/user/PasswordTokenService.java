@@ -1,8 +1,11 @@
 package za.org.grassroot.services.user;
 
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.VerificationCodeType;
+
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -14,6 +17,10 @@ public interface PasswordTokenService {
     VerificationTokenCode generateLongLivedAuthCode(String userUid);
 
     VerificationTokenCode fetchLongLivedAuthCode(String phoneNumber);
+
+    VerificationTokenCode generateEntityResponseToken(String userUid, String entityUid, boolean forcePersist);
+
+    void generateResponseTokens(Set<String> userUids, String groupUid, String taskUid);
 
     boolean extendAuthCodeIfExpiring(String phoneNumber, String code);
 
@@ -30,5 +37,7 @@ public interface PasswordTokenService {
     boolean isExpired(VerificationTokenCode verificationTokenCode);
 
     void expireVerificationCode(String userUid, VerificationCodeType type);
+
+    void validateEntityResponseCode(String userUid, String entityUid, String code);
 
 }

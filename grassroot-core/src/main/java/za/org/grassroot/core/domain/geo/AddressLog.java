@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.geo;
 
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.AddressLogType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -139,6 +140,11 @@ public class AddressLog implements ActionLog, LocationHolder {
 
     public Instant getCreationTime() {
         return creationTime;
+    }
+
+    @Override
+    public ActionLogType getActionLogType() {
+        return ActionLogType.ADDRESS_LOG;
     }
 
     public String getDescription() {

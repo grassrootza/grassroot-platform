@@ -129,8 +129,11 @@ public class GroupController extends BaseController {
         model.addAttribute("reminderOptions", reminderMinuteOptions(true));
         model.addAttribute("hasParent", (group.getParent() != null));
 
-        List<TaskDTO> tasks = taskBroker.fetchUpcomingIncompleteGroupTasks(user.getUid(), groupUid);
-        model.addAttribute("groupTasks", tasks);
+        log.info("about to try adding tasks ...");
+        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS)) {
+            List<TaskDTO> tasks = taskBroker.fetchUpcomingIncompleteGroupTasks(user.getUid(), groupUid);
+            model.addAttribute("groupTasks", tasks);
+        }
 
         model.addAttribute("subGroups", groupQueryBroker.subGroups(groupUid));
         model.addAttribute("openToken", group.hasValidGroupTokenCode());
@@ -839,7 +842,6 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "temp")
     public String redirectToMessaging() {
-
         return "group/temp";
     }
 

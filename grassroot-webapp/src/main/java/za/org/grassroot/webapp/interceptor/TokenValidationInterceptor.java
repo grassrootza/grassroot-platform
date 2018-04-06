@@ -2,8 +2,7 @@ package za.org.grassroot.webapp.interceptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -26,14 +25,11 @@ import java.util.Map;
 /**
  * Created by paballo on 2016/03/15.
  */
-@Component
+@Component @Slf4j
 public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
     private PasswordTokenService passwordTokenService;
-
     private JwtService jwtService;
-
-    private static final Logger log = LoggerFactory.getLogger(TokenValidationInterceptor.class);
 
     private static final String contentType = "application/json";
 
@@ -48,9 +44,7 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request,
-                             HttpServletResponse response, Object handler) throws Exception {
-
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if (request.getMethod().equalsIgnoreCase(RequestMethod.OPTIONS.toString()))
             return true;
 
@@ -68,7 +62,8 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
             String phoneNumber = pathVariables.containsKey("phoneNumber") ? String.valueOf(pathVariables.get("phoneNumber")).trim() : null;
             String code = pathVariables.containsKey("code") ? String.valueOf(pathVariables.get("code")).trim() : null;
-            if (passwordTokenService.isLongLiveAuthValid(phoneNumber, code)) {
+            if (passwordTokenService.isLongLiveAuthValid(phoneNumber, code)
+                    || passwordTokenService.extendAuthCodeIfExpiring(phoneNumber, code)) {
                 return true;
             } else {
                 VerificationTokenCode tokenCode = passwordTokenService.fetchLongLivedAuthCode(phoneNumber);
@@ -79,19 +74,12 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             }
         }
 
-
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectWriter ow = mapper.writer();
 
-        ResponseWrapper responseWrapper;
+        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED,
+                isTokenExpired ? RestMessage.TOKEN_EXPIRED : RestMessage.INVALID_TOKEN, RestStatus.FAILURE);
 
-        if (isTokenExpired) {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.TOKEN_EXPIRED,
-                        RestStatus.FAILURE);
-        } else {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN,
-                        RestStatus.FAILURE);
-        }
         response.setContentType(contentType);
         response.getWriter().write(ow.writeValueAsString(responseWrapper));
         response.setStatus(responseWrapper.getCode());

@@ -94,6 +94,10 @@ public interface UserManagementService {
 
     void updatePhoneNumber(String callingUserUid, String userUid, String phoneNumber);
 
+    void updateHasImage(String userUid, boolean hasImage);
+
+    void updateContactError(String userUid, boolean hasContactError);
+
     /*
     Miscellaneous methods to query various properties about a user
      */

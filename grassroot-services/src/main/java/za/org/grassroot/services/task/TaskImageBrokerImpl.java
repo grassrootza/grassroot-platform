@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,10 +14,12 @@ import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.media.ImageRecord;
+import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
+import za.org.grassroot.core.specifications.TodoLogSpecifications;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.UrlShortener;
@@ -25,15 +28,13 @@ import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.enums.ActionLogType.EVENT_LOG;
 import static za.org.grassroot.core.enums.ActionLogType.TODO_LOG;
+import static za.org.grassroot.core.enums.EventLogType.IMAGE_AT_CREATION;
 import static za.org.grassroot.core.enums.EventLogType.IMAGE_RECORDED;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.forEvent;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.isImageLog;
@@ -116,29 +117,67 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
     @Override
     @Transactional
-    public void recordImageForTask(String userUid, String taskUid, TaskType taskType, String imageKey, EventLogType logType) {
+    public void recordImageForTask(String userUid, String taskUid, TaskType taskType, Collection<String> imageKeys, EventLogType eventLogType, TodoLogType todoLogType) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(taskUid);
-        Objects.requireNonNull(imageKey);
+        Objects.requireNonNull(imageKeys);
 
-        if (taskType.equals(TaskType.MEETING)) {
-            User user = userRepository.findOneByUid(userUid);
-            Event meeting = eventRepository.findOneByUid(taskUid);
-            EventLog imageLog = new EventLog(user, meeting, logType == null ? IMAGE_RECORDED : logType);
-            imageLog.setTag(imageKey); // slight abuse of usage, but no other possible tag here
-            eventLogRepository.save(imageLog);
+        DebugUtil.transactionRequired("Image log storing needs transaction");
+
+        User user = userRepository.findOneByUid(userUid);
+        if (TaskType.MEETING.equals(taskType) || TaskType.VOTE.equals(taskType)) {
+            Event event = eventRepository.findOneByUid(taskUid);
+            eventLogRepository.save(generateEventLogs(imageKeys, user, event, eventLogType));
+        } else {
+            Todo todo = todoRepository.findOneByUid(taskUid);
+            logger.info("recording todo logs with image keys: {}", imageKeys);
+            todoLogRepository.save(generateTodoLogs(imageKeys, user, todo, todoLogType));
         }
+    }
+
+    private List<EventLog> generateEventLogs(Collection<String> imageKeys, User user, Event event, EventLogType eventLogType) {
+        return imageKeys.stream().map(key -> {
+            EventLog imageLog = new EventLog(user, event, eventLogType == null ? IMAGE_RECORDED : eventLogType);
+            imageLog.setTag(key); // slight abuse of usage, but no other possible tag here
+            logger.info("recording event log with image: {}", imageLog);
+            return imageLog;
+        }).collect(Collectors.toList());
+    }
+
+    private List<TodoLog> generateTodoLogs(Collection<String> imageKeys, User user, Todo todo, TodoLogType logType) {
+        return imageKeys.stream()
+                .map(key -> new TodoLog(logType == null ? TodoLogType.IMAGE_RECORDED : logType, user, todo, key))
+                .collect(Collectors.toList());
     }
 
     @Override
     public String getShortUrl(String imageKey) {
         try {
-            return urlShortener.shortenImageUrl(taskImagesBucket, imageKey);
+            return urlShortener.shortenImageUrl(MediaFunction.TASK_IMAGE, imageKey);
         } catch (Exception e) {
             // not great to have generic catch here but need robustness or have risk of notices not going out
             logger.error("Error shortening URL! : {}", e);
             return null;
         }
+    }
+
+    @Override
+    public String fetchImageKeyForCreationImage(String userUid, String taskUid, TaskType taskType) {
+        Task task = validateFieldsAndFetch(userUid, taskUid, taskType);
+        String imageRecordKey;
+        if (taskType.equals(TaskType.TODO)) {
+            Specifications<TodoLog> todoLogSpecs = Specifications.where(TodoLogSpecifications.forTodo((Todo) task))
+                    .and(TodoLogSpecifications.ofType(TodoLogType.IMAGE_AT_CREATION));
+            List<TodoLog> todoLogs = todoLogRepository.findAll(todoLogSpecs);
+            imageRecordKey = todoLogs != null && !todoLogs.isEmpty() ? todoLogs.get(0).getTag() : null;
+        } else {
+            Specifications<EventLog> eventLogSpecs = Specifications.where(
+                    EventLogSpecifications.forEvent((Event) task)).and(EventLogSpecifications.ofType(IMAGE_AT_CREATION));
+            List<EventLog> logs = eventLogRepository.findAll(eventLogSpecs);
+            imageRecordKey = logs != null && !logs.isEmpty() ? logs.get(0).getTag() : null;
+        }
+
+        return imageRecordKey;
     }
 
     @Override

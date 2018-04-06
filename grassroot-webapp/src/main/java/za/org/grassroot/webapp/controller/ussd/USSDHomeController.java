@@ -44,8 +44,6 @@ import static za.org.grassroot.webapp.enums.USSDSection.HOME;
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 public class USSDHomeController extends USSDBaseController {
 
-    private final UserResponseBroker userResponseBroker;
-
     // since this controller in effect routes responses, needs access to the other primary ones
     // setters are for testing (since we need this controller in the tests of the handler)
     private final USSDLiveWireController liveWireController;
@@ -57,6 +55,7 @@ public class USSDHomeController extends USSDBaseController {
     private USSDGeoApiController geoApiController;
 
     private final CampaignBroker campaignBroker;
+    private final UserResponseBroker userResponseBroker;
 
     private static final USSDSection thisSection = HOME;
 
@@ -80,7 +79,7 @@ public class USSDHomeController extends USSDBaseController {
 
     // todo : think about how to do dynamically
     private final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
-            new AbstractMap.SimpleEntry<>("11", "IZWE_LAMI_CONS")
+            new AbstractMap.SimpleEntry<>("1", "IZWE_LAMI_CONS")
     ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
     @Autowired
@@ -177,7 +176,7 @@ public class USSDHomeController extends USSDBaseController {
                 userManager.needsToRenameSelf(user) ? USSDResponseTypes.RENAME_SELF : USSDResponseTypes.NONE;
     }
 
-    private USSDMenu directBasedOnTrailingDigits(String trailingDigits, User user) throws URISyntaxException {
+    private USSDMenu directBasedOnTrailingDigits(String trailingDigits, User user) {
         USSDMenu returnMenu;
         log.info("Processing trailing digits ..." + trailingDigits);
         if (safetyCode.equals(trailingDigits)) {

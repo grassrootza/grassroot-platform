@@ -20,7 +20,7 @@ public interface TodoBroker {
     // methods for creating and modifying to-dos
     String create(TodoHelper todoHelper);
 
-    void cancel(String userUid, String todoUid, String reason);
+    void cancel(String userUid, String todoUid, boolean sendNotices, String reason);
 
     void extend(String userUid, String todoUid, Instant newDueDateTime);
 

@@ -11,10 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
@@ -41,7 +38,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.Locale;
 
 
@@ -74,22 +70,18 @@ public class UserController extends BaseRestController {
         this.messageSource = messageSource;
     }
 
-    @ApiOperation(value = "Store a users profile photo, and get the server key back",
-            notes = " 'data' field contains a string that will have the UID of the file record on the server (storedFileUid)")
+    @ApiOperation(value = "Store a users profile photo, and get the server key back")
     @RequestMapping(value = "/image/change", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> uploadProfileImage(@RequestParam MultipartFile photo, HttpServletRequest request) {
-
-
+    public ResponseEntity uploadProfileImage(@RequestBody MultipartFile photo, HttpServletRequest request) {
         String userUid = getUserIdFromRequest(request);
         String imageKey = userProfileImagesFolder + "/" + userUid;
-        MediaFunction mediaFunction = MediaFunction.USER_PROFILE_IMAGE;
-        // store the media, depending on its function (if task image stick in there so analysis etc is triggered)
-        log.info("storing a media file, with imageKey = {}, and mediaFunction = {}", imageKey, mediaFunction);
 
-        String storedFileUid = mediaFileBroker.storeFile(photo, mediaFunction, null, imageKey, photo.getName());
-        return RestUtil.okayResponseWithData(RestMessage.UPLOADED, storedFileUid);
+        log.info("storing a media file, with imageKey = {}, and mediaFunction = {}", imageKey, MediaFunction.USER_PROFILE_IMAGE);
+
+        String storedFileUid = mediaFileBroker.storeFile(photo, MediaFunction.USER_PROFILE_IMAGE, null, imageKey, photo.getName());
+        userService.updateHasImage(userUid, true);
+        return ResponseEntity.ok(storedFileUid);
     }
-
 
     @RequestMapping(value = "/image/view/{userUid}", method = RequestMethod.GET)
     public ResponseEntity<byte[]> viewProfileImage(@PathVariable String userUid) {
@@ -109,8 +101,7 @@ public class UserController extends BaseRestController {
             }
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.IMAGE_PNG);
-            ResponseEntity<byte[]> response = new ResponseEntity(data, headers, HttpStatus.OK);
-            return response;
+            return (ResponseEntity<byte[]>) new ResponseEntity(data, headers, HttpStatus.OK);
         } catch (Exception e) {
             log.error("Failed to fetch user profile image for user with uid: " + userUid, e);
             return new ResponseEntity(null, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -162,8 +153,11 @@ public class UserController extends BaseRestController {
             if (user.hasPhoneNumber()) {
                 messagingBroker.sendPrioritySMS(message, user.getPhoneNumber()); // _not_ new one, obviously
             } else {
-                messagingBroker.sendEmail(Collections.singletonList(user.getEmailAddress()),
-                        new GrassrootEmail.EmailBuilder().subject("Your Grassroot verification").content(message).build());
+                messagingBroker.sendEmail(new GrassrootEmail.EmailBuilder()
+                        .subject("Your Grassroot verification")
+                        .toAddress(user.getEmailAddress())
+                        .toName(user.getDisplayName())
+                        .content(message).build());
             }
         } catch (Exception e) {
             log.error("No message broker around, couldn't send {}", message);

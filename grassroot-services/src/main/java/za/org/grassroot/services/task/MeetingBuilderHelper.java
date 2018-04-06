@@ -40,7 +40,7 @@ public class MeetingBuilderHelper {
     private String description;
     private MeetingImportance importance;
 
-    private Set<String> assignedMemberUids;
+    @Getter private Set<String> assignedMemberUids;
     @Getter private String taskImageKey;
 
     private boolean isPublic = false;
@@ -154,7 +154,7 @@ public class MeetingBuilderHelper {
                         " is not in the future");
         }
 
-        if (name.length() > 40) {
+        if (name.length() > 50) {
             throw new TaskNameTooLongException();
         }
     }
@@ -232,7 +232,7 @@ public class MeetingBuilderHelper {
                 ", parentUid='" + parentUid + '\'' +
                 ", parentType=" + parentType +
                 ", name='" + name + '\'' +
-                ", startDateTime=" + startDateTime +
+                ", startDateTime=" + startDateTimeInstant +
                 ", eventLocation='" + eventLocation + '\'' +
                 ", includeSubGroups=" + includeSubGroups +
                 ", reminderType=" + reminderType +

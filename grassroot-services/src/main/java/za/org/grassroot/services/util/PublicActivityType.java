@@ -6,6 +6,7 @@ public enum PublicActivityType {
     JOINED_GROUP,
     CALLED_MEETING,
     CALLED_VOTE,
+    CREATED_TODO,
     CREATED_GROUP,
     CREATED_ALERT,
     SENT_BROADCAST,

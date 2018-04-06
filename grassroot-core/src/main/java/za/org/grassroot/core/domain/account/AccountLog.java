@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -62,7 +63,12 @@ public class AccountLog implements ActionLog {
 
     @Override
     public User getUser() {
-        return null;
+        return user;
+    }
+
+    @Override
+    public ActionLogType getActionLogType() {
+        return ActionLogType.ACCOUNT_LOG;
     }
 
     public static class Builder {

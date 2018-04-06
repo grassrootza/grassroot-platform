@@ -1,8 +1,10 @@
 package za.org.grassroot.core.domain.task;
 
+import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -14,7 +16,7 @@ import java.util.Objects;
 /**
  * Created by aakilomar on 12/3/15.
  */
-@Entity
+@Entity @Getter
 @Table(name = "action_todo_log",
 		indexes = {@Index(name = "idx_action_todo_log_actiontodo_id", columnList = "action_todo_id")})
 public class TodoLog implements TaskLog {
@@ -29,7 +31,7 @@ public class TodoLog implements TaskLog {
 
 	@Basic
 	@Column(name = "created_date_time", nullable = false, updatable = false)
-	private Instant createdDateTime;
+	private Instant creationTime;
 
 	@ManyToOne
 	@JoinColumn(name = "action_todo_id", nullable = false)
@@ -67,46 +69,17 @@ public class TodoLog implements TaskLog {
 		this.todo = Objects.requireNonNull(todo);
 		this.message = message;
 		this.user = user;
-		this.createdDateTime = Instant.now();
+		this.creationTime = Instant.now();
 	}
 
-	public String getUid() { return uid; }
-
-	public TodoLogType getType() {
-		return type;
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public Instant getCreatedDateTime() {
-		return createdDateTime;
-	}
-
-	public Instant getCreationTime() {
-		return createdDateTime;
-	}
-
-	public Todo getTodo() {
-		return todo;
-	}
-
-	public User getUser() {
-		return user;
+	@Override
+	public ActionLogType getActionLogType() {
+		return ActionLogType.TODO_LOG;
 	}
 
 	@Override
 	public Task getTask() {
 		return todo;
-	}
-
-	public String getMessage() {
-		return message;
-	}
-
-	public GeoLocation getLocation() {
-		return location;
 	}
 
 	@Override
@@ -134,7 +107,7 @@ public class TodoLog implements TaskLog {
 		sb.append("type=").append(type);
 		sb.append(", todo=").append(todo);
 		sb.append(", user=").append(user);
-		sb.append(", createdDateTime=").append(createdDateTime);
+		sb.append(", createdDateTime=").append(creationTime);
 		sb.append(", id=").append(id);
 		sb.append('}');
 		return sb.toString();

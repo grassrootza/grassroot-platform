@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.TodoType;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -28,11 +29,12 @@ public class TodoHelper {
 
     @Setter private Set<String> assignedMemberUids;
     @Setter private Set<String> confirmingMemberUids;
-    @Setter private Set<String> mediaFileUids; // todo : actually, use taskImage, since we'll want to analyze
+
+    @Setter private List<String> mediaFileUids;
 
     private boolean requireImagesForConfirm;
 
-    void validateMinimumFields() {
+    protected void validateMinimumFields() {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(parentUid);
         Objects.requireNonNull(parentType);
@@ -42,15 +44,15 @@ public class TodoHelper {
         Objects.requireNonNull(dueDateTime);
     }
 
-    boolean isInformationTodo() {
+    public boolean isInformationTodo() {
         return TodoType.INFORMATION_REQUIRED.equals(todoType);
     }
 
-    boolean hasAssignedMembers() {
+    public boolean hasAssignedMembers() {
         return assignedMemberUids != null && !assignedMemberUids.isEmpty();
     }
 
-    boolean hasConfirmationMembers() {
+    public boolean hasConfirmationMembers() {
         return confirmingMemberUids != null && !confirmingMemberUids.isEmpty();
     }
 

@@ -1,7 +1,5 @@
 package za.org.grassroot.webapp.controller.webapp.account;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,15 +8,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.payments.PaymentMethod;
-import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountSponsorshipBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -33,17 +30,12 @@ import java.text.DecimalFormat;
 @RequestMapping("/account/sponsor")
 public class AccountSponsorshipController extends BaseController {
 
-    private static final Logger logger = LoggerFactory.getLogger(AccountSponsorshipController.class);
-
     private final AccountBroker accountBroker;
     private final AccountSponsorshipBroker sponsorshipBroker;
-    private final AccountBillingBroker billingBroker;
 
-    public AccountSponsorshipController(AccountBroker accountBroker, AccountSponsorshipBroker sponsorshipBroker,
-                                        AccountBillingBroker billingBroker) {
+    public AccountSponsorshipController(AccountBroker accountBroker, AccountSponsorshipBroker sponsorshipBroker) {
         this.accountBroker = accountBroker;
         this.sponsorshipBroker = sponsorshipBroker;
-        this.billingBroker = billingBroker;
     }
 
     @RequestMapping(value = "/request", method = RequestMethod.GET)

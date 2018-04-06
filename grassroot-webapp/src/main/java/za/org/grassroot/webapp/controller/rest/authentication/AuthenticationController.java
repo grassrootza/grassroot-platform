@@ -36,7 +36,7 @@ import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -46,8 +46,7 @@ public class AuthenticationController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
-    private static final List<UserInterfaceType> alphaInterfaces =
-            Arrays.asList(UserInterfaceType.WEB_2, UserInterfaceType.ANDROID_2);
+    private static final List<UserInterfaceType> alphaInterfaces = Collections.singletonList(UserInterfaceType.ANDROID_2);
 
     private final JwtService jwtService;
     private final PasswordTokenService passwordTokenService;
@@ -139,7 +138,7 @@ public class AuthenticationController {
             passwordTokenService.generateLongLivedAuthCode(user.getUid());
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
 
-            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user);
 
             String token = jwtService.createJwt(tokenRequest);
 
@@ -184,7 +183,7 @@ public class AuthenticationController {
             newUser.setPassword(password);
 
             User user = userService.createUserWebProfile(newUser);
-            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid()));
+            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user));
             AuthorizedUserDTO response = new AuthorizedUserDTO(user, token);
 
             return new AuthorizationResponseDTO(response);
@@ -247,7 +246,7 @@ public class AuthenticationController {
             User user = userService.findByInputNumber(msisdn);
 
             // Generate a token for the user (for the moment assuming it is Android client)
-            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user);
             if (durationMillis != null && durationMillis != 0) {
                 tokenRequest.setShortExpiryMillis(durationMillis);
             }
@@ -282,9 +281,10 @@ public class AuthenticationController {
             checkUserHasAccess(username, interfaceType == null ? UserInterfaceType.WEB_2 : interfaceType);
 
             // Generate a token for the user (for the moment assuming it is Android client - Angular uses same params)
-            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user);
 
             String token = jwtService.createJwt(tokenRequest);
+            logger.info("generate a jwt token, on server is: {}", token);
 
             // Assemble response entity
             AuthorizedUserDTO response = new AuthorizedUserDTO(user, token);

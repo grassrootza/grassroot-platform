@@ -3,16 +3,20 @@ package za.org.grassroot.core.domain.notification;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
 
-@MappedSuperclass
+@Entity
+@DiscriminatorValue("TODO")
 public abstract class TodoNotification extends Notification {
 	@ManyToOne
 	@JoinColumn(name = "action_todo_id")
@@ -26,9 +30,13 @@ public abstract class TodoNotification extends Notification {
 	@Override
 	public abstract NotificationDetailedType getNotificationDetailedType();
 
-
 	protected TodoNotification() {
 		// for JPA
+	}
+
+	@Override
+	public Task getTask() {
+		return todo;
 	}
 
 	@Override

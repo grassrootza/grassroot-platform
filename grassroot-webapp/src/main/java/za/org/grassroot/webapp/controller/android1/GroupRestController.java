@@ -17,8 +17,8 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
-import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
+import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -98,7 +98,7 @@ public class GroupRestController extends GroupAbstractRestController {
         } catch (InvalidPhoneNumberException e) {
             return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            log.error("Unknown error in group creation: ", e);
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
         }
     }
@@ -177,8 +177,8 @@ public class GroupRestController extends GroupAbstractRestController {
         try {
             groupBroker.unsubscribeMember(user.getUid(), groupUid);
             return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
-        } catch (Exception e) { // means user has already been removed
-            return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEMBER_ALREADY_LEFT);
+        } catch (SoleOrganizerUnsubscribeException e) { // means user has already been removed
+            return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.SOLE_ORGANIZER);
         }
     }
 
@@ -389,11 +389,6 @@ public class GroupRestController extends GroupAbstractRestController {
             }
         }
         return ImmutableMap.of("ADDED", permissionsAdded, "REMOVED", permissionsRemoved);
-    }
-
-    @ExceptionHandler(GroupChatSettingNotFoundException.class)
-    public ResponseEntity<ResponseWrapper> messageSettingNotFound() {
-        return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.MESSAGE_SETTING_NOT_FOUND);
     }
 
 }

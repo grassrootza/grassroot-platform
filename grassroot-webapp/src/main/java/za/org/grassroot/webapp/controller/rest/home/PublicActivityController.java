@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.home;
 
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +15,8 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import java.util.List;
 
 @Slf4j
-@RestController
-@Grassroot2RestController
-@RequestMapping("/activity")
+@RestController @Grassroot2RestController
+@RequestMapping("/api/activity") @Api("/activity")
 public class PublicActivityController {
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
