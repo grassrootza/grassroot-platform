@@ -172,4 +172,25 @@ public class NotificationManager implements NotificationService{
         Specifications<TodoNotification> specs = Specifications.where(forEvent).and(isFailed);
         return todoNotificationRepository.findAll(specs);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countFailedNotificationForEvent(String requestorUid, String eventUid) {
+        Specification<EventNotification> forEvent = (root, query, cb) ->
+                cb.equal(root.get(EventNotification_.event).get("uid"), eventUid);
+        Specification<EventNotification> isFailed = (root, query, cb) ->
+                root.get(BroadcastNotification_.status).in(FAILED_STATUS);
+        Specifications<EventNotification> specs = Specifications.where(forEvent).and(isFailed);
+        return eventNotificationRepository.count(specs);
+    }
+
+    @Override
+    public long countFailedNotificationForTodo(String requestorUid, String todoUid) {
+        Specification<TodoNotification> forEvent = (root, query, cb) ->
+                cb.equal(root.get(TodoNotification_.todo).get("uid"), todoUid);
+        Specification<TodoNotification> isFailed = (root, query, cb) ->
+                root.get(TodoNotification_.status).in(FAILED_STATUS);
+        Specifications<TodoNotification> specs = Specifications.where(forEvent).and(isFailed);
+        return todoNotificationRepository.count(specs);
+    }
 }

@@ -61,6 +61,9 @@ public class TaskFullDTO {
 
     @Setter private List<String> imageKeys;
 
+    @Setter private boolean errorReport;
+
+
     public TaskFullDTO(Task task, User user, Instant lastChangedTime, String userResponse) {
         this.taskUid = task.getUid();
         this.title = task.getName();

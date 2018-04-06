@@ -45,4 +45,8 @@ public interface NotificationService {
 
 	List<TodoNotification> loadFailedNotificationForTodo(String requestorUid, Todo todo);
 
+	long countFailedNotificationForEvent(String requestorUid, String eventUid);
+
+	long countFailedNotificationForTodo(String requestorUid, String eventUid);
+
 }

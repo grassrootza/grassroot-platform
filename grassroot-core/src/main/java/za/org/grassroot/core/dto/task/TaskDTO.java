@@ -71,6 +71,9 @@ public class TaskDTO implements Comparable<TaskDTO> {
     @JsonIgnore
     private final LocalDateTime deadlineDateTime;
 
+    @Setter private boolean errorReport;
+
+
     private TaskDTO(User user, Task task) {
         this.taskUid = task.getUid();
         this.title = task.getName();
