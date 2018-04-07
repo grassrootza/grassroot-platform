@@ -124,14 +124,15 @@ public class EventCreateController extends BaseRestController{
                                                               "members of the parent are assigned") Set<String> assignedMemberUids){
 
         String userUid = getUserIdFromRequest(request);
+
         LocalDateTime eventStartDateTime = Instant.ofEpochMilli(time).atZone(DateTimeUtil.getSAST()).toLocalDateTime();
 
         try {
             User user = userService.load(userUid);
 
             assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
-
             log.info("title={}, description={}, time={}, members={}, options={}", title, description, eventStartDateTime, assignedMemberUids, voteOptions);
+
 
             Vote vote = eventBroker.createVote(user.getUid(), parentUid, parentType, title, eventStartDateTime,
                     false, description, mediaFileUid, assignedMemberUids, voteOptions);
