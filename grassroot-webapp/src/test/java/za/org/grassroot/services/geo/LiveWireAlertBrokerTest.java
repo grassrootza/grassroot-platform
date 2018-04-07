@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBrokerImpl;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 
@@ -27,7 +28,6 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class LiveWireAlertBrokerTest {
-
 
     private LiveWireAlertBrokerImpl liveWireAlertBroker;
 
@@ -47,6 +47,8 @@ public class LiveWireAlertBrokerTest {
     private ApplicationEventPublisher applicationEventPublisherMock;
     @Mock
     private LogsAndNotificationsBroker logsAndNotificationsBrokerMock;
+    @Mock
+    private PermissionBroker permissionBrokerMock;
 
     @Mock
     private TypedQuery<LiveWireAlert> mockQuery;
@@ -60,7 +62,7 @@ public class LiveWireAlertBrokerTest {
     public void setUp () {
         liveWireAlertBroker = new LiveWireAlertBrokerImpl(alertRepositoryMock,userRepositoryMock,
                 groupRepositoryMock,meetingRepositoryMock,entityManagerMock,dataSubscriberRepositoryMock,
-                applicationEventPublisherMock,logsAndNotificationsBrokerMock);
+                applicationEventPublisherMock,logsAndNotificationsBrokerMock, permissionBrokerMock);
 
         testUser = new User("1234567899","Testing", null);
         testLocation = new GeoLocation(testLat,testLong);
