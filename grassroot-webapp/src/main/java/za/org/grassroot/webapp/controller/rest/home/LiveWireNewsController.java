@@ -15,8 +15,6 @@ import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
-import java.util.List;
-
 @Slf4j @RestController
 @Grassroot2RestController
 @RequestMapping("/api/news")

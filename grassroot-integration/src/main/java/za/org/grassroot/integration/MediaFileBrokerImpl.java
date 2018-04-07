@@ -14,7 +14,6 @@ import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.repository.MediaFileRecordRepository;
 import za.org.grassroot.integration.storage.StorageBroker;
 
-import java.util.Iterator;
 import java.util.Objects;
 
 @Service
@@ -27,9 +26,6 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
 
     @Value("${grassroot.livewire.media.bucket:null}")
     private String liveWireMediaBucket;
-
-    @Value("${grassroot.media.user-photo.bucket:null}")
-    private String userProfilePhotoBucket;
 
     @Value("${grassroot.media.default.bucket:null}")
     private String defaultMediaBucket;

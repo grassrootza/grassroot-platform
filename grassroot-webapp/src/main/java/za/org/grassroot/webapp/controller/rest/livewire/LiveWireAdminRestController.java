@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
@@ -27,6 +26,7 @@ import za.org.grassroot.webapp.model.LiveWireAlertDTO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController @Slf4j
 @Api("/api/livewire/admin")
@@ -92,8 +92,8 @@ public class LiveWireAdminRestController extends BaseRestController {
         LiveWireAlert liveWireAlert = liveWireAlertBroker.load(alertUid);
         Set<MediaFileRecord> records = storageBroker.retrieveMediaRecordsForFunction(MediaFunction.LIVEWIRE_MEDIA, mediaFileKeys);
         log.info("Records to add....{}",records);
-        for(Iterator<MediaFileRecord> iterator = records.iterator(); iterator.hasNext();){
-            liveWireAlertBroker.addMediaFile(getUserIdFromRequest(request),liveWireAlert.getUid(),iterator.next());
+        for (MediaFileRecord record : records) {
+            liveWireAlertBroker.addMediaFile(getUserIdFromRequest(request), liveWireAlert.getUid(), record);
         }
 
         log.info("Media files....{}",liveWireAlert.getMediaFiles());
@@ -126,11 +126,10 @@ public class LiveWireAdminRestController extends BaseRestController {
     @GetMapping(value = "/subscribers")
     public ResponseEntity<List<DataSubscriberDTO>> getSubscribers(HttpServletRequest request){
         if(liveWireAlertBroker.canUserRelease(getUserIdFromRequest(request))){
-            List<DataSubscriberDTO> dataSubscriberDTOS = new ArrayList<>();
-            dataSubscriberBroker.listPublicSubscribers()
-                    .forEach(dataSubscriber -> dataSubscriberDTOS.add(new DataSubscriberDTO(dataSubscriber.getUid(),dataSubscriber.getDisplayName())));
+            List<DataSubscriberDTO> dataSubscriberDTOS = dataSubscriberBroker.listPublicSubscribers().stream()
+                    .map(DataSubscriberDTO::new).collect(Collectors.toList());
             return ResponseEntity.ok(dataSubscriberDTOS);
-        }else{
+        } else {
             return ResponseEntity.ok(new ArrayList<>());
         }
     }
@@ -170,7 +169,6 @@ public class LiveWireAdminRestController extends BaseRestController {
         List<FBPostBuilder> posts = new ArrayList<>();
         posts.add(fbPostBuilder);
         log.info("Post to share on FB.....{}",posts);
-        log.info("List ya di posts...{}",posts);
 
         return ResponseEntity.ok(socialMediaBroker.postToFacebook(posts));
     }
