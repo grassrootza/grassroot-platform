@@ -1,9 +1,8 @@
 package za.org.grassroot.services.user;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
 import org.apache.commons.validator.routines.EmailValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;
@@ -48,12 +48,12 @@ import java.util.stream.Collectors;
 /**
  * @author Lesetse Kimwaga
  */
-
+@Slf4j
 @Service
 @Transactional
 public class UserManager implements UserManagementService, UserDetailsService {
 
-    private static final Logger log = LoggerFactory.getLogger(UserManager.class);
+    private static final String EXPIRED_USER_NAME = "del_user_";
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -573,6 +573,63 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public void updateContactError(String userUid, boolean hasContactError) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         user.setContactError(hasContactError);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(String userUid, String validationOtp) {
+        User user = userRepository.findOneByUid(userUid);
+        passwordTokenService.validateOtp(user.getUsername(), validationOtp);
+
+        // step 1 : remove user from their memberships, accounts, etc.
+        Set<Membership> memberships = user.getMemberships();
+        log.info("user now being removed from {} groups", memberships.size());
+        for (Membership membership : memberships) {
+            Group group = membership.getGroup();
+            group.removeMembership(membership); // concurrency?
+        }
+        user.setSafetyGroup(null);
+
+        log.info("user now being removed from accounts ..");
+        user.setPrimaryAccount(null);
+        for (Account account : user.getAccountsAdministered()) {
+            account.removeAdministrator(user);
+        }
+
+        // step 2 : set user inactive and remove their name, phone number and email address, and set their username to unique value
+        log.info("now setting user disabled and removing all personal data");
+        user.setEnabled(false);
+        user.setDisplayName(null);
+        user.setFirstName(null);
+        user.setLastName(null);
+        user.setPhoneNumber(null);
+        user.setEmailAddress(null);
+        user.setLanguageCode(null);
+        user.setProvince(null);
+
+        // possibly at some point in future may create a conflict, but pretty remote (_lots_ of deletes at once)
+        log.info("altering username to unique value");
+        user.setUsername(EXPIRED_USER_NAME + System.nanoTime());
+        user.setPassword(null);
+
+        // step 3 : set all boolean flags to false
+        log.info("and setting all flags to false");
+        user.setHasInitiatedSession(false);
+        user.setHasWebProfile(false);
+        user.setHasImage(false);
+        user.setHasAndroidProfile(false);
+        user.setHasSetOwnName(false);
+        user.setContactError(false);
+        user.setLiveWireContact(false);
+        user.setWhatsAppLinked(false);
+
+        log.info("and storing the deletion of all details");
+        userRepository.saveAndFlush(user);
+
+        log.info("user removed, now cleaning up logs ...");
+        asyncUserService.removeAllUserInfoLogs(userUid);
+
+        log.info("all clean, exiting");
     }
 
     @Override

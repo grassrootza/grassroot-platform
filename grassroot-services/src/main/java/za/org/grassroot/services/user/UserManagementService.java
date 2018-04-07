@@ -98,6 +98,8 @@ public interface UserManagementService {
 
     void updateContactError(String userUid, boolean hasContactError);
 
+    void deleteUser(String userUid, String validationOtp);
+
     /*
     Miscellaneous methods to query various properties about a user
      */
