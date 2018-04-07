@@ -67,17 +67,17 @@ public interface LiveWireAlertBroker {
     Methods for loading, tagging, and releasing alerts
      */
 
-    @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
+    //@PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
     Page<LiveWireAlert> loadAlerts(String userUid, boolean unreviewedOnly, Pageable pageable);
 
     boolean canUserTag(String userUid);
 
     boolean canUserRelease(String userUid);
 
-    @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
+    //@PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
     void setTagsForAlert(String userUid, String alertUid, List<String> tags);
 
-    @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
+    //@PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
     void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send, List<String> publicListUids);
 
     List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, int radius, GeographicSearchType searchType);

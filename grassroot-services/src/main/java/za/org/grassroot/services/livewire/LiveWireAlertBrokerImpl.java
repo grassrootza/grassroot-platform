@@ -31,6 +31,7 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -69,6 +70,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private MessageSourceAccessor messageSource;
     private UssdLocationServicesBroker locationServicesBroker;
 
+    private final PermissionBroker permissionBroker;
+
     protected final static double KM_PER_DEGREE = 111.045;
 
     @Value("${grassroot.livewire.instant.minsize:100}")
@@ -78,7 +81,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private int minGroupTasksForInstantAlert;
 
     @Autowired
-    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker,PermissionBroker permissionBroker) {
         this.alertRepository = alertRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
@@ -87,6 +90,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         this.dataSubscriberRepository = dataSubscriberRepository;
         this.applicationEventPublisher = applicationEventPublisher;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.permissionBroker = permissionBroker;
     }
 
     @Autowired
@@ -417,6 +421,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional(readOnly = true)
     public Page<LiveWireAlert> loadAlerts(String userUid, boolean unreviewedOnly, Pageable pageable) {
+        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid),"ROLE_LIVEWIRE_USER");
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(pageable);
 
@@ -445,6 +450,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional
     public void setTagsForAlert(String userUid, String alertUid, List<String> tags) {
+        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid),"ROLE_LIVEWIRE_USER");
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
@@ -473,6 +479,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional
     public void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send, List<String> publicListUids) {
+        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid),"ROLE_LIVEWIRE_USER");
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
