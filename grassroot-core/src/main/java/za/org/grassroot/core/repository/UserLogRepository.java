@@ -3,6 +3,7 @@ package za.org.grassroot.core.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.enums.UserLogType;
 
@@ -33,5 +34,7 @@ public interface UserLogRepository extends JpaRepository<UserLog, Long>, JpaSpec
             "GROUP BY ul.userUid " +
             "ORDER BY countLog DESC")
     List<Long> getMaxNumberLogsInInterval(Instant start, Instant end, UserLogType userLogType);
+
+    void deleteAllByUserUidAndUserLogTypeIn(String userUid, List<UserLogType> userLogTypeList);
 
 }

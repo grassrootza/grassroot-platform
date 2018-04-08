@@ -112,6 +112,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	public Meeting loadMeeting(String meetingUid) {
+		log.info("looking for meeting with UID: {}", meetingUid);
 		return meetingRepository.findOneByUid(meetingUid);
 	}
 
@@ -456,6 +457,7 @@ public class EventBrokerImpl implements EventBroker {
 		voteRepository.save(vote);
 
 		if (!StringUtils.isEmpty(taskImageKey)) {
+
 			taskImageBroker.recordImageForTask(userUid, vote.getUid(), TaskType.VOTE, Collections.singleton(taskImageKey), EventLogType.IMAGE_AT_CREATION, null);
 			vote.setImageUrl(taskImageBroker.getShortUrl(taskImageKey));
 		}

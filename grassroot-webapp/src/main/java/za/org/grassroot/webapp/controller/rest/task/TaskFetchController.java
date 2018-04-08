@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventNotification;
@@ -30,6 +31,7 @@ import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TaskImageBroker;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
@@ -40,6 +42,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -56,17 +59,19 @@ public class TaskFetchController extends BaseRestController {
 	private final MemberDataExportBroker dataExportBroker;
 	private final NotificationService notificationService;
 	private final EventBroker eventBroker;
+	private final TodoBroker todoBroker;
 
 	@Autowired
 	public TaskFetchController(TaskBroker taskBroker, TaskImageBroker taskImageBroker,
 			JwtService jwtService, UserManagementService userManagementService, MemberDataExportBroker dataExportBroker,
-			NotificationService notificationService, EventBroker eventBroker) {
+			NotificationService notificationService, EventBroker eventBroker, TodoBroker todoBroker) {
 		super(jwtService, userManagementService);
 		this.taskBroker = taskBroker;
 		this.taskImageBroker = taskImageBroker;
 		this.dataExportBroker = dataExportBroker;
 		this.notificationService = notificationService;
 		this.eventBroker = eventBroker;
+		this.todoBroker = todoBroker;
 	}
 
     @Timed
@@ -105,8 +110,18 @@ public class TaskFetchController extends BaseRestController {
     @ApiOperation(value = "Full details on a single, specified task")
     public ResponseEntity<TaskFullDTO> fetchTask(@PathVariable TaskType taskType, @PathVariable String taskUid, HttpServletRequest request) {
         String userUid = getUserIdFromRequest(request);
-        return ResponseEntity.ok(taskBroker.fetchSpecifiedTasks(userUid, Collections.singletonMap(taskUid, taskType),
-                null).get(0));
+		TaskFullDTO task = taskBroker.fetchSpecifiedTasks(userUid, Collections.singletonMap(taskUid, taskType), null).get(0);
+		long failedNotificationForEvent = 0;
+
+		if(task.getType().equals(TaskType.TODO)) {
+			failedNotificationForEvent = notificationService.countFailedNotificationForTodo(userUid, task.getTaskUid());
+		} else {
+			failedNotificationForEvent = notificationService.countFailedNotificationForEvent(userUid, task.getTaskUid());
+		}
+		if(failedNotificationForEvent > 0) {
+			task.setErrorReport(true);
+		}
+        return ResponseEntity.ok(task);
     }
 
     @RequestMapping(value = "/meeting/rsvps/{taskUid}", method = RequestMethod.GET)
@@ -180,6 +195,20 @@ public class TaskFetchController extends BaseRestController {
         if (userUid.equals(loggedInUserUid)) {
             ChangedSinceData<TaskDTO> tasks = taskBroker.fetchGroupTasks(userUid, groupUid,
                     changedSinceMillis == null || changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis));
+
+			for (TaskDTO taskDTO : tasks.getAddedAndUpdated()) {
+
+				long failedNotificationForEvent = 0;
+
+				if(taskDTO.getType().equals(TaskType.TODO.toString())) {
+					failedNotificationForEvent = notificationService.countFailedNotificationForTodo(userUid, taskDTO.getTaskUid());
+				} else {
+					failedNotificationForEvent = notificationService.countFailedNotificationForEvent(userUid, taskDTO.getTaskUid());
+				}
+				if(failedNotificationForEvent > 0) {
+					taskDTO.setErrorReport(true);
+				}
+			}
             log.info("returning tasks: {}", tasks);
             return ResponseEntity.ok(tasks);
         } else
@@ -214,14 +243,26 @@ public class TaskFetchController extends BaseRestController {
         String userId = getUserIdFromRequest(request);
         if (userId != null) {
             List<TaskFullDTO> tasks = taskBroker.fetchUpcomingGroupTasks(userId, groupUid);
+			for (TaskFullDTO task : tasks) {
+				long failedNotificationForEvent = 0;
+
+				if(task.getType().equals(TaskType.TODO)) {
+					failedNotificationForEvent = notificationService.countFailedNotificationForTodo(userId, task.getTaskUid());
+				} else {
+					failedNotificationForEvent = notificationService.countFailedNotificationForEvent(userId, task.getTaskUid());
+				}
+				if(failedNotificationForEvent > 0) {
+					task.setErrorReport(true);
+				}
+			}
             return ResponseEntity.ok(tasks);
         } else {
             return new ResponseEntity<>((List<TaskFullDTO>) null, HttpStatus.UNAUTHORIZED);
         }
     }
 
-	@RequestMapping(value = "/error-report/{taskUid}/download", method = RequestMethod.GET)
-	public ResponseEntity<byte[]> fetchTaskFailedNotifications(@PathVariable String taskUid,
+	@RequestMapping(value = "/error-report/{taskType}/{taskUid}/download", method = RequestMethod.GET)
+	public ResponseEntity<byte[]> fetchTaskFailedNotifications(@PathVariable TaskType taskType, @PathVariable String taskUid,
 			HttpServletRequest request) {
 
 		try {
@@ -235,8 +276,15 @@ public class TaskFetchController extends BaseRestController {
 			headers.add("Pragma", "no-cache");
 			headers.add("Expires", "0");
 
-			Event event = eventBroker.load(taskUid);
-			List <EventNotification> notifications = notificationService.loadFailedNotificationForEvent(user.getUid(), event);
+			List<? extends Notification> notifications = new ArrayList<>();
+			if(taskType.equals(TaskType.MEETING) || taskType.equals(TaskType.VOTE)) {
+				Event event = eventBroker.load(taskUid);
+				notifications = notificationService.loadFailedNotificationForEvent(user.getUid(), event);
+			} else {
+				Todo todo = todoBroker.load(taskUid);
+				notifications = notificationService.loadFailedNotificationForTodo(user.getUid(), todo);
+			}
+
 			log.info("found {} failed notifications", notifications.size());
 			XSSFWorkbook xls = dataExportBroker.exportNotificationErrorReport(notifications);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();

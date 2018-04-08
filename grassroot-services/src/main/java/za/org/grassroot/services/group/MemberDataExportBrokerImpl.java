@@ -10,6 +10,7 @@ import org.thymeleaf.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.NotificationSendError;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
@@ -277,7 +278,7 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Group members");
 
-        generateHeader(workbook, sheet, new String[]{"Created time", "Phone number", "Email", "Message"},
+        generateHeader(workbook, sheet, new String[]{"Created time", "Phone number", "Email"},
                 new int[]{7000, 5000, 7000, 7000});
 
         //table content stuff
@@ -295,14 +296,17 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
                 .withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
 
         for (Notification notification : notifications) {
-            {
-                addRow(sheet, rowIndex, new String[]{
-                        notification.getCreatedDateTime() == null ? "" : formatter.format(notification.getCreatedDateTime()) ,
-                        notification.getTarget().getPhoneNumber(),
-                        notification.getTarget().getEmailAddress(),
-                        notification.getMessage()});
-                rowIndex++;
+            ArrayList<String> tableColumns = new ArrayList<>();
+            tableColumns.add(notification.getCreatedDateTime() == null ? "" : formatter.format(notification.getCreatedDateTime()));
+            tableColumns.add(notification.getTarget().getPhoneNumber() == null ? "" : notification.getTarget().getPhoneNumber());
+            tableColumns.add(notification.getTarget().getEmailAddress() == null ? "" : notification.getTarget().getEmailAddress());
+            for (NotificationSendError notificationSendError : notification.getSendingErrors()) {
+                tableColumns.add(notificationSendError.getErrorTime() == null ? "" : formatter.format(notificationSendError.getErrorTime()) + " - " + notificationSendError.getErrorMessage());
             }
+            String[] values = tableColumns.toArray(new String[0]);
+            addRow(sheet, rowIndex, values);
+            rowIndex++;
+
         }
         return workbook;
     }

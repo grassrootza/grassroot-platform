@@ -24,6 +24,7 @@ public enum RestMessage {
     OTP_REQ_BEFORE_ADD,
     OTP_REQUIRED,
     USER_LOGGED_OUT,
+    USER_DELETED,
     TOKEN_EXTENDED,
     TOKEN_STILL_VALID,
 

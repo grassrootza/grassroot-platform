@@ -9,11 +9,14 @@ import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
 
-@MappedSuperclass
+@Entity
+@DiscriminatorValue("TODO")
 public abstract class TodoNotification extends Notification {
 	@ManyToOne
 	@JoinColumn(name = "action_todo_id")

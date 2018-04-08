@@ -13,16 +13,11 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.notification.BroadcastNotification;
-import za.org.grassroot.core.domain.notification.BroadcastNotification_;
-import za.org.grassroot.core.domain.notification.EventNotification;
-import za.org.grassroot.core.domain.notification.EventNotification_;
+import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.enums.DeliveryRoute;
-import za.org.grassroot.core.repository.BroadcastNotificationRepository;
-import za.org.grassroot.core.repository.EventNotificationRepository;
-import za.org.grassroot.core.repository.NotificationRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
@@ -46,17 +41,18 @@ public class NotificationManager implements NotificationService{
     private final NotificationRepository notificationRepository;
     private final BroadcastNotificationRepository broadcastNotificationRepository;
     private final EventNotificationRepository eventNotificationRepository;
+    private final TodoNotificationRepository todoNotificationRepository;
 
     @Autowired
-    public NotificationManager(UserRepository userRepository,
-                               NotificationRepository notificationRepository,
+    public NotificationManager(UserRepository userRepository, CacheManager cacheManager, NotificationRepository notificationRepository,
                                BroadcastNotificationRepository broadcastNotificationRepository,
-                               CacheManager cacheManager, EventNotificationRepository eventNotificationRepository) {
+                               EventNotificationRepository eventNotificationRepository, TodoNotificationRepository todoNotificationRepository) {
         this.userRepository = userRepository;
         this.notificationRepository = notificationRepository;
         this.broadcastNotificationRepository = broadcastNotificationRepository;
         this.cacheManager = cacheManager;
         this.eventNotificationRepository = eventNotificationRepository;
+        this.todoNotificationRepository = todoNotificationRepository;
     }
 
     @Override
@@ -162,8 +158,39 @@ public class NotificationManager implements NotificationService{
         Specification<EventNotification> forEvent = (root, query, cb) ->
                 cb.equal(root.get(EventNotification_.event), event);
         Specification<EventNotification> isFailed = (root, query, cb) ->
-                root.get(BroadcastNotification_.status).in(FAILED_STATUS);
+                root.get(EventNotification_.status).in(FAILED_STATUS);
         Specifications<EventNotification> specs = Specifications.where(forEvent).and(isFailed);
         return eventNotificationRepository.findAll(specs);
+    }
+
+    @Override
+    public List<TodoNotification> loadFailedNotificationForTodo(String requestorUid, Todo todo) {
+        Specification<TodoNotification> forEvent = (root, query, cb) ->
+                cb.equal(root.get(TodoNotification_.todo), todo);
+        Specification<TodoNotification> isFailed = (root, query, cb) ->
+                root.get(TodoNotification_.status).in(FAILED_STATUS);
+        Specifications<TodoNotification> specs = Specifications.where(forEvent).and(isFailed);
+        return todoNotificationRepository.findAll(specs);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countFailedNotificationForEvent(String requestorUid, String eventUid) {
+        Specification<EventNotification> forEvent = (root, query, cb) ->
+                cb.equal(root.get(EventNotification_.event).get("uid"), eventUid);
+        Specification<EventNotification> isFailed = (root, query, cb) ->
+                root.get(BroadcastNotification_.status).in(FAILED_STATUS);
+        Specifications<EventNotification> specs = Specifications.where(forEvent).and(isFailed);
+        return eventNotificationRepository.count(specs);
+    }
+
+    @Override
+    public long countFailedNotificationForTodo(String requestorUid, String todoUid) {
+        Specification<TodoNotification> forEvent = (root, query, cb) ->
+                cb.equal(root.get(TodoNotification_.todo).get("uid"), todoUid);
+        Specification<TodoNotification> isFailed = (root, query, cb) ->
+                root.get(TodoNotification_.status).in(FAILED_STATUS);
+        Specifications<TodoNotification> specs = Specifications.where(forEvent).and(isFailed);
+        return todoNotificationRepository.count(specs);
     }
 }

@@ -134,7 +134,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     public String initiateFacebookConnection(String userUid) {
         clearCache(userUid, "facebook");
         final URI uri = baseUri(userUid).path("/connect/facebook")
-                .queryParam("scope", "user_friends,user_posts,manage_pages,publish_pages,publish_actions")
+                .queryParam("scope", "user_posts,manage_pages,publish_pages,publish_actions")
                 .build().toUri();
         log.info("okay trying this out, URI = {}", uri.toString());
         return getRedirectUrl(uri);

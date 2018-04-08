@@ -6,10 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoType;
@@ -22,6 +19,7 @@ import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.UserResponseBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -47,6 +45,7 @@ public class IncomingSMSController {
     private final UserManagementService userManager;
 
     private final GroupBroker groupBroker;
+    private final AccountGroupBroker accountGroupBroker;
     private final CampaignBroker campaignBroker;
 
     private final MessageSourceAccessor messageSource;
@@ -63,12 +62,13 @@ public class IncomingSMSController {
 
     @Autowired
     public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker, MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
-                                 NotificationService notificationService, CampaignBroker campaignBroker,
+                                 AccountGroupBroker accountGroupBroker, NotificationService notificationService, CampaignBroker campaignBroker,
                                  @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSource, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userResponseBroker = userResponseBroker;
 
         this.userManager = userManager;
         this.groupBroker = groupBroker;
+        this.accountGroupBroker = accountGroupBroker;
         this.messageSource = messageSource;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.notificationService = notificationService;
@@ -89,8 +89,8 @@ public class IncomingSMSController {
 
     @RequestMapping(value = "initiated/group", method = RequestMethod.GET)
     @ApiOperation(value = "Incoming SMS, under the 'group' short code", notes = "For when we receive an out of the blue SMS, on the group number")
-    public void receiveGroupSms(@RequestParam(value = FROM_PARAMETER_NEW) String phoneNumber,
-                                @RequestParam(value = MSG_TEXT_PARAM_NEW) String message) {
+    public @ResponseBody String receiveGroupSms(@RequestParam(value = FROM_PARAMETER_NEW) String phoneNumber,
+                    @RequestParam(value = MSG_TEXT_PARAM_NEW) String message) {
         log.info("Inside receiving a message on group list, received {} as message", message);
         Map<String, String> groupJoinWords = groupBroker.getJoinWordsWithGroupIds();
         // todo : iterate hard on this to eg catch parts of words etc
@@ -98,14 +98,19 @@ public class IncomingSMSController {
                 .filter(entry -> entry.getKey().toLowerCase().equalsIgnoreCase(message))
                 .map(Map.Entry::getValue).collect(Collectors.toSet());
 
+        final String reply;
         if (!groupMatches.isEmpty()) {
             // disambiguate somehow ... for the moment, just adding the first
             User user = userManager.loadOrCreateUser(phoneNumber);
             final String groupUid = groupMatches.iterator().next();
-            groupBroker.addMemberViaJoinCode(user.getUid(), groupUid, message, UserInterfaceType.INCOMING_SMS, true);
+            Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), groupUid, message, UserInterfaceType.INCOMING_SMS);
+            reply = membership.getGroup().isPaidFor() ? accountGroupBroker.generateGroupWelcomeReply(user.getUid(), groupUid) : "";
         } else {
             log.info("received a join word but don't know what to do with it");
+            reply = messageSource.getMessage("text.group.welcome.unknown",
+                    "Sorry, we couldn't find a Grassroot group with that join word. Try another?");
         }
+        return reply;
     }
 
     @RequestMapping(value = "reply", method = RequestMethod.GET)
