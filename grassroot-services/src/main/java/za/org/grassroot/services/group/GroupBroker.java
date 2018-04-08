@@ -1,11 +1,8 @@
 package za.org.grassroot.services.group;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.dto.group.GroupLogDTO;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
@@ -63,7 +60,7 @@ public interface GroupBroker {
 
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
 
-    Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification);
+    Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
 
     String addMemberViaJoinPage(String groupUid, String code, String broadcastId, String userUid, String name, String phone, String email,
                                 Province province, Locale language, List<String> topics, UserInterfaceType interfaceType);
