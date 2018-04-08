@@ -100,8 +100,7 @@ public class LiveWireController extends BaseRestController{
         if (addLocation) {
             builder.location(new GeoLocation(latitude, longitude), LocationSource.convertFromInterface(UserInterfaceType.ANDROID));
         }
-
-
+        
         if (destType == null) {
             builder.destType(LiveWireAlertDestType.PUBLIC_LIST);
         } else {
