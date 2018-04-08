@@ -24,6 +24,7 @@ import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
+import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.*;
 import za.org.grassroot.services.util.FullTextSearchUtils;
@@ -81,12 +82,14 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     private final AccountRepository accountRepository;
     private final PaidGroupRepository paidGroupRepository;
     private final BroadcastRepository templateRepository;
+    private final MessageAssemblingService messageAssemblingService;
+
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
     public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                   EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
-                                  PaidGroupRepository paidGroupRepository, BroadcastRepository templateRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+                                  PaidGroupRepository paidGroupRepository, BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -95,6 +98,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         this.accountRepository = accountRepository;
         this.paidGroupRepository = paidGroupRepository;
         this.templateRepository = templateRepository;
+        this.messageAssemblingService = messageAssemblingService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
     }
 
@@ -767,6 +771,22 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     public boolean hasSubgroups(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
         return group.getDirectChildren() != null && !group.getDirectChildren().isEmpty();
+    }
+
+    @Override
+    @Transactional
+    public String generateGroupWelcomeReply(String userUid, String groupUid) {
+        final User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        final Group group = groupRepository.findOneByUid(Objects.requireNonNull(groupUid));
+        final Account groupAccount = findAccountForGroup(groupUid);
+
+        final String userMessage = messageAssemblingService.createGroupJoinedMessage(user, group);
+        if (groupAccount != null) {
+            createAndStoreSingleAccountLog(new AccountLog.Builder(groupAccount)
+                    .accountLogType(AccountLogType.MESSAGE_SENT)
+                    .user(user).group(group).build());
+        }
+        return userMessage;
     }
 
     private Set<Notification> generateNotifications(Broadcast templateEntity, int templateStringIndex,

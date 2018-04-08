@@ -54,13 +54,12 @@ public class LiveWireAlertDTO {
 
     private List<String> mediaFileUids;
 
-    // todo : make a 'public' version that hides some details
     public LiveWireAlertDTO(LiveWireAlert alert) {
         this.serverUid = alert.getUid();
         this.headline = alert.getHeadline();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
         this.creatingUserName = alert.getCreatingUser().getName();
-        this.contactUserName = StringUtils.isEmpty(alert.getContactName()) ? alert.getContactName() :
+        this.contactUserName = !StringUtils.isEmpty(alert.getContactName()) ? alert.getContactName() :
                 alert.getContactUser().getName();
         this.contactUserPhone = PhoneNumberUtil.invertPhoneNumber(alert.getContactUser().getPhoneNumber());
         this.description = alert.getDescription();

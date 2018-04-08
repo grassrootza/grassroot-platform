@@ -4,7 +4,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
@@ -24,10 +23,7 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
-import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -157,7 +153,7 @@ public class SearchController extends BaseRestController {
     public ResponseEntity<GroupFullDTO> addMemberWithJoinCode(@RequestParam String joinCode,
                                                                  @RequestParam String groupUid,
                                                                  HttpServletRequest request){
-        groupBroker.addMemberViaJoinCode(getUserIdFromRequest(request),groupUid,joinCode, UserInterfaceType.WEB_2, false);
+        groupBroker.addMemberViaJoinCode(getUserIdFromRequest(request),groupUid,joinCode, UserInterfaceType.WEB_2);
         return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request),
                 groupUid, false, false, false));
     }

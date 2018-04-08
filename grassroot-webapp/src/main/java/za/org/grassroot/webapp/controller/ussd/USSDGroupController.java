@@ -104,7 +104,7 @@ public class USSDGroupController extends USSDBaseController {
 
         Group group = searchResult.get();
         log.debug("adding user via join code ... {}", trailingDigits);
-        Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD, false);
+        Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD);
         if (group.getJoinTopics() != null && !group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
             final String prompt = getMessage(HOME, startMenu, promptKey + ".group.topics", group.getName(), user);
             final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";

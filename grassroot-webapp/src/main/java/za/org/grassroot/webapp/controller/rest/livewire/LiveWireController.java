@@ -101,11 +101,6 @@ public class LiveWireController extends BaseRestController{
             builder.location(new GeoLocation(latitude, longitude), LocationSource.convertFromInterface(UserInterfaceType.ANDROID));
         }
 
-        /*final DataSubscriber dataSubscriber = (destType != null && !LiveWireAlertDestType.PUBLIC_LIST.equals(destType)) ?
-                subscriberBroker.fetchLiveWireListForSubscriber(creatingUser.getUid()) : null;
-
-        builder.destSubscriber(dataSubscriber);*/
-
 
         if (destType == null) {
             builder.destType(LiveWireAlertDestType.PUBLIC_LIST);
