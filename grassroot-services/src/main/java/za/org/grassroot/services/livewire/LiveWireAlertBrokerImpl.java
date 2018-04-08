@@ -623,7 +623,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional(readOnly = true)
     public Page<LiveWireAlert> findPublicAlerts(Pageable pageRequest) {
-        return alertRepository.findByCompleteTrueAndReviewedTrueAndDestinationTypeIn(PUBLIC_TYPES, pageRequest);
+        return alertRepository.findByCompleteTrueAndReviewedTrueAndSentTrueAndDestinationTypeIn(PUBLIC_TYPES, pageRequest);
     }
 
     private Instant getLastWeekTime(){
