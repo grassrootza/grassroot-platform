@@ -6,7 +6,6 @@ import za.org.grassroot.core.enums.EventType;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by luke on 2016/12/12.
@@ -60,10 +59,6 @@ public interface AnalyticalService {
     Methods for closer analysis of user sessions etc
      */
     List<KeywordDTO> getKeywordStats(LocalDateTime from);
-
-    long getMaxSessionsInLastMonth();
-
-    Map<Integer, Integer> getSessionHistogram(Instant start, Instant end, int interval);
 
     /*
     And now a couple for livewire alerts and notifications

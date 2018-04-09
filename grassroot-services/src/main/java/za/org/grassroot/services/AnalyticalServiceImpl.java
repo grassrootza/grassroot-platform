@@ -221,20 +221,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Map<Integer, Integer> getSessionHistogram(Instant start, Instant end, int interval) {
-        Map<Integer, Integer> data = new LinkedHashMap<>();
-        final int max = getMaxSessionsInPeriod(start, end);
-        data.put(1, countSessionsInPeriod(start, end, 1, 1));
-        data.put(2, countSessionsInPeriod(start, end, 2, 2));
-        data.put(10, countSessionsInPeriod(start, end, 3, 10));
-        for (int i = 10; i <= max; i += interval) {
-            data.put(i + interval, countSessionsInPeriod(start, end, i + 1, i + interval));
-        }
-        return data;
-    }
-
-    @Override
     public long countLiveWireAlertsInInterval(Instant start, Instant end) {
         return liveWireAlertRepository.countByCreationTimeBetween(start, end);
     }
