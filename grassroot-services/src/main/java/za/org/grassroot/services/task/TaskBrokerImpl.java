@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
@@ -353,24 +354,29 @@ public class TaskBrokerImpl implements TaskBroker {
 
 		Long startTime = System.currentTimeMillis();
 		User user = userRepository.findOneByUid(userUid);
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, false);
 
-		List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameSearchTerm(user.getId(), tsQuery);
+        try {
+            String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, false);
+            List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameSearchTerm(user.getId(), tsQuery);
 
-        Set<TaskFullDTO> taskFullDtos = new HashSet<>();
-        events.forEach(event -> taskFullDtos.add(new TaskFullDTO(event,user, event.getCreatedDateTime(), getUserResponse(event, user))));
+            Set<TaskFullDTO> taskFullDtos = new HashSet<>();
+            events.forEach(event -> taskFullDtos.add(new TaskFullDTO(event, user, event.getCreatedDateTime(), getUserResponse(event, user))));
 
-        List<Todo> todos = todoBroker.searchUserTodos(userUid, searchTerm);
-        todos.forEach(todo -> taskFullDtos.add(new TaskFullDTO(todo,user,todo.getDeadlineTime(),getUserResponse(todo,user))));
+            List<Todo> todos = todoBroker.searchUserTodos(userUid, searchTerm);
+            todos.forEach(todo -> taskFullDtos.add(new TaskFullDTO(todo, user, todo.getDeadlineTime(), getUserResponse(todo, user))));
 
-		List<TaskFullDTO> tasks = new ArrayList<>(taskFullDtos);
-        tasks.sort((o1, o2) -> ComparisonChain.start()
-                .compare(o2.getDeadlineMillis(), o1.getDeadlineMillis()) // for reverse order
-                .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
-                .result());
-		log.info("Searched for the term {} among all of user's tasks, took {} msecs", searchTerm, System.currentTimeMillis() - startTime);
+            List<TaskFullDTO> tasks = new ArrayList<>(taskFullDtos);
+            tasks.sort((o1, o2) -> ComparisonChain.start()
+                    .compare(o2.getDeadlineMillis(), o1.getDeadlineMillis()) // for reverse order
+                    .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
+                    .result());
+            log.info("Searched for the term {} among all of user's tasks, took {} msecs", searchTerm, System.currentTimeMillis() - startTime);
 
-		return tasks;
+            return tasks;
+        } catch (InvalidDataAccessResourceUsageException e) {
+            log.error("Syntax error: {}", e.getLocalizedMessage());
+            return new ArrayList<>();
+        }
 	}
 
     @Override
