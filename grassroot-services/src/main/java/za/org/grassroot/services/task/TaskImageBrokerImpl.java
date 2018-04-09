@@ -120,6 +120,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     public void recordImageForTask(String userUid, String taskUid, TaskType taskType, Collection<String> imageKeys, EventLogType eventLogType, TodoLogType todoLogType) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(taskUid);
+
         Objects.requireNonNull(imageKeys);
 
         DebugUtil.transactionRequired("Image log storing needs transaction");
@@ -132,6 +133,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
             Todo todo = todoRepository.findOneByUid(taskUid);
             logger.info("recording todo logs with image keys: {}", imageKeys);
             todoLogRepository.save(generateTodoLogs(imageKeys, user, todo, todoLogType));
+
         }
     }
 

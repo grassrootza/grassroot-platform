@@ -23,8 +23,10 @@ public interface TaskImageBroker {
                              String caption, Double latitude, Double longitude);
 
     // use this one for where image has previously been uploaded (e.g., via media service)
+
     // todo : add location recording
     void recordImageForTask(String userUid, String taskUid, TaskType taskType, Collection<String> imageKeys, EventLogType eventLogType, TodoLogType todoLogType);
+
 
     String getShortUrl(String imageKey);
 

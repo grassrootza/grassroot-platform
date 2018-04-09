@@ -6,10 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.SafetyEvent;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.task.*;
@@ -66,8 +63,10 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         VariationAssignment assignment = !optimizelyActive ? null : experimentBroker.assignUser("test_experiment_meetings", user.getUid(), null);
         String messageKey;
         if (event instanceof Vote) {
+
             messageKey = event.hasImage() ? "text.vote.send.image" : "sms.vote.send.new";
         } else if (event.hasImage()) {
+
             messageKey = "sms.mtg.send.image";
         } else if (event.isHighImportance() || (assignment != null && assignment.equals(VariationAssignment.EXPERIMENT))) {
             messageKey = "sms.mtg.send.special";
@@ -349,7 +348,8 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String subject = event.getName();
         subject = (subject.contains("&")) ? subject.replace("&", "and") : subject;
 
-        String userAlias = event.getAncestorGroup().getMembership(event.getCreatedByUser()).getDisplayName();
+        Membership creatingMember = event.getAncestorGroup().getMembership(event.getCreatedByUser());
+        String userAlias = creatingMember != null ? creatingMember.getDisplayName() : event.getCreatedByUser().getDisplayName();
 
         String[] eventVariables;
         if (event.hasImage()) {

@@ -15,6 +15,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 
@@ -165,6 +166,20 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         return userLogRepository.count(where(forUser(userUid))
                 .and(ofType(UserLogType.USED_A_JOIN_CODE))
                 .and(creationTimeBetween(start, end))) > 0;
+    }
+
+    @Override
+    @Transactional
+    public void removeAllUserInfoLogs(String userUid) {
+        userLogRepository.deleteAllByUserUidAndUserLogTypeIn(userUid,
+                Arrays.asList(UserLogType.CHANGED_ADDRESS,
+                        UserLogType.CHANGED_LANGUAGE,
+                        UserLogType.USER_DETAILS_CHANGED,
+                        UserLogType.USER_EMAIL_CHANGED,
+                        UserLogType.USER_PHONE_CHANGED,
+                        UserLogType.DETAILS_CHANGED_BY_GROUP,
+                        UserLogType.DETAILS_CHANGED_ON_JOIN,
+                        UserLogType.SENT_UNEXPECTED_SMS_MESSAGE));
     }
 
 

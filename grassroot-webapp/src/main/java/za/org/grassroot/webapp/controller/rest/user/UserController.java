@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,6 +27,7 @@ import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
+import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
@@ -51,8 +53,10 @@ public class UserController extends BaseRestController {
     private final UserManagementService userService;
     private final PasswordTokenService passwordService;
     private final MessagingServiceBroker messagingBroker;
-    private final MessageSourceAccessor messageSource;
+    private final AddressBroker addressBroker;
 
+    private final Environment environment;
+    private final MessageSourceAccessor messageSource;
 
     @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
     private String userProfileImagesFolder;
@@ -60,13 +64,15 @@ public class UserController extends BaseRestController {
     public UserController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker,
                           UserManagementService userService, JwtService jwtService,
                           PasswordTokenService passwordService, MessagingServiceBroker messagingBroker,
-                          @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSource) {
+                          AddressBroker addressBroker, Environment environment, @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSource) {
         super(jwtService, userService);
         this.mediaFileBroker = mediaFileBroker;
         this.storageBroker = storageBroker;
         this.userService = userService;
         this.passwordService = passwordService;
         this.messagingBroker = messagingBroker;
+        this.addressBroker = addressBroker;
+        this.environment = environment;
         this.messageSource = messageSource;
     }
 
@@ -130,7 +136,7 @@ public class UserController extends BaseRestController {
                 user.getAlertPreference(), user.getLocale(), validationOtp);
 
             if (!updateCompleted) {
-                sendOtp(user);
+                triggerOtp(user);
                 return RestUtil.messageOkayResponse(RestMessage.OTP_REQUIRED);
             }
 
@@ -145,28 +151,6 @@ public class UserController extends BaseRestController {
         } catch (InvalidOtpException e) {
             return RestUtil.errorResponse(RestMessage.INVALID_OTP);
         }
-    }
-
-    private void sendOtp(User user) {
-        final String message = otpMessage(user.getUsername(), user.getLocale());
-        try {
-            if (user.hasPhoneNumber()) {
-                messagingBroker.sendPrioritySMS(message, user.getPhoneNumber()); // _not_ new one, obviously
-            } else {
-                messagingBroker.sendEmail(new GrassrootEmail.EmailBuilder()
-                        .subject("Your Grassroot verification")
-                        .toAddress(user.getEmailAddress())
-                        .toName(user.getDisplayName())
-                        .content(message).build());
-            }
-        } catch (Exception e) {
-            log.error("No message broker around, couldn't send {}", message);
-        }
-    }
-
-    private String otpMessage(String username, Locale locale) {
-        final VerificationTokenCode otp = passwordService.generateShortLivedOTP(username);
-        return messageSource.getMessage("web.user.profile.token.message", new String[] {otp.getCode()}, locale);
     }
 
     @ApiOperation(value = "Update user password, if passed old password")
@@ -188,6 +172,49 @@ public class UserController extends BaseRestController {
         }
     }
 
+    @ApiOperation(value = "Initiate deleting user's account, by generating an OTP")
+    @RequestMapping(value = "/delete/initiate", method = RequestMethod.POST)
+    public ResponseEntity initiateDeleteProfile(HttpServletRequest request) {
+        final String userUid = getUserIdFromRequest(request);
+        User user = userService.load(userUid);
+        triggerOtp(user);
+        return RestUtil.messageOkayResponse(RestMessage.OTP_REQUIRED);
+    }
+
+    @ApiOperation(value = "Complete deleting user's account, validated by OTP")
+    @RequestMapping(value = "/delete/confirm", method = RequestMethod.POST)
+    public ResponseEntity completeProfileDelete(HttpServletRequest request, @RequestParam String otp) {
+        final String userUid = getUserIdFromRequest(request);
+        userService.deleteUser(userUid, otp);
+        addressBroker.removeAddress(userUid);
+        return ResponseEntity.ok(RestMessage.USER_DELETED);
+    }
+
+    // todo: move this to services layer, of course
+    private void triggerOtp(User user) {
+        final String message = otpMessage(user.getUsername(), user.getLocale());
+        if (environment.acceptsProfiles("production"))
+            sendOtp(user, message);
+        else
+            log.info("OTP message: {}", message);
+    }
+
+    private String otpMessage(String username, Locale locale) {
+        final VerificationTokenCode otp = passwordService.generateShortLivedOTP(username);
+        return messageSource.getMessage("web.user.profile.token.message", new String[] {otp.getCode()}, locale);
+    }
+
+    private void sendOtp(User user, String message) {
+        if (user.hasPhoneNumber()) {
+            messagingBroker.sendPrioritySMS(message, user.getPhoneNumber()); // _not_ new one, obviously
+        } else {
+            messagingBroker.sendEmail(new GrassrootEmail.EmailBuilder()
+                    .subject("Your Grassroot verification")
+                    .toAddress(user.getEmailAddress())
+                    .toName(user.getDisplayName())
+                    .content(message).build());
+        }
+    }
 
 
 }

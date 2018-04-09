@@ -77,4 +77,6 @@ public interface AccountGroupBroker {
 
     boolean hasSubgroups(String groupUid);
 
+    String generateGroupWelcomeReply(String userUid, String groupUid);
+
 }
