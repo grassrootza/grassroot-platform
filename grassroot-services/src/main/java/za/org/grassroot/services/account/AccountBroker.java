@@ -1,7 +1,6 @@
 package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.RequestParam;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
@@ -57,9 +56,6 @@ public interface AccountBroker {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
     void updateAccountGroupLimits(String userUid, String accountUid, int numberOfGroups, int maxSizePerGroup,
                                   int maxDepth, int messagesPerMonth, int todosPerMonth, int eventsPerMonth);
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void updateAccountCardPaymentReference(String userUid, String accountUid, String paymentRef);
 
     /* Methods to work out some limits left on account */
 

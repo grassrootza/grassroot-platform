@@ -12,9 +12,9 @@ import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountBillingRecord;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
@@ -270,7 +270,7 @@ public class AccountPaymentController extends BaseController {
             sponsorshipBroker.closeRequestsAndMarkApproved(getUserProfile().getUid(), account.getUid());
             addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
         } else if (enableOrUpdateAccount == UPDATE) {
-            accountBroker.updateAccountCardPaymentReference(getUserProfile().getUid(), account.getUid(), paymentRef);
+            // would have set payment ref
             addMessage(attributes, MessageType.SUCCESS, "account.payment.changed", request);
         }
 

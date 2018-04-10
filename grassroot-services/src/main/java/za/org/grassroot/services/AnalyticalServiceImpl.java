@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.NotificationSpecifications;
@@ -22,11 +21,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.UserSpecifications.*;
@@ -212,15 +208,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public long getMaxSessionsInLastMonth() {
-        Instant end = Instant.now();
-        Instant start = end.minus(30, ChronoUnit.DAYS);
-        List<Long> result = userLogRepository.getMaxNumberLogsInInterval(start, end, UserLogType.USER_SESSION);
-        return (result == null || result.isEmpty()) ? 0 : result.get(0);
-    }
-
-    @Override
     public long countLiveWireAlertsInInterval(Instant start, Instant end) {
         return liveWireAlertRepository.countByCreationTimeBetween(start, end);
     }
@@ -228,16 +215,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Override
     public long countNotificationsInInterval(Instant start, Instant end) {
         return notificationRepository.count(NotificationSpecifications.createdTimeBetween(start, end));
-    }
-
-    private int getMaxSessionsInPeriod(Instant start, Instant end) {
-        List<Long> result = userLogRepository.getMaxNumberLogsInInterval(start, end, UserLogType.USER_SESSION);
-        return (result == null || result.isEmpty()) ? 0 : (int) (long) result.get(0);
-    }
-
-    private int countSessionsInPeriod(Instant start, Instant end, int low, int high) {
-        List<String> uids = userLogRepository.fetchUserUidsHavingUserLogTypeCountBetween(start, end, UserLogType.USER_SESSION, low, high);
-        return (uids == null || uids.isEmpty()) ? 0 : uids.size();
     }
 
     @SuppressWarnings("unchecked")
