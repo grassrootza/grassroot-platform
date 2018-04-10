@@ -3,6 +3,7 @@ package za.org.grassroot.services.user;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.VerificationCodeType;
@@ -20,6 +22,7 @@ import za.org.grassroot.core.specifications.TokenSpecifications;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 
@@ -27,10 +30,7 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -51,14 +51,19 @@ public class PasswordTokenManager implements PasswordTokenService {
     private final UserRepository userRepository;
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Environment environment;
+    private final MessagingServiceBroker messagingBroker;
 
     @Autowired
     public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository,
-                                UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
+                                UserLogRepository userLogRepository, PasswordEncoder passwordEncoder,Environment environment,
+                                MessagingServiceBroker messagingBroker) {
         this.verificationTokenCodeRepository = verificationTokenCodeRepository;
         this.userRepository = userRepository;
         this.userLogRepository = userLogRepository;
         this.passwordEncoder = passwordEncoder;
+        this.environment = environment;
+        this.messagingBroker = messagingBroker;
     }
 
     @Override
@@ -301,6 +306,33 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         if (possibleToken == null || possibleToken.getExpiryDateTime().isBefore(Instant.now())) {
             throw new AccessDeniedException("Error! No matching entity/code combination, or match, but expired");
+        }
+    }
+
+    @Override
+    public void triggerOtp(User user){
+        final String message = otpMessage(user.getUsername());
+        if (environment.acceptsProfiles("production"))
+            sendOtp(user, message);
+        else
+            log.info("OTP message: {}", message);
+    }
+
+    private String otpMessage(String username) {
+        final VerificationTokenCode otp = generateShortLivedOTP(username);
+        String message = "User opt-out code:" + otp.getCode();
+        return message;
+    }
+
+    private void sendOtp(User user, String message) {
+        if (user.hasPhoneNumber()) {
+            messagingBroker.sendPrioritySMS(message, user.getPhoneNumber()); // _not_ new one, obviously
+        } else {
+            messagingBroker.sendEmail(new GrassrootEmail.EmailBuilder()
+                    .subject("Your Grassroot verification")
+                    .toAddress(user.getEmailAddress())
+                    .toName(user.getDisplayName())
+                    .content(message).build());
         }
     }
 

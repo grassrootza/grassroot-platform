@@ -50,32 +50,24 @@ public class AdminRestController extends BaseRestController{
         this.passwordTokenService = passwordTokenService;
     }
 
-    @RequestMapping(value = "/users/load",method = RequestMethod.GET)
-    public ResponseEntity<Boolean> loadUser(@RequestParam() String lookupTerm,
+    @RequestMapping(value = "/user/load",method = RequestMethod.GET)
+    public ResponseEntity<UserDTO> loadUser(@RequestParam() String lookupTerm,
                                                 HttpServletRequest request){
-        boolean isPhoneNumber = PhoneNumberUtil.testInputNumber(lookupTerm);
-        if (!isPhoneNumber && !EmailValidator.getInstance().isValid(lookupTerm)) {
-            throw new NoSuchUserException("Enter email or phone number: " + lookupTerm);
-        }
-        boolean found = false;
         User user = userManagementService.findByUsernameLoose(lookupTerm);
         if(user != null){
-            found = true;
-            String token = userManagementService.regenerateUserVerifier(user.getUsername(), false);
-            if(token != null){
-                messagingServiceBroker.sendPrioritySMS("User opt-out code:" + token,user.getPhoneNumber());
-            }
+            passwordTokenService.triggerOtp(getUserFromRequest(request));
         }
-        return ResponseEntity.ok(found);
+        return ResponseEntity.ok(new UserDTO(user));
     }
 
     @RequestMapping(value = "/user/optout",method = RequestMethod.POST)
-    public ResponseEntity<String> userOptout(@RequestParam String otpEntered,
+    public ResponseEntity<String> userOptout(@RequestParam String userToOptOutUid,
+                                             @RequestParam String otpEntered,
                                              HttpServletRequest request){
         if (!passwordTokenService.isShortLivedOtpValid(getUserFromRequest(request).getPhoneNumber(), otpEntered)) {
             throw new AccessDeniedException("Error! Admin user did not validate with OTP");
         }
-        adminService.removeUserFromAllGroups(getUserIdFromRequest(request), getUserIdFromRequest(request));
+        adminService.removeUserFromAllGroups(getUserIdFromRequest(request), userToOptOutUid);
         return ResponseEntity.ok("SUCCESS");
     }
 }
