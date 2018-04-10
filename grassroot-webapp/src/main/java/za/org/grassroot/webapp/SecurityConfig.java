@@ -97,6 +97,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .useSecureCookie(true).and()
                 .headers().frameOptions().sameOrigin().and() // in future see if can path restrict this
                 .csrf().csrfTokenRepository(new HttpSessionCsrfTokenRepository());
+
     }
 
     private String assembleUssdGatewayAccessString() {

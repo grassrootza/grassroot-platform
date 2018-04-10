@@ -5,6 +5,11 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.HandlerMapping;
@@ -20,6 +25,9 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -49,31 +57,43 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             return true;
 
         AuthorizationHeader authorizationHeader = new AuthorizationHeader(request);
+        final String token = authorizationHeader.hasBearerToken() ? authorizationHeader.getBearerToken() : null;
 
         boolean isTokenExpired = false;
 
-        if (authorizationHeader.hasBearerToken()
-                && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {
+        if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenValid(token)) {
+//            jwtTokenValid(token);
             return true;
-        } else if (authorizationHeader.hasBearerToken()
-                && jwtService.isJwtTokenExpired(authorizationHeader.getBearerToken())) {
+        } else if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenExpired(token)) {
             isTokenExpired = true;
         } else if(authorizationHeader.doesNotHaveBearerToken()) {
-            Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-            String phoneNumber = pathVariables.containsKey("phoneNumber") ? String.valueOf(pathVariables.get("phoneNumber")).trim() : null;
-            String code = pathVariables.containsKey("code") ? String.valueOf(pathVariables.get("code")).trim() : null;
-            if (passwordTokenService.isLongLiveAuthValid(phoneNumber, code)
-                    || passwordTokenService.extendAuthCodeIfExpiring(phoneNumber, code)) {
+            Map<String, String> legacyVars = getLegacyTokenParams(request);
+            if (isLegacyTokenValid(legacyVars)) {
                 return true;
-            } else {
-                VerificationTokenCode tokenCode = passwordTokenService.fetchLongLivedAuthCode(phoneNumber);
-                log.info("token code: {}", tokenCode);
-                if (tokenCode != null && passwordTokenService.isExpired(tokenCode)) {
-                    isTokenExpired = true;
-                }
             }
+            isTokenExpired = isLegacyTokenExpired(legacyVars);
         }
 
+        setResponseBody(isTokenExpired, response);
+        return false;
+    }
+
+    private void jwtTokenValid(String bearerToken) {
+        log.info("uh, setting token valid? ");
+        Authentication auth =  SecurityContextHolder.getContext().getAuthentication();
+        List<GrantedAuthority> authorityList = AuthorityUtils.commaSeparatedStringToAuthorityList(
+                String.join(",", jwtService.getStandardRolesFromJwtToken(bearerToken)));
+        Authentication newAuth;
+        if (auth != null) {
+            auth.setAuthenticated(true);
+            newAuth = new UsernamePasswordAuthenticationToken(auth.getPrincipal(), auth.getCredentials(), authorityList);
+        } else {
+            newAuth = new UsernamePasswordAuthenticationToken(jwtService.getUserIdFromJwtToken(bearerToken), null, authorityList);
+        }
+        SecurityContextHolder.getContext().setAuthentication(newAuth);
+    }
+
+    private void setResponseBody(boolean isTokenExpired, HttpServletResponse response) throws IOException {
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectWriter ow = mapper.writer();
 
@@ -85,8 +105,29 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
         response.setStatus(responseWrapper.getCode());
 
         log.info("Returning invalid token response, rest message: {}", responseWrapper.getMessage());
+    }
 
-        return false;
+    private Map<String, String> getLegacyTokenParams(HttpServletRequest request) {
+        Map<String, String> vars = new HashMap<>();
+        Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        if (pathVariables.containsKey("phoneNumber"))
+            vars.put("phoneNumber", String.valueOf(pathVariables.get("phoneNumber")).trim());
+        if (pathVariables.containsKey("code"))
+            vars.put("code", String.valueOf(pathVariables.get("code")).trim());
+        return vars;
+    }
+
+    private boolean isLegacyTokenValid(Map<String, String> pathVars) {
+        return !pathVars.isEmpty() &&
+                (passwordTokenService.isLongLiveAuthValid(pathVars.get("phoneNumber"), pathVars.get("code"))
+                || passwordTokenService.extendAuthCodeIfExpiring(pathVars.get("phoneNumber"), pathVars.get("code")));
+    }
+
+    private boolean isLegacyTokenExpired(Map<String, String> pathVars) {
+        if (pathVars.isEmpty())
+            return false;
+        VerificationTokenCode tokenCode = passwordTokenService.fetchLongLivedAuthCode(pathVars.get("phoneNumber"));
+        return tokenCode != null && passwordTokenService.isExpired(tokenCode);
     }
 }
 

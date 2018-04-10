@@ -21,10 +21,7 @@ public class AuthorizationHeader {
     }
 
     public boolean hasBearerToken() {
-        if (this.isNull()) {
-            return false;
-        }
-        return getHeader().toLowerCase().startsWith(BEARER_TOKEN_WORD);
+        return !this.isNull() && getHeader().toLowerCase().startsWith(BEARER_TOKEN_WORD);
     }
 
     public boolean doesNotHaveBearerToken() {

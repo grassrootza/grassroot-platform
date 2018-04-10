@@ -2,6 +2,8 @@ package za.org.grassroot.integration.messaging;
 
 import za.org.grassroot.integration.PublicCredentials;
 
+import java.util.List;
+
 /**
  * Created by luke on 2017/05/22.
  */
@@ -28,5 +30,7 @@ public interface JwtService {
     boolean isJwtTokenExpired(String token);
 
     String getUserIdFromJwtToken(String token);
+
+    List<String> getStandardRolesFromJwtToken(String token);
 
 }

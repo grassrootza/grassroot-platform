@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.integration.PublicCredentials;
 import za.org.grassroot.integration.keyprovider.KeyPairProvider;
 
@@ -16,8 +17,7 @@ import java.security.PublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by luke on 2017/05/22.
@@ -121,15 +121,23 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String getUserIdFromJwtToken(String token) {
-
         try {
-            Claims claims = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
-                    .parseClaimsJws(token).getBody();
-            return claims.get(USER_UID_KEY, String.class);
+            return extractClaims(token).get(USER_UID_KEY, String.class);
         } catch (Exception e) {
             logger.error("Failed to get user id from jwt token: {}", e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    public List<String> getStandardRolesFromJwtToken(String token) {
+        String joinedRoles = extractClaims(token).get(SYSTEM_ROLE_KEY, String.class);
+        return !StringUtils.isEmpty(joinedRoles) ? Arrays.asList(joinedRoles.split(",")) : new ArrayList<>();
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
+                .parseClaimsJws(token).getBody();
     }
 
     @Override
