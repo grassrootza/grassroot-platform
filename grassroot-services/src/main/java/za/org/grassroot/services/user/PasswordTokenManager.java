@@ -3,6 +3,7 @@ package za.org.grassroot.services.user;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.env.Environment;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,10 +54,12 @@ public class PasswordTokenManager implements PasswordTokenService {
     private final PasswordEncoder passwordEncoder;
     private final Environment environment;
     private final MessagingServiceBroker messagingBroker;
+    private final MessageSourceAccessor messageSourceAccessor;
 
     @Autowired
     public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository,
                                 UserLogRepository userLogRepository, PasswordEncoder passwordEncoder,Environment environment,
+                                MessageSourceAccessor messageSourceAccessor,
                                 MessagingServiceBroker messagingBroker) {
         this.verificationTokenCodeRepository = verificationTokenCodeRepository;
         this.userRepository = userRepository;
@@ -64,6 +67,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         this.passwordEncoder = passwordEncoder;
         this.environment = environment;
         this.messagingBroker = messagingBroker;
+        this.messageSourceAccessor = messageSourceAccessor;
     }
 
     @Override
@@ -311,22 +315,21 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     @Override
     public void triggerOtp(User user){
-        final String message = otpMessage(user.getUsername());
+        final String message = otpMessage(user.getUsername(),user.getLocale());
         if (environment.acceptsProfiles("production"))
             sendOtp(user, message);
         else
             log.info("OTP message: {}", message);
     }
 
-    private String otpMessage(String username) {
+    private String otpMessage(String username,Locale locale) {
         final VerificationTokenCode otp = generateShortLivedOTP(username);
-        String message = "User opt-out code:" + otp.getCode();
-        return message;
+        return messageSourceAccessor.getMessage("web.user.optout.token.message", new String[] {otp.getCode()}, locale);
     }
 
     private void sendOtp(User user, String message) {
         if (user.hasPhoneNumber()) {
-            messagingBroker.sendPrioritySMS(message, user.getPhoneNumber()); // _not_ new one, obviously
+            messagingBroker.sendPrioritySMS(message, user.getPhoneNumber());
         } else {
             messagingBroker.sendEmail(new GrassrootEmail.EmailBuilder()
                     .subject("Your Grassroot verification")

@@ -24,14 +24,18 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 @RestController
 @Slf4j
 @Api("/api/admin")
 @RequestMapping(value = "/api/admin")
 public class AdminRestController extends BaseRestController{
+
+    private static final Random RANDOM = new SecureRandom();
 
     private final AdminService adminService;
     private final UserManagementService userManagementService;
@@ -51,13 +55,15 @@ public class AdminRestController extends BaseRestController{
     }
 
     @RequestMapping(value = "/user/load",method = RequestMethod.GET)
-    public ResponseEntity<UserDTO> loadUser(@RequestParam() String lookupTerm,
+    public ResponseEntity<String> loadUser(@RequestParam() String lookupTerm,
                                                 HttpServletRequest request){
         User user = userManagementService.findByUsernameLoose(lookupTerm);
+        String userUid = "";
         if(user != null){
+            userUid = user.getUid();
             passwordTokenService.triggerOtp(getUserFromRequest(request));
         }
-        return ResponseEntity.ok(new UserDTO(user));
+        return ResponseEntity.ok(userUid);
     }
 
     @RequestMapping(value = "/user/optout",method = RequestMethod.POST)
