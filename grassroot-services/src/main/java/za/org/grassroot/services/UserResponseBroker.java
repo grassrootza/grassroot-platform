@@ -22,6 +22,8 @@ public interface UserResponseBroker {
      */
     EntityForUserResponse checkForPossibleEntityResponding(String userUid, String response, boolean checkAlerts);
 
+    boolean checkValidityOfResponse(EntityForUserResponse entity, String message);
+
     /**
      * Records user response, dispatching to whichever broker is necessary
      * @param userUid User responding

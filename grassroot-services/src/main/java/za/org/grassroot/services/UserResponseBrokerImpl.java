@@ -9,6 +9,8 @@ import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoType;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.GroupLogRepository;
@@ -118,6 +120,24 @@ public class UserResponseBrokerImpl implements UserResponseBroker {
         }
     }
 
+    // todo : handle with a bit more sophistication (e.g., look for 'yes it is done')
+    @Override
+    public boolean checkValidityOfResponse(EntityForUserResponse entity, String message) {
+        switch (entity.getJpaEntityType()) {
+            case MEETING:
+                return EventRSVPResponse.fromString(message) != EventRSVPResponse.INVALID_RESPONSE;
+            case VOTE:
+                Vote vote = (Vote) entity;
+                return !vote.getVoteOptions().isEmpty() ? vote.hasOption(message) :
+                        EventRSVPResponse.fromString(message) != EventRSVPResponse.INVALID_RESPONSE;
+            case TODO:
+                Todo todo = (Todo) entity;
+                return todo.getType().equals(TodoType.INFORMATION_REQUIRED);
+            default:
+                return false;
+        }
+    }
+
     private boolean hasVoteOption(String option, Event vote) {
         if (vote.getTags() != null) {
             for (String tag : vote.getTags()) {
@@ -147,6 +167,10 @@ public class UserResponseBrokerImpl implements UserResponseBroker {
             default:
                 throw new IllegalArgumentException("Error! Response attempted for non-respondable entity");
         }
+    }
+
+    private void checkForAndSendAcknowledgement() {
+
     }
 
 }

@@ -189,8 +189,13 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Set<String> getActiveCampaignJoinTopics() {
-        return campaignRepository.fetchAllActiveCampaignTags();
+    public Map<String, String> getActiveCampaignJoinTopics() {
+        List<Object[]> tagsWithUids = campaignRepository.fetchAllActiveCampaignTags();
+        return tagsWithUids.stream()
+                .filter(object -> object[0] instanceof String && ((String) object[0]).startsWith(Campaign.PUBLIC_JOIN_WORD_PREFIX))
+                .collect(Collectors.toMap(
+                        object -> ((String) object[0]).substring(Campaign.PUBLIC_JOIN_WORD_PREFIX.length()),
+                        object -> (String) object[1]));
     }
 
     @Override

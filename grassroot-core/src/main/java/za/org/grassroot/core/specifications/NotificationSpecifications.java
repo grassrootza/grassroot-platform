@@ -67,7 +67,7 @@ public final class NotificationSpecifications {
     }
 
     public static Specifications<Notification> sentOrBetterSince(Instant time) {
-        List<NotificationStatus> sentOrBetterStatuses = Arrays.asList(NotificationStatus.READ, NotificationStatus.DELIVERED, NotificationStatus.READ);
+        List<NotificationStatus> sentOrBetterStatuses = Arrays.asList(NotificationStatus.SENT, NotificationStatus.DELIVERED, NotificationStatus.READ);
         Specification<Notification> sentOrBetter = (root, query, cb) -> root.get(Notification_.status).in(sentOrBetterStatuses);
         Specification<Notification> statusChangedSince = (root, query, cb) -> cb.greaterThan(root.get(Notification_.lastStatusChange), time);
         return Specifications.where(statusChangedSince).and(sentOrBetter);

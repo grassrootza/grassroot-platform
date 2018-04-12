@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class Campaign implements TagHolder {
 
     public static final String JOIN_TOPIC_PREFIX = "JOIN_TOPIC:";
+    public static final String PUBLIC_JOIN_WORD_PREFIX = "PUBLIC_JOIN:";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -169,6 +170,19 @@ public class Campaign implements TagHolder {
         setTags(tags);
     }
 
+    public List<String> getPublicJoinWords() {
+        return this.getTagList().stream().filter(s -> s.startsWith(PUBLIC_JOIN_WORD_PREFIX))
+                .map(s -> s.substring(PUBLIC_JOIN_WORD_PREFIX.length())).collect(Collectors.toList());
+    }
+
+    public void addPublicJoinWords(String publicJoinWord) {
+        addTag(PUBLIC_JOIN_WORD_PREFIX + publicJoinWord);
+    }
+
+    public void removePublicJoinWord(String publicJoinWord) {
+        removeTag(PUBLIC_JOIN_WORD_PREFIX + publicJoinWord);
+    }
+
     public long countUsersInLogs(CampaignLogType logType) {
         return getCampaignLogs().stream()
                 .filter(log -> logType.equals(log.getCampaignLogType()))
@@ -201,16 +215,6 @@ public class Campaign implements TagHolder {
     public int hashCode() {
         return getUid() != null ? getUid().hashCode() : 0;
     }
-
-//    @Override
-//    public int compareTo(Campaign campaign) {
-//        if (uid.equals(campaign.getUid())) {
-//            return 0;
-//        } else {
-//            Instant otherCreatedDateTime = campaign.getCreatedDateTime();
-//            return createdDateTime.compareTo(otherCreatedDateTime);
-//        }
-//    }
 
     @Override
     public String toString() {

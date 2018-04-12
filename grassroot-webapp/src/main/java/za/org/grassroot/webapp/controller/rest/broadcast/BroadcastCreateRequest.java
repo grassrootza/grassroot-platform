@@ -31,7 +31,7 @@ public class BroadcastCreateRequest {
     private boolean postToFacebook;
     private List<String> facebookPages;
     private String facebookContent;
-    private String facebookLink; // will need to think through media
+    private String facebookLink;
     private String facebookLinkCaption;
     private String facebookImageKey;
 
