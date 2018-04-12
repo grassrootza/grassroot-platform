@@ -40,7 +40,7 @@ public interface AdminService {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<User> getUsersWithStdRole(String adminUserUid, String systemRole);
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateUserPassword(String adminUserUid, String userUid, String newPassword);
 
 }
