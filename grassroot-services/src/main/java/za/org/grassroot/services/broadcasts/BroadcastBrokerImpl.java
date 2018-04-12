@@ -114,9 +114,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             builder.isSmsAllowed(false);
         }
 
-        ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
-        builder.isFbConnected(fbStatus.isUserConnectionValid())
-                .facebookPages(fbStatus.getManagedPages());
+        List<FacebookAccount> fbAccounts = socialMediaBroker.getFacebookPages(userUid);
+        log.info("fb accounts retrieved: {}", fbAccounts);
+
+        builder.isFbConnected(!fbAccounts.isEmpty())
+                .facebookPages(fbAccounts);
 
         ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
         builder.isTwitterConnected(twitterAccount != null)
@@ -560,10 +562,13 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         List<String> fbPages = null;
         if (broadcast.hasFbPost()) {
-            ManagedPagesResponse pages = socialMediaBroker.getManagedFacebookPages(broadcast.getCreatedByUser().getUid());
+            Map<String, String> userFbPages = socialMediaBroker.getFacebookPages(broadcast.getCreatedByUser().getUid())
+                    .stream().collect(Collectors.toMap(FacebookAccount::getPageId, FacebookAccount::getPageName));
+
             fbPages = Arrays.stream(broadcast.getFacebookPageId().split(", "))
-                    .filter(pageId -> pages.getPageNameForId(pageId).isPresent())
-                    .map(pageId -> pages.getPageNameForId(pageId).orElse(null)).collect(Collectors.toList());
+                    .filter(userFbPages::containsKey)
+                    .map(userFbPages::get)
+                    .collect(Collectors.toList());
         }
 
         String twitterAccount = null;

@@ -5,10 +5,7 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
@@ -20,13 +17,14 @@ import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service @Slf4j
 public class SocialMediaBrokerImpl implements SocialMediaBroker {
+
+    @Value("${grassroot.fb.lambda.url:http://localhost:3000}")
+    private String facebookLambdaUrl;
 
     @Value("${grassroot.integration.service.url:http://localhost}")
     private String integrationServiceUrl;
@@ -37,7 +35,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     @Value("${grassroot.integration.useruid.param:authuser_uid}")
     private String userUidParam;
 
-    @Value("${grassroot.integration.image.baseurl:http://localhost:8080/image}")
+    @Value("${grassroot.images.view.url:http://localhost:8080/image}")
     private String imageBaseUri;
 
     @Value("${grassroot.broadcast.mocksm.enabled:false}")
@@ -56,15 +54,83 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     }
 
     private UriComponentsBuilder baseUri(String userUid) {
-        // todo : use headers with JWT in production for all calls
         return UriComponentsBuilder.fromUriString(integrationServiceUrl).port(integrationServicePort)
                 .queryParam(userUidParam, userUid);
+    }
+
+    private UriComponentsBuilder fbBaseUri(String path) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(facebookLambdaUrl);
+        log.info("builder = {}", builder);
+        builder = builder.pathSegment(path);
+        log.info("now builder = {}", builder);
+        return builder;
     }
 
     private HttpHeaders jwtHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE)));
         return headers;
+    }
+
+    @Override
+    public List<FacebookAccount> getFacebookPages(String userUid) {
+        URI getPagesUri = fbBaseUri("/facebook/pages/{userUid}").buildAndExpand(userUid).toUri();
+        log.info("constructed get pages URI: {}", getPagesUri);
+        ResponseEntity<FacebookAccount[]> userPages = restTemplate.getForEntity(getPagesUri, FacebookAccount[].class);
+        log.info("got these pages back: {}", Arrays.toString(userPages.getBody()));
+        return userPages.getBody() != null && userPages.getBody().length > 0 ? Arrays.asList(userPages.getBody()) : new ArrayList<>();
+    }
+
+    @Override
+    public String initiateFacebookConnection(String userUid) {
+        clearCache(userUid, "facebook");
+        final URI uri = fbBaseUri("facebook/connect/request/{userUid}")
+                .buildAndExpand(userUid).toUri();
+        log.info("okay trying this out, URI = {}", uri.toString());
+        return getRedirectUrl(uri);
+    }
+
+    @Override
+    public List<FacebookAccount> completeFbConnection(String userUid, String code) {
+        final URI uri = fbBaseUri("facebook/connect/done/{userUid}")
+                .queryParam("code", code).buildAndExpand(userUid).toUri();
+
+        log.info("completing FB connection, URI = {}", uri.toString());
+
+        ResponseEntity<String> connectResponse = restTemplate.getForEntity(uri, String.class);
+        return connectResponse.getStatusCode() == HttpStatus.CREATED ? getFacebookPages(userUid) : new ArrayList<>();
+    }
+
+    @Override
+    public List<GenericPostResponse> postToFacebook(List<FBPostBuilder> posts) {
+        log.info("posting to facebook, here are the posts: {}", posts);
+        return posts.stream().map(this::postToFb).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    private GenericPostResponse postToFb(FBPostBuilder post) {
+        final String pathSegment = post.hasImage() ? "facebook/photo/{userUid}" : "facebook/post/{userUid}";
+        UriComponentsBuilder builder = fbBaseUri(pathSegment)
+                .queryParam("message", post.getMessage());
+
+        if (post.hasImage()) {
+            final String imageUrl = imageBaseUri + "/" + post.getImageMediaType() + "/" + post.getImageKey();
+            builder = builder.queryParam("imageUrl", imageUrl);
+        }
+
+        if (post.isPagePost()) {
+            builder = builder.queryParam("pageId", post.getFacebookPageId());
+        }
+
+        HttpEntity entity = new HttpEntity<>(jwtHeaders());
+        try {
+            final URI postUri = builder.buildAndExpand(post.getPostingUserUid()).toUri();
+            log.info("posting to URI: {}", postUri);
+            ResponseEntity<GenericPostResponse> response = restTemplate.exchange(postUri, HttpMethod.POST, entity, GenericPostResponse.class);
+            return handleResponse(response, "FB");
+        } catch (RestClientException e) {
+            log.error("Error calling FB post!", e);
+            return null;
+        }
     }
 
     @Override
@@ -126,21 +192,6 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     }
 
     @Override
-    public ManagedPagesResponse getManagedFacebookPages(String userUid) {
-        return getManagedPages(userUid, "facebook");
-    }
-
-    @Override
-    public String initiateFacebookConnection(String userUid) {
-        clearCache(userUid, "facebook");
-        final URI uri = baseUri(userUid).path("/connect/facebook")
-                .queryParam("scope", "user_posts,manage_pages,publish_pages,publish_actions")
-                .build().toUri();
-        log.info("okay trying this out, URI = {}", uri.toString());
-        return getRedirectUrl(uri);
-    }
-
-    @Override
     public String initiateTwitterConnection(String userUid) {
         clearCache(userUid, "twitter");
         final URI uri = baseUri(userUid).path("/connect/twitter")
@@ -183,23 +234,6 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     }
 
     @Override
-    public List<GenericPostResponse> postToFacebook(List<FBPostBuilder> posts) {
-        log.info("posting to facebook, here is the post: {}", posts);
-        List<GenericPostResponse> responses = new ArrayList<>();
-        for (FBPostBuilder post : posts) {
-            final URI uri = baseUri(post.getPostingUserUid()).path("/grassroot/post/facebook").build().toUri();
-            HttpEntity<GenericPostRequest> entity = new HttpEntity<>(new GenericPostRequest(post, imageBaseUri), jwtHeaders());
-            try {
-                ResponseEntity<GenericPostResponse> response = restTemplate.exchange(uri, HttpMethod.POST, entity, GenericPostResponse.class);
-                responses.add(handleResponse(response, "FB"));
-            } catch (RestClientException e) {
-                log.error("Error calling FB post!", e);
-            }
-        }
-        return responses;
-    }
-
-    @Override
     public ManagedPage isTwitterAccountConnected(String userUid) {
         try {
             return getManagedPages(userUid, "twitter").getManagedPages().get(0);
@@ -229,7 +263,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         try {
             ResponseEntity<RedirectView> view = restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(jwtHeaders()),
                     RedirectView.class);
-            log.info("and returnd view with headers = {} and url = {}", view.getHeaders(), view.getHeaders().get("Location"));
+            log.info("and returned view with headers = {} and url = {}", view.getHeaders(), view.getHeaders().get("Location"));
             return view.getHeaders().get("Location").get(0);
         } catch (RestClientException e) {
             log.error("error calling integration broker", e);
