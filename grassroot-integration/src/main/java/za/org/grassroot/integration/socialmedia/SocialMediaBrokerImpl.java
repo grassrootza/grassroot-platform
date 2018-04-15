@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
@@ -76,9 +77,14 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     public List<FacebookAccount> getFacebookPages(String userUid) {
         URI getPagesUri = fbBaseUri("/facebook/pages/{userUid}").buildAndExpand(userUid).toUri();
         log.info("constructed get pages URI: {}", getPagesUri);
-        ResponseEntity<FacebookAccount[]> userPages = restTemplate.getForEntity(getPagesUri, FacebookAccount[].class);
-        log.info("got these pages back: {}", Arrays.toString(userPages.getBody()));
-        return userPages.getBody() != null && userPages.getBody().length > 0 ? Arrays.asList(userPages.getBody()) : new ArrayList<>();
+        try {
+            ResponseEntity<FacebookAccount[]> userPages = restTemplate.getForEntity(getPagesUri, FacebookAccount[].class);
+            log.info("got these pages back: {}", Arrays.toString(userPages.getBody()));
+            return userPages.getBody() != null && userPages.getBody().length > 0 ? Arrays.asList(userPages.getBody()) : new ArrayList<>();
+        } catch (ResourceAccessException e) {
+            log.error("can't access FB lambda");
+            return new ArrayList<>();
+        }
     }
 
     @Override

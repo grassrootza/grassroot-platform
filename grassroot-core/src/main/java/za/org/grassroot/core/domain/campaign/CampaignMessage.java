@@ -107,7 +107,7 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     }
 
     public Map<String, CampaignActionType> getNextMessages() {
-        List<String> actions = StringArrayUtil.arrayToList(nextActions);
+        List<String> actions = StringArrayUtil.arrayToList(nextActions).stream().distinct().collect(Collectors.toList());
         Map<String, CampaignActionType> unsortedMap = actions.stream().collect(Collectors.toMap(
                 s -> s.substring(0, s.indexOf(":")),
                 s -> CampaignActionType.valueOf(s.substring(s.indexOf(":") + 1))));
