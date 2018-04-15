@@ -20,6 +20,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,7 +55,8 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
         if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {
-            return true;
+            final List<String> systemRoles = jwtService.getSystemRolesFromToken(authorizationHeader.getBearerToken());
+            return !systemRoles.isEmpty();
         } else if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenExpired(authorizationHeader.getBearerToken())) {
             isTokenExpired = true;

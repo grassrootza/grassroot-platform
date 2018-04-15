@@ -2,6 +2,8 @@ package za.org.grassroot.integration.messaging;
 
 import za.org.grassroot.integration.PublicCredentials;
 
+import java.util.List;
+
 /**
  * Created by luke on 2017/05/22.
  */
@@ -9,6 +11,8 @@ public interface JwtService {
 
     String USER_UID_KEY = "USER_UID";
     String SYSTEM_ROLE_KEY = "SYSTEM_ROLE_KEY";
+    String PERMISSIONS_KEY = "PERMISSIONS";
+    String TYPE_KEY = "TYPE";
 
     PublicCredentials getPublicCredentials();
     String createJwt(CreateJwtTokenRequest request);
@@ -28,5 +32,11 @@ public interface JwtService {
     boolean isJwtTokenExpired(String token);
 
     String getUserIdFromJwtToken(String token);
+
+    List<String> getPermissionsFromToken(String token);
+
+    List<String> getSystemRolesFromToken(String token);
+
+    JwtType getJwtType(String token);
 
 }

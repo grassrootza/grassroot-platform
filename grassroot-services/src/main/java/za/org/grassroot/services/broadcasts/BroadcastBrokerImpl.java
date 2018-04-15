@@ -108,7 +108,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.mergeFields(Arrays.asList(Broadcast.NAME_FIELD_TEMPLATE, Broadcast.CONTACT_FIELD_TEMPALTE,
                 Broadcast.PROVINCE_FIELD_TEMPLATE, Broadcast.DATE_FIELD_TEMPLATE));
 
-        if (account !=null && account.getFreeFormCost() > 0) {
+        if (account != null && account.getFreeFormCost() > 0) {
             builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
         } else {
             builder.isSmsAllowed(false);
