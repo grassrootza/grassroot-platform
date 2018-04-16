@@ -18,6 +18,6 @@ public interface MessagingServiceBroker {
 
     void sendEmail(Map<String, String> recipients, GrassrootEmail grassrootEmail);
 
-    void sendEmail(GrassrootEmail email);
+    boolean sendEmail(GrassrootEmail email);
 
 }

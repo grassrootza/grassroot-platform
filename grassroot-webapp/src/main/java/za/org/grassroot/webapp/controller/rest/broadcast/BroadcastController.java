@@ -84,9 +84,13 @@ public class BroadcastController extends BaseRestController {
         Page<BroadcastDTO> broadcastDTOPage = new PageImpl<>(new ArrayList<>());
         if(broadcastSchedule.equals(BroadcastSchedule.IMMEDIATE)){
             broadcastDTOPage = broadcastBroker.fetchSentGroupBroadcasts(groupUid, pageable);
-        } else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE))
+        } else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE)) {
             broadcastDTOPage = broadcastBroker.fetchScheduledGroupBroadcasts(groupUid, pageable);
+        }
 
+        if (broadcastDTOPage.getNumberOfElements() > 0) {
+            log.info("broadcasts received, first one: {}", broadcastDTOPage.getContent().iterator().next());
+        }
         return ResponseEntity.ok(broadcastDTOPage);
     }
 
