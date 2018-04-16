@@ -55,8 +55,8 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
         if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {
-            final List<String> systemRoles = jwtService.getSystemRolesFromToken(authorizationHeader.getBearerToken());
-            return !systemRoles.isEmpty();
+//            final List<String> systemRoles = jwtService.getSystemRolesFromToken(authorizationHeader.getBearerToken());
+            return true;
         } else if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenExpired(authorizationHeader.getBearerToken())) {
             isTokenExpired = true;

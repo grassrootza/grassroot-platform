@@ -23,7 +23,6 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -97,9 +96,10 @@ public class GroupFetchController extends BaseRestController {
     @ApiOperation("Returns a list of groups for currently logged in user")
     public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request) {
         String userId = getUserIdFromRequest(request);
-
+        log.debug("fetching groups for user with ID, {}", userId);
         if (userId != null) {
             List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId);
+            log.info("found {} groups for user", groups.size());
             return new ResponseEntity<>(groups, HttpStatus.OK);
         } else return new ResponseEntity<>(new ArrayList<>(), HttpStatus.UNAUTHORIZED);
     }

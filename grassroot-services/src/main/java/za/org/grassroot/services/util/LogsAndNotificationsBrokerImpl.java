@@ -136,7 +136,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
             log.debug("returning logs from cache, not hitting DB");
             return activityLogs;
         }
-        log.info("calling DB for activity type: {}", activityType);
+        log.debug("calling DB for activity type: {}", activityType);
         final List<PublicActivityType> oldTypes = Arrays.asList(CALLED_MEETING, CALLED_VOTE, CREATED_GROUP, JOINED_GROUP);
         Pageable pageable = new PageRequest(0, MAX_PUBLIC_LOGS, Sort.Direction.DESC,
                 oldTypes.contains(activityType) ? "createdDateTime" : "creationTime");
