@@ -18,12 +18,16 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
 import za.org.grassroot.core.domain.notification.GroupBroadcastNotification;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.task.TaskDTO;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -347,20 +351,20 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             log.info("generating unsubscribe tokens ....");
             tokenService.generateResponseTokens(recipientUids, broadcast.getGroup().getUid(), null);
 
-            messagingServiceBroker.sendEmail(email);
+            boolean deliverySucceeded = messagingServiceBroker.sendEmail(email);
 
-            bundle.addNotifications(recordEmailNotifications(broadcast, recipients, emailBc, actionLog));
+            bundle.addNotifications(recordEmailNotifications(broadcast, recipients, emailBc, actionLog, deliverySucceeded));
         }
     }
 
     // for counting / auditing purposes
-    private Set<Notification> recordEmailNotifications(Broadcast broadcast, Set<User> recipients, EmailBroadcast emailBc, ActionLog actionLog) {
+    private Set<Notification> recordEmailNotifications(Broadcast broadcast, Set<User> recipients, EmailBroadcast emailBc, ActionLog actionLog, boolean deliveryCompleted) {
         boolean isCampaign = broadcast.getCampaign() != null;
         return recipients.stream().map(user -> {
             Notification n = isCampaign ? new CampaignBroadcastNotification(user, emailBc.getContent(), broadcast, broadcast.getEmailDeliveryRoute(), (CampaignLog) actionLog) :
                     new GroupBroadcastNotification(user, emailBc.getContent(), broadcast, broadcast.getEmailDeliveryRoute(), (GroupLog) actionLog);
             n.setSendAttempts(1);
-            n.setStatus(NotificationStatus.DELIVERED);
+            n.setStatus(deliveryCompleted ? NotificationStatus.DELIVERED : NotificationStatus.DELIVERY_FAILED);
             return n;
         }).collect(Collectors.toSet());
     }
@@ -540,21 +544,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private BroadcastDTO assembleDto(Broadcast broadcast) {
-        Specifications<Notification> smsSpecs = Specifications
-                .where(forDeliveryChannels(Arrays.asList(DeliveryRoute.SMS, DeliveryRoute.SHORT_MESSAGE, DeliveryRoute.ANDROID_APP, DeliveryRoute.WHATSAPP)))
-                .and(forGroupBroadcast(broadcast));
-
-        Specifications<Notification> emailSpecs = Specifications
-                .where(forDeliveryChannels(Arrays.asList(DeliveryRoute.EMAIL_GRASSROOT, DeliveryRoute.EMAIL_3RDPARTY, DeliveryRoute.EMAIL_USERACCOUNT)))
-                .and(forGroupBroadcast(broadcast));
-
-        if (environment.acceptsProfiles("production")) {
-            smsSpecs = smsSpecs.and(wasDelivered());
-            emailSpecs = emailSpecs.and(wasDelivered());
-        }
-
-        long smsCount = logsAndNotificationsBroker.countNotifications(smsSpecs);
-        long emailCount = logsAndNotificationsBroker.countNotifications(emailSpecs);
+        long smsCount = broadcast.hasShortMessage() ? countDeliveredSms(broadcast) : 0;
+        long emailCount = broadcast.hasEmail() ? countDeliveredEmails(broadcast) : 0;
 
         long totalCost = accountLogRepository
                 .findByBroadcastAndAccountLogType(broadcast, AccountLogType.BROADCAST_MESSAGE_SENT)
@@ -577,7 +568,39 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             twitterAccount = pages.getPageNameForId(broadcast.getTwitterImageKey()).orElse(null);
         }
 
-        return new BroadcastDTO(broadcast, smsCount, emailCount, (float) totalCost / 100, fbPages, twitterAccount);
+        boolean broadcastSucceeded = !hasFailures(broadcast);
+
+        return new BroadcastDTO(broadcast, smsCount, emailCount, (float) totalCost / 100, fbPages, twitterAccount,
+                broadcastSucceeded);
+    }
+
+    private long countDeliveredSms(Broadcast broadcast) {
+        Specifications<BroadcastNotification> smsSpecs = Specifications
+                .where(forBroadcast(broadcast)).and(forShortMessage());
+        if (environment.acceptsProfiles("production")) {
+            smsSpecs = smsSpecs.and(broadcastDelivered());
+        }
+        return logsAndNotificationsBroker.countNotifications(smsSpecs, BroadcastNotification.class);
+    }
+
+    private long countDeliveredEmails(Broadcast broadcast) {
+        Specifications<BroadcastNotification> emailSpecs = Specifications
+                .where(forBroadcast(broadcast)).and(forEmail());;
+
+        if (environment.acceptsProfiles("production")) {
+            emailSpecs = emailSpecs.and(broadcastDelivered());
+        }
+
+        return logsAndNotificationsBroker.countNotifications(emailSpecs, BroadcastNotification.class);
+    }
+
+    private boolean hasFailures(Broadcast broadcast) {
+        Specifications<BroadcastNotification> failureSpecs = Specifications
+                .where(forBroadcast(broadcast)).and(broadcastFailure());
+        long countFailures = logsAndNotificationsBroker.countNotifications(failureSpecs, BroadcastNotification.class);
+        log.info("counting failures: {}, fb : {}, twitter: {}", countFailures, broadcast.hasFbPost(), broadcast.hasTwitterPost());
+        return countFailures > 0 || (broadcast.hasFbPost() && !broadcast.getFbPostSucceeded()) ||
+                (broadcast.hasTwitterPost() && !broadcast.getTwitterSucceeded());
     }
 
 

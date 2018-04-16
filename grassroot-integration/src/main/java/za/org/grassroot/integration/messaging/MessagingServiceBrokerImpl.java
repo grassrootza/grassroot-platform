@@ -105,7 +105,7 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
     }
 
     @Override
-    public void sendEmail(GrassrootEmail mail) {
+    public boolean sendEmail(GrassrootEmail mail) {
         UriComponentsBuilder builder = baseUri().path("/email/send");
         HttpEntity<Set<GrassrootEmail>> requestEntity = new HttpEntity<>(Collections.singleton(mail), jwtHeaders());
 
@@ -113,8 +113,10 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
             ResponseEntity<String> responseEntity = restTemplate.exchange(builder.build().toUri(), HttpMethod.POST,
                     requestEntity, String.class);
             logger.info("send email: ? {}", responseEntity);
+            return true;
         } catch (RestClientException e) {
             logger.error("Error pushing out emails! {}", e);
+            return false;
         }
     }
 

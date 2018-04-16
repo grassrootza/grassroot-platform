@@ -61,9 +61,9 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     private UriComponentsBuilder fbBaseUri(String path) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(facebookLambdaUrl);
-        log.info("builder = {}", builder);
+        log.debug("builder = {}", builder);
         builder = builder.pathSegment(path);
-        log.info("now builder = {}", builder);
+        log.debug("now builder = {}", builder);
         return builder;
     }
 
@@ -76,7 +76,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     @Override
     public List<FacebookAccount> getFacebookPages(String userUid) {
         URI getPagesUri = fbBaseUri("/facebook/pages/{userUid}").buildAndExpand(userUid).toUri();
-        log.info("constructed get pages URI: {}", getPagesUri);
+        log.debug("constructed get pages URI: {}", getPagesUri);
         try {
             ResponseEntity<FacebookAccount[]> userPages = restTemplate.getForEntity(getPagesUri, FacebookAccount[].class);
             log.info("got these pages back: {}", Arrays.toString(userPages.getBody()));

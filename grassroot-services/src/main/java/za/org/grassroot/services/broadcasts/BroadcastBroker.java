@@ -14,6 +14,8 @@ public interface BroadcastBroker {
 
     String sendGroupBroadcast(BroadcastComponents broadcastComponents);
 
+//    void resendBroadcast()
+
     String sendTaskBroadcast(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders,
                              String message);
 
