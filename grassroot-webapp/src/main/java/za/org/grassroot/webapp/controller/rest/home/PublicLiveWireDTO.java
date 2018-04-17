@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,7 @@ public class PublicLiveWireDTO {
         this.headline = alert.getHeadline();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
         this.description = alert.getDescription();
+
 
         if (includeFullDetails) {
             this.serverUid = alert.getUid();

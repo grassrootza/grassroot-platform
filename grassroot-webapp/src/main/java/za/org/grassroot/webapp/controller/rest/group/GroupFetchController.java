@@ -92,7 +92,7 @@ public class GroupFetchController extends BaseRestController {
         this.groupBroker = groupBroker;
     }
 
-    @RequestMapping(value = "/list")
+    @RequestMapping(value = "/list", method = RequestMethod.GET)
     @ApiOperation("Returns a list of groups for currently logged in user")
     public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request) {
         String userId = getUserIdFromRequest(request);

@@ -569,6 +569,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         log.info("number of notifications for account in period = {}", numberOfMessages);
 
         // this is causing huge DB load, so am removing for now
+
         for (PaidGroup paidGroup : paidGroups) {
             costAccumulator += (countMessagesForPaidGroup(paidGroup, startTime, billingPeriodEnd) * messageCost);
         }

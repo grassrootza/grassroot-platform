@@ -196,6 +196,14 @@ public class BroadcastController extends BaseRestController {
         return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
     }
 
+    @RequestMapping(value = "/resend/{broadcastUid}", method = RequestMethod.POST)
+    public ResponseEntity<BroadcastDTO> resentBroadcast(HttpServletRequest request, String broadcastUid,
+                                                        boolean resendText, boolean resendEmail, boolean resendFb, boolean resendTwitter) {
+        final String resentUid = broadcastBroker.resendBroadcast(getUserIdFromRequest(request), broadcastUid,
+                resendText, resendEmail, resendFb, resendTwitter);
+        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(resentUid));
+    }
+
     @RequestMapping(value = "/cost-this-month", method = RequestMethod.GET)
     public ResponseEntity<Long> getAccountCostThisMonth(HttpServletRequest request) {
         User user = getUserFromRequest(request);

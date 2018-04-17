@@ -251,6 +251,10 @@ public class Broadcast implements GrassrootEntity, TagHolder, GrassrootTemplate 
         return getAssociatedEntities(LANGUAGE_PREFIX).collect(Collectors.toList());
     }
 
+    public List<Locale> getLanguages() {
+        return getAssociatedEntities(LANGUAGE_PREFIX).map(Locale::new).collect(Collectors.toList());
+    }
+
     public Optional<JoinDateCondition> getJoinDateCondition() {
         return getAssociatedEntities(JOIN_DATE_CONDITION_PREFIX).findFirst().map(JoinDateCondition::valueOf);
     }
