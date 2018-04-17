@@ -104,6 +104,8 @@ public class SafetyEvent implements EntityForUserResponse {
         return group;
     }
 
+
+
     public void updateScheduledReminderTime() {
         this.scheduledReminderTime = scheduledReminderTime.plus(20, ChronoUnit.MINUTES);
     }
@@ -116,5 +118,27 @@ public class SafetyEvent implements EntityForUserResponse {
                 ", createdDateTime=" + createdDateTime +
                 ", group=" + group +
                 '}';
+    }
+
+    @Override
+    public void setParent(UidIdentifiable parent) {
+        if (!parent.getJpaEntityType().equals(JpaEntityType.GROUP))
+            throw new IllegalArgumentException("Error, only groups can be parents of safety alerts");
+        this.group = (Group) parent;
+    }
+
+    @Override
+    public UidIdentifiable getParent() {
+        return group;
+    }
+
+    @Override
+    public User getCreatedByUser() {
+        return activatedBy;
+    }
+
+    @Override
+    public Instant getDeadlineTime() {
+        return createdDateTime;
     }
 }
