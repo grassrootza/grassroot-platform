@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -18,12 +19,16 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
 import za.org.grassroot.core.domain.notification.GroupBroadcastNotification;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.task.TaskDTO;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -46,6 +51,8 @@ import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 
 @Service @Slf4j
 public class BroadcastBrokerImpl implements BroadcastBroker {
+
+    private static final String RESEND_PREFIX = "[RESENT] ";
 
     @Value("${grassroot.broadcast.mocksm.enabled:false}")
     private boolean mockSocialMediaBroadcasts;
@@ -108,15 +115,17 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.mergeFields(Arrays.asList(Broadcast.NAME_FIELD_TEMPLATE, Broadcast.CONTACT_FIELD_TEMPALTE,
                 Broadcast.PROVINCE_FIELD_TEMPLATE, Broadcast.DATE_FIELD_TEMPLATE));
 
-        if (account !=null && account.getFreeFormCost() > 0) {
+        if (account != null && account.getFreeFormCost() > 0) {
             builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
         } else {
             builder.isSmsAllowed(false);
         }
 
-        ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
-        builder.isFbConnected(fbStatus.isUserConnectionValid())
-                .facebookPages(fbStatus.getManagedPages());
+        List<FacebookAccount> fbAccounts = socialMediaBroker.getFacebookPages(userUid);
+        log.info("fb accounts retrieved: {}", fbAccounts);
+
+        builder.isFbConnected(!fbAccounts.isEmpty())
+                .facebookPages(fbAccounts);
 
         ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
         builder.isTwitterConnected(twitterAccount != null)
@@ -145,7 +154,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         User user = userRepository.findOneByUid(bc.getUserUid());
         Account account = findAccount(user, bc.getGroupUid());
 
-        if (account == null) {
+        if (account == null && !StringUtils.isEmpty(bc.getShortMessage())) {
             throw new NoPaidAccountException();
         }
 
@@ -179,6 +188,78 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         logsAndNotificationsBroker.storeBundle(bundle);
 
         return broadcast.getUid();
+    }
+
+    @Override
+    @Transactional
+    public String resendBroadcast(String userUid, String broadcastUid, boolean resendText, boolean resendEmail, boolean resendFb, boolean resendTwitter) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Broadcast original = broadcastRepository.findOneByUid(Objects.requireNonNull(broadcastUid));
+
+        if (!original.getCreatedByUser().equals(user)) {
+            throw new AccessDeniedException("Error! Only creating user can resend broadcast");
+        }
+
+        Broadcast broadcast = Broadcast.builder()
+                .createdByUser(original.getCreatedByUser())
+                .account(original.getAccount())
+                .title(RESEND_PREFIX + original.getTitle())
+                .group(original.getGroup())
+                .campaign(original.getCampaign())
+                .onlyUseFreeChannels(original.isOnlyUseFreeChannels())
+                .skipSmsIfEmail(original.isSkipSmsIfEmail()).build();
+
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        if ((resendText && original.hasShortMessage()) || (resendEmail && original.hasEmail())) {
+            copyOverContent(original, broadcast);
+            copyOverFilters(original, broadcast);
+
+            bundle.addBundle(broadcast.getCampaign() == null ?
+                    generateGroupBroadcastBundle(broadcast) : generateCampaignBroadcastBundle(broadcast));
+        }
+
+        if (resendFb && original.hasFbPost()) {
+            List<FBPostBuilder> posts = extractFbFromBroadcast(original);
+            recordFbPosts(posts, broadcast);
+            broadcast.setFbPostSucceeded(postToFacebook(posts));
+        }
+
+        if (resendTwitter && original.hasTwitterPost()) {
+            TwitterPostBuilder post = extractTweetFromBroadcast(original);
+            recordTwitterPost(post, broadcast);
+            broadcast.setTwitterSucceeded(postToTwitter(post));
+        }
+
+        broadcastRepository.saveAndFlush(broadcast);
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+
+        return broadcast.getUid();
+    }
+
+    private void copyOverContent(Broadcast original, Broadcast broadcast) {
+        broadcast.setSmsTemplate1(original.getSmsTemplate1());
+        broadcast.setEmailContent(original.getEmailContent());
+        broadcast.setEmailDeliveryRoute(original.getEmailDeliveryRoute());
+        broadcast.setEmailImageKey(original.getEmailImageKey());
+        broadcast.setEmailAttachments(original.getEmailAttachments());
+    }
+
+    private void copyOverFilters(Broadcast original, Broadcast broadcast) {
+        if (broadcast.hasFilter()) {
+            broadcast.setNameFilter(original.getNamePhoneEmailFilter());
+            broadcast.setTaskTeams(original.getTaskTeams());
+            broadcast.setJoinMethods(original.getJoinMethods());
+            broadcast.setAffiliations(original.getAffiliations());
+
+            original.getJoinDateCondition().ifPresent(broadcast::setJoinDateCondition);
+            original.getJoinDate().ifPresent(broadcast::setJoinDateValue);
+
+            broadcast.setProvinces(original.getProvinces());
+            broadcast.setLanguages(original.getLanguages());
+        }
     }
 
     @Override
@@ -242,16 +323,12 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         if (bc.getFacebookPosts() != null) {
             log.info("sending an FB post, from builder: {}", bc.getFacebookPosts());
             recordFbPosts(bc.getFacebookPosts(), broadcast);
-            List<GenericPostResponse> fbResponses = socialMediaBroker.postToFacebook(bc.getFacebookPosts());
-            broadcast.setFbPostSucceeded(mockSocialMediaBroadcasts || fbResponses.stream().anyMatch(GenericPostResponse::isPostSuccessful));
+            broadcast.setFbPostSucceeded(postToFacebook(bc.getFacebookPosts()));
         }
 
         if (bc.getTwitterPostBuilder() != null) {
             recordTwitterPost(bc.getTwitterPostBuilder(), broadcast);
-            GenericPostResponse twResponse = socialMediaBroker.postToTwitter(bc.getTwitterPostBuilder());
-            if ((twResponse != null && twResponse.isPostSuccessful()) || mockSocialMediaBroadcasts) {
-                broadcast.setTwitterSucceeded(true);
-            }
+            broadcast.setTwitterSucceeded(postToTwitter(bc.getTwitterPostBuilder()));
         }
 
         broadcast.setSentTime(Instant.now());
@@ -259,6 +336,16 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         return bc.isCampaignBroadcast() ?
                 generateCampaignBroadcastBundle(broadcast) :
                 generateGroupBroadcastBundle(broadcast);
+    }
+
+    private boolean postToFacebook(List<FBPostBuilder> fbPosts) {
+        List<GenericPostResponse> fbResponses = socialMediaBroker.postToFacebook(fbPosts);
+        return mockSocialMediaBroadcasts || fbResponses.stream().anyMatch(GenericPostResponse::isPostSuccessful);
+    }
+
+    private boolean postToTwitter(TwitterPostBuilder twPost) {
+        GenericPostResponse twResponse = socialMediaBroker.postToTwitter(twPost);
+        return ((twResponse != null && twResponse.isPostSuccessful()) || mockSocialMediaBroadcasts);
     }
 
     private LogsAndNotificationsBundle storeScheduledBroadcast(BroadcastComponents bc, Broadcast broadcast) {
@@ -330,7 +417,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             Set<String> recipientUids = recipients.stream().map(User::getUid).collect(Collectors.toSet());
             EmailBroadcast emailBc = EmailBroadcast.builder()
                     .broadcastUid(broadcast.getUid())
-                    .subject(broadcast.getTitle())
+                    .subject(broadcast.getTitle().replace(RESEND_PREFIX, ""))
                     .content(broadcast.getEmailContent())
                     .deliveryRoute(broadcast.getEmailDeliveryRoute())
                     .attachmentFileRecordUids(broadcast.getEmailAttachments())
@@ -345,20 +432,20 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             log.info("generating unsubscribe tokens ....");
             tokenService.generateResponseTokens(recipientUids, broadcast.getGroup().getUid(), null);
 
-            messagingServiceBroker.sendEmail(email);
+            boolean deliverySucceeded = messagingServiceBroker.sendEmail(email);
 
-            bundle.addNotifications(recordEmailNotifications(broadcast, recipients, emailBc, actionLog));
+            bundle.addNotifications(recordEmailNotifications(broadcast, recipients, emailBc, actionLog, deliverySucceeded));
         }
     }
 
     // for counting / auditing purposes
-    private Set<Notification> recordEmailNotifications(Broadcast broadcast, Set<User> recipients, EmailBroadcast emailBc, ActionLog actionLog) {
+    private Set<Notification> recordEmailNotifications(Broadcast broadcast, Set<User> recipients, EmailBroadcast emailBc, ActionLog actionLog, boolean deliveryCompleted) {
         boolean isCampaign = broadcast.getCampaign() != null;
         return recipients.stream().map(user -> {
             Notification n = isCampaign ? new CampaignBroadcastNotification(user, emailBc.getContent(), broadcast, broadcast.getEmailDeliveryRoute(), (CampaignLog) actionLog) :
                     new GroupBroadcastNotification(user, emailBc.getContent(), broadcast, broadcast.getEmailDeliveryRoute(), (GroupLog) actionLog);
             n.setSendAttempts(1);
-            n.setStatus(NotificationStatus.DELIVERED);
+            n.setStatus(deliveryCompleted ? NotificationStatus.DELIVERED : NotificationStatus.DELIVERY_FAILED);
             return n;
         }).collect(Collectors.toSet());
     }
@@ -538,21 +625,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private BroadcastDTO assembleDto(Broadcast broadcast) {
-        Specifications<Notification> smsSpecs = Specifications
-                .where(forDeliveryChannels(Arrays.asList(DeliveryRoute.SMS, DeliveryRoute.SHORT_MESSAGE, DeliveryRoute.ANDROID_APP, DeliveryRoute.WHATSAPP)))
-                .and(forGroupBroadcast(broadcast));
-
-        Specifications<Notification> emailSpecs = Specifications
-                .where(forDeliveryChannels(Arrays.asList(DeliveryRoute.EMAIL_GRASSROOT, DeliveryRoute.EMAIL_3RDPARTY, DeliveryRoute.EMAIL_USERACCOUNT)))
-                .and(forGroupBroadcast(broadcast));
-
-        if (environment.acceptsProfiles("production")) {
-            smsSpecs = smsSpecs.and(wasDelivered());
-            emailSpecs = emailSpecs.and(wasDelivered());
-        }
-
-        long smsCount = logsAndNotificationsBroker.countNotifications(smsSpecs);
-        long emailCount = logsAndNotificationsBroker.countNotifications(emailSpecs);
+        long smsCount = broadcast.hasShortMessage() ? countDeliveredSms(broadcast) : 0;
+        long emailCount = broadcast.hasEmail() ? countDeliveredEmails(broadcast) : 0;
 
         long totalCost = accountLogRepository
                 .findByBroadcastAndAccountLogType(broadcast, AccountLogType.BROADCAST_MESSAGE_SENT)
@@ -560,10 +634,13 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         List<String> fbPages = null;
         if (broadcast.hasFbPost()) {
-            ManagedPagesResponse pages = socialMediaBroker.getManagedFacebookPages(broadcast.getCreatedByUser().getUid());
+            Map<String, String> userFbPages = socialMediaBroker.getFacebookPages(broadcast.getCreatedByUser().getUid())
+                    .stream().collect(Collectors.toMap(FacebookAccount::getPageId, FacebookAccount::getPageName));
+
             fbPages = Arrays.stream(broadcast.getFacebookPageId().split(", "))
-                    .filter(pageId -> pages.getPageNameForId(pageId).isPresent())
-                    .map(pageId -> pages.getPageNameForId(pageId).orElse(null)).collect(Collectors.toList());
+                    .filter(userFbPages::containsKey)
+                    .map(userFbPages::get)
+                    .collect(Collectors.toList());
         }
 
         String twitterAccount = null;
@@ -572,7 +649,39 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             twitterAccount = pages.getPageNameForId(broadcast.getTwitterImageKey()).orElse(null);
         }
 
-        return new BroadcastDTO(broadcast, smsCount, emailCount, (float) totalCost / 100, fbPages, twitterAccount);
+        boolean broadcastSucceeded = !hasFailures(broadcast);
+
+        return new BroadcastDTO(broadcast, smsCount, emailCount, (float) totalCost / 100, fbPages, twitterAccount,
+                broadcastSucceeded);
+    }
+
+    private long countDeliveredSms(Broadcast broadcast) {
+        Specifications<BroadcastNotification> smsSpecs = Specifications
+                .where(forBroadcast(broadcast)).and(forShortMessage());
+        if (environment.acceptsProfiles("production")) {
+            smsSpecs = smsSpecs.and(broadcastDelivered());
+        }
+        return logsAndNotificationsBroker.countNotifications(smsSpecs, BroadcastNotification.class);
+    }
+
+    private long countDeliveredEmails(Broadcast broadcast) {
+        Specifications<BroadcastNotification> emailSpecs = Specifications
+                .where(forBroadcast(broadcast)).and(forEmail());;
+
+        if (environment.acceptsProfiles("production")) {
+            emailSpecs = emailSpecs.and(broadcastDelivered());
+        }
+
+        return logsAndNotificationsBroker.countNotifications(emailSpecs, BroadcastNotification.class);
+    }
+
+    private boolean hasFailures(Broadcast broadcast) {
+        Specifications<BroadcastNotification> failureSpecs = Specifications
+                .where(forBroadcast(broadcast)).and(broadcastFailure());
+        long countFailures = logsAndNotificationsBroker.countNotifications(failureSpecs, BroadcastNotification.class);
+        log.info("counting failures: {}, fb : {}, twitter: {}", countFailures, broadcast.hasFbPost(), broadcast.hasTwitterPost());
+        return countFailures > 0 || (broadcast.hasFbPost() && !broadcast.getFbPostSucceeded()) ||
+                (broadcast.hasTwitterPost() && !broadcast.getTwitterSucceeded());
     }
 
 

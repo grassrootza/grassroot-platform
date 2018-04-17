@@ -592,12 +592,10 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     private Set<Notification> generateBillNotifications(AccountBillingRecord billingRecord) {
         Set<Notification> notifications = new HashSet<>();
-        for (User user : billingRecord.getAccount().getAdministrators()) {
-            AccountBillingNotification notification = new AccountBillingNotification(user,
-                    accountEmailService.createAccountBillingNotification(billingRecord),
-                    billingRecord.getAccountLog());
-            notifications.add(notification);
-        }
+        AccountBillingNotification notification = new AccountBillingNotification(billingRecord.getAccount().getBillingUser(),
+                accountEmailService.createAccountBillingNotification(billingRecord),
+                billingRecord.getAccountLog());
+        notifications.add(notification);
         return notifications;
     }
 

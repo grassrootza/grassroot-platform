@@ -83,10 +83,6 @@ public class Account implements GrassrootEntity, Serializable {
     @Column(name = "account_name")
     private String accountName;
 
-    @Basic
-    @Column(name = "payment_reference")
-    private String paymentRef;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "account_type", length = 50, nullable = false)
     protected AccountType type;
@@ -441,10 +437,6 @@ public class Account implements GrassrootEntity, Serializable {
         LocalDate nextDate = LocalDate.now().plus(1, isAnnualAccount() ? ChronoUnit.YEARS : ChronoUnit.MONTHS);
         this.nextBillingDate = nextDate.atTime(billingTime).toInstant(billingTz);
     }
-
-    public String getPaymentRef() { return paymentRef; }
-
-    public void setPaymentRef(String paymentRef) { this.paymentRef = paymentRef; }
 
     public int getTodosPerGroupPerMonth() {
         return todosPerGroupPerMonth;

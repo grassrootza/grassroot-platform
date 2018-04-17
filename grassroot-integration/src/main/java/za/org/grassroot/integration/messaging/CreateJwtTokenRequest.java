@@ -22,12 +22,20 @@ public class CreateJwtTokenRequest {
 
     public CreateJwtTokenRequest(JwtType jwtType) {
         this.jwtType = jwtType;
+        claims.put(JwtService.TYPE_KEY, jwtType);
     }
 
     public CreateJwtTokenRequest(JwtType jwtType, User user) {
         this(jwtType);
         claims.put(JwtService.USER_UID_KEY, user.getUid());
         claims.put(JwtService.SYSTEM_ROLE_KEY, user.getStandardRoles().stream().map(Role::getName).collect(Collectors.joining(",")));
+    }
+
+    // NB: never insert roles in here, this is exclusively for minimal scope tokens
+    public CreateJwtTokenRequest(JwtType jwtType, String userUid, Set<String> permissions) {
+        this(jwtType);
+        claims.put(JwtService.USER_UID_KEY, userUid);
+        claims.put(JwtService.PERMISSIONS_KEY, String.join(",", permissions));
     }
 
     // only used in refresh, and system roles must be comma separated

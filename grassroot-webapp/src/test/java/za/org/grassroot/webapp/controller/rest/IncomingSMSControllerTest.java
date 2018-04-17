@@ -80,11 +80,13 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(meeting);
+        when(userResponseBrokerMock.checkValidityOfResponse(meeting, "yes")).thenReturn(true);
 
         mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", "yes"))
                 .andExpect(status().isOk());
 
         verify(userResponseBrokerMock, times(1)).checkForEntityForUserResponse(sessionTestUser.getUid(), false);
+        verify(userResponseBrokerMock, times(1)).checkValidityOfResponse(meeting, "yes");
         verify(userResponseBrokerMock, times(1)).recordUserResponse(sessionTestUser.getUid(), JpaEntityType.MEETING,
                 meeting.getUid(), "yes");
         verifyZeroInteractions(eventBrokerMock);
@@ -153,12 +155,14 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(vote);
+        when(userResponseBrokerMock.checkValidityOfResponse(vote, msg)).thenReturn(true);
 
         mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
         verify(userResponseBrokerMock, times(1)).recordUserResponse(sessionTestUser.getUid(), JpaEntityType.VOTE,
                 vote.getUid(), msg);
+        verify(userResponseBrokerMock, times(1)).checkValidityOfResponse(vote, msg);
         verifyZeroInteractions(eventLogBrokerMock);
         verifyZeroInteractions(userLogRepositoryMock);
         verifyZeroInteractions(groupLogRepositoryMock);
@@ -187,13 +191,14 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(vote);
+        when(userResponseBrokerMock.checkValidityOfResponse(vote, msg)).thenReturn(true);
 
         mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
-        // todo : make sure case is ignored in user response broker
         verify(userResponseBrokerMock, times(1)).recordUserResponse(sessionTestUser.getUid(), JpaEntityType.VOTE,
                 vote.getUid(), "TWO");
+        verify(userResponseBrokerMock, times(1)).checkValidityOfResponse(vote, msg);
         verifyZeroInteractions(eventLogBrokerMock);
         verifyZeroInteractions(userLogRepositoryMock);
         verifyZeroInteractions(groupLogRepositoryMock);

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.media.MediaFunction;
 
 @Getter @Setter @Builder @ToString @ApiModel
@@ -18,5 +19,13 @@ public class FBPostBuilder {
     private String imageKey;
     private MediaFunction imageMediaType;
     private String imageCaption;
+
+    public boolean hasImage() {
+        return !StringUtils.isEmpty(imageKey);
+    }
+
+    public boolean isPagePost() {
+        return !StringUtils.isEmpty(postingUserUid) && !postingUserUid.equals(facebookPageId);
+    }
 
 }

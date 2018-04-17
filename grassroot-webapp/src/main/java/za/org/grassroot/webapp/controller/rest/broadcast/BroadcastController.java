@@ -84,9 +84,13 @@ public class BroadcastController extends BaseRestController {
         Page<BroadcastDTO> broadcastDTOPage = new PageImpl<>(new ArrayList<>());
         if(broadcastSchedule.equals(BroadcastSchedule.IMMEDIATE)){
             broadcastDTOPage = broadcastBroker.fetchSentGroupBroadcasts(groupUid, pageable);
-        } else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE))
+        } else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE)) {
             broadcastDTOPage = broadcastBroker.fetchScheduledGroupBroadcasts(groupUid, pageable);
+        }
 
+        if (broadcastDTOPage.getNumberOfElements() > 0) {
+            log.info("broadcasts received, first one: {}", broadcastDTOPage.getContent().iterator().next());
+        }
         return ResponseEntity.ok(broadcastDTOPage);
     }
 
@@ -190,6 +194,14 @@ public class BroadcastController extends BaseRestController {
 
         String broadcastUid = broadcastBroker.sendTaskBroadcast(user.getUid(), taskUid, taskType, sendToAll == null || !sendToAll, message);
         return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
+    }
+
+    @RequestMapping(value = "/resend/{broadcastUid}", method = RequestMethod.POST)
+    public ResponseEntity<BroadcastDTO> resentBroadcast(HttpServletRequest request, String broadcastUid,
+                                                        boolean resendText, boolean resendEmail, boolean resendFb, boolean resendTwitter) {
+        final String resentUid = broadcastBroker.resendBroadcast(getUserIdFromRequest(request), broadcastUid,
+                resendText, resendEmail, resendFb, resendTwitter);
+        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(resentUid));
     }
 
     @RequestMapping(value = "/cost-this-month", method = RequestMethod.GET)

@@ -3,6 +3,7 @@ package za.org.grassroot.services.user;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.env.Environment;
 import org.springframework.security.access.AccessDeniedException;
@@ -58,9 +59,8 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     @Autowired
     public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository,
-                                UserLogRepository userLogRepository, PasswordEncoder passwordEncoder,Environment environment,
-                                MessageSourceAccessor messageSourceAccessor,
-                                MessagingServiceBroker messagingBroker) {
+                                UserLogRepository userLogRepository, PasswordEncoder passwordEncoder, Environment environment,
+                                @Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor, MessagingServiceBroker messagingBroker) {
         this.verificationTokenCodeRepository = verificationTokenCodeRepository;
         this.userRepository = userRepository;
         this.userLogRepository = userLogRepository;
@@ -324,7 +324,7 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     private String otpMessage(String username,Locale locale) {
         final VerificationTokenCode otp = generateShortLivedOTP(username);
-        return messageSourceAccessor.getMessage("web.user.optout.token.message", new String[] {otp.getCode()}, locale);
+        return messageSourceAccessor.getMessage("text.user.profile.token.message", new String[] {otp.getCode()}, locale);
     }
 
     private void sendOtp(User user, String message) {

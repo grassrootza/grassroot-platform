@@ -2,7 +2,6 @@ package za.org.grassroot.services;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.dto.MembershipInfo;
 
 import java.util.List;
@@ -13,9 +12,6 @@ import java.util.List;
 public interface AdminService {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    List<MaskedUserDTO> searchByInputNumberOrDisplayName(String inputNumber);
-
-    //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateGroupActive(String adminUserUid, String groupUid, boolean active);
 
     //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

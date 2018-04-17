@@ -14,6 +14,7 @@ public enum UserInterfaceType {
 
     FACEBOOK("facebook"),
     TWITTER("twitter"),
+    OTHER_WEB("other_web"), // so for other 3rd party joins etc
 
     EMAIL("incoming_email"),
     WHATSAPP("incoming_whatsapp");

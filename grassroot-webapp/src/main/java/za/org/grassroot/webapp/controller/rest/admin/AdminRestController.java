@@ -20,6 +20,7 @@ import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.security.SecureRandom;
@@ -27,9 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-@RestController
-@Slf4j
-@Api("/api/admin")
+@RestController @Grassroot2RestController
+@Slf4j @Api("/api/admin")
 @RequestMapping(value = "/api/admin")
 public class AdminRestController extends BaseRestController{
 
@@ -131,7 +131,7 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok("SUCCESS");
     }
 
-
+    // todo : move this into password token manager (it is also used elsewhere)
     private String generateRandomPwd() {
         String letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789+@";
         StringBuilder password = new StringBuilder();
