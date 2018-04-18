@@ -7,6 +7,7 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.model.http.AuthorizationHeader;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 @Slf4j
 public class BaseRestController {
@@ -61,5 +62,9 @@ public class BaseRestController {
         }
 
         return null;
+    }
+
+    protected List<String> getPermissionsFromToken(String jwtToken) {
+        return jwtService.getPermissionsFromToken(jwtToken);
     }
 }

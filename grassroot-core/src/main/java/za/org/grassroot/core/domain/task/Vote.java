@@ -40,7 +40,7 @@ public class Vote extends Event<VoteContainer> {
 	public boolean hasOption(String option) {
 		if (getTags() != null) {
 			for (String tag : getTags()) {
-				if (tag.equalsIgnoreCase(option))
+				if (tag.trim().equalsIgnoreCase(option.trim()))
 					return true;
 			}
 		}

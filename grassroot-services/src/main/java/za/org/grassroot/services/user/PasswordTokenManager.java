@@ -3,6 +3,7 @@ package za.org.grassroot.services.user;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.env.Environment;
 import org.springframework.security.access.AccessDeniedException;
@@ -32,6 +33,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.Random;
 
 /**
  * @author Lesetse Kimwaga
@@ -39,6 +41,7 @@ import java.util.*;
 @Service @Slf4j
 public class PasswordTokenManager implements PasswordTokenService {
 
+    private static final Random RANDOM = new SecureRandom();
     private static final int TOKEN_LIFE_SPAN_MINUTES = 5;
     private static final int TOKEN_LIFE_SPAN_DAYS = 30;
     // making it very long as old device will be discontinued within next few months and several devices
@@ -58,9 +61,9 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     @Autowired
     public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository,
-                                UserLogRepository userLogRepository, PasswordEncoder passwordEncoder,Environment environment,
-                                MessageSourceAccessor messageSourceAccessor,
-                                MessagingServiceBroker messagingBroker) {
+                                UserLogRepository userLogRepository, PasswordEncoder passwordEncoder, Environment environment,
+                                @Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor, MessagingServiceBroker messagingBroker) {
+
         this.verificationTokenCodeRepository = verificationTokenCodeRepository;
         this.userRepository = userRepository;
         this.userLogRepository = userLogRepository;
@@ -322,9 +325,22 @@ public class PasswordTokenManager implements PasswordTokenService {
             log.info("OTP message: {}", message);
     }
 
+    @Override
+    public String generateRandomPwd() {
+        String letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789+@";
+        StringBuilder password = new StringBuilder();
+
+        for (int i = 0; i < 8; i++){
+            int index = (int)(RANDOM.nextDouble()*letters.length());
+            password.append(letters.substring(index, index + 1));
+        }
+
+        return password.toString();
+    }
+
     private String otpMessage(String username,Locale locale) {
         final VerificationTokenCode otp = generateShortLivedOTP(username);
-        return messageSourceAccessor.getMessage("web.user.optout.token.message", new String[] {otp.getCode()}, locale);
+        return messageSourceAccessor.getMessage("text.user.profile.token.message", new String[] {otp.getCode()}, locale);
     }
 
     private void sendOtp(User user, String message) {

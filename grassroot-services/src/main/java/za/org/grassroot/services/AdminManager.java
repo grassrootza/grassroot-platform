@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -21,7 +20,10 @@ import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.group.GroupBroker;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Created by luke on 2016/02/04.
@@ -48,12 +50,6 @@ public class AdminManager implements AdminService {
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
         this.passwordEncoder = passwordEncoder;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MaskedUserDTO> searchByInputNumberOrDisplayName(String inputNumber) {
-        return maskListUsers(userRepository.findByDisplayNameContainingOrPhoneNumberContaining(inputNumber, inputNumber));
     }
 
     /**
@@ -195,16 +191,6 @@ public class AdminManager implements AdminService {
         if (!admin.getStandardRoles().contains(adminRole)) {
             throw new AccessDeniedException("Error! User does not have admin role");
         }
-    }
-
-    /*
-   Helper functions to mask a list of entities
-    */
-    private List<MaskedUserDTO> maskListUsers(List<User> users) {
-        List<MaskedUserDTO> maskedUsers = new ArrayList<>();
-        for (User user : users)
-            maskedUsers.add(new MaskedUserDTO(user));
-        return maskedUsers;
     }
 
 }

@@ -20,20 +20,16 @@ import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
-
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import javax.servlet.http.HttpServletRequest;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-@RestController
-@Slf4j
-@Api("/api/admin")
+
+@RestController @Grassroot2RestController
+@Slf4j @Api("/api/admin")
 @RequestMapping(value = "/api/admin")
 public class AdminRestController extends BaseRestController{
-
-    private static final Random RANDOM = new SecureRandom();
 
     private final AdminService adminService;
     private final UserManagementService userManagementService;
@@ -87,7 +83,7 @@ public class AdminRestController extends BaseRestController{
             throw new AccessDeniedException("Error! Admin user did not validate with OTP");
         }
 
-        String newPwd = generateRandomPwd();
+        String newPwd = passwordTokenService.generateRandomPwd();
         adminService.updateUserPassword(getUserIdFromRequest(request), userToResetUid, newPwd);
         //Sending the password to user
         User user = userManagementService.load(userToResetUid);
@@ -129,18 +125,5 @@ public class AdminRestController extends BaseRestController{
         //todo : Check if member is part of group or not
         adminService.addMemberToGroup(getUserIdFromRequest(request), groupUid, membershipInfo);
         return ResponseEntity.ok("SUCCESS");
-    }
-
-
-    private String generateRandomPwd() {
-        String letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789+@";
-        StringBuilder password = new StringBuilder();
-
-        for (int i = 0; i < 8; i++){
-            int index = (int)(RANDOM.nextDouble()*letters.length());
-            password.append(letters.substring(index, index + 1));
-        }
-
-        return password.toString();
     }
 }

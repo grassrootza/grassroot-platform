@@ -1,18 +1,12 @@
 package za.org.grassroot.services.group;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.util.StringUtils;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.NotificationSendError;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.dto.GrassrootEmail;
@@ -120,9 +114,7 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         Set<User> uniqueUsers = new HashSet<>();
         for (String uid : groupsToExportUids) {
             Group group = groupBroker.load(uid);
-            for (User user : group.getMembers()) {
-                uniqueUsers.add(user);
-            }
+            uniqueUsers.addAll(group.getMembers());
         }
 
         XSSFWorkbook workbook = new XSSFWorkbook();
@@ -224,18 +216,23 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         Objects.requireNonNull(emailAddress); // export will check user and todo
 
         Todo todo = todoBroker.load(todoUid);
-        File workbookFile = writeToFile(exportTodoData(userUid, todoUid), "todo_responses");
+        File workbookFile = writeToFile(exportTodoData(userUid, todoUid), "action_item_responses");
 
         if (workbookFile == null) {
             log.error("Could not generate workbook file to send");
         } else {
-            // todo : make body more friendly, and create a special email address (no-reply) for from
-            GrassrootEmail email = new GrassrootEmail.EmailBuilder("Grassroot: todo responses")
+            GrassrootEmail email = new GrassrootEmail.EmailBuilder("Grassroot: action item responses")
                     .toAddress(emailAddress)
-                    .fromName("no-reply@grassroot.org.za")
-                    .subject(todo.getName() + "todo response")
-                    .attachment("todo_responses", workbookFile)
-                    .content("Good day,\nKindly find the attached responses for the above mentioned todo.")
+                    .fromName("Grassroot System")
+                    .fromAddress("notifications@grassroot.org.za")
+                    .subject(todo.getName() + ": response sheet")
+                    .attachment("action_item_responses", workbookFile)
+                    .content("Good day,\n\n" +
+                            "Kindly find the attached responses for your action item, " + todo.getName() + ", which was just " +
+                            "requested. For any details or questions, log in at https://www.grassroot.org.za or dial *134*1994#.\n\n" +
+                            "Regards,\n\n" +
+                            "Grassroot\n\n" +
+                            "Please do not reply to this mail")
                     .build();
 
             log.info("email assembled, putting it in the queue");

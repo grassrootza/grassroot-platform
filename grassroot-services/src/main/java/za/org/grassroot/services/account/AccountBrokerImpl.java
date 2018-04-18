@@ -9,7 +9,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
@@ -226,10 +225,8 @@ public class AccountBrokerImpl implements AccountBroker {
                     pg.getGroup().setPaidFor(true);
                 });
 
+        // make sure to store reg in here
         account.setDefaultPaymentType(paymentType);
-        if (!StringUtils.isEmpty(ongoingPaymentRef)) {
-            account.setPaymentRef(ongoingPaymentRef);
-        }
 
         if (setBillingUser && !account.getBillingUser().equals(user)) {
             account.setBillingUser(user);
@@ -484,26 +481,6 @@ public class AccountBrokerImpl implements AccountBroker {
                 .user(user)
                 .accountLogType(AccountLogType.DISCRETE_SETTING_CHANGE)
                 .description(sb.toString()).build());
-    }
-
-    @Override
-    @Transactional
-    public void updateAccountCardPaymentReference(String userUid, String accountUid, String paymentRef) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(paymentRef);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        User user = userRepository.findOneByUid(userUid);
-        validateAdmin(user, account);
-
-        account.setPaymentRef(paymentRef);
-        account.setDefaultPaymentType(AccountPaymentType.CARD_PAYMENT);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .user(user)
-                .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
-                .description(paymentRef).build());
     }
 
     @Override

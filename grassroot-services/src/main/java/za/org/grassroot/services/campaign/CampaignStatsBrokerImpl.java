@@ -206,14 +206,14 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         engagementLogs.stream()
                 .filter(log -> log.getChannel() != null)
                 .forEach(log -> {
-            final String key = log.getUser().getId() + "_" + log.getChannel();
+            final String key = log.getUser().getId() + "_" + log.getChannel().name();
             channelMap.put(key, log.getChannel());
         });
 
         // step 3: count the number of interfaces
         log.info("okay, channel map now looks like: {}", channelMap);
         Map<String, Long> result = channelMap.entrySet().stream()
-                .collect(Collectors.groupingBy(entry -> entry.getValue().toString(), Collectors.counting()));
+                .collect(Collectors.groupingBy(entry -> entry.getValue().name(), Collectors.counting()));
 
         cache.put(new Element(cacheKey, result));
         return result;
@@ -293,7 +293,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
             channels.forEach(channel -> {
                 // step 5: group logs by formatted date string (note: may be a clever way to do this just in the stream,
                 // though preserving ordering is useful (more so than a little additional elegance in code)
-                results.put(channel.toString(), groupLogsByTime(logs, log -> channel.equals(log.getChannel()), groupingFormatter, timeKeys));
+                results.put(channel.name(), groupLogsByTime(logs, log -> channel.equals(log.getChannel()), groupingFormatter, timeKeys));
             });
         } else {
             List<User> users = userRepository.findAll(lastStageMap.keySet());

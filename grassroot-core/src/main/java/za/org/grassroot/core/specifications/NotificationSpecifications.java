@@ -9,6 +9,8 @@ import za.org.grassroot.core.domain.account.AccountLog_;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.campaign.CampaignLog_;
+import za.org.grassroot.core.domain.notification.BroadcastNotification;
+import za.org.grassroot.core.domain.notification.BroadcastNotification_;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.CampaignLogType;
@@ -67,7 +69,7 @@ public final class NotificationSpecifications {
     }
 
     public static Specifications<Notification> sentOrBetterSince(Instant time) {
-        List<NotificationStatus> sentOrBetterStatuses = Arrays.asList(NotificationStatus.READ, NotificationStatus.DELIVERED, NotificationStatus.READ);
+        List<NotificationStatus> sentOrBetterStatuses = Arrays.asList(NotificationStatus.SENT, NotificationStatus.DELIVERED, NotificationStatus.READ);
         Specification<Notification> sentOrBetter = (root, query, cb) -> root.get(Notification_.status).in(sentOrBetterStatuses);
         Specification<Notification> statusChangedSince = (root, query, cb) -> cb.greaterThan(root.get(Notification_.lastStatusChange), time);
         return Specifications.where(statusChangedSince).and(sentOrBetter);
@@ -104,11 +106,8 @@ public final class NotificationSpecifications {
         };
     }
 
-    public static Specification<Notification> forGroupBroadcast(Broadcast broadcast) {
-        return (root, query, cb) -> {
-          Join<Notification, GroupLog> groupLogJoin = root.join(Notification_.groupLog);
-          return cb.equal(groupLogJoin.get(GroupLog_.broadcast), broadcast);
-        };
+    public static Specification<BroadcastNotification> forEmail() {
+        return (root, query, cb) -> root.get(BroadcastNotification_.deliveryChannel).in(DeliveryRoute.EMAIL_ROUTES);
     }
 
     public static Specification<Notification> isInFailedStatus() {
@@ -159,5 +158,21 @@ public final class NotificationSpecifications {
                 .and(androidChannel); // since sometimes routing header can be GCM but defaults into AAT
     }
 
+    public static Specification<BroadcastNotification> forBroadcast(Broadcast broadcast) {
+        return (root, query, cb) -> cb.equal(root.get(BroadcastNotification_.broadcast), broadcast);
+    }
+
+    public static Specification<BroadcastNotification> forShortMessage() {
+        return (root, query, cb) -> root.get(BroadcastNotification_.deliveryChannel).in(DeliveryRoute.TEXT_ROUTES);
+    }
+
+    public static Specification<BroadcastNotification> broadcastFailure() {
+        return (root, query, cb) -> root.get(BroadcastNotification_.status).in(FAILED_STATUS);
+    }
+
+    public static Specification<BroadcastNotification> broadcastDelivered() {
+        List<NotificationStatus> deliveredStatuses = Arrays.asList(NotificationStatus.DELIVERED, NotificationStatus.READ);
+        return (root, query, cb) -> root.get(BroadcastNotification_.status).in(deliveredStatuses);
+    }
 
 }

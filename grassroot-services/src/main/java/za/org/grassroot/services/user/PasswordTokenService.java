@@ -14,6 +14,8 @@ public interface PasswordTokenService {
 
     void triggerOtp(User user);
 
+    String generateRandomPwd();
+
     VerificationTokenCode generateShortLivedOTP(String username);
 
     VerificationTokenCode generateLongLivedAuthCode(String userUid);
