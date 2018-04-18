@@ -4,6 +4,8 @@ import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import za.org.grassroot.core.domain.Group;
 
+import java.util.Comparator;
+
 @ApiModel
 @Getter
 public class GroupAdminDTO extends GroupRefDTO{
@@ -15,4 +17,10 @@ public class GroupAdminDTO extends GroupRefDTO{
         this.creatingUserName = group.getCreatedByUser().getDisplayName();
         this.active = group.isActive();
     }
+
+    public static Comparator<GroupAdminDTO> GroupAdminDTOComparator = (groupAdminDTO, t1) -> {
+        int membership1 = groupAdminDTO.memberCount;
+        int membership2 = t1.memberCount;
+        return membership2-membership1;
+    };
 }

@@ -23,6 +23,7 @@ import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -64,6 +65,13 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok(userUid);
     }
 
+    @RequestMapping(value = "/user/groups/number",method = RequestMethod.GET)
+    public ResponseEntity<Integer> getNumberOfGroupsUserIsPartOf(@RequestParam String userUid){
+        User user = userManagementService.load(userUid);
+        int numberOfGroups = groupRepository.countByMembershipsUserAndActiveTrue(user);
+        return ResponseEntity.ok(numberOfGroups);
+    }
+
     @RequestMapping(value = "/user/optout",method = RequestMethod.POST)
     public ResponseEntity<String> userOptout(@RequestParam String userToOptOutUid,
                                              @RequestParam String otpEntered,
@@ -88,7 +96,7 @@ public class AdminRestController extends BaseRestController{
         //Sending the password to user
         User user = userManagementService.load(userToResetUid);
         if(user.hasPhoneNumber()){
-            messagingServiceBroker.sendPrioritySMS("New Grassroot password:"+newPwd,getUserFromRequest(request).getPhoneNumber());
+            messagingServiceBroker.sendPrioritySMS("New Grassroot password:"+newPwd,user.getPhoneNumber());
         }
         return ResponseEntity.ok("SUCCESS");
     }
@@ -99,6 +107,7 @@ public class AdminRestController extends BaseRestController{
         if(!StringUtils.isEmpty(searchTerm)){
             List<Group> groups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
             groups.forEach(group -> groupAdminDTOS.add(new GroupAdminDTO(group)));
+            Collections.sort(groupAdminDTOS,GroupAdminDTO.GroupAdminDTOComparator);
         }
         return ResponseEntity.ok(groupAdminDTOS);
     }
