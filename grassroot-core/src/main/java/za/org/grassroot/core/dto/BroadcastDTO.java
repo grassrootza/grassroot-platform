@@ -23,6 +23,7 @@ public class BroadcastDTO {
     private BroadcastSchedule scheduleType;
 
     private boolean succeeded;
+    private boolean createdByUser;
 
     private boolean shortMessageSent;
     private boolean emailSent;
@@ -52,20 +53,16 @@ public class BroadcastDTO {
     private JoinDateCondition joinDateCondition;
     private LocalDate joinDate;
 
-    public BroadcastDTO(Broadcast broadcast, long deliveredSmsCount, long deliveredEmailCount, float costEstimate,
-                        List<String> facebookPageNames, String twitterAccount, boolean succeeded) {
+    public BroadcastDTO(Broadcast broadcast, boolean createdByUser, boolean succeeded) {
         // set things up
         this.broadcastUid = broadcast.getUid();
         this.title = broadcast.getTitle();
         this.scheduleType = broadcast.getBroadcastSchedule();
         this.succeeded = succeeded;
+        this.createdByUser = createdByUser;
 
         this.shortMessageSent = !StringUtils.isEmpty(broadcast.getSmsTemplate1());
         this.emailSent = !StringUtils.isEmpty(broadcast.getEmailContent());
-
-        this.smsCount = deliveredSmsCount;
-        this.emailCount = deliveredEmailCount;
-        this.costEstimate = costEstimate;
 
         this.dateTimeSent = broadcast.getSentTime();
         this.scheduledSendTime = broadcast.getScheduledSendTime();
@@ -73,9 +70,7 @@ public class BroadcastDTO {
         this.smsContent = broadcast.getSmsTemplate1();
         this.emailContent = broadcast.getEmailContent();
         this.fbPost = broadcast.getFacebookPost();
-        this.fbPages = facebookPageNames;
         this.twitterPost = broadcast.getTwitterPost();
-        this.twitterAccount = twitterAccount;
 
         this.hasFilter = broadcast.hasFilter();
 

@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.home;
 
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -17,7 +18,7 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 @Slf4j @RestController
 @Grassroot2RestController
-@RequestMapping("/api/news")
+@RequestMapping("/api/news") @Api("/api/news")
 public class LiveWireNewsController {
 
     private final LiveWireAlertBroker liveWireAlertBroker;

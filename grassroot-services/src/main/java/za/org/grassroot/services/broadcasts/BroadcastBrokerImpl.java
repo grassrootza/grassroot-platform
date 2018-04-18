@@ -206,6 +206,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .title(RESEND_PREFIX + original.getTitle())
                 .group(original.getGroup())
                 .campaign(original.getCampaign())
+                .broadcastSchedule(BroadcastSchedule.IMMEDIATE)
                 .onlyUseFreeChannels(original.isOnlyUseFreeChannels())
                 .skipSmsIfEmail(original.isSkipSmsIfEmail()).build();
 
@@ -551,13 +552,15 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             smsCount = shortMessageUsers.size();
         }
 
-        AccountLog accountLog = new AccountLog.Builder(bc.getAccount())
-                .user(bc.getCreatedByUser())
-                .group(bc.getGroup())
-                .broadcast(bc)
-                .accountLogType(AccountLogType.BROADCAST_MESSAGE_SENT)
-                .billedOrPaid(bc.getAccount().getFreeFormCost() * smsCount).build();
-        bundle.addLog(accountLog);
+        if (bc.getAccount() != null) {
+            AccountLog accountLog = new AccountLog.Builder(bc.getAccount())
+                    .user(bc.getCreatedByUser())
+                    .group(bc.getGroup())
+                    .broadcast(bc)
+                    .accountLogType(AccountLogType.BROADCAST_MESSAGE_SENT)
+                    .billedOrPaid(bc.getAccount().getFreeFormCost() * smsCount).build();
+            bundle.addLog(accountLog);
+        }
 
         return bundle;
     }
@@ -569,8 +572,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public BroadcastDTO fetchBroadcast(String broadcastUid) {
-        return assembleDto(broadcastRepository.findOneByUid(broadcastUid));
+    public BroadcastDTO fetchBroadcast(String broadcastUid, String fetchingUserId) {
+        return assembleDto(broadcastRepository.findOneByUid(broadcastUid), userRepository.findOneByUid(fetchingUserId));
     }
 
     @Override
@@ -581,29 +584,30 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, Pageable pageable) {
-        Objects.requireNonNull(groupUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+    public Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, String fetchingUserUid, Pageable pageable) {
+        final User fetchingUser = userRepository.findOneByUid(Objects.requireNonNull(fetchingUserUid));
+        Group group = groupRepository.findOneByUid(Objects.requireNonNull(groupUid));
         Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeNotNull(group.getUid(), pageable);
         log.info("fetched these broadcasts: {}", broadcasts);
-        return broadcasts.map(this::assembleDto);
+        return broadcasts.map(broadcast -> assembleDto(broadcast, fetchingUser));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, Pageable pageable) {
-        Objects.requireNonNull(groupUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+    public Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, String fetchingUserUid, Pageable pageable) {
+        final User fetchingUser = userRepository.findOneByUid(Objects.requireNonNull(fetchingUserUid));
+        final Group group = groupRepository.findOneByUid(Objects.requireNonNull(groupUid));
         Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeIsNullAndBroadcastScheduleNot(group.getUid(), BroadcastSchedule.IMMEDIATE, pageable);
-        return broadcasts.map(this::assembleDto);
+        return broadcasts.map(broadcast -> assembleDto(broadcast, fetchingUser));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<BroadcastDTO> fetchCampaignBroadcasts(String campaignUid) {
-        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+    public List<BroadcastDTO> fetchCampaignBroadcasts(String campaignUid, String fetchingUserUid) {
+        final User fetchingUser = userRepository.findOneByUid(Objects.requireNonNull(fetchingUserUid));
+        final Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
         return broadcastRepository.findByCampaign(campaign)
-                .stream().map(this::assembleDto).collect(Collectors.toList());
+                .stream().map(broadcast -> assembleDto(broadcast, fetchingUser)).collect(Collectors.toList());
     }
 
     @Override
@@ -624,7 +628,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         }
     }
 
-    private BroadcastDTO assembleDto(Broadcast broadcast) {
+    private BroadcastDTO assembleDto(Broadcast broadcast, User fetchingUser) {
         long smsCount = broadcast.hasShortMessage() ? countDeliveredSms(broadcast) : 0;
         long emailCount = broadcast.hasEmail() ? countDeliveredEmails(broadcast) : 0;
 
@@ -651,8 +655,15 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         boolean broadcastSucceeded = !hasFailures(broadcast);
 
-        return new BroadcastDTO(broadcast, smsCount, emailCount, (float) totalCost / 100, fbPages, twitterAccount,
-                broadcastSucceeded);
+        BroadcastDTO dto = new BroadcastDTO(broadcast, broadcast.getCreatedByUser().equals(fetchingUser), broadcastSucceeded);
+
+        dto.setSmsCount(smsCount);
+        dto.setEmailCount(emailCount);
+        dto.setCostEstimate((float) totalCost / 100);
+        dto.setFbPages(fbPages);
+        dto.setTwitterAccount(twitterAccount);
+
+        return dto;
     }
 
     private long countDeliveredSms(Broadcast broadcast) {
@@ -666,7 +677,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private long countDeliveredEmails(Broadcast broadcast) {
         Specifications<BroadcastNotification> emailSpecs = Specifications
-                .where(forBroadcast(broadcast)).and(forEmail());;
+                .where(forBroadcast(broadcast)).and(forEmail());
 
         if (environment.acceptsProfiles("production")) {
             emailSpecs = emailSpecs.and(broadcastDelivered());
