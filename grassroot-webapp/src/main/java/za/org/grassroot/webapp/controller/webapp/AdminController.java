@@ -15,18 +15,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.AnalyticalService;
-import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
-import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,7 +28,6 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -51,16 +44,11 @@ public class AdminController extends BaseController {
 
     private static final Random RANDOM = new SecureRandom();
 
-    private final GroupRepository groupRepository;
-    private final GroupBroker groupBroker;
     private final AdminService adminService;
     private final AnalyticalService analyticalService;
 
     @Autowired
-    public AdminController(GroupRepository groupRepository, GroupBroker groupBroker,
-                           AdminService adminService, AnalyticalService analyticalService) {
-        this.groupRepository = groupRepository;
-        this.groupBroker = groupBroker;
+    public AdminController(AdminService adminService, AnalyticalService analyticalService) {
         this.adminService = adminService;
         this.analyticalService = analyticalService;
     }
@@ -129,106 +117,6 @@ public class AdminController extends BaseController {
         return "admin/home";
 
     }
-
-	/*
-	RESTRUCTURED METHODS TO HANDLE GROUP ADMIN
-	 */
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/search", method = RequestMethod.GET)
-    public String findGroup(Model model, @RequestParam(required = false) String searchTerm) {
-        if (StringUtils.isEmpty(searchTerm)) {
-            return "admin/groups/search";
-        } else {
-            String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, false, true);
-            log.info("encoded query: {}", tsQuery);
-            List<Group> possibleGroups = groupRepository.findByFullTextSearchOnGroupName(tsQuery);
-            if (possibleGroups == null || possibleGroups.isEmpty()) {
-                // sometimes stop words / lexemes means the query comes back empty, hence use this
-                possibleGroups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
-            }
-            model.addAttribute("possibleGroups", possibleGroups);
-            model.addAttribute("roles", BaseRoles.groupRoles);
-            return "admin/groups/search_result";
-        }
-    }
-
-	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-	@RequestMapping(value = "/admin/groups/deactivate", method = RequestMethod.POST)
-	public String deactivateGroup(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String searchTerm, HttpServletRequest request) {
-		adminService.updateGroupActive(getUserProfile().getUid(), groupUid, false);
-        addMessage(attributes, MessageType.SUCCESS, "admin.group.deactivated", request);
-        attributes.addAttribute("searchTerm", searchTerm);
-        return "redirect:/admin/groups/search";
-	}
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/activate", method = RequestMethod.POST)
-    public String activateGroup(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String searchTerm, HttpServletRequest request) {
-        adminService.updateGroupActive(getUserProfile().getUid(), groupUid, true);
-        addMessage(attributes, MessageType.SUCCESS, "admin.group.activated", request);
-        attributes.addAttribute("searchTerm", searchTerm);
-        return "redirect:/admin/groups/search";
-    }
-
-	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-	@RequestMapping(value = "/admin/groups/add", method = RequestMethod.POST)
-	public String addMemberToGroup(RedirectAttributes attributes, HttpServletRequest request, @RequestParam String searchTerm,
-                                   @RequestParam String groupUid, @RequestParam String displayName,
-                                   @RequestParam String phoneNumber, @RequestParam String roleName) {
-        MembershipInfo membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
-		adminService.addMemberToGroup(getUserProfile().getUid(), groupUid, membershipInfo);
-        addMessage(attributes, MessageType.SUCCESS, "admin.group.added", request);
-        attributes.addAttribute("searchTerm", searchTerm);
-        return "redirect:/admin/groups/search";
-	}
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/remove", method = RequestMethod.POST)
-    public String removeGroupMember(RedirectAttributes attributes, HttpServletRequest request,
-                                    @RequestParam String groupUid, @RequestParam String phoneNumber, @RequestParam String searchTerm) {
-        try {
-            adminService.removeMemberFromGroup(getUserProfile().getUid(), groupUid, phoneNumber);
-            addMessage(attributes, MessageType.SUCCESS, "admin.group.removed", request);
-        } catch (NoSuchUserException e) {
-            addMessage(attributes, MessageType.ERROR, "admin.group.removed.nouser", request);
-        } catch (MemberNotPartOfGroupException e) {
-            addMessage(attributes, MessageType.ERROR, "admin.group.removed.error", request);
-        }
-        attributes.addAttribute("searchTerm", searchTerm);
-        return "redirect:/admin/groups/search";
-    }
-
-	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-	@RequestMapping(value = "/admin/groups/role", method = RequestMethod.POST)
-	public String changeMemberRole(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String msisdn,
-	                               @RequestParam String roleName, @RequestParam String searchTerm, HttpServletRequest request) {
-
-        final String returnRedir = "redirect:/admin/groups/search";
-        attributes.addAttribute("searchTerm", searchTerm);
-
-        log.info("Looking for user with this phone: {}", msisdn);
-
-        if (!userManagementService.userExist(msisdn)) {
-            log.info("Could not find user, returning error");
-            addMessage(attributes, MessageType.ERROR, "admin.role.change.notfound", new String[] { msisdn }, request);
-            return returnRedir;
-        }
-
-        User userToModify = userManagementService.findByInputNumber(msisdn);
-		Group group = groupBroker.load(groupUid);
-
-		if (!group.getMembers().contains(userToModify)) {
-		    log.info("User not in group, returning with error");
-		    addMessage(attributes, MessageType.ERROR, "admin.role.change.notmember", new String[] { msisdn }, request);
-		    return returnRedir;
-        }
-
-		groupBroker.updateMembershipRole(getUserProfile().getUid(), group.getUid(), userToModify.getUid(), roleName);
-
-		addMessage(attributes, MessageType.INFO, "admin.done", request);
-		return returnRedir;
-	}
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/alpha", method = RequestMethod.GET)
