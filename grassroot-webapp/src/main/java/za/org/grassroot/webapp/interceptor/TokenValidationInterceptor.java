@@ -5,11 +5,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.HandlerMapping;
@@ -27,7 +22,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -62,7 +56,6 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
         boolean isTokenExpired = false;
 
         if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenValid(token)) {
-//            jwtTokenValid(token);
             return true;
         } else if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenExpired(token)) {
             isTokenExpired = true;
@@ -76,21 +69,6 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
         setResponseBody(isTokenExpired, response);
         return false;
-    }
-
-    private void jwtTokenValid(String bearerToken) {
-        log.info("uh, setting token valid? ");
-        Authentication auth =  SecurityContextHolder.getContext().getAuthentication();
-        List<GrantedAuthority> authorityList = AuthorityUtils.commaSeparatedStringToAuthorityList(
-                String.join(",", jwtService.getStandardRolesFromJwtToken(bearerToken)));
-        Authentication newAuth;
-        if (auth != null) {
-            auth.setAuthenticated(true);
-            newAuth = new UsernamePasswordAuthenticationToken(auth.getPrincipal(), auth.getCredentials(), authorityList);
-        } else {
-            newAuth = new UsernamePasswordAuthenticationToken(jwtService.getUserIdFromJwtToken(bearerToken), null, authorityList);
-        }
-        SecurityContextHolder.getContext().setAuthentication(newAuth);
     }
 
     private void setResponseBody(boolean isTokenExpired, HttpServletResponse response) throws IOException {

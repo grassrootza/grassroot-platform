@@ -2,7 +2,6 @@ package za.org.grassroot.webapp;
 
 import com.github.mxab.thymeleaf.extras.dataattribute.dialect.DataAttributeDialect;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -17,7 +16,6 @@ import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
-import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.webapp.interceptor.SimpleLoggingInterceptor;
 import za.org.grassroot.webapp.interceptor.TokenValidationInterceptor;
 
@@ -34,8 +32,6 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 @ControllerAdvice @Slf4j
 public class MVCConfig extends WebMvcConfigurerAdapter {
-
-    private PasswordTokenService passwordTokenService;
 
     @Bean
     public DataAttributeDialect dataAttributeDialect() {
@@ -58,14 +54,8 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
         return new TokenValidationInterceptor();
     }
 
-    @Autowired
-    public void setPasswordTokenService(PasswordTokenService passwordTokenService) {
-        this.passwordTokenService = passwordTokenService;
-    }
-
     @Bean
     public SimpleLoggingInterceptor loggingInterceptor(){return  new SimpleLoggingInterceptor();}
-
 
     @Bean
     @Profile({"localpg", "staging"})
