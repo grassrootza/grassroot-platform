@@ -21,7 +21,7 @@ import static za.org.grassroot.integration.payments.peachp.PaymentCopyPayRespons
 @Slf4j
 @RestController
 @Grassroot2RestController
-@RequestMapping("/api/donate")
+@RequestMapping("/v2/api/donate")
 public class DonationRestController {
 
     @Value("${grassroot.payments.sharing.url:http://localhost:8080/donate]")

@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.media.MediaFunction;
@@ -15,8 +16,9 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 @RestController @Grassroot2RestController
-@Api("/api/media") @Slf4j
-@RequestMapping(value = "/api/media")
+@Api("/v2/api/media") @Slf4j
+@RequestMapping(value = "/v2/api/media")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class MediaController {
 
     private final MediaFileBroker mediaFileBroker;

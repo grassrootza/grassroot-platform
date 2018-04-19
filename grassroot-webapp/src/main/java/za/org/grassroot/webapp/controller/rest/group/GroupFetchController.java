@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
@@ -51,9 +52,9 @@ import java.util.stream.Collectors;
 
 @RestController
 @Grassroot2RestController
-@Slf4j
-@Api("/api/group/fetch")
-@RequestMapping(value = "/api/group/fetch")
+@Slf4j @Api("/v2/api/group/fetch")
+@RequestMapping(value = "/v2/api/group/fetch")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class GroupFetchController extends BaseRestController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupFetchController.class);

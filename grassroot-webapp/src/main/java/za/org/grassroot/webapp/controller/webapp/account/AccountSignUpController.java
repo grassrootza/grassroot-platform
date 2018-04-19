@@ -15,7 +15,6 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.PaidGroup;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
@@ -209,31 +208,6 @@ public class AccountSignUpController extends BaseController {
             addMessage(attributes, MessageType.ERROR, "account.changetype.error", request);
             return "redirect:/account/type";
         }
-    }
-
-    @RequestMapping(value = "contact", method = RequestMethod.POST)
-    public String sendContactMail(@RequestParam(required = false) String emailAddress, @RequestParam String message,
-                                  RedirectAttributes attributes, HttpServletRequest request) {
-        User user = userManagementService.load(getUserProfile().getUid());
-        Account account = accountBroker.loadPrimaryAccountForUser(user.getUid(), false);
-
-        if (!StringUtils.isEmpty(emailAddress)) {
-            userManagementService.updateEmailAddress(user.getUid(), user.getUid(), emailAddress);
-            user.setEmailAddress(emailAddress); // so it's set when inserted into email body
-        }
-
-        StringBuilder mailBody = new StringBuilder("User message:\n\n");
-        mailBody.append(message);
-        mailBody.append("\n\n User details: \n");
-        mailBody.append(user.toString());
-        mailBody.append("\n\n Account details: \n");
-        mailBody.append(account == null ? "Null account" : account.toString());
-
-        messageBroker.sendEmail(new GrassrootEmail.EmailBuilder("Account 'Contact Us' Query")
-                .toAddress("contact@grassroot.org.za").toName("Grassroot").content(mailBody.toString()).build());
-
-        addMessage(attributes, MessageType.SUCCESS, "account.contact.done", request);
-        return "redirect:/account/";
     }
 
 }

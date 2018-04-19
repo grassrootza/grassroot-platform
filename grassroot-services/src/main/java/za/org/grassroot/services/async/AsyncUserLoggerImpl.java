@@ -5,10 +5,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.util.CacheUtilService;
@@ -33,12 +36,14 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     private final UserRepository userRepository;
     private final UserLogRepository userLogRepository;
     private final CacheUtilService cacheUtilService;
+    private final RoleRepository roleRepository;
 
     @Autowired
-    public AsyncUserLoggerImpl(UserRepository userRepository, UserLogRepository userLogRepository, CacheUtilService cacheUtilService) {
+    public AsyncUserLoggerImpl(UserRepository userRepository, UserLogRepository userLogRepository, CacheUtilService cacheUtilService, RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.userLogRepository = userLogRepository;
         this.cacheUtilService = cacheUtilService;
+        this.roleRepository = roleRepository;
     }
 
     @Async
@@ -52,7 +57,11 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         } else if (UserInterfaceType.ANDROID.equals(channel) || UserInterfaceType.ANDROID_2.equals(channel)) {
             user.setHasAndroidProfile(true);
         }
-        user.setHasInitiatedSession(true);
+        if (!user.isHasInitiatedSession()) {
+            user.setHasInitiatedSession(true);
+            Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+            user.addStandardRole(fullUserRole);
+        }
         userLogRepository.save(new UserLog(userUid, UserLogType.USER_SESSION, "", channel));
     }
 

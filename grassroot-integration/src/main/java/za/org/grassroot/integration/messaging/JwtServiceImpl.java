@@ -157,6 +157,17 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
+    public List<String> getStandardRolesFromJwtToken(String token) {
+        String joinedRoles = extractClaims(token).get(SYSTEM_ROLE_KEY, String.class);
+        return !StringUtils.isEmpty(joinedRoles) ? Arrays.asList(joinedRoles.split(",")) : new ArrayList<>();
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
+                .parseClaimsJws(token).getBody();
+    }
+
+    @Override
     public String refreshToken(String oldToken, JwtType jwtType, Long shortExpiryMillis) {
         boolean isTokenStillValid = false;
         Date expirationTime = null;

@@ -24,8 +24,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController @Grassroot2RestController
-@Api("/api/group/outside/join/") @Slf4j
-@RequestMapping(value = "/api/group/outside/join/")
+@Api("/v2/api/group/outside/join/") @Slf4j
+@RequestMapping(value = "/v2/api/group/outside/join/")
 public class IncomingGroupJoinController extends BaseRestController {
 
     private final GroupBroker groupBroker;

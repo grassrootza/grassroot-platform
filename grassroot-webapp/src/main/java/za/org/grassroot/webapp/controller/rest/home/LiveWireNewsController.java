@@ -18,7 +18,7 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 @Slf4j @RestController
 @Grassroot2RestController
-@RequestMapping("/api/news") @Api("/api/news")
+@RequestMapping("/v2/api/news") @Api("/v2/api/news")
 public class LiveWireNewsController {
 
     private final LiveWireAlertBroker liveWireAlertBroker;

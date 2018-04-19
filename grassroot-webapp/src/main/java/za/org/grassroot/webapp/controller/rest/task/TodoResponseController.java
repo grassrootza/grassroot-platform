@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.TodoTypeMismatchException;
@@ -18,10 +19,9 @@ import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Slf4j
-@RestController @Grassroot2RestController
-@Api("/api/task/respond/todo")
-@RequestMapping("/api/task/respond/todo")
+@Slf4j @RestController @Grassroot2RestController
+@RequestMapping("/v2/api/task/respond/todo") @Api("/v2/api/task/respond/todo")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class TodoResponseController extends BaseRestController {
 
     private final TodoBroker todoBroker;
