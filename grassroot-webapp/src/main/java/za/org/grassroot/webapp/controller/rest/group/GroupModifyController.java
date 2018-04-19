@@ -78,6 +78,7 @@ public class GroupModifyController extends GroupBaseController {
                                                    @RequestParam boolean defaultAddToAccount,
                                                    @RequestParam boolean pinGroup,
                                                    HttpServletRequest request) {
+        log.info("creating a group, with name {}", name);
         User user = getUserFromRequest(request);
         if (user != null) {
             HashSet<MembershipInfo> membershipInfos = new HashSet<>();

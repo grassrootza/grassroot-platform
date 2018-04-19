@@ -11,6 +11,8 @@ public interface JwtService {
 
     String USER_UID_KEY = "USER_UID";
     String SYSTEM_ROLE_KEY = "SYSTEM_ROLE_KEY";
+    String PERMISSIONS_KEY = "PERMISSIONS";
+    String TYPE_KEY = "TYPE";
 
     PublicCredentials getPublicCredentials();
     String createJwt(CreateJwtTokenRequest request);
@@ -32,5 +34,11 @@ public interface JwtService {
     String getUserIdFromJwtToken(String token);
 
     List<String> getStandardRolesFromJwtToken(String token);
+
+    List<String> getPermissionsFromToken(String token);
+
+    List<String> getSystemRolesFromToken(String token);
+
+    JwtType getJwtType(String token);
 
 }

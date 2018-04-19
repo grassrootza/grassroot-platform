@@ -83,8 +83,6 @@ public class EventCreateController extends BaseRestController{
                 .description(description)
                 .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis));
 
-        log.info("Helper={}",helper);
-
         if (publicMeeting) {
             helper = helper.isPublic(true);
         }
@@ -100,6 +98,8 @@ public class EventCreateController extends BaseRestController{
         if (!StringUtils.isEmpty(mediaFileUid)) {
             helper.taskImageKey(mediaFileUid);
         }
+
+        log.info("Helper={}",helper);
 
         try {
             Meeting createdMeeting = eventBroker.createMeeting(helper);

@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Slf4j
 public class TaskCreateControllerTest extends RestAbstractUnitTest {
 
-    private static final String path = "/api/task/create";
+    private static final String path = "/v2/api/task/create";
 
     private static final List<String> testVoteOptions = new ArrayList<>();
 
@@ -41,7 +41,7 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
     private static final Instant oneDayAway = Instant.now().plus(1, ChronoUnit.DAYS);
 
     @Mock
-    JwtService jwtServiceMock;
+    private JwtService jwtServiceMock;
 
     @InjectMocks
     private EventCreateController meetingCreateController;
@@ -68,8 +68,6 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
                 .name(testSubject)
                 .location(testEventLocation)
                 .startDateTimeInstant(Instant.ofEpochMilli(testDateTimeEpochMillis));
-
-
 
         when(jwtServiceMock.getUserIdFromJwtToken("testing")).thenReturn(sessionTestUser.getUid());
         when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);

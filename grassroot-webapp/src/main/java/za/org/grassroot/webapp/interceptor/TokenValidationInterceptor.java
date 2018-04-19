@@ -55,7 +55,8 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
         boolean isTokenExpired = false;
 
-        if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenValid(token)) {
+        if (authorizationHeader.hasBearerToken()
+                && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {
             return true;
         } else if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenExpired(token)) {
             isTokenExpired = true;

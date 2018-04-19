@@ -17,6 +17,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
+import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TaskLog;
 import za.org.grassroot.core.domain.task.TodoLog;
@@ -43,6 +44,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
             GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN);
 
 	private final NotificationRepository notificationRepository;
+	private final BroadcastNotificationRepository broadcastNotificationRepository;
 	private final GroupLogRepository groupLogRepository;
 	private final UserLogRepository userLogRepository;
 	private final EventLogRepository eventLogRepository;
@@ -55,9 +57,10 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	private final ApplicationEventPublisher applicationEventPublisher;
 
 	@Autowired
-	public LogsAndNotificationsBrokerImpl(NotificationRepository notificationRepository, GroupLogRepository groupLogRepository,
+	public LogsAndNotificationsBrokerImpl(NotificationRepository notificationRepository, BroadcastNotificationRepository broadcastNotificationRepository, GroupLogRepository groupLogRepository,
 										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository, CacheManager cacheManager, CacheUtilService cacheService, ApplicationEventPublisher applicationEventPublisher) {
 		this.notificationRepository = notificationRepository;
+		this.broadcastNotificationRepository = broadcastNotificationRepository;
 		this.groupLogRepository = groupLogRepository;
 		this.userLogRepository = userLogRepository;
 		this.eventLogRepository = eventLogRepository;
@@ -136,7 +139,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
             log.debug("returning logs from cache, not hitting DB");
             return activityLogs;
         }
-        log.info("calling DB for activity type: {}", activityType);
+        log.debug("calling DB for activity type: {}", activityType);
         final List<PublicActivityType> oldTypes = Arrays.asList(CALLED_MEETING, CALLED_VOTE, CREATED_GROUP, JOINED_GROUP);
         Pageable pageable = new PageRequest(0, MAX_PUBLIC_LOGS, Sort.Direction.DESC,
                 oldTypes.contains(activityType) ? "createdDateTime" : "creationTime");
@@ -253,7 +256,18 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         return notificationRepository.count(specifications);
     }
 
-    @Override
+	@Override
+	@SuppressWarnings("unchecked")
+	@Transactional(readOnly = true)
+	public <T extends Notification> long countNotifications(Specifications<T> specs, Class<T> notificationType) {
+		if (notificationType.equals(BroadcastNotification.class)) {
+			return broadcastNotificationRepository.count((Specifications<BroadcastNotification>) specs);
+		} else {
+			return countNotifications((Specifications<Notification>) specs);
+		}
+	}
+
+	@Override
 	@Transactional(readOnly = true)
     public List<ActionLog> fetchMembershipLogs(Membership membership) {
 		Group group = membership.getGroup();

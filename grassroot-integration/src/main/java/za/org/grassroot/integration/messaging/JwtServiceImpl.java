@@ -82,6 +82,8 @@ public class JwtServiceImpl implements JwtService {
                 return Duration.ofDays(7L).toMillis();
             case GRASSROOT_MICROSERVICE:
                 return Duration.ofSeconds(2).toMillis(); // occasional glitches mean 2 secs is a better trade off here at present
+            case WEBHOOK:
+                return Duration.ofDays(7L).toMillis(); // going to convert these to long lived as soon as spring sec done
             default:
                 return 1L;
         }
@@ -121,8 +123,33 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String getUserIdFromJwtToken(String token) {
+        return extractFromToken(USER_UID_KEY, token);
+    }
+
+    @Override
+    public List<String> getPermissionsFromToken(String token) {
+        String permissionList = extractFromToken(PERMISSIONS_KEY, token);
+        return StringUtils.isEmpty(permissionList) ? new ArrayList<>() :
+                Arrays.asList(permissionList.split(","));
+    }
+
+    @Override
+    public List<String> getSystemRolesFromToken(String token) {
+        String rolesList = extractFromToken(SYSTEM_ROLE_KEY, token);
+        return StringUtils.isEmpty(rolesList) ? new ArrayList<>() :
+                Arrays.asList(rolesList.split(","));
+    }
+
+    @Override
+    public JwtType getJwtType(String token) {
+        return JwtType.valueOf(extractFromToken(TYPE_KEY, token));
+    }
+
+    private String extractFromToken(String key, String token) {
         try {
-            return extractClaims(token).get(USER_UID_KEY, String.class);
+            Claims claims = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
+                    .parseClaimsJws(token).getBody();
+            return claims.get(key, String.class);
         } catch (Exception e) {
             logger.error("Failed to get user id from jwt token: {}", e.getMessage());
             return null;

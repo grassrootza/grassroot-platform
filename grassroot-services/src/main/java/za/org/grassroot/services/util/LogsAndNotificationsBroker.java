@@ -15,6 +15,8 @@ public interface LogsAndNotificationsBroker {
 
 	long countNotifications(Specifications<Notification> specifications);
 
+	<T extends Notification> long countNotifications(Specifications<T> specs, Class<T> notificationType);
+
 	List<ActionLog> fetchMembershipLogs(Membership membership);
 
 	List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs);

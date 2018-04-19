@@ -16,8 +16,6 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
-import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.group.GroupBroker;
 
 import java.util.Collections;
@@ -75,24 +73,6 @@ public class AdminManager implements AdminService {
         validateAdminRole(adminUserUid);
         groupBroker.addMembers(adminUserUid, groupUid, Collections.singleton(membershipInfo),
                 GroupJoinMethod.ADDED_BY_SYS_ADMIN, true);
-    }
-
-    @Override
-    @Transactional
-    public void removeMemberFromGroup(String adminUserUid, String groupUid, String memberMsisdn) {
-        // this is a 'quiet' operation, since only ever triggered if receive an "OPT OUT" notification ... hence don't group log etc
-        validateAdminRole(adminUserUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-        User member = userRepository.findByPhoneNumberAndPhoneNumberNotNull(memberMsisdn);
-        if (member == null) {
-            throw new NoSuchUserException("User with that phone number does not exist");
-        }
-        Membership membership = group.getMembership(member);
-        if (membership == null) {
-            throw new MemberNotPartOfGroupException();
-        } else {
-            group.removeMembership(membership);
-        }
     }
 
     @Override

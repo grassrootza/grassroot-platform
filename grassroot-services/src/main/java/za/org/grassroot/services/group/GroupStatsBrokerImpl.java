@@ -15,7 +15,6 @@ import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.socialmedia.ManagedPagesResponse;
 import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
 
 import javax.annotation.Nullable;
@@ -243,23 +242,12 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
         double hasPhoneNumber = 0;
         double hasProvince = 0;
         double hasOrganisation = 0;
-        double hasFacebook = 0;
-        double hasTwitter = 0;
-
-        Set<String> memberUids = memberships.stream().map(m -> m.getUser().getUid()).collect(Collectors.toSet());
 
         for (Membership membership : memberships) {
             hasEmail += membership.getUser().hasEmailAddress() ? 1 : 0;
             hasPhoneNumber += membership.getUser().hasPhoneNumber() ? 1 : 0;
             hasProvince += membership.getUser().getProvince() != null ? 1 : 0;
             hasOrganisation += Arrays.stream(membership.getTags()).anyMatch(tag -> tag.startsWith(ORGANISATION_TAG_PREFIX)) ? 1 : 0;
-            // since, by definition, user cannot have soc media integrations if haven't set up and registered (i.e., if a USSD only
-            // user, this is a quick way to filter out the unneeded calls)
-            if (membership.getUser().isHasWebProfile()) {
-                Map<String, ManagedPagesResponse> currentIntegrations = socialMediaBroker.getCurrentIntegrations(membership.getUser().getUid()).getCurrentIntegrations();
-                hasFacebook += currentIntegrations.containsKey("facebook") ? 1 : 0;
-                hasTwitter += currentIntegrations.containsKey("twitter") ? 1 : 0;
-            }
         }
 
 
@@ -269,8 +257,6 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
         results.put("PHONE", memberships.size() > 0 ? (int) ((hasPhoneNumber / memberships.size()) * 100) : 0);
         results.put("PROVINCE", memberships.size() > 0 ? (int) ((hasProvince / memberships.size()) * 100) : 0);
         results.put("ORGANISATION", memberships.size() > 0 ? (int) ((hasOrganisation / memberships.size()) * 100) : 0);
-        results.put("FACEBOOK", memberships.size() > 0 ? (int) ((hasFacebook / memberships.size()) * 100) : 0);
-        results.put("TWITTER", memberships.size() > 0 ? (int) ((hasTwitter / memberships.size()) * 100) : 0);
 
         cache.put(new Element(cacheKey, results));
 
