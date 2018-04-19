@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupAdminDTO;
@@ -17,13 +19,18 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AdminService;
+import za.org.grassroot.services.exception.NoSuchUserException;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.enums.RestMessage;
+
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -37,12 +44,14 @@ public class AdminRestController extends BaseRestController{
     private final MessagingServiceBroker messagingServiceBroker;
     private final PasswordTokenService passwordTokenService;
     private final GroupRepository groupRepository;
+    private final GroupBroker groupBroker;
 
 
     public AdminRestController(UserManagementService userManagementService,
                                JwtService jwtService,
                                AdminService adminService,
                                GroupRepository groupRepository,
+                               GroupBroker groupBroker,
                                MessagingServiceBroker messagingServiceBroker,
                                PasswordTokenService passwordTokenService){
         super(jwtService,userManagementService);
@@ -51,6 +60,7 @@ public class AdminRestController extends BaseRestController{
         this.messagingServiceBroker = messagingServiceBroker;
         this.passwordTokenService = passwordTokenService;
         this.groupRepository = groupRepository;
+        this.groupBroker = groupBroker;
     }
 
     @RequestMapping(value = "/user/load",method = RequestMethod.GET)
@@ -127,12 +137,41 @@ public class AdminRestController extends BaseRestController{
     }
 
     @RequestMapping(value = "/groups/member/add",method = RequestMethod.POST)
-    public ResponseEntity<String> addMemberToGroup(@RequestParam String groupUid, @RequestParam String displayName,
-                                                    @RequestParam String phoneNumber, @RequestParam String roleName,
-                                                    HttpServletRequest request){
-        MembershipInfo membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
-        //todo : Check if member is part of group or not
-        adminService.addMemberToGroup(getUserIdFromRequest(request), groupUid, membershipInfo);
-        return ResponseEntity.ok("SUCCESS");
+    public ResponseEntity addMemberToGroup(@RequestParam String groupUid, @RequestParam String displayName,
+                                                        @RequestParam String phoneNumber, @RequestParam String roleName,
+                                                        @RequestParam String email, @RequestParam String province,
+                                                        HttpServletRequest request){
+        User user;
+        try{
+            user = userManagementService.findByInputNumber(phoneNumber);
+        }catch (NoSuchUserException e){
+            user = null;
+        }
+        Group group = groupRepository.findOneByUid(groupUid);
+        log.info("Loaded user={}",user);
+        RestMessage restMessage;
+        MembershipInfo membershipInfo;
+
+        if(user != null){
+            if(group.hasMember(user)){
+                Membership membership = group.getMembership(user);
+                if(!user.hasPassword() || !user.isHasSetOwnName()){
+                    groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(),displayName,phoneNumber,email,null);
+                    restMessage = RestMessage.UPDATED;
+                }else{
+                    groupBroker.updateMembershipRole(getUserIdFromRequest(request),groupUid,user.getUid(),roleName);
+                    restMessage = RestMessage.UPDATED;
+                }
+            }else{
+                membershipInfo = new MembershipInfo(user,displayName,roleName,null);
+                adminService.addMemberToGroup(getUserIdFromRequest(request),groupUid,membershipInfo);
+                restMessage = RestMessage.UPLOADED;
+            }
+        }else {
+            membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
+            adminService.addMemberToGroup(getUserIdFromRequest(request), groupUid, membershipInfo);
+            restMessage = RestMessage.UPLOADED;
+        }
+        return ResponseEntity.ok(restMessage.name());
     }
 }
