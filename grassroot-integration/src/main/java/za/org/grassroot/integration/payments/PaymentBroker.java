@@ -12,15 +12,10 @@ public interface PaymentBroker {
 
     PaymentCopyPayResponse getPaymentResult(String resourcePath, boolean storeRecurringResult, String accountUid);
 
-    PaymentResponse asyncPaymentInitiate(String accountUid, PaymentMethod method, AccountBillingRecord amountToPay, String returnToUrl);
-
-    PaymentResponse asyncPaymentCheckResult(String paymentId, String resourcePath);
-
     PaymentResponse initiateMobilePayment(AccountBillingRecord record, String notificationUrl);
 
     PaymentResponse checkMobilePaymentResult(String paymentId);
 
     boolean triggerRecurringPayment(AccountBillingRecord billingRecord);
 
-    String fetchDetailsForDirectDeposit(String accountUid);
 }

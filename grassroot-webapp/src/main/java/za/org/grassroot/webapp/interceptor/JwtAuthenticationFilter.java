@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         AuthorizationHeader authorizationHeader = new AuthorizationHeader(request);
         final String token = authorizationHeader.hasBearerToken() ? authorizationHeader.getBearerToken() : null;
 
-        log.debug("auth headers: {}, token: {}", request.getHeaderNames(), token);
+        log.info("auth headers: {}, token: {}", request.getHeaderNames(), token);
 
         if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenValid(token)) {
             String userId = jwtService.getUserIdFromJwtToken(token);
@@ -51,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(auth);
         } else {
             boolean isTokenExpired = authorizationHeader.hasBearerToken() && jwtService.isJwtTokenExpired(token);
-            setResponseBody(isTokenExpired, response);
+//            setResponseBody(isTokenExpired, response);
             SecurityContextHolder.getContext().setAuthentication(new AnonAuthentication()); // to avoid redirects etc
         }
 

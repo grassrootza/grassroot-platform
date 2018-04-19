@@ -39,7 +39,7 @@ public class TodoCreateController extends BaseRestController {
     }
 
     /*
-    Used when the thing 'to-do' is respond with some piece of needed information. Whatever the responses are will
+    Used when the thing 'to-do' is responJwtd with some piece of needed information. Whatever the responses are will
     be tagged with the 'response tag'. Paradigmatic case is to request ID numbers (e.g., in filling out member data).
      */
     @RequestMapping(value = "/information/{parentType}/{parentUid}", method = RequestMethod.POST)

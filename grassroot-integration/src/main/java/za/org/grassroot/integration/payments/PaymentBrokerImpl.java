@@ -47,8 +47,6 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentBrokerImpl.class);
 
-    private static final String MONTH_FORMAT = "%1$02d";
-    private static final String YEAR_FORMAT = "20%d";
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#.00");
 
     private static final String DEBIT = "DB";
@@ -232,36 +230,6 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     @Override
     @Transactional
-    public PaymentResponse asyncPaymentInitiate(String accountUid, PaymentMethod method, AccountBillingRecord amountToPay, String returnToUrl) {
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(method);
-        Objects.requireNonNull(returnToUrl);
-
-        try {
-            UriComponentsBuilder uriToCall = generateInitialPaymentUri(method, amountToPay.getTotalAmountToPay())
-                    .queryParam(paymentsAuthChannelIdParam, entityId)
-                    .queryParam(paymentTransIdParam, amountToPay.getUid())
-                    .queryParam("shopperResultUrl", returnToUrl);
-            HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
-            logger.info("URL: " + uriToCall.toUriString());
-            ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(uriToCall.build().toUri(), HttpMethod.POST,
-                    request, PaymentResponsePP.class);
-            logger.info("RESPONSE: {}", response.toString());
-            PaymentResponsePP paymentResponse = response.getBody();
-            amountToPay.setPaymentId(paymentResponse.getThisPaymentId());
-            if (StringUtils.isEmpty(paymentResponse.getRedirectUrl())) {
-                handleSuccessfulPayment(amountToPay, paymentResponse);
-            }
-            return paymentResponse;
-        } catch (HttpStatusCodeException e) {
-            amountToPay.setNextPaymentDate(null);
-            handlePaymentInitError(e, amountToPay);
-            return null; // will throw error before getting here
-        }
-    }
-
-    @Override
-    @Transactional
     public PaymentResponse initiateMobilePayment(AccountBillingRecord record, String notificationUrl) {
         Objects.requireNonNull(record);
 
@@ -308,26 +276,6 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     @Override
     @Transactional
-    public PaymentResponse asyncPaymentCheckResult(String paymentId, String resourcePath) {
-        UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
-                .scheme("https")
-                .host(paymentsRestHost)
-                .path(resourcePath)
-                .queryParam(paymentsAuthUserIdParam, userId)
-                .queryParam(paymentsAuthPasswordParam, password)
-                .queryParam(paymentsAuthChannelIdParam, entityId);
-
-        logger.info("Calling URI: " + builder.toUriString());
-
-        HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
-        ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(builder.build().toUri(), HttpMethod.GET,
-                request, PaymentResponsePP.class);
-        logger.info("Async response: {}", response.toString());
-        return handlePaymentCheckCleanUp(response, paymentId);
-    }
-
-    @Override
-    @Transactional
     public PaymentResponse checkMobilePaymentResult(String paymentId) {
         UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
                 .scheme("https")
@@ -366,26 +314,6 @@ public class PaymentBrokerImpl implements PaymentBroker {
             sendFailureEmail(null, response.toString());
             return new PaymentResponse(PaymentResultType.FAILED_OTHER, paymentId);
         }
-    }
-
-    private UriComponentsBuilder generateInitialPaymentUri(PaymentMethod paymentMethod, double amountToPay) {
-        return baseUriBuilder.cloneBuilder()
-                .path(initialPaymentRestPath)
-                .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay / 100.00))
-                .queryParam(paymentCardBrand, paymentMethod.getCardBrand())
-                .queryParam(paymentTypeParam, DEBIT)
-                .queryParam(cardNumberParam, paymentMethod.normalizedCardNumber())
-                .queryParam(cardHolderParam, paymentMethod.getCardHolder())
-                .queryParam(cardExpiryMonthParam, String.format(MONTH_FORMAT, paymentMethod.getExpiryMonth()))
-                .queryParam(cardExpiryYearParam, String.format(YEAR_FORMAT, paymentMethod.getExpiryYear()))
-                .queryParam(securityCodeParam, paymentMethod.getSecurityCode())
-                .queryParam(recurringParam, INITIAL)
-                .queryParam(registrationFlag, "true");
-    }
-
-    @Override
-    public String fetchDetailsForDirectDeposit(String accountUid) {
-        return depositDetails;
     }
 
     @Override
