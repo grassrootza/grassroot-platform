@@ -82,7 +82,7 @@ public class JwtServiceImpl implements JwtService {
                 return Duration.ofDays(7L).toMillis();
             case GRASSROOT_MICROSERVICE:
                 return Duration.ofSeconds(2).toMillis(); // occasional glitches mean 2 secs is a better trade off here at present
-            case WEBHOOK:
+            case API_CLIENT:
                 return Duration.ofDays(7L).toMillis(); // going to convert these to long lived as soon as spring sec done
             default:
                 return 1L;

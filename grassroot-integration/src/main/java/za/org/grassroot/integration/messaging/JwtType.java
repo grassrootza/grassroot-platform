@@ -4,6 +4,6 @@ public enum JwtType {
 
     ANDROID_CLIENT,
     GRASSROOT_MICROSERVICE,
-    WEBHOOK
+    API_CLIENT
 
 }
