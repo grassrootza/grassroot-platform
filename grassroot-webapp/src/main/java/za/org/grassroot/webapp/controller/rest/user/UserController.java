@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.rest.user;
 
 import com.amazonaws.util.IOUtils;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +33,7 @@ import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -43,9 +46,9 @@ import java.io.InputStream;
 import java.util.Locale;
 
 
-@Slf4j
-@Controller
-@RequestMapping("/api/user/profile")
+@Slf4j @RestController @Grassroot2RestController
+@RequestMapping("/v2/api/user/profile") @Api("/v2/api/user/profile")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class UserController extends BaseRestController {
 
     private final MediaFileBroker mediaFileBroker;

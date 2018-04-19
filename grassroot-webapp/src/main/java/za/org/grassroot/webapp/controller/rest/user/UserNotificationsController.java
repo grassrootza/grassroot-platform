@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,11 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Slf4j
-@RestController
-@Grassroot2RestController
-@Api("/api/user/notifications")
-@RequestMapping(value = "/api/user/notifications")
+@Slf4j @RestController @Grassroot2RestController
+@RequestMapping(value = "/v2/api/user/notifications") @Api("/v2/api/user/notifications")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class UserNotificationsController extends BaseRestController {
 
     public static final int DAYS_PAST_TO_PING = 3;

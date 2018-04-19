@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -29,8 +30,9 @@ import java.util.List;
 import java.util.Random;
 
 @RestController @Grassroot2RestController
-@Slf4j @Api("/api/admin")
-@RequestMapping(value = "/api/admin")
+@Slf4j @Api("/v2/api/admin")
+@RequestMapping(value = "/v2/api/admin")
+@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
 public class AdminRestController extends BaseRestController{
 
     private static final Random RANDOM = new SecureRandom();

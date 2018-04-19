@@ -47,8 +47,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
-@Api("/api/group/modify") @Slf4j
-@RequestMapping(value = "/api/group/modify")
+@Api("/v2/api/group/modify") @Slf4j
+@RequestMapping(value = "/v2/api/group/modify")
 @PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class GroupModifyController extends GroupBaseController {
 

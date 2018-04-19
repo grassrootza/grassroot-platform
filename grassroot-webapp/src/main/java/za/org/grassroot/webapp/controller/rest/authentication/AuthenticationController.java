@@ -29,6 +29,7 @@ import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.InterfaceNotOpenException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.AuthorizationResponseDTO;
@@ -39,9 +40,9 @@ import za.org.grassroot.webapp.util.RestUtil;
 import java.util.Collections;
 import java.util.List;
 
-@RestController
-@Api("/api/auth")
-@RequestMapping("/api/auth")
+@RestController @Grassroot2RestController
+@Api("/v2/api/auth")
+@RequestMapping("/v2/api/auth")
 public class AuthenticationController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);

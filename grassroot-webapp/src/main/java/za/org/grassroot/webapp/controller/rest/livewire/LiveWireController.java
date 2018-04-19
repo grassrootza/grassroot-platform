@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
@@ -23,15 +24,16 @@ import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.util.Set;
 
-@RestController @Slf4j
-@Api("/api/livewire")
-@RequestMapping(value = "/api/livewire")
+@RestController @Grassroot2RestController @Slf4j
+@RequestMapping(value = "/api/livewire") @Api("/api/livewire")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class LiveWireController extends BaseRestController{
 
     private final UserManagementService userManagementService;

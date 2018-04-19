@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
@@ -22,6 +23,7 @@ import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 import za.org.grassroot.webapp.util.RestUtil;
@@ -32,9 +34,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@RestController
-@Api("/api/search") @Slf4j
-@RequestMapping(value = "/api/search")
+@Slf4j @RestController @Grassroot2RestController
+@RequestMapping(value = "/v2/api/search") @Api("/v2/api/search")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class SearchController extends BaseRestController {
 
     private static final int MAX_JOIN_CODE_ATTEMPTS = 5;
