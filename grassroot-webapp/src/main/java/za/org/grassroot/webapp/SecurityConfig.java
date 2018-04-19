@@ -79,7 +79,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/livewire/public/**").permitAll()
                 .antMatchers("/cardauth/**").permitAll()
                 .antMatchers("/donate/**").permitAll()
-                .antMatchers("/v2/**").permitAll()
+                .antMatchers("/api/v2/**").permitAll() // handled in new security config
                 .antMatchers("/ussd/**").access(assembleUssdGatewayAccessString())
                 .anyRequest().authenticated()
                 .and()

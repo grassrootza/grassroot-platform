@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest.group;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,8 +16,9 @@ import java.util.Map;
 
 @RestController
 @Grassroot2RestController
-@Api("/api/group/stats")
-@RequestMapping(value = "/api/group/stats")
+@Api("/v2/api/group/stats")
+@RequestMapping(value = "/v2/api/group/stats")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class GroupStatsController extends BaseRestController {
 
 

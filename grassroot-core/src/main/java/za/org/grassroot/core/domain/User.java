@@ -303,6 +303,10 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.standardRoles.remove(role);
     }
 
+    public void removeAllStdRoles() {
+        this.standardRoles.clear();
+    }
+
     /*
         We use the next set to handle Grassroot Extra accounts
          */

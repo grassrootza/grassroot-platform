@@ -16,7 +16,7 @@ import java.util.List;
 
 @Slf4j
 @RestController @Grassroot2RestController
-@RequestMapping("/api/activity") @Api("/activity")
+@RequestMapping("/v2/api/activity") @Api("/v2/activity")
 public class PublicActivityController {
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;

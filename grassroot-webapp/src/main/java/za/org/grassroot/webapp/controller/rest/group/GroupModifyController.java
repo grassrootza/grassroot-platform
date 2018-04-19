@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
 @RestController @Grassroot2RestController
 @Api("/api/group/modify") @Slf4j
 @RequestMapping(value = "/api/group/modify")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class GroupModifyController extends GroupBaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupModifyController.class);

@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,8 +20,9 @@ import java.util.Map;
 
 @RestController
 @Grassroot2RestController
-@Api("/api/campaign/stats") @Slf4j
-@RequestMapping(value = "/api/campaign/stats")
+@Api("/v2/api/campaign/stats") @Slf4j
+@RequestMapping(value = "/v2/api/campaign/stats")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class CampaignStatsController extends BaseRestController {
 
     private final CampaignStatsBroker campaignStatsBroker;
