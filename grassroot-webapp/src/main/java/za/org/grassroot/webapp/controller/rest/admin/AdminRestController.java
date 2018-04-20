@@ -29,10 +29,7 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 
 @RestController @Grassroot2RestController
@@ -119,7 +116,8 @@ public class AdminRestController extends BaseRestController{
         if(!StringUtils.isEmpty(searchTerm)){
             List<Group> groups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
             groups.forEach(group -> groupAdminDTOS.add(new GroupAdminDTO(group)));
-            Collections.sort(groupAdminDTOS,GroupAdminDTO.GroupAdminDTOComparator);
+            Collections.sort(groupAdminDTOS,
+                    Comparator.comparing((GroupAdminDTO groupAdminDTO) -> groupAdminDTO.getMemberCount()).reversed());
         }
         return ResponseEntity.ok(groupAdminDTOS);
     }
@@ -150,26 +148,19 @@ public class AdminRestController extends BaseRestController{
             user = null;
         }
         Group group = groupRepository.findOneByUid(groupUid);
-        log.info("Loaded user={}",user);
         RestMessage restMessage;
         MembershipInfo membershipInfo;
 
-        if(user != null){
-            if(group.hasMember(user)){
-                Membership membership = group.getMembership(user);
-                if(!user.hasPassword() || !user.isHasSetOwnName()){
-                    groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(),displayName,phoneNumber,email,null);
-                    restMessage = RestMessage.UPDATED;
-                }else{
-                    groupBroker.updateMembershipRole(getUserIdFromRequest(request),groupUid,user.getUid(),roleName);
-                    restMessage = RestMessage.UPDATED;
-                }
+        if(user != null && group.hasMember(user)){
+            Membership membership = group.getMembership(user);
+            if(!user.hasPassword() || !user.isHasSetOwnName()){
+                groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(),displayName,phoneNumber,email,null);
+                restMessage = RestMessage.UPDATED;
             }else{
-                membershipInfo = new MembershipInfo(user,displayName,roleName,null);
-                adminService.addMemberToGroup(getUserIdFromRequest(request),groupUid,membershipInfo);
-                restMessage = RestMessage.UPLOADED;
+                groupBroker.updateMembershipRole(getUserIdFromRequest(request),groupUid,user.getUid(),roleName);
+                restMessage = RestMessage.UPDATED;
             }
-        }else {
+        }else{
             membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
             adminService.addMemberToGroup(getUserIdFromRequest(request), groupUid, membershipInfo);
             restMessage = RestMessage.UPLOADED;

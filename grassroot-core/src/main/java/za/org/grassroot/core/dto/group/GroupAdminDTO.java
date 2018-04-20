@@ -17,10 +17,4 @@ public class GroupAdminDTO extends GroupRefDTO{
         this.creatingUserName = group.getCreatedByUser().getDisplayName();
         this.active = group.isActive();
     }
-
-    public static Comparator<GroupAdminDTO> GroupAdminDTOComparator = (groupAdminDTO, t1) -> {
-        int membership1 = groupAdminDTO.memberCount;
-        int membership2 = t1.memberCount;
-        return membership2-membership1;
-    };
 }
