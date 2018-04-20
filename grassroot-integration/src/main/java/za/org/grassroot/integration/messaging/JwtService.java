@@ -33,6 +33,8 @@ public interface JwtService {
 
     String getUserIdFromJwtToken(String token);
 
+    List<String> getStandardRolesFromJwtToken(String token);
+
     List<String> getPermissionsFromToken(String token);
 
     List<String> getSystemRolesFromToken(String token);

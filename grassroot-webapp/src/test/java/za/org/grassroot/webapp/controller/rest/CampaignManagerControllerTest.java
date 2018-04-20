@@ -71,7 +71,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     @Test
     public void testFetchCampaignManagedByUser() throws Exception{
         when(campaignBroker.getCampaignsManagedByUser(anyString())).thenReturn(campaignList);
-        ResultActions response = mockMvc.perform(get("/api/campaign/manage/list?userUid=1234"));
+        ResultActions response = mockMvc.perform(get("/v2/api/campaign/manage/list?userUid=1234"));
         Assert.assertNotNull(response);
         response.andExpect(status().isOk());
     }
@@ -85,7 +85,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
         String requestJson = mapper.writeValueAsString(createCampaignRequest);
-        ResultActions response = mockMvc.perform(post("/api/campaign/manage/create").contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
+        ResultActions response = mockMvc.perform(post("/v2/api/campaign/manage/create").contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
         response.andExpect(status().isOk());
         Assert.assertNotNull(response);
     }

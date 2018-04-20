@@ -35,6 +35,7 @@ import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.FileCreationException;
 import za.org.grassroot.webapp.model.rest.ImageRecordDTO;
 
@@ -49,9 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@RestController
-@Api("/api/task/fetch") @Slf4j
-@RequestMapping(value = "/api/task/fetch")
+@RestController @Grassroot2RestController
+@RequestMapping(value = "/v2/api/task/fetch") @Api("/v2/api/task/fetch") @Slf4j
 public class TaskFetchController extends BaseRestController {
 
 	private final TaskBroker taskBroker;

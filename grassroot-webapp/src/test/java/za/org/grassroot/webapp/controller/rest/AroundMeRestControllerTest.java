@@ -53,7 +53,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     @Mock
     private LiveWireAlertBroker liveWireAlertBrokerMock;
 
-    private String path = "/api/location";
+    private String path = "/v2/api/location";
     private String uidParameter = "userUid";
     private String testFilterTerm = "filterTerm";
 

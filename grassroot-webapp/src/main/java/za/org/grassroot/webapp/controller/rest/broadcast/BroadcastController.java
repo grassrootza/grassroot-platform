@@ -55,8 +55,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
-@Api("/api/broadcast") @Slf4j
-@RequestMapping(value = "/api/broadcast")
+@Api("/v2/api/broadcast") @Slf4j
+@RequestMapping(value = "/v2/api/broadcast")
 public class BroadcastController extends BaseRestController {
 
     private final BroadcastBroker broadcastBroker;

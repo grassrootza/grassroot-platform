@@ -17,9 +17,6 @@ public interface AdminService {
     //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo);
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void removeMemberFromGroup(String adminUserUid, String groupUid, String memberMsisdn);
-
     //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void removeUserFromAllGroups(String adminUserUid, String userUid);
 

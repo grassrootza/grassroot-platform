@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,10 +29,9 @@ import za.org.grassroot.webapp.util.RestUtil;
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 
-@Slf4j
-@RestController @Grassroot2RestController
-@Api("/api/task/respond")
-@RequestMapping(value = "/api/task/respond")
+@Slf4j @RestController @Grassroot2RestController
+@RequestMapping(value = "/v2/api/task/respond") @Api("/v2/api/task/respond")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class TaskResponseController extends BaseRestController {
 
     private final TaskBroker taskBroker;

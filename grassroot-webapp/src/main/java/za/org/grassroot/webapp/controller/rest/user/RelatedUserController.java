@@ -1,22 +1,22 @@
 package za.org.grassroot.webapp.controller.rest.user;
 
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
-@Controller
-@RequestMapping("/api/user/related")
+@Slf4j @RestController @Grassroot2RestController
+@RequestMapping("/v2/api/user/related") @Api("/v2/api/user/related")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class RelatedUserController extends BaseRestController {
 
     private UserManagementService userService;
