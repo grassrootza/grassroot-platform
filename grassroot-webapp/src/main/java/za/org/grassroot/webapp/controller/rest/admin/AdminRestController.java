@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupAdminDTO;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
@@ -154,7 +154,7 @@ public class AdminRestController extends BaseRestController{
         if(user != null && group.hasMember(user)){
             Membership membership = group.getMembership(user);
             if(!user.hasPassword() || !user.isHasSetOwnName()){
-                groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(),displayName,phoneNumber,email,null);
+                groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(),displayName,phoneNumber,email,Province.valueOf(province));
                 restMessage = RestMessage.UPDATED;
             }else{
                 groupBroker.updateMembershipRole(getUserIdFromRequest(request),groupUid,user.getUid(),roleName);
@@ -162,6 +162,8 @@ public class AdminRestController extends BaseRestController{
             }
         }else{
             membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
+            membershipInfo.setProvince(Province.valueOf(province));
+            membershipInfo.setMemberEmail(email);
             adminService.addMemberToGroup(getUserIdFromRequest(request), groupUid, membershipInfo);
             restMessage = RestMessage.UPLOADED;
         }
