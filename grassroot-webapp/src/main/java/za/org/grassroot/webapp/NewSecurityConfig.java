@@ -27,7 +27,7 @@ public class NewSecurityConfig extends WebSecurityConfigurerAdapter {
             "/v2/api/group/outside/join/**",
             "/v2/api/language/test/**",
             "/v2/api/jwt/public/credentials",
-            "/v2/api/user/profile/image/**"
+            "/v2/api/user/profile/image/view/**"
     };
 
     private static final String[] AUTH_ENDPOINTS = {

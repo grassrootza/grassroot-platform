@@ -9,7 +9,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -24,7 +23,6 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.GroupBroker;
@@ -42,7 +40,6 @@ import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -60,7 +57,7 @@ public class GroupFetchController extends BaseRestController {
     private static final Logger logger = LoggerFactory.getLogger(GroupFetchController.class);
 
     private final GroupFetchBroker groupFetchBroker;
-    private final PdfGeneratingService generatingService;
+
     private final MemberDataExportBroker memberDataExportBroker;
     private final MessageSourceAccessor messageSourceAccessor;
     private final GroupBroker groupBroker;
@@ -82,12 +79,10 @@ public class GroupFetchController extends BaseRestController {
 
 
     public GroupFetchController(GroupFetchBroker groupFetchBroker, JwtService jwtService,
-                                UserManagementService userManagementService, PdfGeneratingService generatingService,
-                                MemberDataExportBroker memberDataExportBroker, MessageSourceAccessor messageSourceAccessor,
-                                GroupBroker groupBroker) {
+                                UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker,
+                                MessageSourceAccessor messageSourceAccessor, GroupBroker groupBroker) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
-        this.generatingService = generatingService;
         this.memberDataExportBroker = memberDataExportBroker;
         this.messageSourceAccessor = messageSourceAccessor;
         this.groupBroker = groupBroker;
@@ -133,28 +128,25 @@ public class GroupFetchController extends BaseRestController {
      * Tells the client which, if any, of the groups have had a structural change since the last time the client knew about
      * Note: does not include / check for a more recent task time (on grounds if client wants to / needs to know that, there
      * are other methods and/or it can store or fetch the tasks itself)
-     * @param userUid The UID of the user calling this group
      * @param existingGroups The groups that already exist on the client, with the epochMilli time they were last updated
      * @return
      */
     @Timed
-    @RequestMapping(value = "/updated/{userUid}", method = RequestMethod.POST)
-    public ResponseEntity<Set<GroupTimeChangedDTO>> fetchUpdatedGroups(@PathVariable String userUid,
-                                                                       @RequestBody Map<String, Long> existingGroups) {
+    @RequestMapping(value = "/updated", method = RequestMethod.POST)
+    public ResponseEntity<Set<GroupTimeChangedDTO>> fetchUpdatedGroups(HttpServletRequest request, @RequestBody Map<String, Long> existingGroups) {
         logger.info("checking for groups changes, map sent in: {}", existingGroups);
-        return ResponseEntity.ok(groupFetchBroker.findNewlyChangedGroups(userUid, existingGroups));
+        return ResponseEntity.ok(groupFetchBroker.findNewlyChangedGroups(getUserIdFromRequest(request), existingGroups));
     }
 
     /**
      * Sends back a minimal set of information about the groups: names, size, last activity times
-     * @param userUid
      * @param groupUids
      * @return
      */
-    @RequestMapping(value = "/info/{userUid}", method = RequestMethod.GET)
-    public ResponseEntity<Set<GroupMinimalDTO>> fetchGroupInfo(@PathVariable String userUid,
+    @RequestMapping(value = "/info", method = RequestMethod.GET)
+    public ResponseEntity<Set<GroupMinimalDTO>> fetchGroupInfo(HttpServletRequest request,
                                                                @RequestParam(required = false) Set<String> groupUids) {
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupMinimalInfo(userUid, groupUids));
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupMinimalInfo(getUserIdFromRequest(request), groupUids));
     }
 
     @RequestMapping(value = "/full", method = RequestMethod.GET)
@@ -258,24 +250,6 @@ public class GroupFetchController extends BaseRestController {
     @ExceptionHandler(value = FileCreationException.class)
     public ResponseEntity<ResponseWrapper> errorGeneratingFile(FileCreationException e) {
         return RestUtil.errorResponse(RestMessage.FILE_GENERATION_ERROR);
-    }
-
-    @RequestMapping(value = "/flyer", method = RequestMethod.GET, params = "typeOfFile=PDF", produces = MediaType.APPLICATION_PDF_VALUE)
-    @ResponseBody //"application/pdf",
-    public FileSystemResource genPdf(@RequestParam String groupUid,
-                                     @RequestParam boolean color,
-                                     @RequestParam Locale language,
-                                     @RequestParam String typeOfFile) {
-        return generateFlyer(groupUid, color, language, typeOfFile);
-    }
-
-    @RequestMapping(value = "/flyer", method = RequestMethod.GET, params = "typeOfFile=JPEG", produces = MediaType.IMAGE_JPEG_VALUE)
-    @ResponseBody
-    public FileSystemResource genImage(@RequestParam String groupUid,
-                                       @RequestParam boolean color,
-                                       @RequestParam Locale language,
-                                       @RequestParam String typeOfFile) {
-        return generateFlyer(groupUid, color, language, typeOfFile);
     }
 
     @RequestMapping(value = "/permissions/{groupUid}", method = RequestMethod.POST)
@@ -401,13 +375,4 @@ public class GroupFetchController extends BaseRestController {
         }
     }
 
-
-    private FileSystemResource generateFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
-        try {
-            return new FileSystemResource(generatingService.generateGroupFlyer(groupUid, color, language, typeOfFile));
-        } catch (FileNotFoundException e) {
-            log.error("Could not generate flyer!", e);
-            return null;
-        }
-    }
 }

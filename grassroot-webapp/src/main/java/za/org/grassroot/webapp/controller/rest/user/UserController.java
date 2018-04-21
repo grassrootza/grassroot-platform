@@ -82,31 +82,6 @@ public class UserController extends BaseRestController {
         return ResponseEntity.ok(storedFileUid);
     }
 
-    @RequestMapping(value = "/image/view/{userUid}", method = RequestMethod.GET)
-    public ResponseEntity<byte[]> viewProfileImage(@PathVariable String userUid) {
-
-        try {
-            String imageKey = userProfileImagesFolder + "/" + userUid;
-            MediaFunction mediaFunction = MediaFunction.USER_PROFILE_IMAGE;
-
-            MediaFileRecord mediaFileRecord = mediaFileBroker.load(mediaFunction, imageKey);
-            byte[] data;
-            if (mediaFileRecord != null) {
-                File imageFile = storageBroker.fetchFileFromRecord(mediaFileRecord);
-                data = IOUtils.toByteArray(new FileInputStream(imageFile));
-            } else {
-                InputStream in = getClass().getResourceAsStream("/static/images/user.png");
-                data = IOUtils.toByteArray(in);
-            }
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.IMAGE_PNG);
-            return (ResponseEntity<byte[]>) new ResponseEntity(data, headers, HttpStatus.OK);
-        } catch (Exception e) {
-            log.error("Failed to fetch user profile image for user with uid: " + userUid, e);
-            return new ResponseEntity(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     @ApiOperation(value = "Updates user profile data",
             notes = "Update result message is returned as a string in the 'data' property")
     @RequestMapping(value = "/data/update", method = RequestMethod.POST)
