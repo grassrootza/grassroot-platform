@@ -5,8 +5,6 @@ import nz.net.ultraq.thymeleaf.LayoutDialect;
 import org.apache.catalina.Context;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -40,8 +38,6 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 public class GrassrootWebApplicationConfig implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
-
-    private static final Logger logger = LoggerFactory.getLogger(GrassrootWebApplicationConfig.class);
 
     @Autowired
     Environment environment;

@@ -191,8 +191,7 @@ public class TodoBrokerImpl implements TodoBroker {
         return TodoType.INFORMATION_REQUIRED.equals(type) || TodoType.VOLUNTEERS_NEEDED.equals(type);
     }
 
-    // todo : as below, proper validation on types, combinations, etc (e.g., responses only within group)
-    // todo : handle properly where users are both assigned and confirming
+    // todo : handle properly where users are both assigned and confirming - as written below, will duplicate TodoAssignment entity, instead should be same one
     private void setAllParentMembersAssigned(Todo todo, boolean shouldRespond) {
         todo.setAssignments(todo.getParent().getMembers().stream()
                 .map(u -> new TodoAssignment(todo, u, true, false, shouldRespond && !u.equals(todo.getCreatedByUser()))).collect(Collectors.toSet()));
@@ -230,7 +229,7 @@ public class TodoBrokerImpl implements TodoBroker {
         createAndStoreTodoLog(user, todo, TodoLogType.CANCELLED, reason);
         if (sendNotices) {
             log.info("send out notices ...");
-            // todo : actually send out notices
+            // todo : actually send out notices (create TodoCancelledNotification)
         }
     }
 
@@ -333,8 +332,6 @@ public class TodoBrokerImpl implements TodoBroker {
 
         Todo todo = todoRepository.findOneByUid(todoUid);
 
-        // todo : enforce assignment only within group members when create
-
         User user = userRepository.findOneByUid(userUid);
         if(todo.getAncestorGroup().getMembership(user) == null){
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ALTER_TODO);
@@ -376,7 +373,6 @@ public class TodoBrokerImpl implements TodoBroker {
         validateUserCanModify(user, todo);
 
         // to make sure reminders are turned off (reminder query should filter out, but just to be sure)
-        // todo  : extend to above as well
         todo.setNextNotificationTime(null);
         todo.setReminderActive(false);
 
@@ -396,7 +392,6 @@ public class TodoBrokerImpl implements TodoBroker {
 
         Set<String> priorMembers = todo.getAssignments().stream().map(a -> a.getUser().getUid()).collect(Collectors.toSet());
 
-        // todo : log (esp if some drop out on filter above) and validate this step etc
         addedMemberUids.removeAll(priorMembers);
         List<User> newUsers = userRepository.findByUidIn(addedMemberUids);
         todo.addAssignments(newUsers.stream().map(u -> new TodoAssignment(todo, u, true, false,
@@ -420,9 +415,8 @@ public class TodoBrokerImpl implements TodoBroker {
 
         User user = userRepository.findOneByUid(addingUserUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
-        validateUserCanModify(user, todo);
 
-        // todo : bunch of validation
+        validateUserCanModify(user, todo);
 
         Set<String> existingAssignments = new HashSet<>();
         todo.getAssignments().stream()
@@ -649,7 +643,7 @@ public class TodoBrokerImpl implements TodoBroker {
     private Set<Notification> recordInformationResponse(TodoAssignment assignment, String response, TodoLog todoLog, boolean sendConfirmation) {
         Set<Notification> notifications = new HashSet<>();
 
-        // todo: handle possible duplication
+        // todo: handle possible duplication on membership tag (i.e., check if one already exists with the response tag)
         Group group = assignment.getTodo().getAncestorGroup();
         Membership membership = group.getMembership(assignment.getUser());
 
@@ -667,8 +661,8 @@ public class TodoBrokerImpl implements TodoBroker {
 
     private Set<Notification> processValidation(TodoAssignment assignment, String response, TodoLog todoLog) {
         Set<Notification> notifications = new HashSet<>();
-        // todo : restrict notifications to only if on paid account (else just do at deadline), and put in proper message
-        // todo : as below, handle different kinds of response better
+        // todo : restrict notifications to only if on paid account (else just do at deadline), and put in proper i18n message
+        // todo : as below, handle different kinds of response better (NLU todo)
         if(assignment.getTodo().getAncestorGroup().isPaidFor()) {
             if ("yes".equalsIgnoreCase(response)) {
                 notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
@@ -683,10 +677,8 @@ public class TodoBrokerImpl implements TodoBroker {
 
     private Set<Notification> notifyCreatorOfVolunteer(TodoAssignment assignment, String response, TodoLog todoLog) {
         Set<Notification> notifications = new HashSet<>();
-        // todo : consider notifying if volunteer responds "no" (if on paid account ...)
         // todo : handle non-predictable text entry (use NLU)
         if ("yes".equalsIgnoreCase(response)) {
-            // todo : consider sending messages to other organizers
             final String message = messageService.createTodoVolunteerReceivedMessage(assignment.getTodo().getCreatedByUser(), assignment);
             notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(), message, todoLog));
         }

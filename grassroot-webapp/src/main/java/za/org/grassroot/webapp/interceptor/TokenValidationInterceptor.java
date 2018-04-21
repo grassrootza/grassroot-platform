@@ -20,7 +20,8 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.List;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -50,32 +51,28 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             return true;
 
         AuthorizationHeader authorizationHeader = new AuthorizationHeader(request);
+        final String token = authorizationHeader.hasBearerToken() ? authorizationHeader.getBearerToken() : null;
 
         boolean isTokenExpired = false;
 
         if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {
-//            final List<String> systemRoles = jwtService.getSystemRolesFromToken(authorizationHeader.getBearerToken());
             return true;
-        } else if (authorizationHeader.hasBearerToken()
-                && jwtService.isJwtTokenExpired(authorizationHeader.getBearerToken())) {
+        } else if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenExpired(token)) {
             isTokenExpired = true;
         } else if(authorizationHeader.doesNotHaveBearerToken()) {
-            Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-            String phoneNumber = pathVariables.containsKey("phoneNumber") ? String.valueOf(pathVariables.get("phoneNumber")).trim() : null;
-            String code = pathVariables.containsKey("code") ? String.valueOf(pathVariables.get("code")).trim() : null;
-            if (passwordTokenService.isLongLiveAuthValid(phoneNumber, code)
-                    || passwordTokenService.extendAuthCodeIfExpiring(phoneNumber, code)) {
+            Map<String, String> legacyVars = getLegacyTokenParams(request);
+            if (isLegacyTokenValid(legacyVars)) {
                 return true;
-            } else {
-                VerificationTokenCode tokenCode = passwordTokenService.fetchLongLivedAuthCode(phoneNumber);
-                log.info("token code: {}", tokenCode);
-                if (tokenCode != null && passwordTokenService.isExpired(tokenCode)) {
-                    isTokenExpired = true;
-                }
             }
+            isTokenExpired = isLegacyTokenExpired(legacyVars);
         }
 
+        setResponseBody(isTokenExpired, response);
+        return false;
+    }
+
+    private void setResponseBody(boolean isTokenExpired, HttpServletResponse response) throws IOException {
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectWriter ow = mapper.writer();
 
@@ -87,8 +84,29 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
         response.setStatus(responseWrapper.getCode());
 
         log.info("Returning invalid token response, rest message: {}", responseWrapper.getMessage());
+    }
 
-        return false;
+    private Map<String, String> getLegacyTokenParams(HttpServletRequest request) {
+        Map<String, String> vars = new HashMap<>();
+        Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        if (pathVariables.containsKey("phoneNumber"))
+            vars.put("phoneNumber", String.valueOf(pathVariables.get("phoneNumber")).trim());
+        if (pathVariables.containsKey("code"))
+            vars.put("code", String.valueOf(pathVariables.get("code")).trim());
+        return vars;
+    }
+
+    private boolean isLegacyTokenValid(Map<String, String> pathVars) {
+        return !pathVars.isEmpty() &&
+                (passwordTokenService.isLongLiveAuthValid(pathVars.get("phoneNumber"), pathVars.get("code"))
+                || passwordTokenService.extendAuthCodeIfExpiring(pathVars.get("phoneNumber"), pathVars.get("code")));
+    }
+
+    private boolean isLegacyTokenExpired(Map<String, String> pathVars) {
+        if (pathVars.isEmpty())
+            return false;
+        VerificationTokenCode tokenCode = passwordTokenService.fetchLongLivedAuthCode(pathVars.get("phoneNumber"));
+        return tokenCode != null && passwordTokenService.isExpired(tokenCode);
     }
 }
 

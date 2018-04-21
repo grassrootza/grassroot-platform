@@ -43,13 +43,11 @@ public class UserProfileController extends BaseController {
 
     private final UserManagementService userManagementService;
     private MemberDataExportBroker memberDataExportBroker;
-    private SocialMediaBroker socialMediaBroker;
 
     @Autowired
     public UserProfileController(UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker, SocialMediaBroker socialMediaBroker) {
         this.userManagementService = userManagementService;
         this.memberDataExportBroker = memberDataExportBroker;
-        this.socialMediaBroker = socialMediaBroker;
     }
 
     @ModelAttribute("sessionUser")

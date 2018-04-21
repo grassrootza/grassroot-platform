@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,13 +14,15 @@ import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.language.NluBroker;
 import za.org.grassroot.integration.language.NluParseResult;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import java.time.ZoneOffset;
 
 @Slf4j
-@RestController
-@Api("/api/language/parse")
-@RequestMapping(value = "/api/language/parse")
+@RestController @Grassroot2RestController
+@Api("/v2/api/language/parse")
+@RequestMapping(value = "/v2/api/language/parse")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class NluController {
 
     private final LearningService learningService;

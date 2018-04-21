@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.rest.integration;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.socialmedia.FacebookAccount;
@@ -16,8 +17,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController @Grassroot2RestController
-@Api("/api/integration/settings") @Slf4j
-@RequestMapping(value = "/api/integration/settings")
+@Api("/v2/api/integration/settings") @Slf4j
+@RequestMapping(value = "/v2/api/integration/settings")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class IntegrationSettingsController extends BaseRestController {
 
     private final SocialMediaBroker socialMediaBroker;

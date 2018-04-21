@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.integration.data.DataImportBroker;
@@ -23,8 +24,9 @@ import java.io.IOException;
 
 @RestController
 @Grassroot2RestController
-@Api("/api/group/import") @Slf4j
-@RequestMapping(value = "/api/group/import")
+@Api("/v2/api/group/import") @Slf4j
+@RequestMapping(value = "/v2/api/group/import")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class GroupImportController extends GroupBaseController {
 
     private final DataImportBroker dataBroker;

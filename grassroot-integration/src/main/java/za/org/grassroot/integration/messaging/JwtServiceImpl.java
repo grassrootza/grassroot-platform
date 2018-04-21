@@ -82,7 +82,7 @@ public class JwtServiceImpl implements JwtService {
                 return Duration.ofDays(7L).toMillis();
             case GRASSROOT_MICROSERVICE:
                 return Duration.ofSeconds(2).toMillis(); // occasional glitches mean 2 secs is a better trade off here at present
-            case WEBHOOK:
+            case API_CLIENT:
                 return Duration.ofDays(7L).toMillis(); // going to convert these to long lived as soon as spring sec done
             default:
                 return 1L;
@@ -154,6 +154,17 @@ public class JwtServiceImpl implements JwtService {
             logger.error("Failed to get user id from jwt token: {}", e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    public List<String> getStandardRolesFromJwtToken(String token) {
+        String joinedRoles = extractClaims(token).get(SYSTEM_ROLE_KEY, String.class);
+        return !StringUtils.isEmpty(joinedRoles) ? Arrays.asList(joinedRoles.split(",")) : new ArrayList<>();
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
+                .parseClaimsJws(token).getBody();
     }
 
     @Override

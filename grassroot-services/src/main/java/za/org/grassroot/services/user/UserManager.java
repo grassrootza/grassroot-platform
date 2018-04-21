@@ -139,14 +139,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
             }
 
             userToUpdate.setHasWebProfile(true);
-            userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
-
         } else {
             userToSave = new User(phoneNumber, userProfile.getDisplayName(), userProfile.getEmailAddress());
             userToSave.setHasWebProfile(true);
             userToSave.setHasSetOwnName(true);
         }
+
+        userToSave.setHasInitiatedSession(true);
+        Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+        userToSave.addStandardRole(fullUserRole);
 
         if (passwordEncoder != null) {
             userToSave.setPassword(passwordEncoder.encode(userProfile.getPassword()));
@@ -174,6 +176,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         boolean userExists = userExist(phoneNumber);
+        Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
 
         if (userExists) {
 
@@ -188,6 +191,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userToUpdate.setMessagingPreference(DeliveryRoute.ANDROID_APP);
             userToUpdate.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
             userToUpdate.setHasInitiatedSession(true);
+            userToUpdate.addStandardRole(fullUserRole);
             userToSave = userToUpdate;
 
         } else {
@@ -201,6 +205,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userProfile.setDisplayName(userDTO.getDisplayName());
             userProfile.setHasSetOwnName(true);
             userProfile.setHasAndroidProfile(true);
+            userProfile.setHasInitiatedSession(true);
+            userProfile.addStandardRole(fullUserRole);
             userProfile.setMessagingPreference(DeliveryRoute.ANDROID_APP);
             userProfile.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
 
@@ -623,6 +629,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setLiveWireContact(false);
         user.setWhatsAppLinked(false);
 
+        // step 4: remove all standard roles
+        user.removeAllStdRoles();
+
         log.info("and storing the deletion of all details");
         userRepository.saveAndFlush(user);
 
@@ -644,6 +653,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User sessionUser = userRepository.findOneByUid(userUid);
 
         sessionUser.setHasInitiatedSession(true);
+
+        Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+        sessionUser.addStandardRole(fullUserRole);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 

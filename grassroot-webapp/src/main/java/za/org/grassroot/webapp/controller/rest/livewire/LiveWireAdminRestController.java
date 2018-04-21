@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
@@ -30,7 +31,8 @@ import java.util.stream.Collectors;
 
 @RestController @Slf4j
 @Api("/api/livewire/admin")
-@RequestMapping(value = "/api/livewire/admin")
+@RequestMapping(value = "/v2/api/livewire/admin")
+@PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
 public class LiveWireAdminRestController extends BaseRestController {
 
     private final StorageBroker storageBroker;

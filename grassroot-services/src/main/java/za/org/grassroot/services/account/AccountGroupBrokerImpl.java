@@ -442,8 +442,10 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     @Override
     @Transactional(readOnly = true)
     public int numberGroupsLeft(String accountUid) {
-        Account account = accountRepository.findOneByUid(accountUid);
-        return account == null ? 0 : account.isEnabled() ? groupsLeftOnAccount(account) : 0;
+        // until this is fixed properly, switching this out to permanent
+        return 10;
+//        Account account = accountRepository.findOneByUid(accountUid);
+//        return account == null ? 0 : account.isEnabled() ? groupsLeftOnAccount(account) : 0;
     }
 
     @Override
