@@ -3,6 +3,7 @@ package za.org.grassroot.services.broadcasts;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
+import za.org.grassroot.integration.socialmedia.FacebookAccount;
 import za.org.grassroot.integration.socialmedia.ManagedPage;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public class BroadcastInfo {
     int smsCostCents;
 
     boolean isFbConnected;
-    List<ManagedPage> facebookPages;
+    List<FacebookAccount> facebookPages;
 
     boolean isTwitterConnected;
     ManagedPage twitterAccount;

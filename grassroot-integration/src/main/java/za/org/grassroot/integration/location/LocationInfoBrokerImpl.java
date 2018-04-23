@@ -185,6 +185,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         } else {
             User user = userRepository.findOneByUid(targetUid);
             List<String> records = retrieveRecordsForProvince(dataSetLabel, infoSetTag, province, user.getLocale());
+            log.info("retrieved records from geo api, looks like: {}", records);
             String message = dataSetLabel + " " + infoSetTag + String.join(", ", records);
             List<Account> accounts = accountRepository.findByUidIn(accountUids);
             if (accounts != null && !accounts.isEmpty()) {
@@ -204,18 +205,28 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private Set<Notification> notificationsFromRecords(List<String> records, User target,
                                                        AccountLog accountLog, int singleMessageLength) {
         int countChars = String.join(", ", records).length();
+        log.info("okay, have this many chars for records: {}", countChars);
         if (countChars < singleMessageLength) {
+            log.info("single message, returning it");
             return Collections.singleton(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
         } else {
             Set<Notification> notifications = new HashSet<>();
-            StringBuilder currentMsg = new StringBuilder(records.get(0));
+            StringBuilder currentMsg = new StringBuilder();
+            log.info("initiated, first message: {}", currentMsg);
             for (String r : records) {
                 if ((currentMsg.length() + r.length() + 2) < singleMessageLength) {
-                    currentMsg.append("; ").append(r);
+                    final String separator = currentMsg.length() > 0 ? "; " : "";
+                    currentMsg.append(separator).append(r);
+                    log.info("continuing assembly, new message: {}", currentMsg);
                 } else {
                     notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
+                    log.info("appended message, creating new one");
                     currentMsg = new StringBuilder(r);
                 }
+            }
+            if (currentMsg.length() > 0) {
+                log.info("adding final message: {}", currentMsg);
+                notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
             }
             return notifications;
         }

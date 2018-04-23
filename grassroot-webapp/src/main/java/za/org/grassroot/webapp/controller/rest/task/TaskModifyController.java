@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -14,9 +15,9 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Slf4j
-@RestController @Grassroot2RestController
-@Api("/api/task/modify") @RequestMapping(value = "/api/task/modify")
+@Slf4j @RestController @Grassroot2RestController
+@Api("/v2/api/task/modify") @RequestMapping(value = "/v2/api/task/modify")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class TaskModifyController extends BaseRestController {
 
     private final TaskBroker taskBroker;

@@ -11,6 +11,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 public interface CampaignBroker {
@@ -36,7 +37,7 @@ public interface CampaignBroker {
 
     boolean isCodeTaken(String proposedCode, String campaignUid);
 
-    Set<String> getActiveCampaignJoinTopics();
+    Map<String, String> getActiveCampaignJoinTopics();
 
     void signPetition(String campaignUid, String userUid, UserInterfaceType channel);
 

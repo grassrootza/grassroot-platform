@@ -14,6 +14,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -48,8 +49,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
-@Api("/api/campaign/manage") @Slf4j
-@RequestMapping(value = "/api/campaign/manage")
+@Api("/v2/api/campaign/manage") @Slf4j
+@RequestMapping(value = "/v2/api/campaign/manage")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class CampaignManagerController extends BaseRestController {
 
     private final CampaignBroker campaignBroker;

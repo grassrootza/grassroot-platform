@@ -20,11 +20,8 @@ import java.util.stream.Stream;
  * Common type for Vote, Meeting and To-do.
  * @param <P> parent type
  */
-public interface Task<P extends UidIdentifiable> extends EntityForUserResponse {
+public interface Task<P extends UidIdentifiable> extends EntityForUserResponse<P> {
 	TaskType getTaskType();
-
-	void setParent(P parent);
-	P getParent();
 
 	User getCreatedByUser();
 

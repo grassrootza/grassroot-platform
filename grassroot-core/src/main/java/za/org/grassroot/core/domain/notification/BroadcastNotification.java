@@ -9,7 +9,10 @@ import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 
-import javax.persistence.*;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 
 // NB: don't ever use this directly (only use subclasses), hence no public constructor
 @Entity

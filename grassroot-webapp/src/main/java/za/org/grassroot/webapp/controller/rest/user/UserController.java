@@ -1,34 +1,35 @@
 package za.org.grassroot.webapp.controller.rest.user;
 
 import com.amazonaws.util.IOUtils;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
-import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.MediaFileBroker;
+import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
-import za.org.grassroot.integration.messaging.MessagingServiceBroker;
+import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
+import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -38,36 +39,34 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.Locale;
+import java.util.Collections;
 
 
-@Slf4j
-@Controller
-@RequestMapping("/api/user/profile")
+@Slf4j @RestController @Grassroot2RestController
+@RequestMapping("/v2/api/user/profile") @Api("/v2/api/user/profile")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class UserController extends BaseRestController {
 
     private final MediaFileBroker mediaFileBroker;
     private final StorageBroker storageBroker;
     private final UserManagementService userService;
     private final PasswordTokenService passwordService;
-    private final MessagingServiceBroker messagingBroker;
-    private final MessageSourceAccessor messageSource;
-
+    private final JwtService jwtService;
+    private final AddressBroker addressBroker;
 
     @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
     private String userProfileImagesFolder;
 
     public UserController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker,
                           UserManagementService userService, JwtService jwtService,
-                          PasswordTokenService passwordService, MessagingServiceBroker messagingBroker,
-                          @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSource) {
+                          PasswordTokenService passwordService, AddressBroker addressBroker) {
         super(jwtService, userService);
         this.mediaFileBroker = mediaFileBroker;
         this.storageBroker = storageBroker;
         this.userService = userService;
         this.passwordService = passwordService;
-        this.messagingBroker = messagingBroker;
-        this.messageSource = messageSource;
+        this.jwtService = jwtService;
+        this.addressBroker = addressBroker;
     }
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back")
@@ -81,31 +80,6 @@ public class UserController extends BaseRestController {
         String storedFileUid = mediaFileBroker.storeFile(photo, MediaFunction.USER_PROFILE_IMAGE, null, imageKey, photo.getName());
         userService.updateHasImage(userUid, true);
         return ResponseEntity.ok(storedFileUid);
-    }
-
-    @RequestMapping(value = "/image/view/{userUid}", method = RequestMethod.GET)
-    public ResponseEntity<byte[]> viewProfileImage(@PathVariable String userUid) {
-
-        try {
-            String imageKey = userProfileImagesFolder + "/" + userUid;
-            MediaFunction mediaFunction = MediaFunction.USER_PROFILE_IMAGE;
-
-            MediaFileRecord mediaFileRecord = mediaFileBroker.load(mediaFunction, imageKey);
-            byte[] data;
-            if (mediaFileRecord != null) {
-                File imageFile = storageBroker.fetchFileFromRecord(mediaFileRecord);
-                data = IOUtils.toByteArray(new FileInputStream(imageFile));
-            } else {
-                InputStream in = getClass().getResourceAsStream("/static/images/user.png");
-                data = IOUtils.toByteArray(in);
-            }
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.IMAGE_PNG);
-            return (ResponseEntity<byte[]>) new ResponseEntity(data, headers, HttpStatus.OK);
-        } catch (Exception e) {
-            log.error("Failed to fetch user profile image for user with uid: " + userUid, e);
-            return new ResponseEntity(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 
     @ApiOperation(value = "Updates user profile data",
@@ -130,7 +104,7 @@ public class UserController extends BaseRestController {
                 user.getAlertPreference(), user.getLocale(), validationOtp);
 
             if (!updateCompleted) {
-                sendOtp(user);
+                passwordService.triggerOtp(user);
                 return RestUtil.messageOkayResponse(RestMessage.OTP_REQUIRED);
             }
 
@@ -145,28 +119,6 @@ public class UserController extends BaseRestController {
         } catch (InvalidOtpException e) {
             return RestUtil.errorResponse(RestMessage.INVALID_OTP);
         }
-    }
-
-    private void sendOtp(User user) {
-        final String message = otpMessage(user.getUsername(), user.getLocale());
-        try {
-            if (user.hasPhoneNumber()) {
-                messagingBroker.sendPrioritySMS(message, user.getPhoneNumber()); // _not_ new one, obviously
-            } else {
-                messagingBroker.sendEmail(new GrassrootEmail.EmailBuilder()
-                        .subject("Your Grassroot verification")
-                        .toAddress(user.getEmailAddress())
-                        .toName(user.getDisplayName())
-                        .content(message).build());
-            }
-        } catch (Exception e) {
-            log.error("No message broker around, couldn't send {}", message);
-        }
-    }
-
-    private String otpMessage(String username, Locale locale) {
-        final VerificationTokenCode otp = passwordService.generateShortLivedOTP(username);
-        return messageSource.getMessage("web.user.profile.token.message", new String[] {otp.getCode()}, locale);
     }
 
     @ApiOperation(value = "Update user password, if passed old password")
@@ -188,6 +140,31 @@ public class UserController extends BaseRestController {
         }
     }
 
+    @ApiOperation(value = "Initiate deleting user's account, by generating an OTP")
+    @RequestMapping(value = "/delete/initiate", method = RequestMethod.POST)
+    public ResponseEntity initiateDeleteProfile(HttpServletRequest request) {
+        final String userUid = getUserIdFromRequest(request);
+        User user = userService.load(userUid);
+        passwordService.triggerOtp(user);
+        return RestUtil.messageOkayResponse(RestMessage.OTP_REQUIRED);
+    }
 
+    @ApiOperation(value = "Complete deleting user's account, validated by OTP")
+    @RequestMapping(value = "/delete/confirm", method = RequestMethod.POST)
+    public ResponseEntity completeProfileDelete(HttpServletRequest request, @RequestParam String otp) {
+        final String userUid = getUserIdFromRequest(request);
+        userService.deleteUser(userUid, otp);
+        addressBroker.removeAddress(userUid);
+        return ResponseEntity.ok(RestMessage.USER_DELETED);
+    }
+
+    @ApiOperation(value = "Get an access token for joining groups, to use in eg 3rd party apps")
+    @RequestMapping(value = "/token/obtain", method = RequestMethod.GET)
+    public ResponseEntity obtainTokenForApi(HttpServletRequest request) {
+        final String userId = getUserIdFromRequest(request);
+        CreateJwtTokenRequest jwtRequest = new CreateJwtTokenRequest(JwtType.API_CLIENT,
+                userId, Collections.singleton(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER.getName()));
+        return ResponseEntity.ok(jwtService.createJwt(jwtRequest));
+    }
 
 }

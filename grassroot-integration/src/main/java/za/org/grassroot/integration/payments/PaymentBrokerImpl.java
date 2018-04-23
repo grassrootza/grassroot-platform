@@ -10,6 +10,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -30,7 +32,11 @@ import java.net.URI;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+
+import static za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse.SUCCESS_MATCHER;
 
 /**
  * Created by luke on 2016/10/26.
@@ -41,11 +47,8 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentBrokerImpl.class);
 
-    private static final String MONTH_FORMAT = "%1$02d";
-    private static final String YEAR_FORMAT = "20%d";
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#.00");
 
-    private static final String PRE_AUTH = "PA";
     private static final String DEBIT = "DB";
     private static final String RECURRING = "DB";
 
@@ -53,16 +56,19 @@ public class PaymentBrokerImpl implements PaymentBroker {
     private static final String REPEAT = "REPEATED";
 
     private static final String OKAY_CODE = "000.100.110";
-    private static final String NO_3D_CODE = "100.390.109";
     private static final String ZEROS_CODE = "000.000.000";
 
     private AccountBillingRecordRepository billingRepository;
     private RestTemplate restTemplate;
+    private AsyncRestTemplate asyncRestTemplate;
     private ObjectMapper objectMapper;
     private final MessagingServiceBroker messageBroker;
 
     private UriComponentsBuilder baseUriBuilder;
     private HttpHeaders stdHeaders;
+
+    @Value("%{grassroot.payments.lambda.url:http://lambdas/payments}")
+    private String paymentStorageLambdaEndpoint;
 
     @Value("${grassroot.payments.url:http://paymentsurl.com}")
     private String paymentUrl;
@@ -126,11 +132,13 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     @Autowired
     public PaymentBrokerImpl(AccountBillingRecordRepository billingRepository,
-                             RestTemplate restTemplate, ObjectMapper objectMapper, MessagingServiceBroker messageBroker) {
+                             RestTemplate restTemplate, AsyncRestTemplate asyncRestTemplate,
+                             ObjectMapper objectMapper, MessagingServiceBroker messageBroker) {
         this.billingRepository = billingRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.messageBroker = messageBroker;
+        this.asyncRestTemplate = asyncRestTemplate;
     }
 
     @PostConstruct
@@ -148,7 +156,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
     }
 
     @Override
-    public PaymentCopyPayResponse initiateCopyPayCheckout(int amountZAR) {
+    public PaymentCopyPayResponse initiateCopyPayCheckout(int amountZAR, boolean recurring) {
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(paymentUrl + "/v1/checkouts")
                 .queryParam("authentication.userId", userId)
@@ -157,6 +165,11 @@ public class PaymentBrokerImpl implements PaymentBroker {
                 .queryParam("amount", amountZAR + ".00")
                 .queryParam("currency", "ZAR")
                 .queryParam("paymentType", "DB");
+
+        if (recurring) {
+            builder = builder.queryParam("recurringType", "INITIAL")
+                    .queryParam("createRegistration", "true");
+        }
 
         HttpHeaders stdHeaders = new HttpHeaders();
         stdHeaders.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
@@ -169,41 +182,50 @@ public class PaymentBrokerImpl implements PaymentBroker {
     }
 
     @Override
-    public PaymentCopyPayResponse getPaymentResult(String resourcePath) {
+    public PaymentCopyPayResponse getPaymentResult(String resourcePath, boolean storeRecurringResult, String accountUid) {
+        if (storeRecurringResult) {
+            Objects.requireNonNull(accountUid);
+        }
+
         URI requestUri = UriComponentsBuilder.fromUriString(paymentUrl + resourcePath).build().toUri();
         logger.info("requesting payment result via URI: {}", requestUri.toString());
         ResponseEntity<PaymentCopyPayResponse> response = restTemplate.getForEntity(requestUri, PaymentCopyPayResponse.class);
+
+        boolean successful = SUCCESS_MATCHER.matcher(response.getBody().getInternalCode()).find();
+        if (successful && storeRecurringResult) {
+            storeAccountPaymentReference(accountUid, response.getBody().getRegistrationId());
+        }
+
         return response.getBody();
     }
 
-    @Override
-    @Transactional
-    public PaymentResponse asyncPaymentInitiate(String accountUid, PaymentMethod method, AccountBillingRecord amountToPay, String returnToUrl) {
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(method);
-        Objects.requireNonNull(returnToUrl);
+    private void storeAccountPaymentReference(String accountUid, String registrationId) {
+        URI storeResultUri = UriComponentsBuilder.fromUriString(paymentStorageLambdaEndpoint + "/store/" + accountUid)
+                .build().toUri();
 
-        try {
-            UriComponentsBuilder uriToCall = generateInitialPaymentUri(method, amountToPay.getTotalAmountToPay())
-                    .queryParam(paymentsAuthChannelIdParam, entityId)
-                    .queryParam(paymentTransIdParam, amountToPay.getUid())
-                    .queryParam("shopperResultUrl", returnToUrl);
-            HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
-            logger.info("URL: " + uriToCall.toUriString());
-            ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(uriToCall.build().toUri(), HttpMethod.POST,
-                    request, PaymentResponsePP.class);
-            logger.info("RESPONSE: {}", response.toString());
-            PaymentResponsePP paymentResponse = response.getBody();
-            amountToPay.setPaymentId(paymentResponse.getThisPaymentId());
-            if (StringUtils.isEmpty(paymentResponse.getRedirectUrl())) {
-                handleSuccessfulPayment(amountToPay, paymentResponse);
-            }
-            return paymentResponse;
-        } catch (HttpStatusCodeException e) {
-            amountToPay.setNextPaymentDate(null);
-            handlePaymentInitError(e, amountToPay);
-            return null; // will throw error before getting here
-        }
+        Map<String, String> body = new HashMap<>();
+        body.put("registrationId", registrationId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+
+        ListenableFuture<ResponseEntity<String>> call = asyncRestTemplate.postForEntity(storeResultUri, entity, String.class);
+        call.addCallback(result -> logger.info("successfully called storage, response: {}", result),
+                ex -> logger.error("and, we have a failure, response: {}", ex));
+    }
+
+    private String getAccountPaymentReference(String accountUid) {
+        URI fetchUri = UriComponentsBuilder.fromUriString(paymentStorageLambdaEndpoint + "/fetch/" + accountUid)
+                .build().toUri();
+        ResponseEntity<String> response = restTemplate.getForEntity(fetchUri, String.class);
+        return response != null ? response.getBody() : null;
+    }
+
+    private void removeAccountPaymentReference(String accountUid) {
+        URI fetchUri = UriComponentsBuilder.fromUriString(paymentStorageLambdaEndpoint + "/remove/" + accountUid)
+                .build().toUri();
+        ListenableFuture<?> deleteReq = asyncRestTemplate.delete(fetchUri);
+        deleteReq.addCallback(result -> logger.info("deleted ref: ", result), ex -> logger.error("Error deleted ref: ", ex));
     }
 
     @Override
@@ -254,26 +276,6 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     @Override
     @Transactional
-    public PaymentResponse asyncPaymentCheckResult(String paymentId, String resourcePath) {
-        UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
-                .scheme("https")
-                .host(paymentsRestHost)
-                .path(resourcePath)
-                .queryParam(paymentsAuthUserIdParam, userId)
-                .queryParam(paymentsAuthPasswordParam, password)
-                .queryParam(paymentsAuthChannelIdParam, entityId);
-
-        logger.info("Calling URI: " + builder.toUriString());
-
-        HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
-        ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(builder.build().toUri(), HttpMethod.GET,
-                request, PaymentResponsePP.class);
-        logger.info("Async response: {}", response.toString());
-        return handlePaymentCheckCleanUp(response, paymentId);
-    }
-
-    @Override
-    @Transactional
     public PaymentResponse checkMobilePaymentResult(String paymentId) {
         UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
                 .scheme("https")
@@ -314,37 +316,16 @@ public class PaymentBrokerImpl implements PaymentBroker {
         }
     }
 
-    private UriComponentsBuilder generateInitialPaymentUri(PaymentMethod paymentMethod, double amountToPay) {
-        return baseUriBuilder.cloneBuilder()
-                .path(initialPaymentRestPath)
-                .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay / 100.00))
-                .queryParam(paymentCardBrand, paymentMethod.getCardBrand())
-                .queryParam(paymentTypeParam, DEBIT)
-                .queryParam(cardNumberParam, paymentMethod.normalizedCardNumber())
-                .queryParam(cardHolderParam, paymentMethod.getCardHolder())
-                .queryParam(cardExpiryMonthParam, String.format(MONTH_FORMAT, paymentMethod.getExpiryMonth()))
-                .queryParam(cardExpiryYearParam, String.format(YEAR_FORMAT, paymentMethod.getExpiryYear()))
-                .queryParam(securityCodeParam, paymentMethod.getSecurityCode())
-                .queryParam(recurringParam, INITIAL)
-                .queryParam(registrationFlag, "true");
-    }
-
-    @Override
-    public String fetchDetailsForDirectDeposit(String accountUid) {
-        // todo : generate an account reference
-        return depositDetails;
-    }
-
     @Override
     @Transactional
     public boolean triggerRecurringPayment(AccountBillingRecord billingRecord) {
         Account account = billingRecord.getAccount();
-        if (StringUtils.isEmpty(account.getPaymentRef())) {
-            billingRecord.setNextPaymentDate(null);
+        final String storedPaymentRef = getAccountPaymentReference(account.getUid());
+        logger.info("fetched payment ref for account, is: {}", storedPaymentRef);
+        if (StringUtils.isEmpty(storedPaymentRef))
             return false;
-        }
 
-        final String recurringPaymentPathVar = String.format(recurringPaymentRestPath, account.getPaymentRef());
+        final String recurringPaymentPathVar = String.format(recurringPaymentRestPath, storedPaymentRef);
         final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
         logger.info("Triggering recurring payment for : {}", account.getAccountName());
 
@@ -423,7 +404,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
         record.setPaymentDescription(errorDescription);
         if (errorDescription.contains("100.150.101")) {
             Account account = record.getAccount();
-            account.setPaymentRef(null);
+            removeAccountPaymentReference(account.getUid());
         }
         sendFailureEmail(record, errorDescription);
     }

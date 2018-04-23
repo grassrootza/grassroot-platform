@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.JpaEntityType;
@@ -35,8 +36,9 @@ import java.util.Set;
 
 @Slf4j
 @RestController @Grassroot2RestController
-@Api("/api/task/create/meeting")
-@RequestMapping(value = "/api/task/create/")
+@Api("/v2/api/task/create/meeting")
+@RequestMapping(value = "/v2/api/task/create/")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class EventCreateController extends BaseRestController{
 
     private final EventBroker eventBroker;
@@ -81,8 +83,6 @@ public class EventCreateController extends BaseRestController{
                 .description(description)
                 .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis));
 
-        log.info("Helper={}",helper);
-
         if (publicMeeting) {
             helper = helper.isPublic(true);
         }
@@ -98,6 +98,8 @@ public class EventCreateController extends BaseRestController{
         if (!StringUtils.isEmpty(mediaFileUid)) {
             helper.taskImageKey(mediaFileUid);
         }
+
+        log.info("Helper={}",helper);
 
         try {
             Meeting createdMeeting = eventBroker.createMeeting(helper);
@@ -124,14 +126,15 @@ public class EventCreateController extends BaseRestController{
                                                               "members of the parent are assigned") Set<String> assignedMemberUids){
 
         String userUid = getUserIdFromRequest(request);
+
         LocalDateTime eventStartDateTime = Instant.ofEpochMilli(time).atZone(DateTimeUtil.getSAST()).toLocalDateTime();
 
         try {
             User user = userService.load(userUid);
 
             assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
-
             log.info("title={}, description={}, time={}, members={}, options={}", title, description, eventStartDateTime, assignedMemberUids, voteOptions);
+
 
             Vote vote = eventBroker.createVote(user.getUid(), parentUid, parentType, title, eventStartDateTime,
                     false, description, mediaFileUid, assignedMemberUids, voteOptions);

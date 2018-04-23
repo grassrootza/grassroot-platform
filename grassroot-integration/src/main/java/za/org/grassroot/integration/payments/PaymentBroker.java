@@ -3,20 +3,14 @@ package za.org.grassroot.integration.payments;
 import za.org.grassroot.core.domain.account.AccountBillingRecord;
 import za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse;
 
-import java.util.regex.Pattern;
-
 /**
  * Created by luke on 2016/10/26.
  */
 public interface PaymentBroker {
 
-    PaymentCopyPayResponse initiateCopyPayCheckout(int amountZAR);
+    PaymentCopyPayResponse initiateCopyPayCheckout(int amountZAR, boolean recurring);
 
-    PaymentCopyPayResponse getPaymentResult(String resourcePath);
-
-    PaymentResponse asyncPaymentInitiate(String accountUid, PaymentMethod method, AccountBillingRecord amountToPay, String returnToUrl);
-
-    PaymentResponse asyncPaymentCheckResult(String paymentId, String resourcePath);
+    PaymentCopyPayResponse getPaymentResult(String resourcePath, boolean storeRecurringResult, String accountUid);
 
     PaymentResponse initiateMobilePayment(AccountBillingRecord record, String notificationUrl);
 
@@ -24,5 +18,4 @@ public interface PaymentBroker {
 
     boolean triggerRecurringPayment(AccountBillingRecord billingRecord);
 
-    String fetchDetailsForDirectDeposit(String accountUid);
 }

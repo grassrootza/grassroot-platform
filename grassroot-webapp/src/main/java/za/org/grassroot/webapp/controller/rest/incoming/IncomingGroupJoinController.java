@@ -8,6 +8,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserFullDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -24,8 +25,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController @Grassroot2RestController
-@Api("/api/group/outside/join/") @Slf4j
-@RequestMapping(value = "/api/group/outside/join/")
+@Api("/v2/api/group/outside/join/") @Slf4j
+@RequestMapping(value = "/v2/api/group/outside/join/")
 public class IncomingGroupJoinController extends BaseRestController {
 
     private final GroupBroker groupBroker;
@@ -113,6 +114,23 @@ public class IncomingGroupJoinController extends BaseRestController {
 
         log.debug("okay, all validated, setting topics = {}", joinTopics);
         groupBroker.setMemberJoinTopics(joinedUserUid, groupUid, joinedUserUid, joinTopics);
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/auto/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Endpoint for automated join, e.g., as posted from a sign up form on an alternate website")
+    public ResponseEntity addToGroupAuto(@PathVariable String groupUid, @RequestParam String firstname, @RequestParam String surname, @RequestParam String email,
+                                         @RequestParam String joinCode, @RequestParam String accessToken) {
+        final String userId = getUserIdFromToken(accessToken);
+        if (StringUtils.isEmpty(userId))
+            throw new AccessDeniedException("Token lacks valid user ID");
+        // we still check this explicitly because even if user has permission (which group broker will check), have to
+        // check that the specific token that's being used has the add member permission
+        if (!getPermissionsFromToken(accessToken).contains(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER.name()))
+            throw new AccessDeniedException("Token does not authorize needed permission");
+
+        groupBroker.addMemberViaJoinPage(groupUid, joinCode, null, null, firstname + " " + surname, null, email,
+                null, null, null, UserInterfaceType.OTHER_WEB);
         return ResponseEntity.ok().build();
     }
 

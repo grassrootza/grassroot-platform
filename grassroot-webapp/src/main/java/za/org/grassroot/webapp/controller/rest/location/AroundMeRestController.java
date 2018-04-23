@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -21,6 +22,7 @@ import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.LiveWireAlertDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -33,10 +35,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Slf4j
-@RestController
-@Api("/api/location")
-@RequestMapping(value = "/api/location")
+@Slf4j @RestController @Grassroot2RestController
+@RequestMapping(value = "/v2/api/location") @Api("/v2/api/location")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class AroundMeRestController {
 
     private final GeoLocationBroker geoLocationBroker;

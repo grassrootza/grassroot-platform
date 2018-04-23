@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
@@ -25,8 +26,6 @@ import java.util.*;
 public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSubscriberBrokerImpl.class);
-
-    private static final String liveWireRoleName = "ROLE_LIVEWIRE_USER";
 
     private final DataSubscriberRepository dataSubscriberRepository;
     private final UserRepository userRepository;
@@ -90,8 +89,8 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
                 .stream()
                 .filter(DataSubscriber::isActive)
                 .filter(DataSubscriber::hasPushEmails)
-                .sorted(Comparator.comparing(DataSubscriber::getCreationTime, Comparator.reverseOrder()))
-                .findFirst().orElse(null);
+                .min(Comparator.comparing(DataSubscriber::getCreationTime, Comparator.reverseOrder()))
+                .orElse(null);
     }
 
     @Override
@@ -104,7 +103,7 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
                 addPrimaryEmailToPush, additionalPushEmails, active);
 
         User sysAdmin = userRepository.findOneByUid(sysAdminUid);
-        permissionBroker.validateSystemRole(sysAdmin, "ROLE_SYSTEM_ADMIN");
+        permissionBroker.validateSystemRole(sysAdmin, BaseRoles.ROLE_SYSTEM_ADMIN);
 
         DataSubscriber subscriber = new DataSubscriber(sysAdmin, sysAdmin, displayName, primaryEmail, active, DataSubscriberType.PRIVATE);
 
@@ -126,7 +125,7 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
         Objects.requireNonNull(subscriberUid);
 
         User sysAdmin = userRepository.findOneByUid(sysAdminUid);
-        permissionBroker.validateSystemRole(sysAdmin, "ROLE_SYSTEM_ADMIN");
+        permissionBroker.validateSystemRole(sysAdmin, BaseRoles.ROLE_SYSTEM_ADMIN);
 
         DataSubscriber subscriber = dataSubscriberRepository.findOneByUid(subscriberUid);
         subscriber.setActive(active);
@@ -179,7 +178,7 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
         validateAdminUser(user, subscriber);
         subscriber.addUserUidsWithAccess(userUids);
-        Role liveWireRole = roleRepository.findByNameAndRoleType(liveWireRoleName, Role.RoleType.STANDARD).get(0);
+        Role liveWireRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_LIVEWIRE_USER, Role.RoleType.STANDARD).get(0);
         userRepository.findByUidIn(userUids)
                 .forEach(u -> u.addStandardRole(liveWireRole));
     }
@@ -197,7 +196,7 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
         validateAdminUser(user, subscriber);
         subscriber.removeUserUidsWithAccess(userUids);
 
-        Role liveWireRole = roleRepository.findByNameAndRoleType(liveWireRoleName, Role.RoleType.STANDARD).get(0);
+        Role liveWireRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_LIVEWIRE_USER, Role.RoleType.STANDARD).get(0);
         userRepository.findByUidIn(userUids)
                 .forEach(u -> u.removeStandardRole(liveWireRole));
     }
@@ -251,7 +250,7 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
     private void validateAdminUser(User user, DataSubscriber subscriber) {
         if (!subscriber.getAdministrator().equals(user)) {
-            permissionBroker.validateSystemRole(user, "ROLE_SYSTEM_ADMIN");
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
     }
 }

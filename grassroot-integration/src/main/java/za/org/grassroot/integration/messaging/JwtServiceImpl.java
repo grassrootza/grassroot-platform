@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.integration.PublicCredentials;
 import za.org.grassroot.integration.keyprovider.KeyPairProvider;
 
@@ -16,8 +17,7 @@ import java.security.PublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by luke on 2017/05/22.
@@ -82,6 +82,8 @@ public class JwtServiceImpl implements JwtService {
                 return Duration.ofDays(7L).toMillis();
             case GRASSROOT_MICROSERVICE:
                 return Duration.ofSeconds(2).toMillis(); // occasional glitches mean 2 secs is a better trade off here at present
+            case API_CLIENT:
+                return Duration.ofDays(7L).toMillis(); // going to convert these to long lived as soon as spring sec done
             default:
                 return 1L;
         }
@@ -121,15 +123,48 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String getUserIdFromJwtToken(String token) {
+        return extractFromToken(USER_UID_KEY, token);
+    }
 
+    @Override
+    public List<String> getPermissionsFromToken(String token) {
+        String permissionList = extractFromToken(PERMISSIONS_KEY, token);
+        return StringUtils.isEmpty(permissionList) ? new ArrayList<>() :
+                Arrays.asList(permissionList.split(","));
+    }
+
+    @Override
+    public List<String> getSystemRolesFromToken(String token) {
+        String rolesList = extractFromToken(SYSTEM_ROLE_KEY, token);
+        return StringUtils.isEmpty(rolesList) ? new ArrayList<>() :
+                Arrays.asList(rolesList.split(","));
+    }
+
+    @Override
+    public JwtType getJwtType(String token) {
+        return JwtType.valueOf(extractFromToken(TYPE_KEY, token));
+    }
+
+    private String extractFromToken(String key, String token) {
         try {
             Claims claims = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
                     .parseClaimsJws(token).getBody();
-            return claims.get(USER_UID_KEY, String.class);
+            return claims.get(key, String.class);
         } catch (Exception e) {
             logger.error("Failed to get user id from jwt token: {}", e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    public List<String> getStandardRolesFromJwtToken(String token) {
+        String joinedRoles = extractClaims(token).get(SYSTEM_ROLE_KEY, String.class);
+        return !StringUtils.isEmpty(joinedRoles) ? Arrays.asList(joinedRoles.split(",")) : new ArrayList<>();
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
+                .parseClaimsJws(token).getBody();
     }
 
     @Override

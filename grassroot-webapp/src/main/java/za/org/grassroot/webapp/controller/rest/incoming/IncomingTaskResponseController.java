@@ -14,12 +14,13 @@ import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Api("/api/inbound/respond/")
-@RestController @Slf4j
-@RequestMapping("/api/inbound/respond/")
+@Slf4j
+@RestController @Grassroot2RestController
+@RequestMapping("/v2/api/inbound/respond/") @Api("/v2/api/inbound/respond/")
 public class IncomingTaskResponseController extends BaseRestController {
 
     private final TaskBroker taskBroker;

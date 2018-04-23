@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.home;
 
+import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
@@ -11,9 +12,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Getter
+@Getter @ApiModel
 public class PublicLiveWireDTO {
-
+    private String serverUid;
     private String headline;
     private long creationTimeMillis;
     private String description;
@@ -25,16 +26,21 @@ public class PublicLiveWireDTO {
     private int activityCount;
     private List<String> imageKeys;
 
+    private List<String> tags;
+
     public PublicLiveWireDTO(LiveWireAlert alert, boolean includeFullDetails) {
+
         this.headline = alert.getHeadline();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
         this.description = alert.getDescription();
 
 
         if (includeFullDetails) {
+            this.serverUid = alert.getUid();
             this.imageKeys = alert.getMediaFiles().stream().map(MediaFileRecord::getKey).collect(Collectors.toList());
             this.contactName = alert.getContactNameNullSafe();
             this.alertType = alert.getType();
+            this.tags = alert.getTagList();
 
             if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
                 Group group = alert.getGroup();

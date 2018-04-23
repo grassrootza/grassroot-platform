@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.repository.MediaFileRecordRepository;
@@ -25,9 +26,6 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
 
     @Value("${grassroot.livewire.media.bucket:null}")
     private String liveWireMediaBucket;
-
-    @Value("${grassroot.media.user-photo.bucket:null}")
-    private String userProfilePhotoBucket;
 
     @Value("${grassroot.media.default.bucket:null}")
     private String defaultMediaBucket;
@@ -86,6 +84,15 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
             logger.error("Error storing media file, returning null");
             return null;
         }
+    }
+
+    @Override
+    @Transactional
+    public void deleteFile(LiveWireAlert liveWireAlert, String imageKey, MediaFunction function){
+        String bucket = getBucketForFunction(Objects.requireNonNull(function));
+        MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
+
+        liveWireAlert.getMediaFiles().remove(record);
     }
 
     private String getBucketForFunction(MediaFunction function) {

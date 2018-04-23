@@ -1,5 +1,6 @@
 package za.org.grassroot.core.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.StringUtils;
@@ -14,12 +15,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
-@Getter @Setter
+@Getter @Setter @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BroadcastDTO {
 
     private String broadcastUid;
     private String title;
     private BroadcastSchedule scheduleType;
+
+    private boolean succeeded;
+    private boolean createdByUser;
 
     private boolean shortMessageSent;
     private boolean emailSent;
@@ -49,19 +53,16 @@ public class BroadcastDTO {
     private JoinDateCondition joinDateCondition;
     private LocalDate joinDate;
 
-    public BroadcastDTO(Broadcast broadcast, long deliveredSmsCount, long deliveredEmailCount, float costEstimate,
-                        List<String> facebookPageNames, String twitterAccount) {
+    public BroadcastDTO(Broadcast broadcast, boolean createdByUser, boolean succeeded) {
         // set things up
         this.broadcastUid = broadcast.getUid();
         this.title = broadcast.getTitle();
         this.scheduleType = broadcast.getBroadcastSchedule();
+        this.succeeded = succeeded;
+        this.createdByUser = createdByUser;
 
         this.shortMessageSent = !StringUtils.isEmpty(broadcast.getSmsTemplate1());
         this.emailSent = !StringUtils.isEmpty(broadcast.getEmailContent());
-
-        this.smsCount = deliveredSmsCount;
-        this.emailCount = deliveredEmailCount;
-        this.costEstimate = costEstimate;
 
         this.dateTimeSent = broadcast.getSentTime();
         this.scheduledSendTime = broadcast.getScheduledSendTime();
@@ -69,9 +70,7 @@ public class BroadcastDTO {
         this.smsContent = broadcast.getSmsTemplate1();
         this.emailContent = broadcast.getEmailContent();
         this.fbPost = broadcast.getFacebookPost();
-        this.fbPages = facebookPageNames;
         this.twitterPost = broadcast.getTwitterPost();
-        this.twitterAccount = twitterAccount;
 
         this.hasFilter = broadcast.hasFilter();
 
@@ -84,7 +83,17 @@ public class BroadcastDTO {
             this.joinDateCondition = broadcast.getJoinDateCondition().orElse(null);
             this.joinDate = broadcast.getJoinDate().orElse(null);
         }
-
     }
 
+    @Override
+    public String toString() {
+        return "BroadcastDTO{" +
+                "broadcastUid='" + broadcastUid + '\'' +
+                ", title='" + title + '\'' +
+                ", succeeded='" + succeeded + '\'' +
+                ", smsCount=" + smsCount +
+                ", emailCount=" + emailCount +
+                ", twitterAccount=" + twitterAccount +
+                '}';
+    }
 }

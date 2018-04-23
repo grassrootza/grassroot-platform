@@ -51,7 +51,8 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     }
 
     @JsonCreator
-    public MembershipInfo(@JsonProperty("phoneNumber") String phoneNumber, @JsonProperty("roleName") String roleName,
+    public MembershipInfo(@JsonProperty("phoneNumber") String phoneNumber,
+                          @JsonProperty("roleName") String roleName,
                           @JsonProperty("displayName") String displayName) {
         this.phoneNumber = phoneNumber;
         this.roleName = roleName;

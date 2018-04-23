@@ -3,6 +3,9 @@ package za.org.grassroot.services.user;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.core.env.Environment;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -10,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.VerificationCodeType;
@@ -20,6 +24,7 @@ import za.org.grassroot.core.specifications.TokenSpecifications;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 
@@ -27,10 +32,8 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.Objects;
+import java.util.*;
 import java.util.Random;
-import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -38,6 +41,7 @@ import java.util.Set;
 @Service @Slf4j
 public class PasswordTokenManager implements PasswordTokenService {
 
+    private static final Random RANDOM = new SecureRandom();
     private static final int TOKEN_LIFE_SPAN_MINUTES = 5;
     private static final int TOKEN_LIFE_SPAN_DAYS = 30;
     // making it very long as old device will be discontinued within next few months and several devices
@@ -51,14 +55,22 @@ public class PasswordTokenManager implements PasswordTokenService {
     private final UserRepository userRepository;
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Environment environment;
+    private final MessagingServiceBroker messagingBroker;
+    private final MessageSourceAccessor messageSourceAccessor;
 
     @Autowired
     public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository,
-                                UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
+                                UserLogRepository userLogRepository, PasswordEncoder passwordEncoder, Environment environment,
+                                @Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor, MessagingServiceBroker messagingBroker) {
+
         this.verificationTokenCodeRepository = verificationTokenCodeRepository;
         this.userRepository = userRepository;
         this.userLogRepository = userLogRepository;
         this.passwordEncoder = passwordEncoder;
+        this.environment = environment;
+        this.messagingBroker = messagingBroker;
+        this.messageSourceAccessor = messageSourceAccessor;
     }
 
     @Override
@@ -301,6 +313,45 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         if (possibleToken == null || possibleToken.getExpiryDateTime().isBefore(Instant.now())) {
             throw new AccessDeniedException("Error! No matching entity/code combination, or match, but expired");
+        }
+    }
+
+    @Override
+    public void triggerOtp(User user){
+        final String message = otpMessage(user.getUsername(),user.getLocale());
+        if (environment.acceptsProfiles("production"))
+            sendOtp(user, message);
+        else
+            log.info("OTP message: {}", message);
+    }
+
+    @Override
+    public String generateRandomPwd() {
+        String letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789+@";
+        StringBuilder password = new StringBuilder();
+
+        for (int i = 0; i < 8; i++){
+            int index = (int)(RANDOM.nextDouble()*letters.length());
+            password.append(letters.substring(index, index + 1));
+        }
+
+        return password.toString();
+    }
+
+    private String otpMessage(String username,Locale locale) {
+        final VerificationTokenCode otp = generateShortLivedOTP(username);
+        return messageSourceAccessor.getMessage("text.user.profile.token.message", new String[] {otp.getCode()}, locale);
+    }
+
+    private void sendOtp(User user, String message) {
+        if (user.hasPhoneNumber()) {
+            messagingBroker.sendPrioritySMS(message, user.getPhoneNumber());
+        } else {
+            messagingBroker.sendEmail(new GrassrootEmail.EmailBuilder()
+                    .subject("Your Grassroot verification")
+                    .toAddress(user.getEmailAddress())
+                    .toName(user.getDisplayName())
+                    .content(message).build());
         }
     }
 

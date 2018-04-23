@@ -17,9 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
-import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
-import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.MembershipInfo;
@@ -433,14 +431,14 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType, boolean sendJoiningNotification) {
+    public Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
 
         validateJoinCode(group, tokenPassed);
         recordJoinCodeInbound(group, tokenPassed);
 
-        return selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null, null, sendJoiningNotification);
+        return selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null, null);
     }
 
     @Override
@@ -512,7 +510,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                     String.format("name: %s, province: %s", name, province), interfaceType));
         }
 
-        selfJoinViaCode(joiningUser, group, GroupJoinMethod.URL_JOIN_WORD, code, broadcast, topics, userLogs, false);
+        selfJoinViaCode(joiningUser, group, GroupJoinMethod.URL_JOIN_WORD, code, broadcast, topics, userLogs);
         return joiningUser.getUid();
     }
 
@@ -533,8 +531,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("okay, adding topics at join, passed {}, got {}", joinTopics, membership.getTopics());
     }
 
-    private Membership selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, Broadcast broadcast, List<String> topics, Set<UserLog> userLogs,
-                                       boolean sendJoiningNotification) {
+    private Membership selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, Broadcast broadcast, List<String> topics, Set<UserLog> userLogs) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         boolean wasAlreadyMember = false;
 
@@ -571,18 +568,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         bundle.addLog(groupLog);
         if (userLogs != null && !userLogs.isEmpty()) {
             bundle.addLogs(userLogs.stream().map(u -> (ActionLog) u).collect(Collectors.toSet()));
-        }
-
-        if (sendJoiningNotification && group.isPaidFor()) {
-            final String userMessage = messageAssemblingService.createGroupJoinedMessage(user, group);
-            final Account groupAccount = accountGroupBroker.findAccountForGroup(group.getUid());
-            if (groupAccount != null) {
-                AccountLog accountLog = new AccountLog.Builder(groupAccount).accountLogType(AccountLogType.MESSAGE_SENT)
-                        .user(user).group(group).build();
-                Notification notification = new GroupWelcomeNotification(user, userMessage, accountLog);
-                bundle.addLog(accountLog);
-                bundle.addNotification(notification);
-            }
         }
 
         if (!wasAlreadyMember) {
@@ -1008,11 +993,16 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         User changingUser = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        try {
+        if(!changingUser.getStandardRoles().contains("ROLE_SYSTEM_ADMIN") || !permissionBroker.isGroupPermissionAvailable(changingUser,group,Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)){
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+
+        /*try {
+            //permissionBroker.validateSystemRole(changingUser,"ROLE_SYSTEM_ADMIN");
             permissionBroker.validateGroupPermission(changingUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        }
+        }*/
 
         List<String> detailsChanged = new ArrayList<>();
         if (province != null) {

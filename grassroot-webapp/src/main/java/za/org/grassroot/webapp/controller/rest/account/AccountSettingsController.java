@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.rest.account;
 
 import com.amazonaws.util.IOUtils;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +34,7 @@ import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.model.rest.wrappers.AccountWrapper;
 
 import javax.servlet.http.HttpServletRequest;
@@ -47,8 +49,9 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@Controller
-@RequestMapping(value = "/api/account")
+@Controller @Grassroot2RestController
+@RequestMapping(value = "/v2/api/account") @Api("/v2/api/account")
+@PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
 public class AccountSettingsController extends BaseRestController {
 
     private final AccountBroker accountBroker;

@@ -14,12 +14,14 @@ import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Api("/api/inbound/unsubscribe/")
-@RestController @Slf4j
-@RequestMapping("/api/inbound/unsubscribe/")
+@Slf4j
+@Api("/v2/api/inbound/unsubscribe/")
+@RestController @Grassroot2RestController
+@RequestMapping("/v2/api/inbound/unsubscribe/")
 public class IncomingUnsubscribeController extends BaseRestController {
 
     private final GroupBroker groupBroker;

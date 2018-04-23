@@ -14,18 +14,20 @@ public interface BroadcastBroker {
 
     String sendGroupBroadcast(BroadcastComponents broadcastComponents);
 
+    String resendBroadcast(String userUid, String broadcastUid, boolean resendText, boolean resendEmail, boolean resendFb, boolean resendTwitter);
+
     String sendTaskBroadcast(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders,
                              String message);
 
-    BroadcastDTO fetchBroadcast(String broadcastUid);
+    BroadcastDTO fetchBroadcast(String broadcastUid, String fetchingUserId);
 
     Broadcast getBroadcast(String broadcastUid);
 
-    Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, Pageable pageable);
+    Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, String fetchingUserUid, Pageable pageable);
 
-    Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, Pageable pageable);
+    Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, String fetchingUserUid, Pageable pageable);
 
-    List<BroadcastDTO> fetchCampaignBroadcasts(String campaignUid);
+    List<BroadcastDTO> fetchCampaignBroadcasts(String campaignUid, String fetchingUserUid);
 
     // needs to be in interface so picked up by entities
     void sendScheduledBroadcasts();

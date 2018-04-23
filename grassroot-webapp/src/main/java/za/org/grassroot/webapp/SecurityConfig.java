@@ -6,6 +6,7 @@ import org.springframework.beans.factory.config.MethodInvokingFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.RememberMeAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -32,7 +33,7 @@ import java.util.List;
  * @author Lesetse Kimwaga
  */
 @Slf4j
-@Configuration
+@Configuration @Order(2)
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @PropertySource(value = "${grassroot.integration.properties}", ignoreResourceNotFound = true) // ignoring else tests fail ...
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
@@ -69,32 +70,33 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         log.info("configuring security with USSD gateway: {}", environment.getProperty("grassroot.ussd.gateway", "127.0.0.1"));
         http
                 .authorizeRequests()
-                    .antMatchers("/index").permitAll()
-                    .antMatchers("/signup").permitAll()
-                    .antMatchers("/signup/extra").permitAll()
-                    .antMatchers("/user/recovery").permitAll()
-                    .antMatchers("/user/recovery/success").permitAll()
-                    .antMatchers("/grass-root-verification/*").permitAll()
-                    .antMatchers("/livewire/public/**").permitAll()
-                    .antMatchers("/cardauth/**").permitAll()
-                    .antMatchers("/donate/**").permitAll()
-                    .antMatchers("/ussd/**").access(assembleUssdGatewayAccessString())
-                    .anyRequest().authenticated()
-                    .and()
+                .antMatchers("/index").permitAll()
+                .antMatchers("/signup").permitAll()
+                .antMatchers("/signup/extra").permitAll()
+                .antMatchers("/user/recovery").permitAll()
+                .antMatchers("/user/recovery/success").permitAll()
+                .antMatchers("/grass-root-verification/*").permitAll()
+                .antMatchers("/livewire/public/**").permitAll()
+                .antMatchers("/cardauth/**").permitAll()
+                .antMatchers("/donate/**").permitAll()
+                .antMatchers("/api/v2/**").permitAll() // handled in new security config
+                .antMatchers("/ussd/**").access(assembleUssdGatewayAccessString())
+                .anyRequest().authenticated()
+                .and()
                 .formLogin()
-                    .successHandler(savedRequestAwareAuthenticationSuccessHandler())
-                    .defaultSuccessUrl("/home")
-                    .loginPage("/login")
-                    .loginProcessingUrl("/login")
-                    .permitAll()
-                    .and()
+                .successHandler(savedRequestAwareAuthenticationSuccessHandler())
+                .defaultSuccessUrl("/home")
+                .loginPage("/login")
+                .loginProcessingUrl("/login")
+                .permitAll()
+                .and()
                 .logout()
-                    .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                    .logoutSuccessUrl("/login")
-                    .permitAll().and()
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutSuccessUrl("/login")
+                .permitAll().and()
                 .rememberMe()
-                    .rememberMeServices(rememberMeServices())
-                    .useSecureCookie(true).and()
+                .rememberMeServices(rememberMeServices())
+                .useSecureCookie(true).and()
                 .headers().frameOptions().sameOrigin().and() // in future see if can path restrict this
                 .csrf().csrfTokenRepository(new HttpSessionCsrfTokenRepository());
     }
@@ -161,7 +163,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         MethodInvokingFactoryBean methodInvokingFactoryBean = new MethodInvokingFactoryBean();
         methodInvokingFactoryBean.setTargetClass(SecurityContextHolder.class);
         methodInvokingFactoryBean.setTargetMethod("setStrategyName");
-        methodInvokingFactoryBean.setArguments(new String[]{SecurityContextHolder.MODE_INHERITABLETHREADLOCAL});
+        methodInvokingFactoryBean.setArguments(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
         return methodInvokingFactoryBean;
     }
 

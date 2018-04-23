@@ -1,6 +1,7 @@
 package za.org.grassroot.integration;
 
 import org.springframework.web.multipart.MultipartFile;
+import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 
@@ -14,5 +15,6 @@ public interface MediaFileBroker {
 
     String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey, String fileName);
 
+    void deleteFile(LiveWireAlert liveWireAlert, String imageKey, MediaFunction function);
 
 }

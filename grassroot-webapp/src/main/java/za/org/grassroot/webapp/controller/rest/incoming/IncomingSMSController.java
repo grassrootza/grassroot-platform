@@ -6,15 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.domain.task.TodoType;
-import za.org.grassroot.core.domain.task.Vote;
-import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
@@ -22,6 +17,7 @@ import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.UserResponseBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -43,10 +39,16 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/inbound/sms/")
 public class IncomingSMSController {
 
+    // some prefixes used in logging inbound
+    private static final String RECEIVED = "RECEIVED:";
+    private static final String MATCHED = "MATCHED:";
+    private static final String UNMATCHED = "UNMATCHED:";
+
     private final UserResponseBroker userResponseBroker;
     private final UserManagementService userManager;
 
     private final GroupBroker groupBroker;
+    private final AccountGroupBroker accountGroupBroker;
     private final CampaignBroker campaignBroker;
 
     private final MessageSourceAccessor messageSource;
@@ -59,53 +61,96 @@ public class IncomingSMSController {
     private static final String FROM_PARAMETER_NEW = "num";
     private static final String MSG_TEXT_PARAM_NEW = "mesg";
 
-    private static final Duration NOTIFICATION_WINDOW = Duration.of(6, ChronoUnit.HOURS);
+    private static final Duration NOTIFICATION_WINDOW = Duration.of(1, ChronoUnit.DAYS);
 
     @Autowired
     public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker, MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
-                                 NotificationService notificationService, CampaignBroker campaignBroker,
+                                 AccountGroupBroker accountGroupBroker, NotificationService notificationService, CampaignBroker campaignBroker,
                                  @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSource, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userResponseBroker = userResponseBroker;
 
         this.userManager = userManager;
         this.groupBroker = groupBroker;
+        this.accountGroupBroker = accountGroupBroker;
         this.messageSource = messageSource;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.notificationService = notificationService;
         this.campaignBroker = campaignBroker;
     }
 
+    @RequestMapping(value = "initiated/group", method = RequestMethod.GET)
+    @ApiOperation(value = "Incoming SMS, under the 'group' short code", notes = "For when we receive an out of the blue SMS, on the group number")
+    public @ResponseBody String receiveGroupSms(@RequestParam(value = FROM_PARAMETER_NEW) String phoneNumber,
+                    @RequestParam(value = MSG_TEXT_PARAM_NEW) String message) {
+        log.info("Inside receiving a message on group list, received {} as message", message);
+        // join word as key, uid as map
+        User user = userManager.loadOrCreateUser(phoneNumber);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, RECEIVED + message, UserInterfaceType.INCOMING_SMS));
+
+        Map<String, String> groupJoinWords = groupBroker.getJoinWordsWithGroupIds();
+
+        Set<String> groupMatches = groupJoinWords.entrySet().stream()
+                .filter(entry -> entry.getKey().toLowerCase().equalsIgnoreCase(message.trim()))
+                .map(Map.Entry::getValue).collect(Collectors.toSet());
+
+        final String reply;
+        if (!groupMatches.isEmpty()) {
+            // disambiguate somehow ... for the moment, just adding the first
+            final String groupUid = groupMatches.iterator().next();
+            Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), groupUid, message, UserInterfaceType.INCOMING_SMS);
+            reply = membership.getGroup().isPaidFor() ? accountGroupBroker.generateGroupWelcomeReply(user.getUid(), groupUid) : "";
+            bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, MATCHED + message, UserInterfaceType.INCOMING_SMS));
+        } else {
+            log.info("received a join word but don't know what to do with it");
+            reply = messageSource.getMessage("text.group.welcome.unknown", new String[] { message.trim() },
+                    "Sorry, we couldn't find a Grassroot group with that join word (" + message + "). Try another?");
+            bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, UNMATCHED + message, UserInterfaceType.INCOMING_SMS));
+        }
+
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        return reply;
+    }
+
     @RequestMapping(value = "initiated/campaign", method = RequestMethod.GET)
     @ApiOperation(value = "Send in an incoming SMS, that is newly initiated, on campaign short code",
             notes = "For when we receive an SMS 'out of the blue', on the campaign number")
-    public void receiveNewlyInitiatedSms(@RequestParam(value = FROM_PARAMETER_REPLY) String phoneNumber,
-                                         @RequestParam(value = MESSAGE_TEXT_PARAM_REPLY) String message) {
+    public String receiveNewlyInitiatedSms(@RequestParam(value = FROM_PARAMETER_REPLY) String phoneNumber,
+                                           @RequestParam(value = MESSAGE_TEXT_PARAM_REPLY) String message) {
         log.info("Inside receiving newly initiated SMS, received {} as message", message);
-        User user = userManager.loadOrCreateUser(phoneNumber); // this may be a user we don't know
-        Set<String> campaignTags = campaignBroker.getActiveCampaignJoinTopics();
-        log.info("active campaign tags = {}", campaignTags);
-        // then: filter them
-    }
 
-    @RequestMapping(value = "initiated/group", method = RequestMethod.GET)
-    @ApiOperation(value = "Incoming SMS, under the 'group' short code", notes = "For when we receive an out of the blue SMS, on the group number")
-    public void receiveGroupSms(@RequestParam(value = FROM_PARAMETER_NEW) String phoneNumber,
-                                @RequestParam(value = MSG_TEXT_PARAM_NEW) String message) {
-        log.info("Inside receiving a message on group list, received {} as message", message);
-        Map<String, String> groupJoinWords = groupBroker.getJoinWordsWithGroupIds();
-        // todo : iterate hard on this to eg catch parts of words etc
-        Set<String> groupMatches = groupJoinWords.entrySet().stream()
-                .filter(entry -> entry.getKey().toLowerCase().equalsIgnoreCase(message))
+        User user = userManager.loadOrCreateUser(phoneNumber); // this may be a user we don't know
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        Map<String, String> campaignTags = campaignBroker.getActiveCampaignJoinTopics();
+        log.info("active campaign tags = {}", campaignTags);
+
+        Set<String> campaignMatches = campaignTags.entrySet().stream()
+                .filter(entry -> entry.getKey().toLowerCase().equalsIgnoreCase(message.trim()))
                 .map(Map.Entry::getValue).collect(Collectors.toSet());
 
-        if (!groupMatches.isEmpty()) {
+        final String reply;
+        if (!campaignMatches.isEmpty()) {
             // disambiguate somehow ... for the moment, just adding the first
-            User user = userManager.loadOrCreateUser(phoneNumber);
-            final String groupUid = groupMatches.iterator().next();
-            groupBroker.addMemberViaJoinCode(user.getUid(), groupUid, message, UserInterfaceType.INCOMING_SMS, true);
+            final String campaignUid = campaignMatches.iterator().next();
+            bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, MATCHED + message, UserInterfaceType.INCOMING_SMS));
+
+            Campaign campaign = campaignBroker.load(campaignUid);
+            campaignBroker.addUserToCampaignMasterGroup(campaignUid, user.getUid(), UserInterfaceType.INCOMING_SMS);
+            CampaignMessage replyMsg = campaignBroker.getOpeningMessage(campaignUid, null, UserInterfaceType.INCOMING_SMS, null);
+
+            reply = replyMsg != null ? replyMsg.getMessage() :
+                    messageSource.getMessage("text.campaign.joined.default", new String[] { campaign.getName() });
         } else {
-            log.info("received a join word but don't know what to do with it");
+            log.info("received a join word but don't know what to do with it, message: {}", message.trim());
+            reply = messageSource.getMessage("text.campaign.tag.unknown", new String[] { message.trim() },
+                    "Sorry, we couldn't find a campaign with that topic (" + message + "). Try another?");
+            bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, UNMATCHED + message, UserInterfaceType.INCOMING_SMS));
         }
+
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        return reply;
     }
 
     @RequestMapping(value = "reply", method = RequestMethod.GET)
@@ -124,51 +169,32 @@ public class IncomingSMSController {
         final String trimmedMsg = msg.trim();
         EntityForUserResponse likelyEntity = userResponseBroker.checkForEntityForUserResponse(user.getUid(), false);
 
-        if (likelyEntity == null || !checkValidityOfResponse(likelyEntity, trimmedMsg)) {
+        if (likelyEntity == null || !userResponseBroker.checkValidityOfResponse(likelyEntity, trimmedMsg)) {
             log.info("User response does not match any recently sent entities, recording raw text log");
             handleUnknownResponse(user, trimmedMsg);
             return;
         }
 
-        userResponseBroker.recordUserResponse(user.getUid(),
-                likelyEntity.getJpaEntityType(),
-                likelyEntity.getUid(),
-                trimmedMsg);
+        userResponseBroker.recordUserResponse(user.getUid(), likelyEntity.getJpaEntityType(), likelyEntity.getUid(), trimmedMsg);
 
-        // todo : send a response confirming?
-    }
-
-    // todo: move this into response broker checking, handle with more sophistication
-    private boolean checkValidityOfResponse(EntityForUserResponse entity, String message) {
-        switch (entity.getJpaEntityType()) {
-            case MEETING:
-                return EventRSVPResponse.fromString(message) != EventRSVPResponse.INVALID_RESPONSE;
-            case VOTE:
-                Vote vote = (Vote) entity;
-                return !vote.getVoteOptions().isEmpty() ? vote.hasOption(message) :
-                        EventRSVPResponse.fromString(message) != EventRSVPResponse.INVALID_RESPONSE;
-            case TODO:
-                Todo todo = (Todo) entity;
-                return todo.getType().equals(TodoType.INFORMATION_REQUIRED); // todo : look for eg "yes it is done"
-            default:
-                return false;
-        }
     }
 
     private void handleUnknownResponse(User user, String trimmedMsg) {
-        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE,
-                trimmedMsg, UserInterfaceType.INCOMING_SMS);
-
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        bundle.addLog(userLog);
 
+        bundle.addLog(new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE,
+                trimmedMsg, UserInterfaceType.INCOMING_SMS));
+
+        // get the last day's worth of notifications
         List<Notification> recentNotifications = notificationService
                 .fetchSentOrBetterSince(user.getUid(), Instant.now().minus(NOTIFICATION_WINDOW), null);
+        log.info("since {}, number of recent notifications: {}", Instant.now().minus(NOTIFICATION_WINDOW), recentNotifications.size());
 
+        // this will store a possible group and each notification that was sent
         Map<Group, String> messagesAndGroups = new HashMap<>();
 
-        // todo: not the most elegant thing in the world, but can clean up later
-        recentNotifications.stream().sorted(Comparator.comparing(Notification::getCreatedDateTime))
+        recentNotifications.stream()
+                .sorted(Comparator.comparing(Notification::getCreatedDateTime)) // important so 'message' is most recent
                 .forEach(n -> {
                     Group group = n.getRelevantGroup();
                     if (group != null)
@@ -178,10 +204,8 @@ public class IncomingSMSController {
         log.info("okay, we have {} distinct groups", messagesAndGroups.size());
 
         for (Map.Entry<Group, String> entry : messagesAndGroups.entrySet()) {
-            String description = MessageFormat.format("From user: {0}; likely responding to: {1}",
-                    trimmedMsg, entry.getValue());
-            GroupLog groupLog = new GroupLog(entry.getKey(), user,
-                    GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user, null, null,
+            String description = MessageFormat.format("From user: {0}; likely responding to: {1}", trimmedMsg, entry.getValue());
+            GroupLog groupLog = new GroupLog(entry.getKey(), user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user, null, null,
                     description.substring(0, Math.min(255, description.length()))); // since could be very long ...
             bundle.addLog(groupLog);
         }

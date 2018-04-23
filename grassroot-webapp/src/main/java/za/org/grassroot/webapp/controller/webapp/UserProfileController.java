@@ -18,8 +18,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.integration.socialmedia.ManagedPage;
-import za.org.grassroot.integration.socialmedia.ManagedPagesResponse;
 import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.group.MemberDataExportBroker;
@@ -32,7 +30,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -46,13 +43,11 @@ public class UserProfileController extends BaseController {
 
     private final UserManagementService userManagementService;
     private MemberDataExportBroker memberDataExportBroker;
-    private SocialMediaBroker socialMediaBroker;
 
     @Autowired
     public UserProfileController(UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker, SocialMediaBroker socialMediaBroker) {
         this.userManagementService = userManagementService;
         this.memberDataExportBroker = memberDataExportBroker;
-        this.socialMediaBroker = socialMediaBroker;
     }
 
     @ModelAttribute("sessionUser")
@@ -132,20 +127,4 @@ public class UserProfileController extends BaseController {
         xls.write(response.getOutputStream());
         response.flushBuffer();
     }
-
-    @RequestMapping(value = "social-media", method = RequestMethod.GET)
-    public String linkSocialMedia(Model model) {
-        model.addAttribute("name", "NAAM");
-        long startTime = System.currentTimeMillis();
-        ManagedPagesResponse response = socialMediaBroker.getManagedFacebookPages(getUserProfile().getUid());
-        model.addAttribute("fbConnected", response.isUserConnectionValid());
-        model.addAttribute("fbPages", response.getManagedPages());
-        log.info("time for first call: {} msecs", System.currentTimeMillis() - startTime);
-        ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(getUserProfile().getUid());
-        model.addAttribute("twitterConnected", twitterAccount != null);
-        model.addAttribute("twitterAccountName", twitterAccount != null ? twitterAccount.getDisplayName() : "");
-        log.info("time for both calls: {} msecs", System.currentTimeMillis() - startTime);
-        return "user/social-media";
-    }
-
 }

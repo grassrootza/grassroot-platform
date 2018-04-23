@@ -200,9 +200,15 @@ public class VoteBrokerImpl implements VoteBroker {
         EventLog priorResponse = eventLogRepository
                 .findByEventAndUserAndEventLogType(vote, user, EventLogType.VOTE_OPTION_RESPONSE);
 
+        Optional<String> storedOption = vote.getVoteOptions().stream().filter(s -> s.trim().equalsIgnoreCase(voteOption.trim()))
+                .findFirst();
+
+        if (!storedOption.isPresent() || StringUtils.isEmpty(storedOption.get()))
+            throw new IllegalArgumentException("Error! Non existent vote option passed to us");
+
         if (priorResponse == null) {
             // user has not voted before, so adding a new one
-            eventLogRepository.save(new EventLog(user, vote, EventLogType.VOTE_OPTION_RESPONSE, voteOption));
+            eventLogRepository.save(new EventLog(user, vote, EventLogType.VOTE_OPTION_RESPONSE, storedOption.get()));
         } else {
             priorResponse.setTag(voteOption);
         }

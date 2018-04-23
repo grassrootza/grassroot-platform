@@ -55,8 +55,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
-@Api("/api/broadcast") @Slf4j
-@RequestMapping(value = "/api/broadcast")
+@Api("/v2/api/broadcast") @Slf4j
+@RequestMapping(value = "/v2/api/broadcast")
 public class BroadcastController extends BaseRestController {
 
     private final BroadcastBroker broadcastBroker;
@@ -78,23 +78,28 @@ public class BroadcastController extends BaseRestController {
 
     @RequestMapping(value = "/fetch/group/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch the broadcasts attached to a group")
-    public ResponseEntity<Page<BroadcastDTO>> fetchGroupSentBroadcasts(@PathVariable String groupUid,
+    public ResponseEntity<Page<BroadcastDTO>> fetchGroupSentBroadcasts(HttpServletRequest request, @PathVariable String groupUid,
                                                                        @RequestParam BroadcastSchedule broadcastSchedule,
                                                                        Pageable pageable) {
         Page<BroadcastDTO> broadcastDTOPage = new PageImpl<>(new ArrayList<>());
+        final String userUid = getUserIdFromRequest(request);
         if(broadcastSchedule.equals(BroadcastSchedule.IMMEDIATE)){
-            broadcastDTOPage = broadcastBroker.fetchSentGroupBroadcasts(groupUid, pageable);
-        } else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE))
-            broadcastDTOPage = broadcastBroker.fetchScheduledGroupBroadcasts(groupUid, pageable);
+            broadcastDTOPage = broadcastBroker.fetchSentGroupBroadcasts(groupUid, userUid, pageable);
+        } else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE)) {
+            broadcastDTOPage = broadcastBroker.fetchScheduledGroupBroadcasts(groupUid, userUid, pageable);
+        }
 
+        if (broadcastDTOPage.getNumberOfElements() > 0) {
+            log.info("broadcasts received, first one: {}", broadcastDTOPage.getContent().iterator().next());
+        }
         return ResponseEntity.ok(broadcastDTOPage);
     }
 
 
     @RequestMapping(value = "/fetch/campaign/{campaignUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch the broadcasts from a campaign")
-    public ResponseEntity<List<BroadcastDTO>> fetchCampaignBroadcasts(@PathVariable String campaignUid) {
-        return ResponseEntity.ok(broadcastBroker.fetchCampaignBroadcasts(campaignUid));
+    public ResponseEntity<List<BroadcastDTO>> fetchCampaignBroadcasts(HttpServletRequest request, @PathVariable String campaignUid) {
+        return ResponseEntity.ok(broadcastBroker.fetchCampaignBroadcasts(campaignUid, getUserIdFromRequest(request)));
     }
 
     @RequestMapping(value = "/create/group/info/{groupUid}", method = RequestMethod.GET)
@@ -148,7 +153,7 @@ public class BroadcastController extends BaseRestController {
 
         String broadcastUid = broadcastBroker.sendGroupBroadcast(bc);
 
-        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
+        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid, userUid));
     }
 
     @RequestMapping(value = "/create/campaign/{campaignUid}", method = RequestMethod.POST)
@@ -159,9 +164,10 @@ public class BroadcastController extends BaseRestController {
         log.info("broadcast send time millis = {}", createRequest.getSendDateTimeMillis());
         log.info("broadcast create request, = {}", createRequest);
 
+        final String userUid = getUserIdFromRequest(request);
         BroadcastComponents bc = BroadcastComponents.builder()
                 .title(createRequest.getTitle())
-                .userUid(getUserIdFromRequest(request))
+                .userUid(userUid)
                 .campaignUid(campaignUid)
                 .campaignBroadcast(true)
                 .broadcastSchedule(createRequest.getSendType())
@@ -173,7 +179,7 @@ public class BroadcastController extends BaseRestController {
         fillInContent(createRequest, bc);
         String broadcastUid = broadcastBroker.sendGroupBroadcast(bc);
 
-        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
+        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid, userUid));
     }
 
     @RequestMapping(value = "/create/task/{taskType}/{taskUid}", method = RequestMethod.POST)
@@ -189,7 +195,16 @@ public class BroadcastController extends BaseRestController {
         log.info("sending a task broadcast, sendToAll = {}, message = {}", sendToAll, message);
 
         String broadcastUid = broadcastBroker.sendTaskBroadcast(user.getUid(), taskUid, taskType, sendToAll == null || !sendToAll, message);
-        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
+        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid, user.getUid()));
+    }
+
+    @RequestMapping(value = "/resend/{broadcastUid}", method = RequestMethod.POST)
+    public ResponseEntity<BroadcastDTO> resentBroadcast(HttpServletRequest request, @PathVariable String broadcastUid,
+                                                        boolean resendText, boolean resendEmail, boolean resendFb, boolean resendTwitter) {
+        final String userUid = getUserIdFromRequest(request);
+        final String resentUid = broadcastBroker.resendBroadcast(userUid, broadcastUid,
+                resendText, resendEmail, resendFb, resendTwitter);
+        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(resentUid, userUid));
     }
 
     @RequestMapping(value = "/cost-this-month", method = RequestMethod.GET)

@@ -21,7 +21,6 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
-import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.NoSuchUserException;
@@ -29,6 +28,7 @@ import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.InterfaceNotOpenException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.AuthorizationResponseDTO;
@@ -39,9 +39,9 @@ import za.org.grassroot.webapp.util.RestUtil;
 import java.util.Collections;
 import java.util.List;
 
-@RestController
-@Api("/api/auth")
-@RequestMapping("/api/auth")
+@RestController @Grassroot2RestController
+@Api("/v2/api/auth")
+@RequestMapping("/v2/api/auth")
 public class AuthenticationController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
@@ -51,18 +51,15 @@ public class AuthenticationController {
     private final JwtService jwtService;
     private final PasswordTokenService passwordTokenService;
     private final UserManagementService userService;
-    private final MessagingServiceBroker messagingServiceBroker;
     private final AsyncUserLogger userLogger;
     private final Environment environment;
 
     @Autowired
     public AuthenticationController(JwtService jwtService, PasswordTokenService passwordTokenService,
-                                    UserManagementService userService, MessagingServiceBroker messagingServiceBroker,
-                                    AsyncUserLogger userLogger, Environment environment) {
+                                    UserManagementService userService, AsyncUserLogger userLogger, Environment environment) {
         this.jwtService = jwtService;
         this.passwordTokenService = passwordTokenService;
         this.userService = userService;
-        this.messagingServiceBroker = messagingServiceBroker;
         this.userLogger = userLogger;
         this.environment = environment;
     }
@@ -111,7 +108,7 @@ public class AuthenticationController {
                 logger.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
                 String tokenCode = temporaryTokenSend(
                         userService.generateAndroidUserVerifier(phoneNumber, displayName, password),
-                        phoneNumber, "Registration confirmation code: ");
+                        phoneNumber);
 
                 return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
             } else {
@@ -203,7 +200,7 @@ public class AuthenticationController {
             // note: user stored username may be different from that passed in req param (e.g., if user primarily
             // uses phone but in this case gives us their email
             String token = userService.regenerateUserVerifier(user.getUsername(), false);
-            temporaryTokenSend(token, user.getUsername(), "Password reset confirmation code: ");
+            temporaryTokenSend(token, user.getUsername());
             return ResponseEntity.ok().build();
         } catch (InvalidPhoneNumberException|NoSuchUserException e) {
             logger.info("Invalid user of passed username: ", passedUsername);
@@ -327,21 +324,15 @@ public class AuthenticationController {
         }
     }
 
-
-    private String temporaryTokenSend(String token, String numberOrEmail, String messagePrefix) {
+    private String temporaryTokenSend(String token, String numberOrEmail) {
         if (environment.acceptsProfiles("production")) {
-            if (token != null) {
-                messagingServiceBroker.sendPrioritySMS(messagePrefix + token, numberOrEmail);
-            } else {
-                logger.warn("Did not send verification message. No system messaging configuration found.");
-            }
+            passwordTokenService.triggerOtp(userService.findByUsernameLoose(numberOrEmail));
             return "";
         } else {
             logger.info("returning token: {}", token);
             return token;
         }
     }
-
 
     private boolean ifExists(String phoneNumber) {
         return userService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));

@@ -49,6 +49,8 @@ public enum UserLogType {
     LIVEWIRE_CONTACT_REVOKED("revoked livewire permission"),
     SENT_UNEXPECTED_SMS_MESSAGE("sent SMS message that could not be interpreted"),
     SENT_GROUP_JOIN_CODE("User sent group join code sms"),
+    INBOUND_JOIN_WORD("User sent an inbound join word"),
+    INBOUND_CAMPAIGN_WORD("User sent an inbound campaign word"),
 
     WHATSAPP_CONFIRMED("User added us to contact book, confirming WhatsApp channel");
 

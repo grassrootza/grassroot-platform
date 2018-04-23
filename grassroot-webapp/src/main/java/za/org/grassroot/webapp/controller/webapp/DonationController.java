@@ -25,7 +25,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Locale;
-import java.util.regex.Pattern;
 
 import static za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse.SUCCESS_MATCHER;
 
@@ -75,7 +74,7 @@ public class DonationController extends BaseController {
     public String initiatePayment(Model model, @RequestParam int amount, @RequestParam String name, @RequestParam String email) {
         try {
             long startTime = System.currentTimeMillis();
-            PaymentCopyPayResponse response = paymentBroker.initiateCopyPayCheckout(amount);
+            PaymentCopyPayResponse response = paymentBroker.initiateCopyPayCheckout(amount, false);
             log.info("got checkout response in {} msecs, looks like {}", startTime - System.currentTimeMillis(), response);
             model.addAttribute("paymentJsUrl",
                     paymentUrl + "/v1/paymentWidgets.js?checkoutId=" + response.getId());
@@ -102,7 +101,7 @@ public class DonationController extends BaseController {
                                   @RequestParam(required = false) int amount,
                                   Model model, RedirectAttributes attributes, HttpServletRequest request) {
         try {
-            PaymentCopyPayResponse response = paymentBroker.getPaymentResult(resourcePath);
+            PaymentCopyPayResponse response = paymentBroker.getPaymentResult(resourcePath, false, null);
             log.info("got this response: {}", response.toString());
             if (SUCCESS_MATCHER.matcher(response.getInternalCode()).find()) {
                 log.info("successful payment! internal code: {}", response.getInternalCode());

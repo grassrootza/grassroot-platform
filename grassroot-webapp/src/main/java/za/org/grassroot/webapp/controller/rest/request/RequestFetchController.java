@@ -13,14 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@RestController
-@Api("/api/request/fetch")
-@RequestMapping(value = "/api/request/fetch")
+@RestController @Grassroot2RestController
+@RequestMapping(value = "/v2/api/request/fetch") @Api("/v2/api/request/fetch")
 public class RequestFetchController {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestFetchController.class);

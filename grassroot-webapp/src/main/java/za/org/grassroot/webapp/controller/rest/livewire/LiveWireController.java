@@ -1,10 +1,10 @@
 package za.org.grassroot.webapp.controller.rest.livewire;
 
 import io.swagger.annotations.Api;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
@@ -16,25 +16,25 @@ import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import java.time.Instant;
 import java.util.Set;
 
-@RestController
-@Api("/api/livewire")
-@RequestMapping(value = "/api/livewire")
-public class LiveWireController {
-
-    private static final Logger logger = LoggerFactory.getLogger(LiveWireController.class);
+@RestController @Grassroot2RestController @Slf4j
+@RequestMapping(value = "/api/livewire") @Api("/api/livewire")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
+public class LiveWireController extends BaseRestController{
 
     private final UserManagementService userManagementService;
     private final GroupBroker groupBroker;
@@ -44,8 +44,16 @@ public class LiveWireController {
     private final LiveWireAlertBroker liveWireAlertBroker;
     private final DataSubscriberBroker subscriberBroker;
 
+
     @Autowired
-    public LiveWireController(UserManagementService userManagementService, GroupBroker groupBroker, EventBroker eventBroker, StorageBroker storageBroker, LiveWireAlertBroker liveWireAlertBroker, DataSubscriberBroker subscriberBroker) {
+    public LiveWireController(UserManagementService userManagementService,
+                              GroupBroker groupBroker,
+                              EventBroker eventBroker,
+                              StorageBroker storageBroker,
+                              LiveWireAlertBroker liveWireAlertBroker,
+                              DataSubscriberBroker subscriberBroker,
+                              JwtService jwtService) {
+        super(jwtService,userManagementService);
         this.userManagementService = userManagementService;
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
@@ -80,18 +88,21 @@ public class LiveWireController {
                 .contactNumber(contactNumber)
                 .type(type);
 
-        logger.info("do we have mediaFiles? {}", mediaFileKeys);
+        log.info("Dest type....###########{}",destType);
+
+        log.info("do we have mediaFiles? {}, task uid {}", mediaFileKeys,taskUid);
 
         if (LiveWireAlertType.INSTANT.equals(type)) {
             builder.group(groupBroker.load(groupUid));
         } else if (LiveWireAlertType.MEETING.equals(type)) {
+            log.info("meeting entity: {}", eventBroker.loadMeeting(taskUid));
             builder.meeting(eventBroker.loadMeeting(taskUid));
         }
 
         if (addLocation) {
             builder.location(new GeoLocation(latitude, longitude), LocationSource.convertFromInterface(UserInterfaceType.ANDROID));
         }
-
+        
         if (destType == null) {
             builder.destType(LiveWireAlertDestType.PUBLIC_LIST);
         } else {
