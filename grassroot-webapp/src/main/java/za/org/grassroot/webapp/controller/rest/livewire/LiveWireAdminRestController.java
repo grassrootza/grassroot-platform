@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -186,5 +187,12 @@ public class LiveWireAdminRestController extends BaseRestController {
                 .imageKey(imageKey)
                 .imageMediaFunction(imageMediaFunction).build();
         return ResponseEntity.ok(socialMediaBroker.postToTwitter(tweet));
+    }
+
+    @RequestMapping(value = "/list/subscribers",method = RequestMethod.GET)
+    public ResponseEntity<List<DataSubscriberDTO>> listDataSubscribers(){
+        List<DataSubscriberDTO> dataSubscriberDTOS = dataSubscriberBroker.listSubscribers(false,new Sort(Sort.Direction.ASC, "displayName"))
+                .stream().map(DataSubscriberDTO::new).collect(Collectors.toList());
+        return ResponseEntity.ok(dataSubscriberDTOS);
     }
 }
