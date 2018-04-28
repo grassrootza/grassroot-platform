@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
+import za.org.grassroot.core.dto.DataSubscriberAdminDTO;
 import za.org.grassroot.core.dto.DataSubscriberDTO;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -190,9 +191,9 @@ public class LiveWireAdminRestController extends BaseRestController {
     }
 
     @RequestMapping(value = "/list/subscribers",method = RequestMethod.GET)
-    public ResponseEntity<List<DataSubscriberDTO>> listDataSubscribers(){
-        List<DataSubscriberDTO> dataSubscriberDTOS = dataSubscriberBroker.listSubscribers(false,new Sort(Sort.Direction.ASC, "displayName"))
-                .stream().map(DataSubscriberDTO::new).collect(Collectors.toList());
+    public ResponseEntity<List<DataSubscriberAdminDTO>> listDataSubscribers(){
+        List<DataSubscriberAdminDTO> dataSubscriberDTOS = dataSubscriberBroker.listSubscribers(false,new Sort(Sort.Direction.ASC, "displayName"))
+                .stream().map(DataSubscriberAdminDTO::new).collect(Collectors.toList());
         return ResponseEntity.ok(dataSubscriberDTOS);
     }
 }
