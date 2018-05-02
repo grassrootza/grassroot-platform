@@ -11,23 +11,26 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupAdminDTO;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AdminService;
+import za.org.grassroot.services.exception.NoSuchUserException;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.enums.RestMessage;
 
 import javax.servlet.http.HttpServletRequest;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
 
 @RestController @Grassroot2RestController
 @Slf4j @Api("/v2/api/admin")
@@ -35,19 +38,19 @@ import java.util.Random;
 @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
 public class AdminRestController extends BaseRestController{
 
-    private static final Random RANDOM = new SecureRandom();
-
     private final AdminService adminService;
     private final UserManagementService userManagementService;
     private final MessagingServiceBroker messagingServiceBroker;
     private final PasswordTokenService passwordTokenService;
     private final GroupRepository groupRepository;
+    private final GroupBroker groupBroker;
 
 
     public AdminRestController(UserManagementService userManagementService,
                                JwtService jwtService,
                                AdminService adminService,
                                GroupRepository groupRepository,
+                               GroupBroker groupBroker,
                                MessagingServiceBroker messagingServiceBroker,
                                PasswordTokenService passwordTokenService){
         super(jwtService,userManagementService);
@@ -56,6 +59,7 @@ public class AdminRestController extends BaseRestController{
         this.messagingServiceBroker = messagingServiceBroker;
         this.passwordTokenService = passwordTokenService;
         this.groupRepository = groupRepository;
+        this.groupBroker = groupBroker;
     }
 
     @RequestMapping(value = "/user/load",method = RequestMethod.GET)
@@ -68,6 +72,13 @@ public class AdminRestController extends BaseRestController{
             passwordTokenService.triggerOtp(getUserFromRequest(request));
         }
         return ResponseEntity.ok(userUid);
+    }
+
+    @RequestMapping(value = "/user/groups/number",method = RequestMethod.GET)
+    public ResponseEntity<Integer> getNumberOfGroupsUserIsPartOf(@RequestParam String userUid){
+        User user = userManagementService.load(userUid);
+        int numberOfGroups = groupRepository.countByMembershipsUserAndActiveTrue(user);
+        return ResponseEntity.ok(numberOfGroups);
     }
 
     @RequestMapping(value = "/user/optout",method = RequestMethod.POST)
@@ -89,12 +100,12 @@ public class AdminRestController extends BaseRestController{
             throw new AccessDeniedException("Error! Admin user did not validate with OTP");
         }
 
-        String newPwd = generateRandomPwd();
+        String newPwd = passwordTokenService.generateRandomPwd();
         adminService.updateUserPassword(getUserIdFromRequest(request), userToResetUid, newPwd);
         //Sending the password to user
         User user = userManagementService.load(userToResetUid);
         if(user.hasPhoneNumber()){
-            messagingServiceBroker.sendPrioritySMS("New Grassroot password:"+newPwd,getUserFromRequest(request).getPhoneNumber());
+            messagingServiceBroker.sendPrioritySMS("New Grassroot password:"+newPwd,user.getPhoneNumber());
         }
         return ResponseEntity.ok("SUCCESS");
     }
@@ -105,6 +116,8 @@ public class AdminRestController extends BaseRestController{
         if(!StringUtils.isEmpty(searchTerm)){
             List<Group> groups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
             groups.forEach(group -> groupAdminDTOS.add(new GroupAdminDTO(group)));
+            Collections.sort(groupAdminDTOS,
+                    Comparator.comparing((GroupAdminDTO groupAdminDTO) -> groupAdminDTO.getMemberCount()).reversed());
         }
         return ResponseEntity.ok(groupAdminDTOS);
     }
@@ -124,25 +137,36 @@ public class AdminRestController extends BaseRestController{
     }
 
     @RequestMapping(value = "/groups/member/add",method = RequestMethod.POST)
-    public ResponseEntity<String> addMemberToGroup(@RequestParam String groupUid, @RequestParam String displayName,
-                                                    @RequestParam String phoneNumber, @RequestParam String roleName,
-                                                    HttpServletRequest request){
-        MembershipInfo membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
-        //todo : Check if member is part of group or not
-        adminService.addMemberToGroup(getUserIdFromRequest(request), groupUid, membershipInfo);
-        return ResponseEntity.ok("SUCCESS");
-    }
-
-    // todo : move this into password token manager (it is also used elsewhere)
-    private String generateRandomPwd() {
-        String letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789+@";
-        StringBuilder password = new StringBuilder();
-
-        for (int i = 0; i < 8; i++){
-            int index = (int)(RANDOM.nextDouble()*letters.length());
-            password.append(letters.substring(index, index + 1));
+    public ResponseEntity addMemberToGroup(@RequestParam String groupUid, @RequestParam String displayName,
+                                                        @RequestParam String phoneNumber, @RequestParam String roleName,
+                                                        @RequestParam String email, @RequestParam String province,
+                                                        HttpServletRequest request){
+        User user;
+        try{
+            user = userManagementService.findByInputNumber(phoneNumber);
+        }catch (NoSuchUserException e){
+            user = null;
         }
+        Group group = groupRepository.findOneByUid(groupUid);
+        RestMessage restMessage;
+        MembershipInfo membershipInfo;
 
-        return password.toString();
+        if(user != null && group.hasMember(user)){
+            Membership membership = group.getMembership(user);
+            if(!user.hasPassword() || !user.isHasSetOwnName()){
+                groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(),displayName,phoneNumber,email,Province.valueOf(province));
+                restMessage = RestMessage.UPDATED;
+            }else{
+                groupBroker.updateMembershipRole(getUserIdFromRequest(request),groupUid,user.getUid(),roleName);
+                restMessage = RestMessage.UPDATED;
+            }
+        }else{
+            membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
+            membershipInfo.setProvince(Province.valueOf(province));
+            membershipInfo.setMemberEmail(email);
+            adminService.addMemberToGroup(getUserIdFromRequest(request), groupUid, membershipInfo);
+            restMessage = RestMessage.UPLOADED;
+        }
+        return ResponseEntity.ok(restMessage.name());
     }
 }
