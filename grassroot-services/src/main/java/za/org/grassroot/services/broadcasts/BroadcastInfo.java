@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
 import za.org.grassroot.integration.socialmedia.FacebookAccount;
-import za.org.grassroot.integration.socialmedia.ManagedPage;
+import za.org.grassroot.integration.socialmedia.TwitterAccount;
 
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,7 @@ public class BroadcastInfo {
     List<FacebookAccount> facebookPages;
 
     boolean isTwitterConnected;
-    ManagedPage twitterAccount;
+    TwitterAccount twitterAccount;
 
     Map<String, String> campaignNamesUrls;
 

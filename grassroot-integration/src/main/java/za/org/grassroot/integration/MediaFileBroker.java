@@ -17,4 +17,6 @@ public interface MediaFileBroker {
 
     void deleteFile(LiveWireAlert liveWireAlert, String imageKey, MediaFunction function);
 
+    String getBucketForFunction(MediaFunction function);
+
 }

@@ -7,8 +7,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.socialmedia.FacebookAccount;
-import za.org.grassroot.integration.socialmedia.IntegrationListResponse;
 import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
+import za.org.grassroot.integration.socialmedia.TwitterAccount;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -29,9 +29,14 @@ public class IntegrationSettingsController extends BaseRestController {
         this.socialMediaBroker = socialMediaBroker;
     }
 
-    @RequestMapping(value = "/status/all", method = RequestMethod.GET)
-    public IntegrationListResponse getAllCurrentConnections(HttpServletRequest request) {
-        return socialMediaBroker.getCurrentIntegrations(getUserIdFromRequest(request));
+    @RequestMapping(value = "/status/facebook", method = RequestMethod.GET)
+    public List<FacebookAccount> getFacebookAccounts(HttpServletRequest request) {
+        return socialMediaBroker.getFacebookPages(getUserIdFromRequest(request));
+    }
+
+    @RequestMapping(value = "/status/twitter", method = RequestMethod.GET)
+    public TwitterAccount getTwitterAccount(HttpServletRequest request) {
+        return socialMediaBroker.isTwitterAccountConnected(getUserIdFromRequest(request));
     }
 
     @RequestMapping(value = "/connect/facebook/initiate", method = RequestMethod.GET)
@@ -47,21 +52,6 @@ public class IntegrationSettingsController extends BaseRestController {
         return ResponseEntity.ok(socialMediaBroker.completeFbConnection(getUserIdFromRequest(request), code));
     }
 
-//    @RequestMapping(value = "/connect/{providerId}/complete", method = RequestMethod.GET)
-//    public ResponseEntity<ManagedPagesResponse> completeGenericConnect(HttpServletRequest request,
-//                                                                  @PathVariable String providerId) {
-//        // this gets much cleaner when we up to spring 5
-//        log.info("here is our parameter list: {}", request.getParameterMap());
-//        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-//        Map<String, String[]> params = request.getParameterMap();
-//        params.forEach((key, value) -> {
-//            List<String> subValues = Arrays.asList(value);
-//            subValues.forEach(sv -> map.add(key, sv));
-//        });
-//        log.info("composed map: {}", map);
-//        return ResponseEntity.ok(socialMediaBroker.completeIntegrationConnect(getUserIdFromRequest(request), providerId, map));
-//    }
-
     @RequestMapping(value = "/connect/twitter/initiate", method = RequestMethod.GET)
     public ResponseEntity<String> initiateTwitterConnect(HttpServletRequest request) {
         String location = socialMediaBroker.initiateTwitterConnection(getUserIdFromRequest(request));
@@ -70,10 +60,10 @@ public class IntegrationSettingsController extends BaseRestController {
     }
 
     @RequestMapping(value = "/remove/{providerId}", method = RequestMethod.POST)
-    public IntegrationListResponse removeAccount(HttpServletRequest request, @PathVariable String providerId) {
-        IntegrationListResponse response = socialMediaBroker.removeIntegration(getUserIdFromRequest(request), providerId);
-        log.info("after removal, integrations: {}", response);
-        return response;
+    public ResponseEntity<Boolean> removeAccount(HttpServletRequest request, @PathVariable String providerId) {
+        boolean removed = socialMediaBroker.removeIntegration(getUserIdFromRequest(request), providerId);
+        log.info("after removal, integrations: {}", removed);
+        return ResponseEntity.ok(removed);
     }
 
 }
