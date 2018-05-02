@@ -6,10 +6,10 @@ import za.org.grassroot.core.enums.DataSubscriberType;
 import java.time.Instant;
 
 public class DataSubscriberAdminDTO extends DataSubscriberDTO{
-    private Instant creationTime;
-    private boolean active;
-    private String primaryEmail;
-    private DataSubscriberType subscriberType;
+    public Instant creationTime;
+    public boolean active;
+    public String primaryEmail;
+    public DataSubscriberType subscriberType;
 
     public DataSubscriberAdminDTO(DataSubscriber dataSubscriber){
         super(dataSubscriber);

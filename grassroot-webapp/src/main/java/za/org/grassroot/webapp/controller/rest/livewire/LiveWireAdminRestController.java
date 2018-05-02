@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
@@ -25,10 +26,13 @@ import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.livewire.LiveWireSendingBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
+import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.LiveWireAlertDTO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @RestController @Slf4j
@@ -44,6 +48,9 @@ public class LiveWireAdminRestController extends BaseRestController {
     private final DataSubscriberBroker dataSubscriberBroker;
     private final LiveWireSendingBroker liveWireSendingBroker;
     private final SocialMediaBroker socialMediaBroker;
+
+    private static final Pattern emailSplitPattern = Pattern.compile("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b",
+            Pattern.CASE_INSENSITIVE);
 
     public LiveWireAdminRestController(UserManagementService userManagementService,
                                        StorageBroker storageBroker,
@@ -192,8 +199,47 @@ public class LiveWireAdminRestController extends BaseRestController {
 
     @RequestMapping(value = "/list/subscribers",method = RequestMethod.GET)
     public ResponseEntity<List<DataSubscriberAdminDTO>> listDataSubscribers(){
-        List<DataSubscriberAdminDTO> dataSubscriberDTOS = dataSubscriberBroker.listSubscribers(false,new Sort(Sort.Direction.ASC, "displayName"))
-                .stream().map(DataSubscriberAdminDTO::new).collect(Collectors.toList());
+        List<DataSubscriber> dataSubscribers = dataSubscriberBroker.listSubscribers(false,new Sort(Sort.Direction.ASC, "displayName"));
+        List<DataSubscriberAdminDTO> dataSubscriberDTOS = new ArrayList<>();
+
+        dataSubscribers.forEach(dataSubscriber -> dataSubscriberDTOS.add(new DataSubscriberAdminDTO(dataSubscriber)));
+
+       /* dataSubscriberDTOS = dataSubscriberBroker.listSubscribers(false,new Sort(Sort.Direction.ASC, "displayName"))
+                .stream().map(DataSubscriberAdminDTO::new).collect(Collectors.toList());*/
         return ResponseEntity.ok(dataSubscriberDTOS);
+    }
+
+    @RequestMapping(value = "/create/subscriber",method = RequestMethod.POST)
+    public ResponseEntity createSubscriber(@RequestParam String displayName,
+                                           @RequestParam String primaryEmail,
+                                           @RequestParam Boolean addToPushEmails,
+                                           @RequestParam String emailsForPush,
+                                           @RequestParam Boolean active,
+                                           HttpServletRequest request){
+        log.info("name={},primary email={},add primary email={},emais for push={},active={}",displayName,primaryEmail,addToPushEmails,emailsForPush,active);
+        List<String> emails = emailsForPush == null ? null : splitEmailInput(emailsForPush);
+        RestMessage restMessage;
+        try{
+            dataSubscriberBroker.create(getUserIdFromRequest(request), displayName, primaryEmail,
+                    addToPushEmails != null && addToPushEmails, emails, active != null && active);
+            restMessage = RestMessage.ACCOUNT_CREATED;
+        }catch (Exception e){
+            restMessage = RestMessage.ERROR;
+        }
+        return ResponseEntity.ok(restMessage.name());
+    }
+
+    @RequestMapping(value = "/subscriber/load",method = RequestMethod.GET)
+    public ResponseEntity<DataSubscriberAdminDTO> loadDataSubscriber(@RequestParam String subscriberUid){
+        return ResponseEntity.ok(new DataSubscriberAdminDTO(dataSubscriberBroker.load(subscriberUid)));
+    }
+
+    private List<String> splitEmailInput(String emailsInSingleString) {
+        Matcher emailMatcher = emailSplitPattern.matcher(emailsInSingleString);
+        List<String> emails = new ArrayList<>();
+        while (emailMatcher.find()) {
+            emails.add(emailMatcher.group());
+        }
+        return emails;
     }
 }
