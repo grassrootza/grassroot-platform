@@ -17,6 +17,7 @@ import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.dto.DataSubscriberAdminDTO;
 import za.org.grassroot.core.dto.DataSubscriberDTO;
 import za.org.grassroot.core.dto.UserAdminDTO;
+import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.MediaFileBroker;
@@ -29,6 +30,7 @@ import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.livewire.LiveWireSendingBroker;
+import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -54,6 +56,7 @@ public class LiveWireAdminRestController extends BaseRestController {
     private final LiveWireSendingBroker liveWireSendingBroker;
     private final SocialMediaBroker socialMediaBroker;
     private final UserManagementService userManagementService;
+    private final PasswordTokenService passwordTokenService;
 
     private static final Pattern emailSplitPattern = Pattern.compile("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b",
             Pattern.CASE_INSENSITIVE);
@@ -63,6 +66,7 @@ public class LiveWireAdminRestController extends BaseRestController {
                                        MediaFileBroker mediaFileBroker,
                                        SocialMediaBroker socialMediaBroker,
                                        LiveWireSendingBroker liveWireSendingBroker,
+                                       PasswordTokenService passwordTokenService,
                                        DataSubscriberBroker dataSubscriberBroker,
                                        LiveWireAlertBroker liveWireAlertBroker,
                                        JwtService jwtService){
@@ -74,6 +78,7 @@ public class LiveWireAdminRestController extends BaseRestController {
         this.liveWireSendingBroker = liveWireSendingBroker;
         this.socialMediaBroker = socialMediaBroker;
         this.userManagementService = userManagementService;
+        this.passwordTokenService = passwordTokenService;
     }
 
     @RequestMapping(value = "/list",method = RequestMethod.GET)
@@ -289,8 +294,9 @@ public class LiveWireAdminRestController extends BaseRestController {
     }
 
     @RequestMapping(value = "/subscriber/user/add", method = RequestMethod.POST)
-    public ResponseEntity addUserUidToSubscriber(@RequestParam String subscriberUid, @RequestParam String addUserPhone,
-                                         HttpServletRequest request){
+    public ResponseEntity addUserUidToSubscriber(@RequestParam String subscriberUid,
+                                                 @RequestParam String addUserPhone,
+                                                 HttpServletRequest request){
         RestMessage restMessage;
         try{
             String msisdn = PhoneNumberUtil.convertPhoneNumber(addUserPhone);
@@ -300,6 +306,78 @@ public class LiveWireAdminRestController extends BaseRestController {
             restMessage = RestMessage.UPDATED;
         }catch (AccessDeniedException | InvalidPhoneNumberException e){
             restMessage = RestMessage.ERROR;
+        }
+        return ResponseEntity.ok(restMessage.name());
+    }
+
+    @RequestMapping(value = "/subscriber/user/remove", method = RequestMethod.POST)
+    public ResponseEntity removeUserUidFromSubscriber(@RequestParam String subscriberUid,
+                                                      @RequestParam String userToRemoveUid,
+                                                      HttpServletRequest request){
+        RestMessage restMessage;
+        try {
+            dataSubscriberBroker.removeUsersWithViewAccess(getUserIdFromRequest(request), subscriberUid,
+                    Collections.singleton(userToRemoveUid));
+            restMessage = RestMessage.UPDATED;
+        }catch (AccessDeniedException e){
+            restMessage = RestMessage.ERROR;
+        }
+        return ResponseEntity.ok(restMessage.name());
+    }
+
+    @RequestMapping(value = "/subscriber/permissions/change", method = RequestMethod.POST)
+    public ResponseEntity updateDataSubscriberPermissions(@RequestParam String subscriberUid,
+                                                 @RequestParam Boolean canTag,
+                                                 @RequestParam Boolean canRelease,
+                                                 HttpServletRequest request){
+        RestMessage restMessage;
+        try {
+            dataSubscriberBroker.updateSubscriberPermissions(getUserIdFromRequest(request), subscriberUid,
+                    canTag != null ? canTag : false, canRelease != null ? canRelease : false);
+            restMessage = RestMessage.UPDATED;
+        }catch (AccessDeniedException e){
+            restMessage = RestMessage.ERROR;
+        }
+        return ResponseEntity.ok(restMessage.name());
+    }
+
+    @RequestMapping(value = "/subscriber/type/change", method = RequestMethod.POST)
+    public ResponseEntity updateDataSubscriberType(@RequestParam String subscriberUid,
+                                                   @RequestParam String subscriberType,
+                                                   HttpServletRequest request){
+        RestMessage restMessage;
+        try{
+            dataSubscriberBroker.updateSubscriberType(getUserIdFromRequest(request), subscriberUid, DataSubscriberType.valueOf(subscriberType));
+            restMessage = RestMessage.UPDATED;
+        }catch (AccessDeniedException e){
+            restMessage = RestMessage.ERROR;
+        }
+        return ResponseEntity.ok(restMessage.name());
+    }
+
+    @RequestMapping(value = "/subscriber/active/otp", method = RequestMethod.GET)
+    public ResponseEntity sendAdminOtp(HttpServletRequest request){
+        RestMessage restMessage;
+        try {
+            passwordTokenService.triggerOtp(getUserFromRequest(request));
+            restMessage = RestMessage.VERIFICATION_TOKEN_SENT;
+        }catch (Exception e){
+            restMessage = RestMessage.ERROR;
+        }
+        return ResponseEntity.ok(restMessage.name());
+    }
+
+    @RequestMapping(value = "/subscriber/active/status", method = RequestMethod.POST)
+    public ResponseEntity activateSubscriber(@RequestParam String subscriberUid,
+                                     @RequestParam String otpEntered,
+                                     HttpServletRequest request){
+        RestMessage restMessage;
+        if (!passwordTokenService.isShortLivedOtpValid(getUserFromRequest(request).getPhoneNumber(), otpEntered)) {
+            restMessage = RestMessage.INVALID_OTP;
+        }else{
+            DataSubscriber subscriber = dataSubscriberBroker.validateSubscriberAdmin(getUserIdFromRequest(request), subscriberUid);
+            dataSubscriberBroker.updateActiveStatus(getUserIdFromRequest(request), subscriberUid, !subscriber.isActive());
+            restMessage = RestMessage.UPDATED;
         }
         return ResponseEntity.ok(restMessage.name());
     }
