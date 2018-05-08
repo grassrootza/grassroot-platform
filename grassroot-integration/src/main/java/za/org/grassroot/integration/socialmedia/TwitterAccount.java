@@ -5,11 +5,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-@Getter @Setter @NoArgsConstructor @ToString
-public class ManagedPage {
+@ToString @NoArgsConstructor @Getter @Setter
+public class TwitterAccount {
 
-    private String providerUserId;
     private String displayName;
-    private String imageUrl;
+    private String twitterUserId;
+    private String profileImageUrl;
 
 }
