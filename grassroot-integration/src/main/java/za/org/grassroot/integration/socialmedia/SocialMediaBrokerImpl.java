@@ -28,7 +28,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     @Value("${grassroot.fb.lambda.url:http://localhost:3000}")
     private String facebookLambdaUrl;
 
-    @Value("${grassroot.tw.lambda.url:http://localhost:3000}")
+    @Value("${grassroot.twitter.lambda.url:http://localhost:3000}")
     private String twitterLambdaUrl;
 
     @Value("${grassroot.images.view.url:http://localhost:8080/image}")
@@ -87,8 +87,9 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public String initiateTwitterConnection(String userUid) {
-        final URI uri = twBaseUri("/connect/twitter/request/{userUid}")
+        final URI uri = twBaseUri("twitter/connect/request/{userUid}")
                 .buildAndExpand(userUid).toUri();
+        log.info("initiating twitter lambda, url: {}", uri);
         ResponseEntity<String> parameters = restTemplate.getForEntity(uri, String.class);
         log.info("okay got back params: {}", parameters.getBody());
         return "https://api.twitter.com/oauth/authorize?" + parameters.getBody();
@@ -109,7 +110,8 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     public TwitterAccount completeTwitterConnection(String userUid, String oauthToken, String oauthVerifier) {
         final URI uri = twBaseUri("twitter/connect/done/{userUid}")
                 .queryParam("oauth_token", oauthToken)
-                .queryParam("oauth_verifier", oauthVerifier).buildAndExpand(userUid).toUri();
+                .queryParam("oauth_verifier", oauthVerifier)
+                .buildAndExpand(userUid).toUri();
         ResponseEntity<TwitterAccount> account = restTemplate.getForEntity(uri, TwitterAccount.class);
         return account.getBody();
     }
@@ -151,6 +153,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         try {
             final URI uri = twBaseUri("twitter/status/{userUid}").buildAndExpand(userUid).toUri();
             ResponseEntity<TwitterAccount> twAccount = restTemplate.getForEntity(uri, TwitterAccount.class);
+            log.info("got twitter account: ", twAccount);
             return twAccount.getBody();
         } catch (RestClientException e) {
             log.error("Error trying to check Twitter account: {}", e.getMessage());

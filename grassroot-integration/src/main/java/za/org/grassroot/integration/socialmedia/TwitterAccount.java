@@ -10,5 +10,6 @@ public class TwitterAccount {
 
     private String displayName;
     private String twitterUserId;
+    private String profileImageUrl;
 
 }

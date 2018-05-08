@@ -59,6 +59,13 @@ public class IntegrationSettingsController extends BaseRestController {
         return ResponseEntity.ok(location);
     }
 
+    @RequestMapping(value = "/connect/twitter/complete", method = RequestMethod.GET)
+    public ResponseEntity<TwitterAccount> completeTwitterAccount(HttpServletRequest request,
+                                                                 @RequestParam String oauth_token,
+                                                                 @RequestParam String oauth_verifier) {
+        return ResponseEntity.ok(socialMediaBroker.completeTwitterConnection(getUserIdFromRequest(request), oauth_token, oauth_verifier));
+    }
+
     @RequestMapping(value = "/remove/{providerId}", method = RequestMethod.POST)
     public ResponseEntity<Boolean> removeAccount(HttpServletRequest request, @PathVariable String providerId) {
         boolean removed = socialMediaBroker.removeIntegration(getUserIdFromRequest(request), providerId);
