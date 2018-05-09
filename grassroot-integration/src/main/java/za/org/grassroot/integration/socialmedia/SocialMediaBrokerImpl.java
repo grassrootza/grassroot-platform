@@ -1,24 +1,25 @@
 package za.org.grassroot.integration.socialmedia;
 
 import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Element;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
@@ -27,43 +28,32 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     @Value("${grassroot.fb.lambda.url:http://localhost:3000}")
     private String facebookLambdaUrl;
 
-    @Value("${grassroot.integration.service.url:http://localhost}")
-    private String integrationServiceUrl;
-
-    @Value("${grassroot.integration.service.port:8085}")
-    private Integer integrationServicePort;
-
-    @Value("${grassroot.integration.useruid.param:authuser_uid}")
-    private String userUidParam;
+    @Value("${grassroot.twitter.lambda.url:http://localhost:3000}")
+    private String twitterLambdaUrl;
 
     @Value("${grassroot.images.view.url:http://localhost:8080/image}")
     private String imageBaseUri;
 
-    @Value("${grassroot.broadcast.mocksm.enabled:false}")
-    private boolean mockSocialMediaBroadcasts;
-
-    // note: to replace with single WebClient when up to Spring 5 (and in meantime fine tune this rest template given
-    // heavy use!)
+    // note: to replace with single WebClient when up to Spring 5
     private final RestTemplate restTemplate;
     private final JwtService jwtService;
-    private final CacheManager cacheManager;
+    private final MediaFileBroker mediaFileBroker;
 
-    public SocialMediaBrokerImpl(RestTemplate restTemplate, JwtService jwtService, CacheManager cacheManager) {
+    public SocialMediaBrokerImpl(RestTemplate restTemplate, JwtService jwtService, MediaFileBroker mediaFileBroker) {
         this.restTemplate = restTemplate;
         this.jwtService = jwtService;
-        this.cacheManager = cacheManager;
-    }
-
-    private UriComponentsBuilder baseUri(String userUid) {
-        return UriComponentsBuilder.fromUriString(integrationServiceUrl).port(integrationServicePort)
-                .queryParam(userUidParam, userUid);
+        this.mediaFileBroker = mediaFileBroker;
     }
 
     private UriComponentsBuilder fbBaseUri(String path) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(facebookLambdaUrl);
-        log.debug("builder = {}", builder);
         builder = builder.pathSegment(path);
-        log.debug("now builder = {}", builder);
+        return builder;
+    }
+
+    private UriComponentsBuilder twBaseUri(String path) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(twitterLambdaUrl);
+        builder = builder.pathSegment(path);
         return builder;
     }
 
@@ -89,11 +79,20 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public String initiateFacebookConnection(String userUid) {
-        clearCache(userUid, "facebook");
         final URI uri = fbBaseUri("facebook/connect/request/{userUid}")
                 .buildAndExpand(userUid).toUri();
         log.info("okay trying this out, URI = {}", uri.toString());
         return getRedirectUrl(uri);
+    }
+
+    @Override
+    public String initiateTwitterConnection(String userUid) {
+        final URI uri = twBaseUri("twitter/connect/request/{userUid}")
+                .buildAndExpand(userUid).toUri();
+        log.info("initiating twitter lambda, url: {}", uri);
+        ResponseEntity<String> parameters = restTemplate.getForEntity(uri, String.class);
+        log.info("okay got back params: {}", parameters.getBody());
+        return "https://api.twitter.com/oauth/authorize?" + parameters.getBody();
     }
 
     @Override
@@ -105,6 +104,16 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
         ResponseEntity<String> connectResponse = restTemplate.getForEntity(uri, String.class);
         return connectResponse.getStatusCode() == HttpStatus.CREATED ? getFacebookPages(userUid) : new ArrayList<>();
+    }
+
+    @Override
+    public TwitterAccount completeTwitterConnection(String userUid, String oauthToken, String oauthVerifier) {
+        final URI uri = twBaseUri("twitter/connect/done/{userUid}")
+                .queryParam("oauth_token", oauthToken)
+                .queryParam("oauth_verifier", oauthVerifier)
+                .buildAndExpand(userUid).toUri();
+        ResponseEntity<TwitterAccount> account = restTemplate.getForEntity(uri, TwitterAccount.class);
+        return account.getBody();
     }
 
     @Override
@@ -127,7 +136,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             builder = builder.queryParam("pageId", post.getFacebookPageId());
         }
 
-        HttpEntity entity = new HttpEntity<>(jwtHeaders());
+        HttpEntity entity = new HttpEntity<>(null);
         try {
             final URI postUri = builder.buildAndExpand(post.getPostingUserUid()).toUri();
             log.info("posting to URI: {}", postUri);
@@ -140,128 +149,58 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     }
 
     @Override
-    public IntegrationListResponse getCurrentIntegrations(String userUid) {
-        IntegrationListResponse response = new IntegrationListResponse();
-        response.addIntegration("facebook", getManagedPages(userUid, "facebook"));
-        response.addIntegration("twitter", getManagedPages(userUid, "twitter"));
-        response.addIntegration("google", getManagedPages(userUid, "google"));
-        return response;
-    }
-
-    @Override
-    public ManagedPagesResponse getManagedPages(String userUid, String providerId) {
-        ManagedPagesResponse response = searchCache(userUid, providerId);
-        return response == null ? askService(userUid, providerId) : response;
-    }
-
-    private ManagedPagesResponse searchCache(String userUid, String providerId) {
-        Cache cache = cacheManager.getCache("social_media_managed_pages");
-        String cacheKey = providerId + "-" + userUid;
-        Element element = cache.get(cacheKey);
-        ManagedPagesResponse resultFromCache = element != null ? (ManagedPagesResponse) element.getObjectValue() : null;
-        log.info("got anything from cache? key = {}, result = {}", cacheKey, resultFromCache);
-        return resultFromCache;
-    }
-
-    private void addToCache(String userUid, String providerId, ManagedPagesResponse response) {
-        Cache cache = cacheManager.getCache("social_media_managed_pages");
-        String cacheKey = providerId + "-" + userUid;
-        cache.put(new Element(cacheKey, response));
-    }
-
-    private void clearCache(String userUid, String providerId) {
-        Cache cache = cacheManager.getCache("social_media_managed_pages");
-        String cacheKey = providerId + "-" + userUid;
-        cache.remove(cacheKey);
-    }
-
-    private ManagedPagesResponse askService(String userUid, String providerId) {
-        if (mockSocialMediaBroadcasts) {
-            switch (providerId) {
-                case "facebook": return mockFbPages();
-                case "twitter": return mockTwitterAccount();
-                default: return null;
-            }
-        } else {
-            try {
-                final URI uri = baseUri(userUid).path("/connect/status/pages/" + providerId).build().toUri();
-                log.debug("getting user's managed pages, URI = {}", uri.toString());
-                ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
-                ManagedPagesResponse processedResponse = handleResponse(response, providerId);
-                addToCache(userUid, providerId, processedResponse);
-                return processedResponse;
-            } catch (RestClientException e) {
-                log.error("Error calling social media service! Exception header: {}", e.getMessage());
-                return new ManagedPagesResponse();
-            }
-        }
-    }
-
-    @Override
-    public String initiateTwitterConnection(String userUid) {
-        clearCache(userUid, "twitter");
-        final URI uri = baseUri(userUid).path("/connect/twitter")
-                .build().toUri();
-        log.info("okay trying to connect to twitter, URI = {}", uri.toString());
-        return getRedirectUrl(uri);
-    }
-
-    @Override
-    public IntegrationListResponse removeIntegration(String userUid, String providerId) {
-        clearCache(userUid, providerId);
-        final URI uri = baseUri(userUid).path("/connect/" + providerId).build().toUri();
-        log.info("okay, removing account: {}", uri.toString());
+    public TwitterAccount isTwitterAccountConnected(String userUid) {
         try {
-            restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(jwtHeaders()), String.class);
-            log.info("successfully called delete connection, now getting latest set of connections");
-            return getCurrentIntegrations(userUid);
-        } catch (RestClientException e) {
-            log.error("error calling integration broker", e);
-            return null;
-        }
-    }
-
-
-    @Override
-    public ManagedPagesResponse completeIntegrationConnect(String userUid, String providerId, MultiValueMap<String, String> paramsToPass) {
-        clearCache(userUid, providerId);
-        final URI uri = baseUri(userUid).path("/connect/" + providerId)
-                .queryParams(paramsToPass)
-                .build().toUri();
-        try {
-            log.info("calling URI: {}", uri);
-            ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), String.class);
-            log.info("response: {}", response);
-            return getManagedPages(userUid, providerId);
-        } catch(RestClientException e) {
-            log.error("error calling integration broker", e);
-            return null;
-        }
-    }
-
-    @Override
-    public ManagedPage isTwitterAccountConnected(String userUid) {
-        try {
-            return getManagedPages(userUid, "twitter").getManagedPages().get(0);
+            final URI uri = twBaseUri("twitter/status/{userUid}").buildAndExpand(userUid).toUri();
+            ResponseEntity<TwitterAccount> twAccount = restTemplate.getForEntity(uri, TwitterAccount.class);
+            log.info("got twitter account: ", twAccount);
+            return twAccount.getBody();
         } catch (RestClientException e) {
             log.error("Error trying to check Twitter account: {}", e.getMessage());
-            return null;
-        } catch (NullPointerException|IndexOutOfBoundsException e) {
-            log.error("okay, no twitter page, returning null");
             return null;
         }
     }
 
     @Override
     public GenericPostResponse postToTwitter(TwitterPostBuilder post) {
-        final URI uri = baseUri(post.getPostingUserUid()).path("/grassroot/post/twitter").build().toUri();
-        HttpEntity<GenericPostRequest> entity = new HttpEntity<>(new GenericPostRequest(post, imageBaseUri), jwtHeaders());
+        UriComponentsBuilder uriBuilder = twBaseUri("twitter/post/{userUid}")
+                .queryParam("tweet", post.getMessage());
+
+        if (!StringUtils.isEmpty(post.getImageKey())) {
+            uriBuilder = uriBuilder
+                    .queryParam("mediaKey", post.getImageKey())
+                    .queryParam("mediaBucket", mediaFileBroker.getBucketForFunction(post.getImageMediaFunction()));
+        }
+
+        final URI uri = uriBuilder.buildAndExpand(post.getPostingUserUid()).toUri();
+
+        HttpEntity entity = new HttpEntity<>(jwtHeaders());
+
         try {
             ResponseEntity<GenericPostResponse> response = restTemplate.exchange(uri, HttpMethod.POST, entity, GenericPostResponse.class);
             return handleResponse(response, "Twitter");
         } catch (RestClientException e) {
             log.error("Error calling Twitter post!", e);
             return null;
+        }
+    }
+
+    @Override
+    public boolean removeIntegration(String userUid, String providerId) {
+        try {
+            if ("facebook".equals(providerId)) {
+                final URI uri = twBaseUri("facebook/remove/{userUid}").buildAndExpand(userUid).toUri();
+                restTemplate.getForEntity(uri, String.class);
+                return true;
+            } else if ("twitter".equals(providerId)) {
+                final URI uri = twBaseUri("twitter/remove/{userUid}").buildAndExpand(userUid).toUri();
+                restTemplate.getForEntity(uri, String.class);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (RestClientException e) {
+            return false;
         }
     }
 
@@ -284,24 +223,6 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             log.error("Error! Could not complete call to {} provider, response: {}", provider, response);
             return null;
         }
-    }
-
-    // using this while we are still in alpha - as else a time drag to boot integration service locally etc - remove when done
-    private ManagedPagesResponse mockFbPages() {
-        ManagedPage mockPage = new ManagedPage();
-        mockPage.setDisplayName("User FB page");
-        mockPage.setProviderUserId("user");
-        ManagedPage mockPage2 = new ManagedPage();
-        mockPage2.setDisplayName("Org FB page");
-        mockPage2.setProviderUserId("org");
-        return new ManagedPagesResponse(true, Arrays.asList(mockPage, mockPage2));
-    }
-
-    private ManagedPagesResponse mockTwitterAccount() {
-        ManagedPage mockAccount = new ManagedPage();
-        mockAccount.setDisplayName("@testing");
-        mockAccount.setProviderUserId("testing");
-        return new ManagedPagesResponse(true, Collections.singletonList(mockAccount));
     }
 
 }

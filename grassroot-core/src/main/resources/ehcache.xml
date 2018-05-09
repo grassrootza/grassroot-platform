@@ -83,12 +83,6 @@
            timeToIdleSeconds="10">
     </cache>
 
-    <cache name="social_media_managed_pages"
-           maxEntriesLocalHeap="2000"
-           eternal="false"
-           timeToIdleSeconds="900">
-    </cache>
-
     <cache name="user_join_group"
            maxEntriesLocalHeap="2000"
            eternal="false"

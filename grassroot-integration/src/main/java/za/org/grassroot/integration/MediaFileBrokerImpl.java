@@ -95,7 +95,8 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
         liveWireAlert.getMediaFiles().remove(record);
     }
 
-    private String getBucketForFunction(MediaFunction function) {
+    @Override
+    public String getBucketForFunction(MediaFunction function) {
         switch (function) {
             case TASK_IMAGE:
                 return taskImagesBucket;

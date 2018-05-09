@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
 import za.org.grassroot.core.domain.notification.GroupBroadcastNotification;
@@ -127,7 +128,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.isFbConnected(!fbAccounts.isEmpty())
                 .facebookPages(fbAccounts);
 
-        ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
+        TwitterAccount twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
         builder.isTwitterConnected(twitterAccount != null)
                 .twitterAccount(twitterAccount);
 
@@ -489,6 +490,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .postingUserUid(broadcast.getCreatedByUser().getUid())
                 .message(broadcast.getTwitterPost())
                 .imageKey(broadcast.getTwitterImageKey())
+                .imageMediaFunction(MediaFunction.BROADCAST_IMAGE)
                 .build();
     }
 
@@ -649,8 +651,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         String twitterAccount = null;
         if (broadcast.hasTwitterPost()) {
-            ManagedPagesResponse pages = socialMediaBroker.getManagedPages(broadcast.getCreatedByUser().getUid(), "twitter");
-            twitterAccount = pages.getPageNameForId(broadcast.getTwitterImageKey()).orElse(null);
+            TwitterAccount twAccount = socialMediaBroker.isTwitterAccountConnected(broadcast.getCreatedByUser().getUid());
+            twitterAccount = twAccount.getTwitterUserId();
         }
 
         boolean broadcastSucceeded = !hasFailures(broadcast);
