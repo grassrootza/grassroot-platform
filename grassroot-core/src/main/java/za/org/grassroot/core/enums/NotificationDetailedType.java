@@ -18,6 +18,7 @@ public enum NotificationDetailedType {
 
 	TODO_INFO,
 	TODO_REMINDER,
+	TODO_CANCELLED,
 
 	JOINREQUEST,
 
