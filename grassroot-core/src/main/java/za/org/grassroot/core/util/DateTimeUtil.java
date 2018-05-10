@@ -148,11 +148,14 @@ public class DateTimeUtil {
             }
         }
 
-        if (!StringUtils.isEmpty(timeString) && !StringUtils.isEmpty(dateString)) {
-            return preferredDateTimeFormat.parse(dateString + " " + timeString, LocalDateTime::from);
-        } else {
+        try {
+            return !StringUtils.isEmpty(timeString) && !StringUtils.isEmpty(dateString) ?
+                    preferredDateTimeFormat.parse(dateString + " " + timeString, LocalDateTime::from) : null;
+        } catch (DateTimeParseException e) {
+            log.error("preprocessing failed, hand over to service");
             return null;
         }
+
     }
 
 
@@ -251,8 +254,6 @@ public class DateTimeUtil {
             log.info("reformDateInput .... valid dd-MM string found, extracted as: {}", dateOnly);
             List<String> dividedUp = Lists.newArrayList(
                     Splitter.on(CharMatcher.anyOf(possibleDateDelimiters)).omitEmptyStrings().split(dateOnly));
-            String year = (Integer.parseInt(dividedUp.get(1)) >= LocalDateTime.now().getMonthValue()) ?
-                    Year.now().toString() : Year.now().plusYears(1).toString();
             LocalDate date = LocalDate.of(Year.now().getValue(), Integer.parseInt(dividedUp.get(1)),
                     Integer.parseInt(dividedUp.get(0)));
             if (date.isBefore(LocalDate.now())) {
@@ -266,6 +267,10 @@ public class DateTimeUtil {
                 // not failsafe, but as good as we can make it (will interpret 104 as 1 april, most of rest will get)
                 int digitsForMonths = (Integer.parseInt(digitString.substring(digitString.length() - 2)) < 13) ? 2 : 1;
                 String month = digitString.substring(digitString.length() - digitsForMonths);
+
+                if (Integer.parseInt(month) == 0 || Integer.parseInt(month) > 12) // means we have a time string, basically
+                    return null;
+
                 String days = digitString.substring(0, digitString.length() - digitsForMonths);
                 String year = (Integer.parseInt(month) >= LocalDateTime.now().getMonthValue()) ?
                         Year.now().toString() : Year.now().plusYears(1).toString();
@@ -276,7 +281,6 @@ public class DateTimeUtil {
                 log.info("reformDateInput ... something went wrong: {}", e.toString());
                 return trimmedResponse;
             }
-
         } else {
             return trimmedResponse;
         }

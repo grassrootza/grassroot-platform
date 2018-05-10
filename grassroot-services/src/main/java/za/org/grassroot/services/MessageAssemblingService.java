@@ -43,6 +43,10 @@ public interface MessageAssemblingService {
 
     String createMeetingThankYourMessage(User target, Meeting meeting);
 
+    String createTodoCancelledMessage(User user, Todo todo);
+
+    String createTodoValidatedMessage(TodoAssignment todoAssignment);
+
     String createWelcomeMessage(String messageId, User user);
 
     String createSafetyEventMessage(User respondent, User requestor, Address address, boolean reminder);

@@ -4,8 +4,6 @@ import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import za.org.grassroot.core.domain.Group;
 
-import java.util.Comparator;
-
 @ApiModel
 @Getter
 public class GroupAdminDTO extends GroupRefDTO{
