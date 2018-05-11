@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest.authentication;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 import java.util.Collections;
 import java.util.List;
 
-@RestController @Grassroot2RestController
+@RestController @Grassroot2RestController @Slf4j
 @Api("/v2/api/auth")
 @RequestMapping("/v2/api/auth")
 public class AuthenticationController {
@@ -154,6 +155,8 @@ public class AuthenticationController {
     public AuthorizationResponseDTO registerWebUser(@RequestParam String name,
                                                     @RequestParam(required = false) String phone,
                                                     @RequestParam(required = false) String email,
+                                                    @RequestParam(required = false) String otpEntered,
+                                                    @RequestParam boolean withOtp,
                                                     @RequestParam String password) {
         checkRegistrationOpen(UserInterfaceType.WEB_2);
         logger.info("registering, phone = {}, email = {}", phone, email);
@@ -165,7 +168,7 @@ public class AuthenticationController {
             else if (StringUtils.isEmpty(password))
                 return new AuthorizationResponseDTO(RestMessage.INVALID_PASSWORD);
 
-            // once kill old web app, convert this (needed only because of Spring Security user profile needs on reg, it seems)
+            // once kill old web app, convert this (needed only because of Spring Security user profile needs on reg, it seems);
             User newUser = User.makeEmpty();
             newUser.setDisplayName(name);
 
@@ -175,6 +178,12 @@ public class AuthenticationController {
 
             if (!StringUtils.isEmpty(email)) {
                 newUser.setEmailAddress(email);
+            }
+
+            if(withOtp){
+                if(!passwordTokenService.isShortLivedOtpValid(newUser.getPhoneNumber(),otpEntered)){
+                    return new AuthorizationResponseDTO(RestMessage.INVALID_OTP);
+                }
             }
 
             newUser.setPassword(password);
@@ -190,6 +199,30 @@ public class AuthenticationController {
         } catch (InvalidPhoneNumberException phoneNumberException) {
             return new AuthorizationResponseDTO(RestMessage.INVALID_MSISDN);
         }
+    }
+
+    @RequestMapping(value = "/web/user/check",method = RequestMethod.GET)
+    public ResponseEntity checkIfUserExist(@RequestParam String phone,
+                                           @RequestParam String email){
+        RestMessage restMessage;
+        try{
+            User user = userService.findByNumberOrEmail(phone,email);
+
+            if(user != null){
+                if(!user.isHasWebProfile()){
+                    restMessage = RestMessage.USER_NO_ACCOUNT;
+                    passwordTokenService.triggerOtp(user);
+                }else{
+                    restMessage = RestMessage.USER_ALREADY_EXISTS;
+                }
+            }else{
+                restMessage = RestMessage.USER_DOES_NOT_EXIST;
+            }
+        }catch (NoSuchUserException e){
+            restMessage = RestMessage.USER_DOES_NOT_EXIST;
+        }
+
+        return ResponseEntity.ok(restMessage.name());
     }
 
     @RequestMapping(value = "/reset-password-request", method = RequestMethod.POST)
