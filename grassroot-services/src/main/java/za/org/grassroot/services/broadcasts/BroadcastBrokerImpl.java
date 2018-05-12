@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.campaign.CampaignLog_;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
@@ -26,10 +27,7 @@ import za.org.grassroot.core.domain.notification.GroupBroadcastNotification;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.task.TaskDTO;
-import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -45,9 +43,11 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static za.org.grassroot.core.enums.CampaignLogType.*;
 import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 
 @Service @Slf4j
@@ -76,13 +76,14 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final AccountLogRepository accountLogRepository;
+    private final CampaignLogRepository campaignLogRepository;
 
     private final Environment environment;
 
     private PasswordTokenService tokenService;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, TaskBroker taskBroker, AccountGroupBroker accountGroupBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository, Environment environment) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, TaskBroker taskBroker, AccountGroupBroker accountGroupBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository, CampaignLogRepository campaignLogRepository, Environment environment) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
@@ -95,6 +96,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.accountLogRepository = accountLogRepository;
+        this.campaignLogRepository = campaignLogRepository;
         this.environment = environment;
     }
 
@@ -144,6 +146,55 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         return builder.build();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public BroadcastInfo fetchCampaignBroadcastParams(String userUid, String campaignUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        Account account = campaign.getAccount();
+
+        if (account == null)
+            throw new IllegalArgumentException("Only account-linked campaigns can send a broadcast");
+
+        BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
+        builder.broadcastId(UIDGenerator.generateId());
+
+        builder.mergeFields(Arrays.asList(Broadcast.NAME_FIELD_TEMPLATE, Broadcast.CONTACT_FIELD_TEMPALTE,
+                Broadcast.PROVINCE_FIELD_TEMPLATE, Broadcast.DATE_FIELD_TEMPLATE));
+
+        if (account.getFreeFormCost() > 0) {
+            builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
+        } else {
+            builder.isSmsAllowed(false);
+        }
+
+        List<FacebookAccount> fbAccounts = socialMediaBroker.getFacebookPages(userUid);
+
+        builder.isFbConnected(!fbAccounts.isEmpty()).facebookPages(fbAccounts);
+
+        TwitterAccount twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
+        builder.isTwitterConnected(twitterAccount != null).twitterAccount(twitterAccount);
+
+        int campaignMembersSize = getCampaignEngagedUsers(campaign).size();
+        builder.allMemberCount(campaignMembersSize);
+        log.info("count of engaged users fo campaign: {}", campaignMembersSize);
+
+        return builder.build();
+    }
+
+    private Specifications<CampaignLog> engagementLogsForCampaign(Campaign campaign) {
+        Specification<CampaignLog> forCampaign = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaign), campaign);
+        List<CampaignLogType> types = Arrays.asList(CAMPAIGN_PETITION_SIGNED, CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,
+                CAMPAIGN_SHARED, CAMPAIGN_USER_TAGGED);
+        Specification<CampaignLog> engaged = (root, query, cb) -> root.get(CampaignLog_.campaignLogType).in(types);
+        return Specifications.where(forCampaign).and(engaged);
+    }
+
+    private List<User> getCampaignEngagedUsers(Campaign campaign) {
+        return campaignLogRepository.findAll(engagementLogsForCampaign(campaign))
+                .stream().map(CampaignLog::getUser).distinct().collect(Collectors.toList());
+    }
+
     private Account findAccount(User user, String groupUid) {
         return user.getPrimaryAccount() != null ?
                 user.getPrimaryAccount() : accountGroupBroker.findAccountForGroup(groupUid);
@@ -159,24 +210,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             throw new NoPaidAccountException();
         }
 
-        // prepersist is not working as reliably as hoped (or is happening in wrong sequence), to generate this if blank, hence
-        final String uid = StringUtils.isEmpty(bc.getBroadcastId()) ? UIDGenerator.generateId() : bc.getBroadcastId();
-        log.info("creating broadcast, incoming ID {}, set id: {}", bc.getBroadcastId(), uid);
+        Broadcast broadcast = createWithStandardItems(bc, user, account);
 
-        Broadcast broadcast = Broadcast.builder()
-                .uid(uid)
-                .createdByUser(user)
-                .account(account)
-                .title(bc.getTitle())
-                .broadcastSchedule(bc.getBroadcastSchedule())
-                .scheduledSendTime(bc.getScheduledSendTime())
-                .build();
-
-        if (bc.isCampaignBroadcast()) {
-            broadcast.setCampaign(campaignRepository.findOneByUid(bc.getCampaignUid()));
-        } else {
-            broadcast.setGroup(groupRepository.findOneByUid(bc.getGroupUid()));
-        }
+        broadcast.setGroup(groupRepository.findOneByUid(bc.getGroupUid()));
 
         wireUpFilters(bc, broadcast);
 
@@ -189,6 +225,46 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         logsAndNotificationsBroker.storeBundle(bundle);
 
         return broadcast.getUid();
+    }
+
+    @Override
+    @Transactional
+    public String sendCampaignBroadcast(BroadcastComponents bc) {
+        User user = userRepository.findOneByUid(bc.getUserUid());
+        Campaign campaign = campaignRepository.findOneByUid(bc.getCampaignUid());
+
+        if (campaign.getAccount() == null) {
+            throw new NoPaidAccountException();
+        }
+
+        Broadcast broadcast = createWithStandardItems(bc, user, campaign.getAccount());
+
+        broadcast.setCampaign(campaignRepository.findOneByUid(bc.getCampaignUid()));
+
+        wireUpFilters(bc, broadcast);
+
+        LogsAndNotificationsBundle bundle = bc.isImmediateBroadcast() ?
+                sendImmediateBroadcast(bc, broadcast) :
+                storeScheduledBroadcast(bc, broadcast);
+
+        broadcastRepository.saveAndFlush(broadcast);
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+
+        return broadcast.getUid();
+    }
+
+    private Broadcast createWithStandardItems(BroadcastComponents bc, User user, Account account) {
+        // prepersist is not working as reliably as hoped (or is happening in wrong sequence), to generate this if blank, hence
+        final String uid = StringUtils.isEmpty(bc.getBroadcastId()) ? UIDGenerator.generateId() : bc.getBroadcastId();
+        return Broadcast.builder()
+                .uid(uid)
+                .createdByUser(user)
+                .account(account)
+                .title(bc.getTitle())
+                .broadcastSchedule(bc.getBroadcastSchedule())
+                .scheduledSendTime(bc.getScheduledSendTime())
+                .build();
     }
 
     @Override
@@ -555,13 +631,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         }
 
         if (bc.getAccount() != null) {
-            AccountLog accountLog = new AccountLog.Builder(bc.getAccount())
-                    .user(bc.getCreatedByUser())
-                    .group(bc.getGroup())
-                    .broadcast(bc)
-                    .accountLogType(AccountLogType.BROADCAST_MESSAGE_SENT)
-                    .billedOrPaid(bc.getAccount().getFreeFormCost() * smsCount).build();
-            bundle.addLog(accountLog);
+            bundle.addLog(costAccountLog(bc, smsCount));
         }
 
         return bundle;
@@ -569,7 +639,90 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private LogsAndNotificationsBundle generateCampaignBroadcastBundle(Broadcast bc) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        Campaign campaign = bc.getCampaign();
+        CampaignLog campaignLog = new CampaignLog(bc.getCreatedByUser(), CampaignLogType.CAMPAIGN_BROADCAST_SENT,
+                campaign, null, null);
+        campaignLog.setBroadcast(bc);
+        bundle.addLog(campaignLog);
+
+        Set<User> usersToReceive = bc.hasFilter() ? filterCampaignUsers(bc, campaign) :
+                new HashSet<>(getCampaignEngagedUsers(campaign));
+
+        if (bc.hasEmail()) {
+            Set<User> emailUsers = usersToReceive.stream().filter(User::hasEmailAddress).collect(Collectors.toSet());
+            log.info("campaign broadcast has an email, sending it to {} users, bc ID = {}", emailUsers.size(), bc.getUid());
+            handleBroadcastEmails(bc, campaignLog, emailUsers, bundle);
+        }
+
+        long smsCount = 0;
+        if (bc.hasShortMessage()) {
+            boolean skipUsersWithEmail = bc.isSkipSmsIfEmail() && bc.hasEmail();
+            log.info("sending short message ... skipping emails? {}", skipUsersWithEmail);
+            Set<User> shortMessageUsers = skipUsersWithEmail ?
+                    usersToReceive.stream().filter(u -> !u.hasEmailAddress() && u.hasPhoneNumber()).collect(Collectors.toSet()) :
+                    usersToReceive.stream().filter(User::hasPhoneNumber).collect(Collectors.toSet());
+            log.info("now generating {} notifications", shortMessageUsers.size());
+            Set<Notification> shortMessageNotifications = new HashSet<>();
+            shortMessageUsers.forEach(u -> {
+                CampaignBroadcastNotification notification = new CampaignBroadcastNotification(u,
+                        bc.getShortMsgIncludingMerge(u), bc,
+                        u.getMessagingPreference(), campaignLog);
+                notification.setUseOnlyFreeChannels(bc.isOnlyUseFreeChannels());
+                shortMessageNotifications.add(notification);
+            });
+            bundle.addNotifications(shortMessageNotifications);
+            smsCount = shortMessageUsers.size();
+        }
+
+        bundle.addLog(costAccountLog(bc, smsCount));
         return bundle;
+    }
+
+    private Set<User> filterCampaignUsers(Broadcast bc, Campaign campaign) {
+        Specifications<CampaignLog> specs = engagementLogsForCampaign(campaign);
+
+        if (!bc.getProvinces().isEmpty()) {
+            specs.and((root, query, cb) -> root.get(CampaignLog_.user).get(User_.province).in(bc.getProvinces()));
+        }
+
+        if (bc.getJoinDateCondition().isPresent()) {
+            specs.and(joinDateCondition(bc.getJoinDateCondition().get(), bc.getJoinDate()
+                    .orElseThrow(() -> new IllegalArgumentException("Join date condition without join date"))));
+        }
+
+        if (!bc.getTopics().isEmpty()) {
+            List<String> prefixedTopics = bc.getTopics().stream().map(s -> Campaign.JOIN_TOPIC_PREFIX + s).collect(Collectors.toList());
+            specs.and((root, query, cb) -> root.get(CampaignLog_.description).in(prefixedTopics));
+        }
+
+        return campaignLogRepository.findAll(specs).stream().distinct().map(CampaignLog::getUser).distinct()
+                .collect(Collectors.toSet());
+    }
+
+    private Specification<CampaignLog> joinDateCondition(JoinDateCondition condition, LocalDate joinDate) {
+        Instant startOfDay = joinDate.atStartOfDay().toInstant(ZoneOffset.UTC);
+        Instant endOfDay = joinDate.atStartOfDay().toInstant(ZoneOffset.UTC);
+
+        switch (condition) {
+            case EXACT:
+                return (root, query, cb) -> cb.between(root.get(CampaignLog_.creationTime), startOfDay, endOfDay);
+            case BEFORE:
+                return (root, query, cb) -> cb.lessThan(root.get(CampaignLog_.creationTime), startOfDay);
+            case AFTER: // doing as inclusive
+                return (root, query, cb) -> cb.greaterThan(root.get(CampaignLog_.creationTime), startOfDay);
+            default:
+                throw new IllegalArgumentException("Unsupported join date condition");
+        }
+    }
+
+    private AccountLog costAccountLog(Broadcast bc, long smsCount) {
+        return new AccountLog.Builder(bc.getAccount())
+                .user(bc.getCreatedByUser())
+                .group(bc.getGroup())
+                .broadcast(bc)
+                .accountLogType(AccountLogType.BROADCAST_MESSAGE_SENT)
+                .billedOrPaid(bc.getAccount().getFreeFormCost() * smsCount).build();
     }
 
     @Override

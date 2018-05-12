@@ -12,7 +12,11 @@ public interface BroadcastBroker {
 
     BroadcastInfo fetchGroupBroadcastParams(String userUid, String groupUid);
 
+    BroadcastInfo fetchCampaignBroadcastParams(String userUid, String campaignUid);
+
     String sendGroupBroadcast(BroadcastComponents broadcastComponents);
+
+    String sendCampaignBroadcast(BroadcastComponents broadcastComponents);
 
     String resendBroadcast(String userUid, String broadcastUid, boolean resendText, boolean resendEmail, boolean resendFb, boolean resendTwitter);
 

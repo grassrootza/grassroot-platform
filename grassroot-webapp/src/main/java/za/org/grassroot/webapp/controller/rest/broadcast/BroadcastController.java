@@ -110,6 +110,14 @@ public class BroadcastController extends BaseRestController {
         return ResponseEntity.ok(info);
     }
 
+    @RequestMapping(value = "/create/campaign/info/{campaignUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetch some basic information on the group, including social media options")
+    public ResponseEntity<BroadcastInfo> getCampaignBroadcastParams(HttpServletRequest request, @PathVariable String campaignUid) {
+        BroadcastInfo info = broadcastBroker.fetchCampaignBroadcastParams(getUserIdFromRequest(request), campaignUid);
+        log.info("returning info: {}", info);
+        return ResponseEntity.ok(info);
+    }
+
     @RequestMapping(value = "/shorten/link", method = RequestMethod.GET)
     @ApiOperation(value = "Shorten a link for use in a broadcast short message")
     public ResponseEntity<String> shortenLink(@RequestParam String link, HttpServletRequest request) {
