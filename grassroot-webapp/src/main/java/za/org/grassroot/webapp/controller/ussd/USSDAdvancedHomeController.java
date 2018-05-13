@@ -123,7 +123,7 @@ public class USSDAdvancedHomeController extends USSDBaseController {
         if (tracking) {
             lookupAndStoreLocation(user.getUid());
             menu = new USSDMenu(getMessage(thisSection, "public", "track.prompt.okay", user));
-            menu.addMenuOption(moreMenus + "/public/mtgs?repeat=true", getMessage(thisSection, "public", "track.options.again", user));
+            menu.addMenuOption(moreMenus + "public/mtgs?repeat=true", getMessage(thisSection, "public", "track.options.again", user));
             addBackOption(menu, user);
         } else {
             menu = new USSDMenu(getMessage(thisSection, "public", "track.prompt.denied", user));
