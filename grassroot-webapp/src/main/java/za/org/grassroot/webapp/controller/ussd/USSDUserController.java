@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import org.apache.commons.validator.routines.EmailValidator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -32,6 +34,13 @@ public class USSDUserController extends USSDBaseController {
     private static final String keyLanguage = "language";
     private static final String keyLink = "link";
     private static final USSDSection thisSection = USSDSection.USER_PROFILE;
+
+    private final AddressBroker addressBroker;
+
+    @Autowired
+    public USSDUserController(AddressBroker addressBroker) {
+        this.addressBroker = addressBroker;
+    }
 
     @RequestMapping(value = homePath + "rename-start")
     @ResponseBody
@@ -60,6 +69,7 @@ public class USSDUserController extends USSDBaseController {
 
         thisMenu.addMenuOption(userMenus + keyName, getMessage(thisSection, startMenu, optionsKey + keyName, sessionUser));
         thisMenu.addMenuOption(userMenus + keyLanguage, getMessage(thisSection, startMenu, optionsKey + keyLanguage, sessionUser));
+        thisMenu.addMenuOption(userMenus + "town", getMessage(thisSection, startMenu, optionsKey + "town", sessionUser));
         thisMenu.addMenuOption(userMenus + "email", getMessage(thisSection, startMenu, optionsKey + "email", sessionUser));
         thisMenu.addMenuOption(userMenus+keyLink+doSuffix, getMessage(thisSection,startMenu,optionsKey+keyLink,sessionUser));
         thisMenu.addMenuOption(keyStart, getMessage(thisSection, startMenu, optionsKey + "back", sessionUser));
@@ -155,6 +165,22 @@ public class USSDUserController extends USSDBaseController {
             userManager.updateEmailAddress(user.getUid(), user.getUid(), email);
             menu = new USSDMenu(getMessage("user.email.prompt.done", user), optionsHomeExit(user, false));
         }
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = homePath + userMenus + "town")
+    @ResponseBody public Request townPrompt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        final String prompt = getMessage(thisSection, "town", "prompt", user);
+        return menuBuilder(new USSDMenu(prompt, userMenus + "town/set"));
+    }
+
+    @RequestMapping(value = homePath + userMenus + "town/set")
+    @ResponseBody public Request townSet(@RequestParam(value = phoneNumber) String inputNumber,
+                                         @RequestParam(value = userInputParam) String town) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        addressBroker.updateUserAddress(user.getUid(), null, null, town);
+        USSDMenu menu = new USSDMenu(getMessage("user.town.updated.prompt", user));
         return menuBuilder(menu);
     }
 

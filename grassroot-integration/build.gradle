@@ -1,7 +1,16 @@
 description = 'Grassroot Integration'
 
+repositories {
+    mavenLocal()
+    maven {
+        url  "https://dl.bintray.com/grassrootza/grassroot-graph"
+    }
+}
+
 dependencies {
     compile project(':grassroot-core')
+
+    compile group: 'za.org.grassroot', name: 'grassroot-graph-domain', version: '0.0.1-SNAPSHOT'
 
     compile group: 'org.springframework', name: 'spring-web', version: libs.springVersion
 
@@ -21,6 +30,7 @@ dependencies {
 
     compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.240'
     compile group: 'com.amazonaws', name: 'aws-java-sdk-dynamodb', version: '1.11.240'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-sqs', version: '1.11.328'
 
     compile 'com.optimizely.ab:core-api:1.7.0'
     compile 'com.optimizely.ab:core-httpclient-impl:1.7.0'

@@ -200,7 +200,9 @@ public class VoteBrokerImpl implements VoteBroker {
         EventLog priorResponse = eventLogRepository
                 .findByEventAndUserAndEventLogType(vote, user, EventLogType.VOTE_OPTION_RESPONSE);
 
-        Optional<String> storedOption = vote.getVoteOptions().stream().filter(s -> s.trim().equalsIgnoreCase(voteOption.trim()))
+        final List<String> options = vote.getVoteOptions().isEmpty() ? Arrays.asList("YES", "NO", "ABSTAIN") : vote.getVoteOptions();
+
+        Optional<String> storedOption = options.stream().filter(s -> s.trim().equalsIgnoreCase(voteOption.trim()))
                 .findFirst();
 
         if (!storedOption.isPresent() || StringUtils.isEmpty(storedOption.get()))
