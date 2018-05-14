@@ -1,5 +1,12 @@
 description = 'Grassroot Integration'
 
+repositories {
+    mavenLocal()
+    maven {
+        url  "https://dl.bintray.com/grassrootza/grassroot-graph"
+    }
+}
+
 dependencies {
     compile project(':grassroot-core')
 
