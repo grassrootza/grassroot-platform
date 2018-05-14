@@ -8,7 +8,7 @@ public interface GraphBroker {
 
     void addUserToGraph(String userUid);
 
-    void addGroupToGraph(String groupUid);
+    void addGroupToGraph(String groupUid, String creatingUserUid);
 
     void addAccountToGraph(String accountUid);
 

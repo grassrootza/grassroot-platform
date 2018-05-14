@@ -92,7 +92,7 @@ public class USSDTodoController extends USSDBaseController {
                         new String[] { todo.getCreatorAlias(), todo.getMessage() }, user);
                 USSDMenu menu = new USSDMenu(confirmationPrompt);
                 menu.addMenuOptions(optionsYesNo(user, "todo/respond/validate?todoUid=" + todo.getUid()));
-                menu.addMenuOption(REL_PATH + "/respond/validate?todoUid=" + todo.getUid() + " &" + yesOrNoParam + "=unsure",
+                menu.addMenuOption(REL_PATH + "/respond/validate?todoUid=" + todo.getUid() + "&" + yesOrNoParam + "=unsure",
                         messageAssembler.getMessage("todo.validate.option.unsure", user));
                 return menu;
             default:

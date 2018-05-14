@@ -136,7 +136,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         final String messageKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey)
                 + (todo.hasImage() ? ".image" : ".new"
                 + (todo.getActionByDate().isBefore(Instant.now().plus(1, ChronoUnit.HOURS)) ? ".instant" : ""));
-        log.info("generating todo message, with key: {}, for locale: {}", messageKey, locale);
+        log.debug("generating todo message, with key: {}, for locale: {}", messageKey, locale);
         return messageSourceAccessor.getMessage(messageKey, todoFields, locale);
     }
 

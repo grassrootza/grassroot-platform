@@ -28,6 +28,7 @@ import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.async.AsyncUserLogger;
@@ -55,28 +56,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     private static final String EXPIRED_USER_NAME = "del_user_";
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private GroupRepository groupRepository;
-    @Autowired
-    private RoleRepository roleRepository;
-    @Autowired
-    private PasswordTokenService passwordTokenService;
-    @Autowired
-    private CacheUtilService cacheUtilService;
-    @Autowired
-    private AsyncUserLogger asyncUserService;
-    @Autowired
-    private UserRequestRepository userCreateRequestRepository;
-    @Autowired
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
-    @Autowired
-    private MessageAssemblingService messageAssemblingService;
-    @Autowired
-    private MessagingServiceBroker messagingServiceBroker;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private UserRepository userRepository;
+    @Autowired private GroupRepository groupRepository;
+    @Autowired private RoleRepository roleRepository;
+    @Autowired private PasswordTokenService passwordTokenService;
+    @Autowired private CacheUtilService cacheUtilService;
+    @Autowired private AsyncUserLogger asyncUserService;
+    @Autowired private UserRequestRepository userCreateRequestRepository;
+    @Autowired private LogsAndNotificationsBroker logsAndNotificationsBroker;
+    @Autowired private MessageAssemblingService messageAssemblingService;
+    @Autowired private MessagingServiceBroker messagingServiceBroker;
+    @Autowired(required = false) private GraphBroker graphBroker;
 
     private RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder().withinRange('a', 'z').build();
 
@@ -159,13 +150,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
         try {
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (!userExists)
-                asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "Web");
+                asyncRecordNewUser(userToReturn.getUid(), "Web");
             asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_WEB, "User created web profile");
             return userToReturn;
         } catch (final Exception e) {
             throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
         }
+    }
 
+    private void asyncRecordNewUser(final String userUid, final String logDescription) {
+        asyncUserService.recordUserLog(userUid, UserLogType.CREATED_IN_DB, logDescription);
+        if (graphBroker != null)
+            graphBroker.addUserToGraph(userUid);
     }
 
     @Override
@@ -216,7 +212,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         try {
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (!userExists)
-                asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "Android");
+                asyncRecordNewUser(userToReturn.getUid(), "Android");
             asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.REGISTERED_ANDROID, "User created android profile");
             return userToReturn;
         } catch (final Exception e) {
@@ -389,7 +385,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             User sessionUser = new User(phoneNumber, null, null);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
-            asyncUserService.recordUserLog(newUser.getUid(), UserLogType.CREATED_IN_DB, "Created via loadOrCreateUser");
+            asyncRecordNewUser(newUser.getUid(), "Created via loadOrCreateUser");
             return newUser;
         } else {
             return userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
@@ -482,7 +478,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setDisplayName(displayName);
         user.setEmailAddress(emailAddress);
         user = userRepository.save(user);
-        asyncUserService.recordUserLog(user.getUid(), UserLogType.CREATED_IN_DB, "Created via sponsorship request");
+        asyncRecordNewUser(user.getUid(), "Created via sponsorship request");
         return user.getUid();
     }
 

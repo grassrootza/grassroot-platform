@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.campaign.CampaignType;
@@ -13,7 +14,7 @@ import java.io.Serializable;
 import java.util.List;
 
 
-@ApiModel(value = "CreateCampaignRequest") @Setter
+@ApiModel(value = "CreateCampaignRequest") @Setter @ToString
 public class CreateCampaignRequest implements Serializable {
 
     private static final long serialVersionUID = -3263387305104374730L;
