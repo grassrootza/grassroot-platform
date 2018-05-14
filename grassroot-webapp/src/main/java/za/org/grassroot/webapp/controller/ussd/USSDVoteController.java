@@ -32,6 +32,7 @@ import za.org.grassroot.webapp.util.USSDGroupUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
+import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -105,7 +106,7 @@ public class USSDVoteController extends USSDBaseController {
         if (vote.getVoteOptions().isEmpty()) {
             addYesNoOptions(vote, user, openingMenu);
         } else {
-            addVoteOptions(vote, user, openingMenu);
+            addVoteOptions(vote, openingMenu);
         }
 
         if (!StringUtils.isEmpty(vote.getDescription())) {
@@ -134,7 +135,7 @@ public class USSDVoteController extends USSDBaseController {
         if (vote.getVoteOptions().isEmpty()) {
             addYesNoOptions(vote, user, menu);
         } else if (String.join("X. ", vote.getVoteOptions()).length() + 3 + vote.getDescription().length() < 160) {
-            addVoteOptions(vote, user, menu);
+            addVoteOptions(vote, menu);
         }
 
         if (!menu.hasOptions() || menu.getMenuCharLength() < 160) {
@@ -156,7 +157,7 @@ public class USSDVoteController extends USSDBaseController {
         menu.addMenuOption(voteUri + "ABSTAIN", getMessage(optionMsgKey + "abstain", user));
     }
 
-    private void addVoteOptions(Vote vote, User user, USSDMenu menu) {
+    private void addVoteOptions(Vote vote, USSDMenu menu) {
         final String voteUri = voteMenus + "record?voteUid=" + vote.getUid() + "&response=";
         vote.getVoteOptions().forEach(o -> {
             menu.addMenuOption(voteUri + USSDUrlUtil.encodeParameter(o), o);
@@ -258,12 +259,20 @@ public class USSDVoteController extends USSDBaseController {
             final String timePrompt = getMessage(thisSection, "time", promptKey + ".multi", user);
             return menuBuilder(groupMenu(user, timePrompt, requestUid));
         } else {
+            return menuBuilder(addOptionAndReturn(user, requestUid, userInput));
+        }
+    }
+
+    private USSDMenu addOptionAndReturn(User user, String requestUid, String userInput) {
+        try {
             int newNumber = eventRequestBroker.addVoteOption(user.getUid(), requestUid, userInput);
             final String prompt = newNumber > 1 ?
-                    getMessage(thisSection, "multi", promptKey + ".more", user):
+                    getMessage(thisSection, "multi", promptKey + ".more", user) :
                     getMessage(thisSection, "multi", promptKey + ".1more", user);
-            USSDMenu menu = new USSDMenu(prompt, menuUrl("multi_option/add", requestUid));
-            return menuBuilder(menu);
+            return new USSDMenu(prompt, menuUrl("multi_option/add", requestUid));
+        } catch (InvalidParameterException e) {
+            final String prompt = getMessage(thisSection, "multi", promptKey + ".toolong", user);
+            return new USSDMenu(prompt, menuUrl("multi_option/add", requestUid));
         }
     }
 

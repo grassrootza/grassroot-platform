@@ -30,6 +30,7 @@ import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.UrlShortener;
+import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -84,6 +85,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     private final UrlShortener urlShortener;
 
     private GcmRegistrationBroker gcmRegistrationBroker;
+    private GraphBroker graphBroker;
 
     @Setter private ApplicationContext applicationContext;
 
@@ -112,6 +114,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Autowired(required = false)
     public void setGcmRegistrationBroker(GcmRegistrationBroker gcmRegistrationBroker) {
         this.gcmRegistrationBroker = gcmRegistrationBroker;
+    }
+
+    @Autowired(required = false)
+    public void setGraphBroker(GraphBroker graphBroker) {
+        this.graphBroker = graphBroker;
     }
 
     @Override
@@ -177,6 +184,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         storeBundleAfterCommit(bundle);
 
         logger.info("returning group now ... group has {} members", group.getMemberships().size());
+
+        if (graphBroker != null)
+            graphBroker.addGroupToGraph(group.getUid(), userUid);
 
         return group;
     }

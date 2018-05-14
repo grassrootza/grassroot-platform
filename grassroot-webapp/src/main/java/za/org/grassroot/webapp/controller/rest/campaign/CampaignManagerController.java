@@ -143,10 +143,15 @@ public class CampaignManagerController extends BaseRestController {
                                          BindingResult bindingResult, HttpServletRequest request){
         String userUid = getUserIdFromRequest(request);
 
+        log.info("creating a campaign with request: {}", createCampaignRequest);
+
         if (bindingResult.hasErrors()) {
+            log.info("error! binding result has errors: {}", bindingResult);
             return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
         }
+
         if (createCampaignRequest.hasNoGroup()) {
+            log.info("error! campaign has no master group set");
             return RestUtil.errorResponse(RestMessage.CAMPAIGN_MISSING_MASTER_GROUP);
         }
 
