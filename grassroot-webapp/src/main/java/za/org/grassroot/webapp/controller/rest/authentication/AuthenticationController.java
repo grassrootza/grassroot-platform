@@ -156,7 +156,6 @@ public class AuthenticationController {
                                                     @RequestParam(required = false) String phone,
                                                     @RequestParam(required = false) String email,
                                                     @RequestParam(required = false) String otpEntered,
-                                                    @RequestParam boolean withOtp,
                                                     @RequestParam String password) {
         checkRegistrationOpen(UserInterfaceType.WEB_2);
         logger.info("registering, phone = {}, email = {}", phone, email);
@@ -180,7 +179,7 @@ public class AuthenticationController {
                 newUser.setEmailAddress(email);
             }
 
-            if(withOtp){
+            if(!StringUtils.isEmpty(otpEntered)){
                 if(!passwordTokenService.isShortLivedOtpValid(newUser.getPhoneNumber(),otpEntered)){
                     return new AuthorizationResponseDTO(RestMessage.INVALID_OTP);
                 }
@@ -202,27 +201,20 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/web/user/check",method = RequestMethod.GET)
-    public ResponseEntity checkIfUserExist(@RequestParam String phone,
-                                           @RequestParam String email){
-        RestMessage restMessage;
-        try{
-            User user = userService.findByNumberOrEmail(phone,email);
-
-            if(user != null){
-                if(!user.isHasWebProfile()){
-                    restMessage = RestMessage.USER_NO_ACCOUNT;
-                    passwordTokenService.triggerOtp(user);
-                }else{
-                    restMessage = RestMessage.USER_ALREADY_EXISTS;
-                }
+    public AuthorizationResponseDTO checkIfUserExist(@RequestParam String phone){
+        AuthorizationResponseDTO responseDTO;
+        User user = userService.findByUsernameLoose(phone);
+        if(user != null){
+            if(!user.isHasWebProfile()){
+                passwordTokenService.triggerOtp(user);
+                responseDTO = new AuthorizationResponseDTO(RestMessage.USER_NO_ACCOUNT);
             }else{
-                restMessage = RestMessage.USER_DOES_NOT_EXIST;
+                responseDTO = new AuthorizationResponseDTO(RestMessage.USER_ALREADY_EXISTS);
             }
-        }catch (NoSuchUserException e){
-            restMessage = RestMessage.USER_DOES_NOT_EXIST;
+        }else{
+            responseDTO = new AuthorizationResponseDTO(RestMessage.USER_DOES_NOT_EXIST);
         }
-
-        return ResponseEntity.ok(restMessage.name());
+        return responseDTO;
     }
 
     @RequestMapping(value = "/reset-password-request", method = RequestMethod.POST)
