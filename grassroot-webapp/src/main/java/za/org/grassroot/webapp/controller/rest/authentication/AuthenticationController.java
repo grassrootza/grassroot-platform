@@ -181,9 +181,10 @@ public class AuthenticationController {
             if (UserRegPossibility.USER_REQUIRES_OTP.equals(regPossibility)) {
                 if (StringUtils.isEmpty(otpEntered))
                     return new AuthorizationResponseDTO(RestMessage.OTP_REQUIRED);
+            }
 
-                newUser = userService.findByNumberOrEmail(phone, email);
-                if (!passwordTokenService.isShortLivedOtpValid(newUser.getUsername(), otpEntered))
+            if(!StringUtils.isEmpty(otpEntered)){
+                if (!passwordTokenService.isShortLivedOtpValid(phone, otpEntered))
                     return new AuthorizationResponseDTO(RestMessage.INVALID_OTP);
             }
 

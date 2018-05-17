@@ -762,18 +762,22 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public UserRegPossibility checkUserCanRegister(String phone, String email){
-        User user = findByNumberOrEmail(phone, email);
-        if (user == null)
+        try{
+            User user = findByNumberOrEmail(phone, email);
+            if (user == null)
+                return UserRegPossibility.USER_CAN_REGISTER;
+
+            if (user.hasPassword())
+                return UserRegPossibility.USER_CANNOT_REGISTER;
+
+            // last case: user exists but has no password set
+            passwordTokenService.triggerOtp(user);
+            return UserRegPossibility.USER_REQUIRES_OTP;
+        }catch (NoSuchUserException e){
             return UserRegPossibility.USER_CAN_REGISTER;
-
-        if (user.hasPassword())
-            return UserRegPossibility.USER_CANNOT_REGISTER;
-
-        // last case: user exists but has no password set
-        passwordTokenService.triggerOtp(user);
-        return UserRegPossibility.USER_REQUIRES_OTP;
+        }
     }
 
     private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
