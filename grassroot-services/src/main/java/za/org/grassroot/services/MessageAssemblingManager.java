@@ -133,8 +133,10 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 sdf.format(todo.getActionByDateAtSAST()),
                 todo.getImageUrl()
         };
-        final String messageKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey) + (todo.hasImage() ? ".image" :
-                        ".new" + (todo.getActionByDate().isBefore(Instant.now().plus(1, ChronoUnit.HOURS)) ? ".instant" : ""));
+        final String messageKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey)
+                + (todo.hasImage() ? ".image" : ".new"
+                + (todo.getActionByDate().isBefore(Instant.now().plus(1, ChronoUnit.HOURS)) ? ".instant" : ""));
+        log.debug("generating todo message, with key: {}, for locale: {}", messageKey, locale);
         return messageSourceAccessor.getMessage(messageKey, todoFields, locale);
     }
 
@@ -222,6 +224,28 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 ((Group) parent).getGroupName() : "Grassroot";
         String[] fields = new String[]{prefix, meeting.getName(), meeting.getEventDateTimeAtSAST().format(shortDateFormatter)};
         return messageSourceAccessor.getMessage("sms.meeting.thankyou", fields, target.getLocale());
+    }
+
+    @Override
+    public String createTodoCancelledMessage(User user, Todo todo) {
+        Locale locale = user.getLocale();
+        String[] args = new String[] {
+                todo.getParent().getName(),
+                todo.getCreatedByUser().getName(),
+                todo.getMessage() };
+        return messageSourceAccessor.getMessage("text.todo.cancelled", args, locale);
+    }
+
+    @Override
+    public String createTodoValidatedMessage(TodoAssignment todoAssignment) {
+        final Todo todo = todoAssignment.getTodo();
+        final Locale locale = todo.getCreatedByUser().getLocale();
+        final String[] fields = new String[] {
+                todo.getAncestorGroup().getName(),
+                todoAssignment.getUser().getName(),
+                todo.getMessage()
+        };
+        return messageSourceAccessor.getMessage("text.todo.conf.confirms.notify", fields, locale);
     }
 
     @Override

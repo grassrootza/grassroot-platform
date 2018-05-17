@@ -17,11 +17,6 @@ public class GrassrootIntegrationServicesConfig implements CommandLineRunner {
     @Value("${grassroot.messaging.service.port:8081}")
     private Integer messagingServicePort;
 
-    @Value("${grassroot.integration.service.url:http://localhost}")
-    private String integrationServiceUrl;
-    @Value("${grassroot.integration.service.port:8085}")
-    private Integer integrationServicePort;
-
     private final AsyncRestTemplate asyncRestTemplate;
 
     public GrassrootIntegrationServicesConfig(AsyncRestTemplate asyncRestTemplate) {
@@ -34,9 +29,6 @@ public class GrassrootIntegrationServicesConfig implements CommandLineRunner {
         // vulnerability, but instead tell it to refresh the keys it has stored for the services that it is wired to trust
         log.info("HTTP servlet booted, telling messaging server to refresh keys");
         asyncRestTemplate.getForEntity(UriComponentsBuilder.fromUriString(messagingServiceUrl).port(messagingServicePort)
-                .path(REFRESH_PATH).toUriString(), Boolean.class);
-        log.info("HTTP servlet booted, telling integration server to refresh keys");
-        asyncRestTemplate.getForEntity(UriComponentsBuilder.fromUriString(integrationServiceUrl).port(messagingServicePort)
                 .path(REFRESH_PATH).toUriString(), Boolean.class);
     }
 }

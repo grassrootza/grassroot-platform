@@ -12,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.TodoCancelledNotification;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
 import za.org.grassroot.core.domain.task.*;
@@ -191,7 +192,6 @@ public class TodoBrokerImpl implements TodoBroker {
         return TodoType.INFORMATION_REQUIRED.equals(type) || TodoType.VOLUNTEERS_NEEDED.equals(type);
     }
 
-    // todo : handle properly where users are both assigned and confirming - as written below, will duplicate TodoAssignment entity, instead should be same one
     private void setAllParentMembersAssigned(Todo todo, boolean shouldRespond) {
         todo.setAssignments(todo.getParent().getMembers().stream()
                 .map(u -> new TodoAssignment(todo, u, true, false, shouldRespond && !u.equals(todo.getCreatedByUser()))).collect(Collectors.toSet()));
@@ -204,8 +204,19 @@ public class TodoBrokerImpl implements TodoBroker {
     }
 
     private void setConfirmingMembers(Todo todo, Set<String> confirmingMemberUids) {
-        List<User> users = userRepository.findByUidIn(confirmingMemberUids);
+        Set<TodoAssignment> duplicateAssignments = todo.getAssignments().stream()
+                .filter(assignment -> confirmingMemberUids.contains(assignment.getUser().getUid())).collect(Collectors.toSet());
+        duplicateAssignments.forEach(todoAssignment -> {
+            todoAssignment.setValidator(true);
+            todoAssignment.setShouldRespond(true);
+        });
+        todoAssignmentRepository.save(duplicateAssignments);
+
+        Set<String> newAssignments = new HashSet<>(confirmingMemberUids);
+        newAssignments.removeAll(duplicateAssignments.stream().map(a -> a.getUser().getUid()).collect(Collectors.toSet()));
+        List<User> users = userRepository.findByUidIn(newAssignments);
         todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, false, true, true)).collect(Collectors.toSet()));
+        todoRepository.save(todo);
     }
 
     private Notification generateTodoAssignedNotification(Todo todo, User target, TodoLog todoLog) {
@@ -226,10 +237,14 @@ public class TodoBrokerImpl implements TodoBroker {
         validateUserCanModify(user, todo);
         todo.setCancelled(true);
         log.info("todo is cancelled, notification params: send : {}, reason: {}", sendNotices, reason);
-        createAndStoreTodoLog(user, todo, TodoLogType.CANCELLED, reason);
         if (sendNotices) {
-            log.info("send out notices ...");
-            // todo : actually send out notices (create TodoCancelledNotification)
+            TodoLog todoLog = new TodoLog(TodoLogType.CANCELLED, user, todo, reason);
+            final String cancelledMsg = messageService.createTodoCancelledMessage(user, todo);
+            Set<Notification> notifications = todo.getAssignments().stream().map(todoAssignment ->
+               new TodoCancelledNotification(todoAssignment.getUser(), cancelledMsg, todoLog)).collect(Collectors.toSet());
+            storeLogAndNotifications(todoLog, notifications);
+        } else {
+            createAndStoreTodoLog(user, todo, TodoLogType.CANCELLED, reason);
         }
     }
 
@@ -643,12 +658,17 @@ public class TodoBrokerImpl implements TodoBroker {
     private Set<Notification> recordInformationResponse(TodoAssignment assignment, String response, TodoLog todoLog, boolean sendConfirmation) {
         Set<Notification> notifications = new HashSet<>();
 
-        // todo: handle possible duplication on membership tag (i.e., check if one already exists with the response tag)
         Group group = assignment.getTodo().getAncestorGroup();
         Membership membership = group.getMembership(assignment.getUser());
 
-        final String memberTag = assignment.getTodo().getResponseTag() + ":" + response;
-        log.info("adding tag to member: {}", memberTag);
+        final String responseTag = assignment.getTodo().getResponseTag();
+
+        final String memberTag = responseTag + ":" + response;
+        final Optional<String> currentTag = membership.getTagList().stream().filter(s -> s.startsWith(responseTag)).findFirst();
+
+        log.info("adding tag to member: {}, has already: {}", memberTag, currentTag);
+
+        currentTag.ifPresent(membership::removeTag);
         membership.addTag(memberTag);
 
         if (sendConfirmation) {
@@ -661,16 +681,11 @@ public class TodoBrokerImpl implements TodoBroker {
 
     private Set<Notification> processValidation(TodoAssignment assignment, String response, TodoLog todoLog) {
         Set<Notification> notifications = new HashSet<>();
-        // todo : restrict notifications to only if on paid account (else just do at deadline), and put in proper i18n message
         // todo : as below, handle different kinds of response better (NLU todo)
-        if(assignment.getTodo().getAncestorGroup().isPaidFor()) {
-            if ("yes".equalsIgnoreCase(response)) {
+        if (assignment.getTodo().getAncestorGroup().isPaidFor() && "yes".equalsIgnoreCase(response)) {
+                final String message = messageService.createTodoValidatedMessage(assignment);
                 notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
-                        "someone validated", todoLog));
-            }else if("no".equalsIgnoreCase(response)){
-                notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
-                        "someone invalidated", todoLog));
-            }
+                        message, todoLog));
         }
         return notifications;
     }
