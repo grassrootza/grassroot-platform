@@ -2,6 +2,7 @@ package za.org.grassroot.services.user;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.omg.CORBA.DynAnyPackage.Invalid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
@@ -204,7 +205,6 @@ public class PasswordTokenManager implements PasswordTokenService {
             throw new InvalidOtpException();
         }
     }
-
 
     @Override
     public void validatePwdPhoneOrEmail(String username, String password) {

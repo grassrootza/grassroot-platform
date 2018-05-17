@@ -762,18 +762,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public String checkUserExists(String userName){
-        User user = findByUsernameLoose(userName);
-        String message = "";
-        if(user != null){
-            if(!user.isHasWebProfile()){
-                passwordTokenService.triggerOtp(user);
-                message = "USER_NO_ACCOUNT";
-            }
-        }else{
-            message = "USER_DOES_NOT_EXIST";
-        }
-        return message;
+    @Transactional(readOnly = true)
+    public UserRegPossibility checkUserCanRegister(String phone, String email){
+        User user = findByNumberOrEmail(phone, email);
+        if (user == null)
+            return UserRegPossibility.USER_CAN_REGISTER;
+
+        if (user.hasPassword())
+            return UserRegPossibility.USER_CANNOT_REGISTER;
+
+        // last case: user exists but has no password set
+        passwordTokenService.triggerOtp(user);
+        return UserRegPossibility.USER_REQUIRES_OTP;
     }
 
     private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
