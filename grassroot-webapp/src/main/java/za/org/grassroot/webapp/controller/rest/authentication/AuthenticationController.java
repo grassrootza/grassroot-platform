@@ -167,6 +167,12 @@ public class AuthenticationController {
             else if (StringUtils.isEmpty(password))
                 return new AuthorizationResponseDTO(RestMessage.INVALID_PASSWORD);
 
+            if(StringUtils.isEmpty(otpEntered)){
+                if(userService.checkUserExists(phone).equals(RestMessage.USER_NO_ACCOUNT.name())){
+                    return new AuthorizationResponseDTO(RestMessage.USER_NO_ACCOUNT);
+                }
+            }
+
             // once kill old web app, convert this (needed only because of Spring Security user profile needs on reg, it seems);
             User newUser = User.makeEmpty();
             newUser.setDisplayName(name);
@@ -198,23 +204,6 @@ public class AuthenticationController {
         } catch (InvalidPhoneNumberException phoneNumberException) {
             return new AuthorizationResponseDTO(RestMessage.INVALID_MSISDN);
         }
-    }
-
-    @RequestMapping(value = "/web/user/check",method = RequestMethod.GET)
-    public AuthorizationResponseDTO checkIfUserExist(@RequestParam String phone){
-        AuthorizationResponseDTO responseDTO;
-        User user = userService.findByUsernameLoose(phone);
-        if(user != null){
-            if(!user.isHasWebProfile()){
-                passwordTokenService.triggerOtp(user);
-                responseDTO = new AuthorizationResponseDTO(RestMessage.USER_NO_ACCOUNT);
-            }else{
-                responseDTO = new AuthorizationResponseDTO(RestMessage.USER_ALREADY_EXISTS);
-            }
-        }else{
-            responseDTO = new AuthorizationResponseDTO(RestMessage.USER_DOES_NOT_EXIST);
-        }
-        return responseDTO;
     }
 
     @RequestMapping(value = "/reset-password-request", method = RequestMethod.POST)

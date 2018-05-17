@@ -761,6 +761,21 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setNotificationPriority(alertPreference.getPriority());
     }
 
+    @Override
+    public String checkUserExists(String userName){
+        User user = findByUsernameLoose(userName);
+        String message = "";
+        if(user != null){
+            if(!user.isHasWebProfile()){
+                passwordTokenService.triggerOtp(user);
+                message = "USER_NO_ACCOUNT";
+            }
+        }else{
+            message = "USER_DOES_NOT_EXIST";
+        }
+        return message;
+    }
+
     private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
         if (!callingUserUid.equals(userToUpdateUid)) {
             User callingUser = userRepository.findOneByUid(callingUserUid);
