@@ -112,4 +112,6 @@ public interface UserManagementService {
 
     List<User> findRelatedUsers(User user, String nameFragment);
 
+    UserRegPossibility checkUserCanRegister(String phone, String email);
+
 }

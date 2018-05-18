@@ -48,7 +48,6 @@ import java.util.Collections;
 public class UserController extends BaseRestController {
 
     private final MediaFileBroker mediaFileBroker;
-    private final StorageBroker storageBroker;
     private final UserManagementService userService;
     private final PasswordTokenService passwordService;
     private final JwtService jwtService;
@@ -62,7 +61,6 @@ public class UserController extends BaseRestController {
                           PasswordTokenService passwordService, AddressBroker addressBroker) {
         super(jwtService, userService);
         this.mediaFileBroker = mediaFileBroker;
-        this.storageBroker = storageBroker;
         this.userService = userService;
         this.passwordService = passwordService;
         this.jwtService = jwtService;
