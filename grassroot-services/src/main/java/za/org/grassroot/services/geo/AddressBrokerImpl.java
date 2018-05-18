@@ -1,4 +1,4 @@
-package za.org.grassroot.services.user;
+package za.org.grassroot.services.geo;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -7,31 +7,31 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.AddressLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.enums.AddressLogType;
-import za.org.grassroot.core.enums.LocationSource;
-import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.AddressLogRepository;
 import za.org.grassroot.core.repository.AddressRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.async.AsyncUserLogger;
-import za.org.grassroot.services.geo.GeoLocationUtils;
-import za.org.grassroot.services.geo.InvertGeoCodeResult;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.AddressSpecifications.forUser;
 import static za.org.grassroot.core.specifications.AddressSpecifications.matchesStreetArea;
@@ -54,6 +54,9 @@ public class AddressBrokerImpl implements AddressBroker {
 
     @Value("${grassroot.geocoding.api.url:http://nominatim.openstreetmap.org/reverse}")
     private String geocodingApiUrl;
+
+    @Value("${grassroot.places.lambda.url:http://localhost:3000/lookup}")
+    private String placeLookupUrl;
 
     @Autowired
     public AddressBrokerImpl(UserRepository userRepository, AddressRepository addressRepository, AsyncUserLogger asyncUserLogger, AddressLogRepository addressLogRepository, EntityManager entityManager, RestTemplate restTemplate) {
@@ -227,5 +230,25 @@ public class AddressBrokerImpl implements AddressBroker {
                 .source(LocationSource.convertFromInterface(interfaceType))
                 .description(description).build();
         addressLogRepository.save(log);
+    }
+
+    @Override
+    public List<String> lookupPostCodeOrTown(String postCodeOrTown, Province province) {
+        try {
+            URIBuilder uriBuilder = new URIBuilder(placeLookupUrl);
+            uriBuilder.addParameter("searchTerm", postCodeOrTown.trim());
+            if (province != null) {
+
+                uriBuilder.addParameter("province", Province.CANONICAL_NAMES_ZA.getOrDefault(province, ""));
+            }
+
+            ResponseEntity<TownLookupResult[]> lookupResult = restTemplate.getForEntity(uriBuilder.build(), TownLookupResult[].class);
+            log.info("lookup result: {}", lookupResult);
+
+            return Arrays.stream(lookupResult.getBody()).map(TownLookupResult::getDescription).collect(Collectors.toList());
+        } catch (URISyntaxException|RestClientException e) {
+            log.error("Error constructing or executing lookup URL: {}", e);
+            return new ArrayList<>();
+        }
     }
 }
