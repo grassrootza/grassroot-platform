@@ -53,7 +53,6 @@ public class GraphBrokerImpl implements GraphBroker {
     public void init() {
         this.sqs = AmazonSQSClientBuilder.defaultClient();
         this.sqsQueueUrl = sqs.getQueueUrl(grassrootQueue).getQueueUrl();
-
     }
 
     @Override
