@@ -67,4 +67,6 @@ public interface CampaignBroker {
 
     void setCampaignImage(String userUid, String campaignUid, String mediaFileKey);
 
+    void endCampaign(String userUid, String campaignUid);
+
 }

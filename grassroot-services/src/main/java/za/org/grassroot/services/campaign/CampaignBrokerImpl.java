@@ -353,7 +353,9 @@ public class CampaignBrokerImpl implements CampaignBroker {
                     cdto.getNextMsgIds().forEach(nextMsgId -> {
                         CampaignMessage nextMsg = explodedMessages.get(nextMsgId + LOCALE_SEP + lang);
                         log.info("for next msg {}, found CM: {}", nextMsgId + LOCALE_SEP + lang, nextMsg);
-                        cm.addNextMessage(nextMsg.getUid(), mappedMessages.get(nextMsgId).getLinkedActionType());
+                        if (nextMsg != null) {
+                            cm.addNextMessage(nextMsg.getUid(), mappedMessages.get(nextMsgId).getLinkedActionType());
+                        }
                     });
                 })
         );
@@ -556,6 +558,22 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         MediaFileRecord record = mediaFileBroker.load(MediaFunction.CAMPAIGN_IMAGE, mediaFileKey);
         campaign.setCampaignImage(record);
+    }
+
+    @Override
+    @Transactional
+    public void endCampaign(String userUid, String campaignUid) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+
+        log.info("user = {}, campaign = {}", user, campaign);
+        validateUserCanModifyCampaign(user, campaign);
+
+        Instant priorEndDate = campaign.getEndDateTime();
+        campaign.setEndDateTime(Instant.now());
+
+        persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_DEACTIVATED, campaign, null,
+                "Prior end date: " + priorEndDate));
     }
 
     private Campaign getCampaignByCampaignCode(String campaignCode){
