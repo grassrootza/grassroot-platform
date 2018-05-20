@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.group.GroupBroker;
 
 import java.util.Collections;
@@ -39,6 +41,8 @@ public class AdminManager implements AdminService {
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private GraphBroker graphBroker;
+
     @Autowired
     public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -48,6 +52,11 @@ public class AdminManager implements AdminService {
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    @Autowired(required = false)
+    public void setGraphBroker(GraphBroker graphBroker) {
+        this.graphBroker = graphBroker;
     }
 
     /**
@@ -163,6 +172,24 @@ public class AdminManager implements AdminService {
 
         userLogRepository.save(new UserLog(user.getUid(), UserLogType.ADMIN_CHANGED_PASSWORD,
                 adminUserUid, UserInterfaceType.WEB));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGrassrootGraphUsers() {
+        if (graphBroker != null) {
+            Specifications<User> users = Specifications.where((root, query, cb) -> cb.isTrue(root.get(User_.enabled)));
+            userRepository.findAll(users).forEach(user -> graphBroker.addUserToGraph(user.getUid()));
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGrassrootGraphGroups() {
+        if (graphBroker != null) {
+            Specifications<Group> groups = Specifications.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
+            groupRepository.findAll(groups).forEach(group -> graphBroker.addGroupToGraph(group.getUid(), group.getCreatedByUser().getUid()));
+        }
     }
 
     private void validateAdminRole(String adminUserUid) {

@@ -69,7 +69,8 @@ public class GraphBrokerImpl implements GraphBroker {
         log.info("adding group to Grassroot graph ...");
         Actor group = new Actor(ActorType.GROUP, groupUid);
         IncomingGraphAction action = wrapActorCreation(group);
-        action.getRelationships().add(generatorRelationship(creatingUserUid, groupUid));
+        IncomingRelationship genRel = generatorRelationship(creatingUserUid, groupUid);
+        action.addRelationship(genRel);
         dispatchAction(action, "group");
     }
 
@@ -138,6 +139,9 @@ public class GraphBrokerImpl implements GraphBroker {
 
         IncomingGraphAction graphAction = new IncomingGraphAction(task.getUid(), ActionType.CREATE_ENTITY,
                 graphDataObjects, null);
+
+
+
         dispatchAction(graphAction, "task");
     }
 
@@ -145,8 +149,8 @@ public class GraphBrokerImpl implements GraphBroker {
         IncomingDataObject dataObject = new IncomingDataObject(GraphEntityType.ACTOR, actor);
         return new IncomingGraphAction(actor.getPlatformUid(),
                 ActionType.CREATE_ENTITY,
-                Collections.singletonList(dataObject),
-                Collections.emptyList());
+                new ArrayList<>(Collections.singletonList(dataObject)), // to avoid nulls on later adds
+                new ArrayList<>());
     }
 
     private IncomingRelationship generatorRelationship(String generatorUid, String generatedUid) {
