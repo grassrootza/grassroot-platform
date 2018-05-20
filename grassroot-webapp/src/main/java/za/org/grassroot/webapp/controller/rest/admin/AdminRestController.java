@@ -29,7 +29,10 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 
 @RestController @Grassroot2RestController
@@ -169,4 +172,19 @@ public class AdminRestController extends BaseRestController{
         }
         return ResponseEntity.ok(restMessage.name());
     }
+
+    @RequestMapping(value = "/graph/transfer/users", method = RequestMethod.GET)
+    public ResponseEntity initiateUserGraphTransfer() {
+        log.info("alright, seeding the queue");
+        adminService.populateGrassrootGraphUsers();
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/graph/transfer/groups", method = RequestMethod.GET)
+    public ResponseEntity initiateGroupGraphTransfer() {
+        log.info("seeding queue with groups");
+        adminService.populateGrassrootGraphGroups();
+        return ResponseEntity.ok().build();
+    }
+
 }
