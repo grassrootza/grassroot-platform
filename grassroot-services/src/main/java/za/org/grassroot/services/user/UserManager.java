@@ -761,6 +761,25 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setNotificationPriority(alertPreference.getPriority());
     }
 
+    @Override
+    @Transactional
+    public UserRegPossibility checkUserCanRegister(String phone, String email){
+        try{
+            User user = findByNumberOrEmail(phone, email);
+            if (user == null)
+                return UserRegPossibility.USER_CAN_REGISTER;
+
+            if (user.hasPassword())
+                return UserRegPossibility.USER_CANNOT_REGISTER;
+
+            // last case: user exists but has no password set
+            passwordTokenService.triggerOtp(user);
+            return UserRegPossibility.USER_REQUIRES_OTP;
+        }catch (NoSuchUserException e){
+            return UserRegPossibility.USER_CAN_REGISTER;
+        }
+    }
+
     private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
         if (!callingUserUid.equals(userToUpdateUid)) {
             User callingUser = userRepository.findOneByUid(callingUserUid);

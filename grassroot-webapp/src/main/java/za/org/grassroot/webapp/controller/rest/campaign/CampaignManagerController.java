@@ -269,6 +269,12 @@ public class CampaignManagerController extends BaseRestController {
         return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign));
     }
 
+    @RequestMapping(value = "/end/{campaignUid}", method = RequestMethod.GET)
+    public ResponseEntity endCampaign(@PathVariable String campaignUid, HttpServletRequest request) {
+        campaignBroker.endCampaign(getUserIdFromRequest(request), campaignUid);
+        return ResponseEntity.ok(fetchAndCacheUpdatedCampaign(campaignUid, getUserIdFromRequest(request)));
+    }
+
     @RequestMapping(value = "/update/sharing/{campaignUid}", method = RequestMethod.POST)
     public ResponseEntity alterSmsSharingSettings(HttpServletRequest request, @PathVariable String campaignUid,
                                                   @RequestParam boolean sharingEnabled, @RequestParam long smsLimit,

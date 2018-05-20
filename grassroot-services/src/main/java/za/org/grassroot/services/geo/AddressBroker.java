@@ -1,8 +1,11 @@
-package za.org.grassroot.services.user;
+package za.org.grassroot.services.geo;
 
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
+
+import java.util.List;
 
 /**
  * Created by paballo on 2016/07/14.
@@ -25,4 +28,6 @@ public interface AddressBroker {
 
     void reviseLocationAddress(String userUid, String addressUid, GeoLocation location,
                                String description, UserInterfaceType interfaceType);
+
+    List<String> lookupPostCodeOrTown(String postCodeOrTown, Province province);
 }

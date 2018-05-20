@@ -9,16 +9,19 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.services.user.AddressBroker;
+import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -172,11 +175,24 @@ public class USSDUserController extends USSDBaseController {
     @ResponseBody public Request townPrompt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         final String prompt = getMessage(thisSection, "town", "prompt", user);
-        return menuBuilder(new USSDMenu(prompt, userMenus + "town/set"));
+        return menuBuilder(new USSDMenu(prompt, userMenus + "town/select"));
     }
 
-    @RequestMapping(value = homePath + userMenus + "town/set")
-    @ResponseBody public Request townSet(@RequestParam(value = phoneNumber) String inputNumber,
+    @RequestMapping(value = homePath + userMenus + "town/select")
+    @ResponseBody public Request townOptions(@RequestParam(value = phoneNumber) String inputNumber,
+                                             @RequestParam(value = userInputParam) String userInput) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        final List<String> placeDescriptions = addressBroker.lookupPostCodeOrTown(userInput, user.getProvince());
+        final String prompt = "Please select which of these is your area: ";
+        final USSDMenu menu = new USSDMenu(prompt);
+        menu.addMenuOptions(placeDescriptions.stream().collect(Collectors.toMap(
+                desc -> userMenus + "town/confirm?town=" + USSDUrlUtil.encodeParameter(desc),
+                desc -> desc)));
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = homePath + userMenus + "town/confirm")
+    @ResponseBody public Request townConfirm(@RequestParam(value = phoneNumber) String inputNumber,
                                          @RequestParam(value = userInputParam) String town) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         addressBroker.updateUserAddress(user.getUid(), null, null, town);

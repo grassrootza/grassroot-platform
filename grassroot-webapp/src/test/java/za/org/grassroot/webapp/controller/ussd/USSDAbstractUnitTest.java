@@ -31,7 +31,7 @@ import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.livewire.LiveWireContactBroker;
 import za.org.grassroot.services.task.*;
-import za.org.grassroot.services.user.AddressBroker;
+import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.util.USSDGroupUtil;

@@ -26,6 +26,7 @@ import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
+import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -60,6 +61,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
     private TaskImageBroker taskImageBroker;
     private PasswordTokenService tokenService;
+    private GraphBroker graphBroker;
 
     @Autowired
     public TodoBrokerImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
@@ -81,6 +83,11 @@ public class TodoBrokerImpl implements TodoBroker {
     @Autowired
     public void setTokenService(PasswordTokenService tokenService) {
         this.tokenService = tokenService;
+    }
+
+    @Autowired(required = false)
+    public void setGraphBroker(GraphBroker graphBroker) {
+        this.graphBroker = graphBroker;
     }
 
     @Override
@@ -136,7 +143,10 @@ public class TodoBrokerImpl implements TodoBroker {
 
         generateResponseTokens(todo, notifications);
 
-        log.info("and now we are done with todo creation ...");
+        log.info("and now we are done with todo creation ... adding to graph, if enabled");
+
+        if (graphBroker != null)
+            graphBroker.addTaskToGraph(todo);
 
         return todo.getUid();
     }

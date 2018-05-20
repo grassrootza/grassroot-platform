@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest.authentication;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.services.user.UserRegPossibility;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.InterfaceNotOpenException;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -39,7 +41,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 import java.util.Collections;
 import java.util.List;
 
-@RestController @Grassroot2RestController
+@RestController @Grassroot2RestController @Slf4j
 @Api("/v2/api/auth")
 @RequestMapping("/v2/api/auth")
 public class AuthenticationController {
@@ -154,19 +156,39 @@ public class AuthenticationController {
     public AuthorizationResponseDTO registerWebUser(@RequestParam String name,
                                                     @RequestParam(required = false) String phone,
                                                     @RequestParam(required = false) String email,
+                                                    @RequestParam(required = false) String otpEntered,
                                                     @RequestParam String password) {
         checkRegistrationOpen(UserInterfaceType.WEB_2);
         logger.info("registering, phone = {}, email = {}", phone, email);
         try {
+            // first check basic parameters are valid
             if (StringUtils.isEmpty(name))
                 return new AuthorizationResponseDTO(RestMessage.INVALID_DISPLAYNAME);
             else if (StringUtils.isEmpty(email) && StringUtils.isEmpty(phone))
-                new AuthorizationResponseDTO(RestMessage.INVALID_MSISDN);
+                return new AuthorizationResponseDTO(RestMessage.INVALID_MSISDN);
             else if (StringUtils.isEmpty(password))
                 return new AuthorizationResponseDTO(RestMessage.INVALID_PASSWORD);
 
-            // once kill old web app, convert this (needed only because of Spring Security user profile needs on reg, it seems)
+            // note: once kill old web app, convert this (needed only because of Spring Security user profile needs on reg, it seems);
             User newUser = User.makeEmpty();
+
+            // second, check if this phone/email can register
+            final UserRegPossibility regPossibility = userService.checkUserCanRegister(phone, email);
+            if (UserRegPossibility.USER_CANNOT_REGISTER.equals(regPossibility))
+                return new AuthorizationResponseDTO(RestMessage.USER_REGISTRATION_FAILED);
+
+            // third, if registration is possible but needs an otp, check the otp or tell client it's necessary
+            if (UserRegPossibility.USER_REQUIRES_OTP.equals(regPossibility)) {
+                if (StringUtils.isEmpty(otpEntered))
+                    return new AuthorizationResponseDTO(RestMessage.OTP_REQUIRED);
+            }
+
+            if(!StringUtils.isEmpty(otpEntered)){
+                if (!passwordTokenService.isShortLivedOtpValid(phone, otpEntered))
+                    return new AuthorizationResponseDTO(RestMessage.INVALID_OTP);
+            }
+
+            // at this point, all checks have necessarily passed, so continue
             newUser.setDisplayName(name);
 
             if (!StringUtils.isEmpty(phone)) {

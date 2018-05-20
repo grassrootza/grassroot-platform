@@ -21,6 +21,7 @@ import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -79,6 +80,7 @@ public class EventBrokerImpl implements EventBroker {
 	private final EntityManager entityManager;
 
 	private PasswordTokenService tokenService;
+	private GraphBroker graphBroker;
 
 	@Autowired
 	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker,EntityManager entityManager) {
@@ -102,6 +104,11 @@ public class EventBrokerImpl implements EventBroker {
 	@Autowired
 	public void setTokenService(PasswordTokenService tokenService) {
 		this.tokenService = tokenService;
+	}
+
+	@Autowired(required = false)
+	public void setGraphBroker(GraphBroker graphBroker) {
+		this.graphBroker = graphBroker;
 	}
 
 	@Override
@@ -149,7 +156,10 @@ public class EventBrokerImpl implements EventBroker {
 
 		generateResponseTokens(meeting);
 
-		log.info("called store bundle, exiting create mtg method ...");
+		log.info("called store bundle, exiting create mtg method ... triggering graph if enabled");
+		if (graphBroker != null)
+			graphBroker.addTaskToGraph(meeting);
+
 		return meeting;
 	}
 
@@ -473,6 +483,9 @@ public class EventBrokerImpl implements EventBroker {
 		logsAndNotificationsBroker.storeBundle(bundle);
 
 		generateResponseTokens(vote);
+
+		if (graphBroker != null)
+			graphBroker.addTaskToGraph(vote);
 
 		return vote;
 	}
