@@ -19,8 +19,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.web.servlet.ViewResolver;
-import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
-import org.thymeleaf.extras.springsecurity4.dialect.SpringSecurityDialect;
 import org.thymeleaf.spring4.SpringTemplateEngine;
 import org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
@@ -59,8 +57,6 @@ public class GrassrootWebApplicationConfig implements ApplicationContextAware {
     private SpringTemplateEngine templateEngine() {
         SpringTemplateEngine engine = new SpringTemplateEngine();
         engine.setTemplateResolver(templateResolver());
-        engine.addDialect(new SpringSecurityDialect());
-        engine.addDialect(new Java8TimeDialect());
         engine.addDialect(new DataAttributeDialect());
         engine.addDialect(new LayoutDialect());
         return engine;

@@ -21,15 +21,11 @@ dependencies {
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: libs.springBootVersion
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: libs.springBootVersion
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: libs.springBootVersion
-    compile group: 'org.springframework.boot', name: 'spring-boot-devtools', version: libs.springBootVersion
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version: libs.springBootVersion
 
     compile group: 'org.springframework.security', name: 'spring-security-web', version: libs.springSecurityVersion
 
     compile group: 'org.thymeleaf', name: 'thymeleaf', version: libs.thymeleafVersion
     compile group: 'org.thymeleaf', name: 'thymeleaf-spring4', version: libs.thymeleafVersion
-    compile group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-springsecurity4', version: libs.thymeleafVersion
-    compile group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-java8time', version: libs.thymeleafVersion
 
     compile group: 'nz.net.ultraq.thymeleaf', name: 'thymeleaf-layout-dialect', version: '2.0.3'
     compile group: 'com.github.mxab.thymeleaf.extras', name: 'thymeleaf-extras-data-attribute', version: '2.0.1'
