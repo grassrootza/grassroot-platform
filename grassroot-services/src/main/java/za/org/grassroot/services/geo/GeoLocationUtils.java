@@ -1,7 +1,7 @@
 package za.org.grassroot.services.geo;
 
-import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -12,7 +12,7 @@ import java.util.Objects;
 
 public class GeoLocationUtils {
 
-	protected final static double M_PER_DEGREE = 111045;
+	private final static double M_PER_DEGREE = 111045;
 	public final static int DEFAULT_RADIUS = 5000;
 
 	private GeoLocationUtils() {

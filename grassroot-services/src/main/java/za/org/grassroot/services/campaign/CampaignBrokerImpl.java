@@ -98,6 +98,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Locale safeLocale = locale == null ? Locale.ENGLISH : locale;
         UserInterfaceType safeChannel = channel == null ? UserInterfaceType.USSD : channel;
         MessageVariationAssignment safeVariation = variation == null ? MessageVariationAssignment.DEFAULT: variation;
+        log.info("getting opening message, with input locale: {}, safe locale: {}", locale, safeLocale);
         List<CampaignMessage> messages = campaignMessageRepository.findAll(
                 CampaignMessageSpecifications.ofTypeForCampaign(campaign, CampaignActionType.OPENING, safeLocale, safeChannel, safeVariation));
         if (messages.isEmpty()) {
@@ -368,8 +369,16 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Override
     public List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale) {
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+        // note: Java locale handling is horrific. 2-digit and 3-digit ISO strings generate locales that fail on equals
+        // hence all of the below were failing, because we are using 3-digit (much more robust for several SA languages)
+        // but almost everything passed in, constructed via Locale string constructor, was 2-digit in origin. Hence what follows.
+        Locale safeLocale = locale == null ? Locale.ENGLISH : locale;
+        Set<Locale> locales = campaignMessageRepository.selectLocalesForCampaign(campaign);
+        Optional<Locale> maybeContains = locales.stream()
+                .filter(lang -> lang.getISO3Language().equals(safeLocale.getISO3Language())).findAny();
+        final Locale gettingOverJavaLocaleHorror = maybeContains.orElse(safeLocale);
         return campaignMessageRepository.findAll(
-                CampaignMessageSpecifications.ofTypeForCampaign(campaign, linkedAction, locale)
+                CampaignMessageSpecifications.ofTypeForCampaign(campaign, linkedAction, gettingOverJavaLocaleHorror)
         );
     }
 

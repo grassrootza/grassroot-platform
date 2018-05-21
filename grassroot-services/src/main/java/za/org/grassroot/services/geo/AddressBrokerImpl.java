@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.AddressLog;
@@ -26,12 +27,12 @@ import za.org.grassroot.services.async.AsyncUserLogger;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.AddressSpecifications.forUser;
 import static za.org.grassroot.core.specifications.AddressSpecifications.matchesStreetArea;
@@ -55,8 +56,8 @@ public class AddressBrokerImpl implements AddressBroker {
     @Value("${grassroot.geocoding.api.url:http://nominatim.openstreetmap.org/reverse}")
     private String geocodingApiUrl;
 
-    @Value("${grassroot.places.lambda.url:http://localhost:3000/lookup}")
-    private String placeLookupUrl;
+    @Value("${grassroot.places.lambda.url:http://localhost:3000}")
+    private String placeLookupLambda;
 
     @Autowired
     public AddressBrokerImpl(UserRepository userRepository, AddressRepository addressRepository, AsyncUserLogger asyncUserLogger, AddressLogRepository addressLogRepository, EntityManager entityManager, RestTemplate restTemplate) {
@@ -233,22 +234,47 @@ public class AddressBrokerImpl implements AddressBroker {
     }
 
     @Override
-    public List<String> lookupPostCodeOrTown(String postCodeOrTown, Province province) {
+    public List<TownLookupResult> lookupPostCodeOrTown(String postCodeOrTown, Province province) {
         try {
-            URIBuilder uriBuilder = new URIBuilder(placeLookupUrl);
+            URIBuilder uriBuilder = new URIBuilder(placeLookupLambda + "/lookup");
             uriBuilder.addParameter("searchTerm", postCodeOrTown.trim());
             if (province != null) {
-
                 uriBuilder.addParameter("province", Province.CANONICAL_NAMES_ZA.getOrDefault(province, ""));
             }
 
             ResponseEntity<TownLookupResult[]> lookupResult = restTemplate.getForEntity(uriBuilder.build(), TownLookupResult[].class);
             log.info("lookup result: {}", lookupResult);
-
-            return Arrays.stream(lookupResult.getBody()).map(TownLookupResult::getDescription).collect(Collectors.toList());
+            return Arrays.asList(lookupResult.getBody());
         } catch (URISyntaxException|RestClientException e) {
-            log.error("Error constructing or executing lookup URL: {}", e);
+            log.error("Error constructing or executing lookup URL: ", e);
             return new ArrayList<>();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void setUserArea(String userUid, String placeId, LocationSource locationAccuracy, boolean setPrimary) {
+        try {
+            URI uri = UriComponentsBuilder.fromUriString(placeLookupLambda)
+                    .pathSegment("details")
+                    .pathSegment("{placeId}")
+                    .buildAndExpand(placeId).toUri();
+            ResponseEntity<TownLookupResult> responseEntity = restTemplate.getForEntity(uri, TownLookupResult.class);
+            log.info("found place: {}", responseEntity.getBody());
+            TownLookupResult place = responseEntity.getBody();
+
+            User user = userRepository.findOneByUid(userUid);
+            Address address = new Address(user, setPrimary);
+            address.setTownOrCity(place.getTownName());
+            address.setPostalCode(place.getPostalCode());
+            if (place.getLatitude() != null) {
+                address.setLocation(new GeoLocation(place.getLatitude(), place.getLongitude()));
+                address.setLocationSource(locationAccuracy);
+            }
+
+            storeAddressRawAfterDuplicateCheck(address);
+        } catch (RestClientException e) {
+            log.error("Error constructing or executing lookup URL: {}", e);
         }
     }
 }

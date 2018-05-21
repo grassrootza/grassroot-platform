@@ -1,9 +1,9 @@
 package za.org.grassroot.core.domain.geo;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.LocationHolder;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -15,8 +15,9 @@ import java.time.Instant;
  */
 
 @Entity
-@Table(name = "address")
+@Table(name = "address") @Getter
 public class Address implements LocationHolder {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -34,13 +35,15 @@ public class Address implements LocationHolder {
     @Column(name = "area")
     private String neighbourhood;
 
-    /*@Column(name = "city")
-    private String city;*/
+    @Column(name = "postal_code")
+    @Setter private String postalCode;
+
+    @Column(name = "town_or_city")
+    @Setter private String townOrCity;
 
     @Column(name = "created_date_time", nullable = false, updatable = false)
     private Instant createdDateTime;
 
-    // think about whether to make this many to many if multiple users at same address
     @ManyToOne
     @JoinColumn(name = "resident_user_id", nullable = true, updatable = true)
     private User resident;
@@ -56,7 +59,8 @@ public class Address implements LocationHolder {
     })
     private GeoLocation location;
 
-    @Column(name = "location_source", nullable = true)
+    @Column(name = "location_source")
+    @Enumerated(EnumType.STRING)
     private LocationSource locationSource;
 
     private Address(){
@@ -77,42 +81,16 @@ public class Address implements LocationHolder {
         this.neighbourhood = town;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public User getResident() { return resident; }
-
-    public boolean isPrimary() {
-        return primary;
-    }
-
     public void setPrimary(boolean primary) {
         this.primary = primary;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    public String getHouse() {
-        return house;
     }
 
     public void setHouse(String house) {
         this.house = house;
     }
 
-    public String getStreet() {
-        return street;
-    }
-
     public void setStreet(String street) {
         this.street = street;
-    }
-
-    public String getNeighbourhood() {
-        return neighbourhood;
     }
 
     public void setNeighbourhood(String neighbourhood) {
@@ -122,14 +100,6 @@ public class Address implements LocationHolder {
     public Instant getCreatedDateTime() {
         return createdDateTime;
     }
-
-    /*public String getCity() {
-        return city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }*/
 
     public void setLocation(GeoLocation location) { this.location = location; }
 

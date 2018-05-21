@@ -8,8 +8,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.geo.AddressBroker;
+import za.org.grassroot.services.geo.TownLookupResult;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -182,20 +184,31 @@ public class USSDUserController extends USSDBaseController {
     @ResponseBody public Request townOptions(@RequestParam(value = phoneNumber) String inputNumber,
                                              @RequestParam(value = userInputParam) String userInput) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
-        final List<String> placeDescriptions = addressBroker.lookupPostCodeOrTown(userInput, user.getProvince());
-        final String prompt = "Please select which of these is your area: ";
-        final USSDMenu menu = new USSDMenu(prompt);
-        menu.addMenuOptions(placeDescriptions.stream().collect(Collectors.toMap(
-                desc -> userMenus + "town/confirm?town=" + USSDUrlUtil.encodeParameter(desc),
-                desc -> desc)));
-        return menuBuilder(menu);
+        final List<TownLookupResult> placeDescriptions = addressBroker.lookupPostCodeOrTown(userInput, user.getProvince());
+        if (placeDescriptions == null || placeDescriptions.isEmpty()) {
+            final String prompt = "Sorry, we couldn't find that. Please try again, e.g., with the province, or just the postal code";
+            return menuBuilder(new USSDMenu(prompt, userMenus + "town/select"));
+        } else if (placeDescriptions.size() == 1) {
+            final String prompt = "Confirming, your town is: " + placeDescriptions.get(0).getDescription() + ". Correct?";
+            USSDMenu menu = new USSDMenu(prompt);
+            menu.addMenuOption(userMenus + "town/confirm?placeId=" + placeDescriptions.get(0).getPlaceId(), "Yes");
+            menu.addMenuOption(userMenus + "town", "No");
+            return menuBuilder(menu);
+        } else {
+            final String prompt = "Please select which of these is your area: ";
+            final USSDMenu menu = new USSDMenu(prompt);
+            menu.addMenuOptions(placeDescriptions.stream().collect(Collectors.toMap(
+                    lookup -> userMenus + "town/confirm?placeId=" + USSDUrlUtil.encodeParameter(lookup.getPlaceId()),
+                    TownLookupResult::getDescription)));
+            return menuBuilder(menu);
+        }
     }
 
     @RequestMapping(value = homePath + userMenus + "town/confirm")
     @ResponseBody public Request townConfirm(@RequestParam(value = phoneNumber) String inputNumber,
-                                         @RequestParam(value = userInputParam) String town) throws URISyntaxException {
+                                         @RequestParam String placeId) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
-        addressBroker.updateUserAddress(user.getUid(), null, null, town);
+        addressBroker.setUserArea(user.getUid(), placeId, LocationSource.TOWN_LOOKUP, true);
         USSDMenu menu = new USSDMenu(getMessage("user.town.updated.prompt", user));
         return menuBuilder(menu);
     }

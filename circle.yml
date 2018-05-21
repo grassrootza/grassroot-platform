@@ -72,7 +72,8 @@ deployment:
       - chmod +x buildimage.sh
       - ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
 
-      # deploy files to beanstalk
+      # deploy files to beanstalk, after copying over config
+      - mv .deploy/templates/nginx.staging.config .deploy/.ebextensions/001_nginx_http-https.config
       - mv .deploy/ebdeploy.sh ebdeploy.sh
       - chmod +x ebdeploy.sh
       - ./ebdeploy.sh $CIRCLE_SHA1 $ENVIRONMENT $EBENVIRONMENT
