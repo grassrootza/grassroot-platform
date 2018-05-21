@@ -67,7 +67,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
     private UriComponentsBuilder baseUriBuilder;
     private HttpHeaders stdHeaders;
 
-    @Value("%{grassroot.payments.lambda.url:http://lambdas/payments}")
+    @Value("${grassroot.payments.lambda.url:http://lambdas/payments}")
     private String paymentStorageLambdaEndpoint;
 
     @Value("${grassroot.payments.url:http://paymentsurl.com}")

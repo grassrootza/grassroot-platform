@@ -231,8 +231,10 @@ public class USSDCampaignController extends USSDBaseController {
     }
 
     private USSDMenu genericPositiveExit(String campaignUid, Locale locale) {
+        log.info("inside generic positive exit ...");
         List<CampaignMessage> campaignMessage = campaignBroker.findCampaignMessage(campaignUid,
                 CampaignActionType.EXIT_POSITIVE, locale);
+        log.info("found a campaign message? : {}", campaignMessage);
         return !campaignMessage.isEmpty() ? buildCampaignUSSDMenu(campaignMessage.get(0)) :
                 new USSDMenu(getMessage("campaign.exit_positive.generic", locale.getLanguage()));
     }

@@ -2,6 +2,7 @@ package za.org.grassroot.services.geo;
 
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -29,5 +30,7 @@ public interface AddressBroker {
     void reviseLocationAddress(String userUid, String addressUid, GeoLocation location,
                                String description, UserInterfaceType interfaceType);
 
-    List<String> lookupPostCodeOrTown(String postCodeOrTown, Province province);
+    List<TownLookupResult> lookupPostCodeOrTown(String postCodeOrTown, Province province);
+
+    void setUserArea(String userUid, String placeId, LocationSource locationAccuracy, boolean setPrimary);
 }

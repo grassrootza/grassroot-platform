@@ -9,6 +9,7 @@ public enum LocationSource {
     LOGGED_APPROX, // i.e., direct input from an unreliable / medium-accuracy source
     LOGGED_PRECISE, // i.e., direct input from a reliable source
     LOGGED_MULTIPLE, // i.e., best possible, average of direct logged GPS
+    TOWN_LOOKUP, // i.e., from looking up the postal code or user inputting town
     UNKNOWN; // just in case corrupted call etc
 
     public static LocationSource convertFromInterface(UserInterfaceType type) {
