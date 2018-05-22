@@ -25,4 +25,12 @@ public final class AddressSpecifications {
                 cb.equal(root.get(Address_.neighbourhood), area));
     }
 
+    public static Specification<Address> hasLocationTownOrPostalCode() {
+        return (root, query, cb) -> cb.or(
+                cb.isNotNull(root.get(Address_.location)),
+                cb.isNotNull(root.get(Address_.postalCode)),
+                cb.isNotNull(root.get(Address_.townOrCity))
+        );
+    }
+
 }

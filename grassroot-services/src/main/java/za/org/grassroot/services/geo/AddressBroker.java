@@ -33,4 +33,6 @@ public interface AddressBroker {
     List<TownLookupResult> lookupPostCodeOrTown(String postCodeOrTown, Province province);
 
     void setUserArea(String userUid, String placeId, LocationSource locationAccuracy, boolean setPrimary);
+
+    boolean hasAddressOrLocation(String userUid);
 }

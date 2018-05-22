@@ -256,7 +256,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         return notificationRepository.count(specifications);
     }
 
-	@Override
+    @Override
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly = true)
 	public <T extends Notification> long countNotifications(Specifications<T> specs, Class<T> notificationType) {
@@ -318,7 +318,13 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 				.collect(Collectors.toList());
 	}
 
-    private void saveLog(ActionLog actionLog) {
+	@Override
+	@Transactional(readOnly = true)
+	public long countCampaignLogs(Specifications<CampaignLog> specs) {
+		return campaignLogRepository.count(specs);
+	}
+
+	private void saveLog(ActionLog actionLog) {
 		if (actionLog instanceof GroupLog) {
 			groupLogRepository.save((GroupLog) actionLog);
 			((GroupLog) actionLog).getGroup().setLastGroupChangeTime(Instant.now());

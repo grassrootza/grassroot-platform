@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.rest.task;
 
-import com.codahale.metrics.annotation.Timed;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.dto.task.TaskDTO;
@@ -43,11 +41,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
@@ -74,7 +68,6 @@ public class TaskFetchController extends BaseRestController {
 		this.todoBroker = todoBroker;
 	}
 
-    @Timed
     @RequestMapping(value = "/updated", method = RequestMethod.POST)
     @ApiOperation(value = "All updated tasks", notes = "Fetches all the tasks updated since the timestamps in the map " +
             "(sends TaskMinimalDTO class, which is not appearing)")
@@ -158,7 +151,6 @@ public class TaskFetchController extends BaseRestController {
         }
     }
 
-    @Timed
     @RequestMapping(value = "/all/{userUid}", method = RequestMethod.GET)
     @ApiOperation(value = "All a users' tasks", notes = "Fetches full details on all a users' tasks, with an option parameter" +
             " for sort type (defaults to sorting by last change")
@@ -174,7 +166,6 @@ public class TaskFetchController extends BaseRestController {
             return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
     }
 
-    @Timed
     @RequestMapping(value = "/upcoming/user", method = RequestMethod.GET)
     @ApiOperation(value = "Upcoming user tasks", notes = "Fetches full details on upcoming user's tasks, with an option parameter" +
             " for sort type (defaults to sorting by last change")
