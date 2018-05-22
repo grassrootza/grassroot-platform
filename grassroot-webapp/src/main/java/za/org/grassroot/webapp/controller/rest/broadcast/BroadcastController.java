@@ -30,7 +30,6 @@ import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
-import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.broadcasts.BroadcastBroker;
 import za.org.grassroot.services.broadcasts.BroadcastComponents;
 import za.org.grassroot.services.broadcasts.BroadcastInfo;
@@ -60,17 +59,15 @@ import java.util.stream.Collectors;
 public class BroadcastController extends BaseRestController {
 
     private final BroadcastBroker broadcastBroker;
-    private final AccountBillingBroker billingBroker;
     private final UrlShortener urlShortener;
     private final NotificationService notificationService;
     private final MemberDataExportBroker memberDataExportBroker;
 
     @Autowired
     public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker, MediaFileBroker mediaFileBroker,
-                               AccountBillingBroker billingBroker, UrlShortener urlShortener, NotificationService notificationService, MemberDataExportBroker memberDataExportBroker) {
+                               UrlShortener urlShortener, NotificationService notificationService, MemberDataExportBroker memberDataExportBroker) {
         super(jwtService, userManagementService);
         this.broadcastBroker = broadcastBroker;
-        this.billingBroker = billingBroker;
         this.urlShortener = urlShortener;
         this.notificationService = notificationService;
         this.memberDataExportBroker = memberDataExportBroker;
@@ -222,8 +219,9 @@ public class BroadcastController extends BaseRestController {
         Account primaryAccount = user.getPrimaryAccount();
         TemporalAdjuster startOfMonth = (Temporal date) -> ((LocalDateTime)date).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
         Instant firstDayOfMonth = LocalDateTime.now().with(startOfMonth).toInstant(OffsetDateTime.now().getOffset());
-        long costSinceLastBill = billingBroker.calculateMessageCostsInPeriod(primaryAccount, firstDayOfMonth, Instant.now());
-        return ResponseEntity.ok(costSinceLastBill);
+        // todo: restore this out of account broker (just using logs)
+        // long costSinceLastBill = billingBroker.calculateMessageCostsInPeriod(primaryAccount, firstDayOfMonth, Instant.now());
+        return ResponseEntity.ok(0L);
     }
 
     @RequestMapping(value = "/error-report/{broadcastUid}/download", method = RequestMethod.GET)

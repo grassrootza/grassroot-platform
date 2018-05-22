@@ -29,13 +29,12 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.AccountSpecifications.*;
-import static za.org.grassroot.services.account.AccountBillingBrokerImpl.BILLING_TZ;
-import static za.org.grassroot.services.account.AccountBillingBrokerImpl.STD_BILLING_HOUR;
 
 /**
  * Created by luke on 2015/11/12.
@@ -67,19 +66,15 @@ public class AccountBrokerImpl implements AccountBroker {
     private final ApplicationEventPublisher eventPublisher;
 
     private final AccountGroupBroker accountGroupBroker;
-    private final AccountBillingBroker accountBillingBroker;
-    private final AccountSponsorshipBroker sponsorshipBroker;
 
     @Autowired
     public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, PermissionBroker permissionBroker,
-                             LogsAndNotificationsBroker logsAndNotificationsBroker, AccountGroupBroker accountGroupBroker, AccountSponsorshipBroker sponsorshipBroker,
-                             AccountBillingBroker accountBillingBroker, Environment environment, ApplicationEventPublisher eventPublisher) {
+                             LogsAndNotificationsBroker logsAndNotificationsBroker, AccountGroupBroker accountGroupBroker,
+                             Environment environment, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.permissionBroker = permissionBroker;
         this.accountGroupBroker = accountGroupBroker;
-        this.accountBillingBroker = accountBillingBroker;
-        this.sponsorshipBroker = sponsorshipBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.environment = environment;
         this.eventPublisher = eventPublisher;
@@ -163,7 +158,7 @@ public class AccountBrokerImpl implements AccountBroker {
             account.setEnabled(true);
             account.setEnabledDateTime(Instant.now());
             account.setEnabledByUser(creatingUser);
-            account.setNextBillingDate(LocalDateTime.now().plusMonths(1).toInstant(BILLING_TZ));
+            account.setNextBillingDate(LocalDateTime.now().plusMonths(1).toInstant(ZoneOffset.UTC));
             account.setDefaultPaymentType(AccountPaymentType.FREE_TRIAL); // todo : rethink if want to handle it this way, and/or alter payment type selection UX/UI
 
             bundle.addLog(new AccountLog.Builder(account)
@@ -205,7 +200,7 @@ public class AccountBrokerImpl implements AccountBroker {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        if (!account.getAdministrators().contains(user) && !sponsorshipBroker.hasUserBeenAskedToSponsor(userUid, accountUid)) {
+        if (!account.getAdministrators().contains(user)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
@@ -213,7 +208,6 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setEnabledDateTime(Instant.now());
         account.setEnabledByUser(user);
         account.setDisabledDateTime(DateTimeUtil.getVeryLongAwayInstant());
-        account.incrementBillingDate(STD_BILLING_HOUR, AccountBillingBrokerImpl.BILLING_TZ);
 
         // re-enable any groups that were disabled when the account expired
         log.info("enabling {} paid groups ... from among ...", account.getPaidGroups().size()); // force a quick cache to avoid N+1
@@ -277,9 +271,6 @@ public class AccountBrokerImpl implements AccountBroker {
 
         if (billingCycle != null && !billingCycle.equals(account.getBillingCycle())) {
             account.setBillingCycle(billingCycle);
-            if (adjustNextBillingDate) {
-                account.incrementBillingDate(STD_BILLING_HOUR, BILLING_TZ);
-            }
             account.setSubscriptionFee(calculateSubscriptionFee(account, account.getType()));
             bundle.addLog(new AccountLog.Builder(account)
                     .user(user)
@@ -337,10 +328,6 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         validateAdmin(user, account);
 
-        if (generateClosingBill) {
-            accountBillingBroker.generateClosingBill(administratorUid, accountUid);
-        }
-
         account.setEnabled(false);
         account.setDisabledDateTime(Instant.now());
         account.setDisabledByUser(user);
@@ -375,10 +362,6 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         if (account.isEnabled()) {
             account.setEnabled(false);
-        }
-
-        if (generateClosingBill) {
-            accountBillingBroker.generateClosingBill(userUid, accountUid);
         }
 
         User user = userRepository.findOneByUid(userUid);
@@ -423,8 +406,6 @@ public class AccountBrokerImpl implements AccountBroker {
         if (groupsToRemove != null && !groupsToRemove.isEmpty()) {
             accountGroupBroker.removeGroupsFromAccount(accountUid, groupsToRemove, userUid);
         }
-
-        accountBillingBroker.generateBillOutOfCycle(account.getUid(), false, false, null, false);
 
         account.setType(newAccountType);
         setAccountLimits(account, newAccountType);
@@ -768,10 +749,6 @@ public class AccountBrokerImpl implements AccountBroker {
 
         account.setEnabled(false);
         account.setVisible(false);
-
-        if (generateClosingBill) {
-            accountBillingBroker.generateClosingBill(userUid, accountUid);
-        }
 
         log.info("removing {} paid groups", account.getPaidGroups().size());
         Set<String> paidGroupUids = account.getPaidGroups().stream().map(pg -> pg.getGroup().getUid()).collect(Collectors.toSet());
