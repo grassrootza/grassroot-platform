@@ -50,8 +50,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     private static final List<String> SYSTEM_CODES = Arrays.asList("123", "911");
 
-    private static final String CAMPAIGN_NOT_FOUND_CODE = "campaign.not.found.error";
-
     private final CampaignRepository campaignRepository;
     private final CampaignMessageRepository campaignMessageRepository;
     private final CampaignStatsBroker campaignStatsBroker;
@@ -535,6 +533,16 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         groupBroker.assignMembershipTopics(userUid, campaign.getMasterGroup().getUid(), userUid, Collections.singleton(joinTopic), true);
         persistCampaignLog(campaignLog);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasUserShared(String campaignUid, String userUid) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
+        Specification<CampaignLog> ofTypeSharing = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType),
+                CampaignLogType.CAMPAIGN_SHARED);
+        return logsAndNotificationsBroker.countCampaignLogs(Specifications.where(forUser).and(ofTypeSharing)) > 0;
     }
 
     @Override

@@ -1,6 +1,5 @@
 package za.org.grassroot.services;
 
-import com.codahale.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,8 +107,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
 
     private static Set<Permission> constructPermissionSet(Set<Permission> baseSet, Permission... permissions) {
-        Set<Permission> set = new HashSet<>();
-        set.addAll(baseSet);
+        Set<Permission> set = new HashSet<>(baseSet);
         Collections.addAll(set, permissions);
         return java.util.Collections.unmodifiableSet(set);
     }
@@ -211,7 +209,6 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Override
     @Transactional(readOnly = true)
-    @Timed
     @SuppressWarnings("unchecked")
     public List<Group> getActiveGroupsSorted(User user, Permission requiredPermission) {
         Query resultQuery = requiredPermission == null ?

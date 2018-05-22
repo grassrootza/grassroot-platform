@@ -49,6 +49,8 @@ public interface CampaignBroker {
 
     void setUserJoinTopic(String campaignUid, String userUid, String joinTopic, UserInterfaceType channel);
 
+    boolean hasUserShared(String campaignUid, String userUid);
+
     // modifying and adding
     Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate,
                     Instant endDate, List<String> joinTopics, CampaignType campaignType, String url, boolean smsShare, long smsLimit, String imageKey);

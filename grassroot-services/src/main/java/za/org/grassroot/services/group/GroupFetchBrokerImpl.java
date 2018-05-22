@@ -1,6 +1,5 @@
 package za.org.grassroot.services.group;
 
-import com.codahale.metrics.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -69,7 +68,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         this.entityManager = entityManager;
     }
 
-    @Timed
     @Override
     @Transactional(readOnly = true)
     public Set<GroupTimeChangedDTO> findNewlyChangedGroups(String userUid, Map<String, Long> excludedGroupsByTimeChanged) {
@@ -106,7 +104,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .collect(Collectors.toSet());
     }
 
-    @Timed
     @Override
     @Transactional(readOnly = true)
     public Set<GroupMinimalDTO> fetchGroupMinimalInfo(String userUid, Set<String> groupUids) {
@@ -125,7 +122,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         return new HashSet<>(dtoList);
     }
 
-    @Timed
     @Override
     @Transactional(readOnly = true)
     public List<GroupMinimalDTO> fetchAllUserGroupsSortByLatestTime(String userUid) {
@@ -143,7 +139,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .collect(Collectors.toList());
     }
 
-    @Timed
     @Override
     @Transactional(readOnly = true)
     public GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid, boolean includeAllMembers, boolean includeAllSubgroups, boolean includeMemberHistory) {
@@ -272,7 +267,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         return list.stream().map(GroupLogDTO::new).collect(Collectors.toList());
     }
 
-    @Timed
     @Override
     @Transactional(readOnly = true)
     public List<GroupWebDTO> fetchGroupWebInfo(String userUid) {

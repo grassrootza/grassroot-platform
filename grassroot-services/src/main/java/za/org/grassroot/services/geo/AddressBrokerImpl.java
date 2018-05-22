@@ -19,22 +19,28 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.AddressLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.AddressLogRepository;
 import za.org.grassroot.core.repository.AddressRepository;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.AddressSpecifications;
 import za.org.grassroot.services.async.AsyncUserLogger;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import static za.org.grassroot.core.specifications.AddressSpecifications.forUser;
+import static za.org.grassroot.core.specifications.AddressSpecifications.hasLocationTownOrPostalCode;
 import static za.org.grassroot.core.specifications.AddressSpecifications.matchesStreetArea;
 
 /**
@@ -53,6 +59,8 @@ public class AddressBrokerImpl implements AddressBroker {
     private final EntityManager entityManager;
     private final RestTemplate restTemplate;
 
+    private UserLocationLogRepository userLocationLogRepository;
+
     @Value("${grassroot.geocoding.api.url:http://nominatim.openstreetmap.org/reverse}")
     private String geocodingApiUrl;
 
@@ -67,6 +75,11 @@ public class AddressBrokerImpl implements AddressBroker {
         this.addressLogRepository = addressLogRepository;
         this.entityManager = entityManager;
         this.restTemplate = restTemplate;
+    }
+
+    @Autowired(required = false)
+    public void setUserLocationLogRepository(UserLocationLogRepository userLocationLogRepository) {
+        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @Override
@@ -276,5 +289,18 @@ public class AddressBrokerImpl implements AddressBroker {
         } catch (RestClientException e) {
             log.error("Error constructing or executing lookup URL: {}", e);
         }
+    }
+
+    @Override
+    @Transactional
+    public boolean hasAddressOrLocation(String userUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Specifications<Address> specs = Specifications.where(forUser(user)).and(hasLocationTownOrPostalCode());
+
+        if (addressRepository.count(specs) > 0)
+            return true;
+        else
+            return userLocationLogRepository != null && userLocationLogRepository.findFirstByUserUidAndTimestampAfterOrderByTimestampDesc(userUid,
+                Instant.now().minus(180, ChronoUnit.DAYS)) != null;
     }
 }
