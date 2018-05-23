@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.model.web;
+package za.org.grassroot.webapp.model.rest;
 
 /**
  * Created by luke on 2016/10/24.

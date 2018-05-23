@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.model.web;
+package za.org.grassroot.webapp.model.rest;
 
 import java.util.List;
 

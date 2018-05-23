@@ -15,7 +15,7 @@ import za.org.grassroot.integration.data.MemberImportResult;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
-import za.org.grassroot.webapp.model.web.ExcelSheetAnalysis;
+import za.org.grassroot.webapp.model.rest.ExcelSheetAnalysis;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
