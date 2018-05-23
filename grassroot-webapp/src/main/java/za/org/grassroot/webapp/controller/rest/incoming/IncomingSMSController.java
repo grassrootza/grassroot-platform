@@ -100,7 +100,9 @@ public class IncomingSMSController {
             // disambiguate somehow ... for the moment, just adding the first
             final String groupUid = groupMatches.iterator().next();
             Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), groupUid, message, UserInterfaceType.INCOMING_SMS);
-            reply = membership.getGroup().isPaidFor() ? accountGroupBroker.generateGroupWelcomeReply(user.getUid(), groupUid) : "";
+            // if group has custom welcome messages those will be triggered for everyone, in group broker, so don't do it here
+            reply = membership.getGroup().isPaidFor() && !accountGroupBroker.hasGroupWelcomeMessages(groupUid) ?
+                    accountGroupBroker.generateGroupWelcomeReply(user.getUid(), groupUid) : "";
             bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, MATCHED + message, UserInterfaceType.INCOMING_SMS));
         } else {
             log.info("received a join word but don't know what to do with it");
