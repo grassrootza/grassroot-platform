@@ -24,7 +24,6 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
-import za.org.grassroot.core.specifications.PaidGroupSpecifications;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -60,9 +59,6 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Autowired
     private GroupRepository groupRepository;
-
-    @Autowired
-    private PaidGroupRepository paidGroupRepository;
 
     @Autowired
     private GroupLocationRepository groupLocationRepository;
@@ -292,9 +288,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Transactional(readOnly = true)
     public boolean isGroupPaidFor(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        return paidGroupRepository.count(Specifications
-                .where(PaidGroupSpecifications.isForGroup(group))
-                .and(PaidGroupSpecifications.expiresAfter(Instant.now()))) > 0;
+        return group.isPaidFor() && group.getAccount() != null;
     }
 
     /*

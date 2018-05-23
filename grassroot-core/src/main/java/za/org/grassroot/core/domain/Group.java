@@ -1,8 +1,10 @@
 package za.org.grassroot.core.domain;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
@@ -61,6 +63,10 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     @Column(name = "paid_for")
     private boolean paidFor;
+
+    @ManyToOne()
+    @JoinColumn(name = "account_id")
+    @Getter @Setter private Account account;
 
     @Column(name = "group_token_code", nullable = true, insertable = true, updatable = true, unique = true)
     private String groupTokenCode;

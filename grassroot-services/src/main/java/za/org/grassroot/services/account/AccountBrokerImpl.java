@@ -10,11 +10,14 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
-import za.org.grassroot.core.domain.account.PaidGroup;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.enums.AccountBillingCycle;
+import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.AccountPaymentType;
+import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
@@ -209,16 +212,6 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setEnabledByUser(user);
         account.setDisabledDateTime(DateTimeUtil.getVeryLongAwayInstant());
 
-        // re-enable any groups that were disabled when the account expired
-        log.info("enabling {} paid groups ... from among ...", account.getPaidGroups().size()); // force a quick cache to avoid N+1
-        account.getPaidGroups().stream()
-                .filter(pg -> PaidGroupStatus.SUSPENDED.equals(pg.getStatus()) && !pg.getGroup().isPaidFor())
-                .forEach(pg -> {
-                    pg.setExpireDateTime(DateTimeUtil.getVeryLongAwayInstant());
-                    pg.setStatus(PaidGroupStatus.ACTIVE);
-                    pg.getGroup().setPaidFor(true);
-                });
-
         // make sure to store reg in here
         account.setDefaultPaymentType(paymentType);
 
@@ -332,11 +325,8 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setDisabledDateTime(Instant.now());
         account.setDisabledByUser(user);
 
-        for (PaidGroup paidGroup : account.getPaidGroups()) {
-            paidGroup.setExpireDateTime(Instant.now());
-            paidGroup.setRemovedByUser(user);
-            paidGroup.setStatus(PaidGroupStatus.REMOVED);
-            paidGroup.getGroup().setPaidFor(false);
+        for (Group paidGroup : account.getPaidGroups()) {
+            paidGroup.setPaidFor(false);
         }
 
         if (removeAdminRole) {
@@ -370,7 +360,7 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setVisible(false);
 
         log.info("removing {} paid groups", account.getPaidGroups().size());
-        Set<String> paidGroupUids = account.getPaidGroups().stream().map(pg -> pg.getGroup().getUid()).collect(Collectors.toSet());
+        Set<String> paidGroupUids = account.getPaidGroups().stream().map(Group::getUid).collect(Collectors.toSet());
         accountGroupBroker.removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
@@ -396,7 +386,7 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         validateAdmin(user, account);
 
-        int remainingGroups = (int) account.getPaidGroups().stream().filter(PaidGroup::isActive).count() -
+        int remainingGroups = (int) account.getPaidGroups().stream().filter(Group::isActive).count() -
                 (groupsToRemove == null ? 0 : groupsToRemove.size());
 
         if (remainingGroups > maxGroupNumber.get(newAccountType)) {
@@ -751,7 +741,7 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setVisible(false);
 
         log.info("removing {} paid groups", account.getPaidGroups().size());
-        Set<String> paidGroupUids = account.getPaidGroups().stream().map(pg -> pg.getGroup().getUid()).collect(Collectors.toSet());
+        Set<String> paidGroupUids = account.getPaidGroups().stream().map(Group::getUid).collect(Collectors.toSet());
         accountGroupBroker.removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)

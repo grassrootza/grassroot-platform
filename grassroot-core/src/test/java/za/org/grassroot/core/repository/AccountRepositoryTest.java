@@ -13,7 +13,6 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
-import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountType;
 
@@ -47,9 +46,6 @@ public class AccountRepositoryTest {
 
     @Autowired
     private GroupRepository groupRepository;
-
-    @Autowired
-    private PaidGroupRepository paidGroupRepository;
 
     private User testUser;
 
@@ -265,25 +261,16 @@ public class AccountRepositoryTest {
         testGroup = groupRepository.save(testGroup);
         Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         account = accountRepository.save(account);
-        PaidGroup testPaidGroup = new PaidGroup(testGroup, account, testUser);
-        testPaidGroup = paidGroupRepository.save(testPaidGroup);
-
-        account.addPaidGroup(testPaidGroup);
+        account.addPaidGroup(testGroup);
         accountRepository.save(account);
 
         Account accountFromDbByName = accountRepository.findByAccountName(accountName).get(0);
         assertNotNull(accountFromDbByName);
         assertNotNull(accountFromDbByName.getPaidGroups());
         assertThat(accountFromDbByName.getPaidGroups().size(), is(1));
-        PaidGroup paidGroupFromAccount = accountFromDbByName.getPaidGroups().iterator().next();
+        Group paidGroupFromAccount = accountFromDbByName.getPaidGroups().iterator().next();
         assertNotNull(paidGroupFromAccount);
         assertThat(paidGroupFromAccount.getAccount(), is(accountFromDbByName));
-        assertThat(paidGroupFromAccount.getGroup(), is(testGroup));
-        assertThat(paidGroupFromAccount.getAddedByUser(), is(testUser));
-
-        Account accountFromDbByPaidGroup = accountRepository.findByPaidGroups(testPaidGroup);
-        assertNotNull(accountFromDbByPaidGroup);
-        assertThat(accountFromDbByPaidGroup.getAccountName(), is(accountName));
 
     }
 

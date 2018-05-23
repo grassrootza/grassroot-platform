@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain.account;
 
 import za.org.grassroot.core.domain.GrassrootEntity;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
@@ -15,7 +16,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2015/10/18. (and significantly overhauled / modified during 2016/10)
@@ -73,7 +73,7 @@ public class Account implements GrassrootEntity, Serializable {
     private Set<User> administrators = new HashSet<>();
 
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
-    private Set<PaidGroup> paidGroups = new HashSet<>();
+    private Set<Group> paidGroups = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "billing_user", nullable = false)
@@ -237,18 +237,14 @@ public class Account implements GrassrootEntity, Serializable {
         this.administrators = administrators;
     }
 
-    public Set<PaidGroup> getPaidGroups() {
+    public Set<Group> getPaidGroups() {
         if (paidGroups == null) {
             paidGroups = new HashSet<>();
         }
         return paidGroups;
     }
 
-    public Set<PaidGroup> getCurrentPaidGroups() {
-        return paidGroups.stream().filter(PaidGroup::isActive).collect(Collectors.toSet());
-    }
-
-    public void setPaidGroups(Set<PaidGroup> paidGroups) {
+    public void setPaidGroups(Set<Group> paidGroups) {
         this.paidGroups = paidGroups;
     }
 
@@ -319,12 +315,12 @@ public class Account implements GrassrootEntity, Serializable {
         administrators.remove(administrator);
     }
 
-    public void addPaidGroup(PaidGroup paidGroup) {
-        paidGroups.add(paidGroup);
+    public void addPaidGroup(Group group) {
+        paidGroups.add(group);
     }
 
-    public void removePaidGroup(PaidGroup paidGroup) {
-        paidGroups.remove(paidGroup);
+    public void removePaidGroup(Group group) {
+        paidGroups.remove(group);
     }
 
     public int getMaxNumberGroups() {
