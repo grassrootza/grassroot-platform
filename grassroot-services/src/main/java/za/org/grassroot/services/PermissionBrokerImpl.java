@@ -222,6 +222,14 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean isSystemAdmin(User user) {
+        List<Role> systemRoles = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_SYSTEM_ADMIN, Role.RoleType.STANDARD);
+        Set<Role> userRoles = user.getStandardRoles();
+        return userRoles.containsAll(systemRoles);
+    }
+
+    @Override
     public void validateSystemRole(User user, String roleName) {
         log.info("attempting to validate system role, with name: " + roleName);
         List<Role> systemRoles = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD);

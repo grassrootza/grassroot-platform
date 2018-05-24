@@ -237,7 +237,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
                 break;
         }
 
-        log.info("okay tested for type, comes out as : {}", activityType);
+        log.debug("okay tested for type, comes out as : {}", activityType);
 
         if (activityType != null) {
             List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
@@ -246,7 +246,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
             }
 
             activityLogs.add(new PublicActivityLog(activityType, actionLog.getUser().getName(), actionLog.getCreationTime().toEpochMilli()));
-            log.info("activity type positive, adding to public cache: {}", activityLogs);
+            log.debug("activity type positive, adding to public cache: {}", activityLogs);
             cacheService.putCachedPublicActivity(activityType, activityLogs);
         }
     }
