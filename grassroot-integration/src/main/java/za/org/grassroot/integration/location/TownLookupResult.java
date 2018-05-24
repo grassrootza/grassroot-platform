@@ -1,4 +1,4 @@
-package za.org.grassroot.services.geo;
+package za.org.grassroot.integration.location;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
@@ -28,8 +28,8 @@ public class TownLookupResult {
     private String placeType;
 
     @JsonProperty("longitude")
-    private Long longitude;
+    private Double longitude;
 
     @JsonProperty("latitude")
-    private Long latitude;
+    private Double latitude;
 }
