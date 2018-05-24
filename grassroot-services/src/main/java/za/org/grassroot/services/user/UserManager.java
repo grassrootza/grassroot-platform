@@ -331,7 +331,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional
     public String regenerateUserVerifier(String phoneNumber, boolean createUserIfNotExists) {
-        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+        //User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+        User user = findByNumberOrEmail(phoneNumber,phoneNumber);
         if (user == null) {
             if (createUserIfNotExists) {
                 UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);

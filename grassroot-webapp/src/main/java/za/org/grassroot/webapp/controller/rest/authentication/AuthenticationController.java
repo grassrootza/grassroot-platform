@@ -184,7 +184,9 @@ public class AuthenticationController {
             }
 
             if(!StringUtils.isEmpty(otpEntered)){
-                if (!passwordTokenService.isShortLivedOtpValid(phone, otpEntered))
+                String veriFyBy = StringUtils.isEmpty(phone) ? email : phone;
+                log.info("Verifying otp by={}",veriFyBy);
+                if (!passwordTokenService.isShortLivedOtpValid(veriFyBy, otpEntered))
                     return new AuthorizationResponseDTO(RestMessage.INVALID_OTP);
             }
 
