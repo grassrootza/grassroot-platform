@@ -69,6 +69,8 @@ public interface PermissionBroker {
 
     Set<Permission> getProtectedOrganizerPermissions();
 
+    boolean isSystemAdmin(User user);
+
     void validateSystemRole(User user, String roleName);
 
     void addSystemRole(User user, String roleName);

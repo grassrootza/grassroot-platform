@@ -159,11 +159,11 @@ public class AdminRestController extends BaseRestController{
             if(!user.hasPassword() || !user.isHasSetOwnName()){
                 groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(),displayName,phoneNumber,email,Province.valueOf(province));
                 restMessage = RestMessage.UPDATED;
-            }else{
-                groupBroker.updateMembershipRole(getUserIdFromRequest(request),groupUid,user.getUid(),roleName);
+            } else {
+                groupBroker.updateMembershipRole(getUserIdFromRequest(request), groupUid, user.getUid(), roleName);
                 restMessage = RestMessage.UPDATED;
             }
-        }else{
+        } else {
             membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
             membershipInfo.setProvince(Province.valueOf(province));
             membershipInfo.setMemberEmail(email);
