@@ -295,6 +295,19 @@ public class CampaignManagerController extends BaseRestController {
         return ResponseEntity.ok(fetchAndCacheUpdatedCampaign(campaignUid, userUid));
     }
 
+    @RequestMapping(value = "/update/welcome/{campaignUid}", method = RequestMethod.POST)
+    public ResponseEntity updateCampaignWelcomeMessage(HttpServletRequest request, @PathVariable String campaignUid,
+                                                       @RequestParam String message) {
+        campaignBroker.setCampaignMessageText(getUserIdFromRequest(request), campaignUid, message);
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/update/welcome/clear/{campaignUid}", method = RequestMethod.POST)
+    public ResponseEntity clearCampaignWelcomeMsg(HttpServletRequest request, @PathVariable String campaignUid) {
+        campaignBroker.clearCampaignMessageText(getUserIdFromRequest(request), campaignUid);
+        return ResponseEntity.ok().build();
+    }
+
     private CampaignViewDTO fetchAndCacheUpdatedCampaign(String campaignUid, String userUid) {
         Campaign updatedCampaign = campaignBroker.load(campaignUid);
         clearCaches(campaignUid, userUid, updatedCampaign.getMasterGroup().getUid());

@@ -25,6 +25,10 @@ public interface CampaignBroker {
 
     CampaignMessage loadCampaignMessage(String messageUid, String userUid);
 
+    void checkForAndTriggerCampaignText(String campaignUid, String userUid);
+
+    void haltCampaignWelcomeText(String campaignUid, String userUid);
+
     List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale);
 
     List<Campaign> getCampaignsManagedByUser(String userUid);
@@ -58,6 +62,10 @@ public interface CampaignBroker {
     Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages);
 
     Campaign updateMasterGroup(String campaignUid, String groupUid, String userUid);
+
+    void setCampaignMessageText(String userUid, String campaignUid, String message);
+
+    void clearCampaignMessageText(String userUid, String campaignUid);
 
     void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid,
                                boolean removeImage, Instant endDate, String newCode, String landingUrl, String petitionApi, List<String> joinTopics);
