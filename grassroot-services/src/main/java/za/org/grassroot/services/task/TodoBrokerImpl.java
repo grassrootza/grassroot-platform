@@ -12,6 +12,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.TodoCancelledNotification;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;

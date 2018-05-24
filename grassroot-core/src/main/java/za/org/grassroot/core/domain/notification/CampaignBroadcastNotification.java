@@ -1,6 +1,6 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.Broadcast;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.enums.DeliveryRoute;

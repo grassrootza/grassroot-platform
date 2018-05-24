@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.GrassrootEmail;

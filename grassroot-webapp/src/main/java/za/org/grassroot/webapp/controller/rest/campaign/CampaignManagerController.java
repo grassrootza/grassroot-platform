@@ -20,7 +20,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignType;

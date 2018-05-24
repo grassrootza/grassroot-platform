@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.task.Meeting;

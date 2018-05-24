@@ -1,7 +1,7 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.Broadcast;
-import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.DeliveryRoute;

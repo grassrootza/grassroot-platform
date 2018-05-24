@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.VoteResultsNotification;
 import za.org.grassroot.core.domain.task.EventLog;

@@ -8,7 +8,7 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;

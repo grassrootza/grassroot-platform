@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;

@@ -7,6 +7,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.group.GroupPermissionTemplate;

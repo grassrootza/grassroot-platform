@@ -9,7 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;

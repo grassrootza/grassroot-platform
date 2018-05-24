@@ -2,7 +2,7 @@ package za.org.grassroot.services.livewire;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;

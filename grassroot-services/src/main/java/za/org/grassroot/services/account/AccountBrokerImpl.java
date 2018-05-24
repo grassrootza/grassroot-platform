@@ -10,7 +10,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;

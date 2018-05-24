@@ -3,7 +3,7 @@ package za.org.grassroot.webapp.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;

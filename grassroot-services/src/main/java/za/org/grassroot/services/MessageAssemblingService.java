@@ -1,6 +1,6 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;

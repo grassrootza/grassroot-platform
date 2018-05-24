@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.Province;

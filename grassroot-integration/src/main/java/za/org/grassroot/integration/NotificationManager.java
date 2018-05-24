@@ -13,6 +13,8 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Todo;

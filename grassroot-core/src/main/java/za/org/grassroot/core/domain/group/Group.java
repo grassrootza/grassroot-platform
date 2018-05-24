@@ -1,9 +1,10 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.group;
 
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.task.*;

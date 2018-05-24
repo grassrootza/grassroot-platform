@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.group;
 
 public enum JoinCodeType {
 

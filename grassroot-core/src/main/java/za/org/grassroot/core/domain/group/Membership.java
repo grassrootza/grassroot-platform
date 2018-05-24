@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.group;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -6,6 +6,9 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.TagHolder;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.GroupViewPriority;
 
 import javax.persistence.*;

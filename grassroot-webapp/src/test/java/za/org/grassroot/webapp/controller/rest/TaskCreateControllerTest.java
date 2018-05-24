@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Meeting;

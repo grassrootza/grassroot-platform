@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.PermissionBroker;

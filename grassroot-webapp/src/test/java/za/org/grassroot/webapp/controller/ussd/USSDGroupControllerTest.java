@@ -6,6 +6,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.UserInterfaceType;

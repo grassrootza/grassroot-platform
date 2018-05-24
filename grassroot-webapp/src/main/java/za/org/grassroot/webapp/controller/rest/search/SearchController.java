@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupRefDTO;

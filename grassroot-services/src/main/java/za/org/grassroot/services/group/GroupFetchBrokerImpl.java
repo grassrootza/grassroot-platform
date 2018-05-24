@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.dto.MembershipDTO;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;

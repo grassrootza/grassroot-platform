@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.broadcast;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -7,8 +7,14 @@ import lombok.experimental.Tolerate;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.GrassrootTemplate;
+import za.org.grassroot.core.domain.GrassrootEntity;
+import za.org.grassroot.core.domain.TagHolder;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.JoinDateCondition;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.TaskType;

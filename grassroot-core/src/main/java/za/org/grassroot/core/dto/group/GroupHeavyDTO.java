@@ -1,8 +1,8 @@
 package za.org.grassroot.core.dto.group;
 
 import lombok.Getter;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 
 @Getter
 public class GroupHeavyDTO extends GroupMinimalDTO {

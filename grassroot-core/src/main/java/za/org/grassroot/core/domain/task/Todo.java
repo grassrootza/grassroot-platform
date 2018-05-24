@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TaskType;

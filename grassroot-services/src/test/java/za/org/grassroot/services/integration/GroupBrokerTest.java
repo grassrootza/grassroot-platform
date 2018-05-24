@@ -1,6 +1,5 @@
 package za.org.grassroot.services.integration;
 
-import com.google.common.collect.Sets;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -13,23 +12,16 @@ import org.springframework.test.context.junit4.AbstractTransactionalJUnit4Spring
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
 
-import java.util.Set;
-
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static za.org.grassroot.core.domain.GroupJoinMethod.ADDED_BY_OTHER_MEMBER;
-import static za.org.grassroot.services.group.GroupPermissionTemplate.DEFAULT_GROUP;
 
 // major todo: use mocking to restore these to working
 @RunWith(SpringRunner.class)

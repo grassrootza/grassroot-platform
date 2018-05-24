@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.task.Event;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MeetingRepository;
 import za.org.grassroot.core.util.DateTimeUtil;

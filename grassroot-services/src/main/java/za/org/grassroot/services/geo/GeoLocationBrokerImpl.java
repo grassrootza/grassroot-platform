@@ -7,7 +7,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.*;

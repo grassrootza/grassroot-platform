@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;

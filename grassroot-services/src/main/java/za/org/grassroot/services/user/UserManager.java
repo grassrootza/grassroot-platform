@@ -16,6 +16,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;

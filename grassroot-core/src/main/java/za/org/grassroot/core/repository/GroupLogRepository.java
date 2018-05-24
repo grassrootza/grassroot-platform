@@ -4,8 +4,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.enums.GroupLogType;
 
 import java.time.Instant;

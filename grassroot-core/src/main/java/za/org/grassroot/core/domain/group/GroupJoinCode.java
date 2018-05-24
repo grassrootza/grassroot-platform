@@ -1,8 +1,9 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.group;
 
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
+import za.org.grassroot.core.domain.User;
 
 import javax.persistence.*;
 import java.time.Instant;

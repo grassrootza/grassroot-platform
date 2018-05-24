@@ -1,6 +1,6 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;

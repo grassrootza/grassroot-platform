@@ -5,10 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinCode;
-import za.org.grassroot.core.domain.JoinCodeType;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinCode;
+import za.org.grassroot.core.domain.group.JoinCodeType;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.MembershipDTO;
 import za.org.grassroot.core.util.DateTimeUtil;
 

@@ -1,6 +1,6 @@
 package za.org.grassroot.core.domain.geo;
 
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.LocationSource;
 
 import javax.persistence.*;

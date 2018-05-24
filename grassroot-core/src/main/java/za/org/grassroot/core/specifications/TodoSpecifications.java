@@ -3,6 +3,8 @@ package za.org.grassroot.core.specifications;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 

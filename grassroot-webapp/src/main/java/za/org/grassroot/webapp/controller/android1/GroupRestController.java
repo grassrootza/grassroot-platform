@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;

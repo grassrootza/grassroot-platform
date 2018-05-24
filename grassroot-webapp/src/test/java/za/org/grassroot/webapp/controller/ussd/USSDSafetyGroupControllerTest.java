@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.Address;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;

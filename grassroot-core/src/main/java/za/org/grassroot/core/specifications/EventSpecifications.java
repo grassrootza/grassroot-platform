@@ -3,6 +3,8 @@ package za.org.grassroot.core.specifications;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.AbstractEventEntity_;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Event_;
@@ -10,7 +12,6 @@ import za.org.grassroot.core.enums.EventType;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
-import java.util.Collection;
 
 /**
  * Created by luke on 2016/09/26.

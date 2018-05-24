@@ -13,7 +13,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.GcmRegistration;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.GroupRepository;

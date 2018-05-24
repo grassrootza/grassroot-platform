@@ -3,7 +3,7 @@ package za.org.grassroot.webapp.model.rest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;

@@ -1,7 +1,7 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.Todo_;

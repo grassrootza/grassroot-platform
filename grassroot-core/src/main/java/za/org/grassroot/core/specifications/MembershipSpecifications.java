@@ -5,6 +5,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.JoinDateCondition;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.Province;
 
 import javax.persistence.criteria.*;

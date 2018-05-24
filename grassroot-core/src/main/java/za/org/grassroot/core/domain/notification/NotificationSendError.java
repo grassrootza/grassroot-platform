@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.notification;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

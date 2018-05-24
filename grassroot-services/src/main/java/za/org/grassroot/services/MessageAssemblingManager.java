@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.geo.Address;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;

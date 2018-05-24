@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;

@@ -5,8 +5,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 

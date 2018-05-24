@@ -2,7 +2,7 @@ package za.org.grassroot.services.util;
 
 import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.Notification;
 
 import java.util.Collection;

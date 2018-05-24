@@ -1,7 +1,7 @@
 package za.org.grassroot.services.task;
 
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;

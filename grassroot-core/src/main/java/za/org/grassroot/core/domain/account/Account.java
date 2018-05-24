@@ -1,7 +1,7 @@
 package za.org.grassroot.core.domain.account;
 
 import za.org.grassroot.core.domain.GrassrootEntity;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;

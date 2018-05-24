@@ -12,6 +12,8 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.association.AssociationRequestEvent;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.notification.JoinRequestNotification;
 import za.org.grassroot.core.domain.notification.JoinRequestResultNotification;
 import za.org.grassroot.core.dto.MembershipInfo;

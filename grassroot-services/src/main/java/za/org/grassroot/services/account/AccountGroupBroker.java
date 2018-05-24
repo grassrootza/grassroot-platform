@@ -2,8 +2,8 @@ package za.org.grassroot.services.account;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Broadcast;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.account.Account;
 
 import java.time.Duration;

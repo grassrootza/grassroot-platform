@@ -1,7 +1,7 @@
 package za.org.grassroot.services.task;
 
 import org.springframework.data.domain.Page;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;

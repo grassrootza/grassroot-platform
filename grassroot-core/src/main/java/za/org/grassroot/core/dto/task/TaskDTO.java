@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.EventType;

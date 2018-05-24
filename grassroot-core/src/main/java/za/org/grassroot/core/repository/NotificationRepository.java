@@ -5,7 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.NotificationStatus;
+import za.org.grassroot.core.domain.notification.NotificationStatus;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.DeliveryRoute;
 

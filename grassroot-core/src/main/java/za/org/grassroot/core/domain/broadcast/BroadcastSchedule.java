@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.broadcast;
 
 public enum BroadcastSchedule {
 
