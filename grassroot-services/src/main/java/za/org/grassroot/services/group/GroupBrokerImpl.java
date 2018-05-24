@@ -967,14 +967,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         logger.info("changing member to this role: " + roleName);
 
-        if (userUid.equals(memberUid))
-            throw new IllegalArgumentException("A user cannot change ther own role: memberUid = " + memberUid);
-
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        boolean isSystemAdmin = permissionBroker.isSystemAdmin(user);
+        if (!isSystemAdmin && userUid.equals(memberUid))
+            throw new IllegalArgumentException("A user cannot change their own role: memberUid = " + memberUid);
+
+        if (!isSystemAdmin) {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
 
         Membership membership = group.getMemberships().stream()
