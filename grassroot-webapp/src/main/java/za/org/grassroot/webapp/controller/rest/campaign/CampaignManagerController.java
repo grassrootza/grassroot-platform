@@ -295,6 +295,28 @@ public class CampaignManagerController extends BaseRestController {
         return ResponseEntity.ok(fetchAndCacheUpdatedCampaign(campaignUid, userUid));
     }
 
+    @RequestMapping(value = "/update/welcome/set/{campaignUid}", method = RequestMethod.POST)
+    public ResponseEntity updateCampaignWelcomeMessage(HttpServletRequest request, @PathVariable String campaignUid,
+                                                       @RequestParam String message) {
+        campaignBroker.setCampaignMessageText(getUserIdFromRequest(request), campaignUid, message);
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/update/welcome/clear/{campaignUid}", method = RequestMethod.POST)
+    public ResponseEntity clearCampaignWelcomeMsg(HttpServletRequest request, @PathVariable String campaignUid) {
+        campaignBroker.clearCampaignMessageText(getUserIdFromRequest(request), campaignUid);
+        return ResponseEntity.ok().build();
+    }
+
+    // campaign fetch is already heavy enough and this is a very specific use case, so separating it
+    // not the world' best REST path, but not really worth the candle to rewire a bunch above
+    @RequestMapping(value = "/update/welcome/current/{campaignUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetch campaign welcome message, if one exists")
+    public ResponseEntity checkForExistingCampaignWelcome(HttpServletRequest request, @PathVariable String campaignUid) {
+        final String message = campaignBroker.getCampaignMessageText(getUserIdFromRequest(request), campaignUid);
+        return StringUtils.isEmpty(message) ? ResponseEntity.ok().build() : ResponseEntity.ok(message);
+    }
+
     private CampaignViewDTO fetchAndCacheUpdatedCampaign(String campaignUid, String userUid) {
         Campaign updatedCampaign = campaignBroker.load(campaignUid);
         clearCaches(campaignUid, userUid, updatedCampaign.getMasterGroup().getUid());

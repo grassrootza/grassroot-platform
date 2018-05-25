@@ -458,6 +458,14 @@ public class GroupModifyController extends GroupBaseController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/welcome/clear/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Remove a group welcome message")
+    public ResponseEntity removeGroupWelcomeMessage(@PathVariable String groupUid, HttpServletRequest request) {
+        accountGroupBroker.deactivateGroupWelcomes(getUserIdFromRequest(request), groupUid);
+        return ResponseEntity.ok().build();
+    }
+
     private List<MembershipInfo> findInvalidMembers(Set<MembershipInfo> members) {
         return members.stream()
                 .filter(m -> !m.hasValidPhoneOrEmail() || StringUtils.isEmpty(m.getDisplayName()))

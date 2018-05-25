@@ -204,7 +204,15 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         actionLogs.forEach(this::updateCacheSingle);
     }
 
-    private void updateCacheSingle(ActionLog actionLog) {
+	@Override
+	@Transactional
+	@SuppressWarnings("unchecked")
+	public void abortNotificationSend(Specifications specifications) {
+		notificationRepository.findAll((Specifications<Notification>) specifications)
+					.forEach(n -> n.setStatus(NotificationStatus.ABORTED));
+	}
+
+	private void updateCacheSingle(ActionLog actionLog) {
         PublicActivityType activityType = null;
 
         log.info("checking for public action type, log = {}", actionLog);

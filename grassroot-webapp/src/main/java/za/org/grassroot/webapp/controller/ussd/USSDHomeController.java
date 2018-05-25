@@ -77,7 +77,6 @@ public class USSDHomeController extends USSDBaseController {
     @Value("${grassroot.geo.apis.enabled:false}")
     private boolean geoApisEnabled;
 
-    // todo : think about how to do dynamically
     private final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
             new AbstractMap.SimpleEntry<>("1", "IZWE_LAMI_CONS")
     ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
@@ -244,6 +243,9 @@ public class USSDHomeController extends USSDBaseController {
     }
 
     private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user) {
+        log.info("fire off SMS in background, if exists ...");
+        campaignBroker.checkForAndTriggerCampaignText(campaign.getUid(), user.getUid());
+        log.info("fired off ... continue ...");
         Set<Locale> supportedCampaignLanguages = campaignBroker.getCampaignLanguages(campaign.getUid());
         if(supportedCampaignLanguages.size() == 1) {
             return assembleCampaignResponse(campaign, supportedCampaignLanguages.iterator().next());
@@ -254,7 +256,7 @@ public class USSDHomeController extends USSDBaseController {
         }
     }
 
-    private USSDMenu assembleCampaignResponse(Campaign campaign,Locale userLocale) {
+    private USSDMenu assembleCampaignResponse(Campaign campaign, Locale userLocale) {
         CampaignMessage campaignMessage = campaignBroker.getOpeningMessage(campaign.getUid(), userLocale, UserInterfaceType.USSD, null);
         String promptMessage = campaignMessage.getMessage();
         Map<String, String> linksMap = new HashMap<>();
