@@ -169,7 +169,7 @@ public class USSDCampaignController extends USSDBaseController {
         } else if (!user.hasName()) {
             final String prompt = promptStart + getMessage("campaign.joined.name", user);
             menu = new USSDMenu(prompt, campaignMenus + "user/name?campaignUid=" + campaign.getUid());
-        } else if (campaign.isSharingEnabled() && campaign.sharingBudgetLeft() > 0
+        } else if (campaign.isOutboundTextEnabled() && campaign.outboundBudgetLeft() > 0
                 && !campaignBroker.hasUserShared(campaign.getUid(), user.getUid())) {
             menu = buildSharingMenu(campaign.getUid(), locale);
         } else if (!addressBroker.hasAddressOrLocation(user.getUid())) {

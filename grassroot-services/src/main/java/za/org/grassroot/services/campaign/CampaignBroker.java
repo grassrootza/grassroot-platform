@@ -67,6 +67,8 @@ public interface CampaignBroker {
 
     void clearCampaignMessageText(String userUid, String campaignUid);
 
+    String getCampaignMessageText(String userUid, String campaignUid);
+
     void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid,
                                boolean removeImage, Instant endDate, String newCode, String landingUrl, String petitionApi, List<String> joinTopics);
 

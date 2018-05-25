@@ -832,8 +832,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             logger.info("found no paid group record, creating one ...");
             addGroupToAccount(account.getUid(), group.getUid(), user.getUid());
             paidGroup = fetchLatestPaidGroup(group);
-        } else if (!paidGroup.getAccount().equals(account)) {
-            throw new GroupAlreadyPaidForException();
         }
 
         return paidGroup;

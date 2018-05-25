@@ -141,7 +141,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
         User user = userManager.load(Objects.requireNonNull(userUid));
         Broadcast template = broadcastRepository.findTopByCampaignAndBroadcastScheduleAndActiveTrue(campaign, BroadcastSchedule.ENGAGED_CAMPAIGN);
         log.info("checked for welcome message, found? : {}", template);
-        if (template != null && !StringUtils.isEmpty(template.getSmsTemplate1())) {
+        if (template != null && !StringUtils.isEmpty(template.getSmsTemplate1())
+                && campaign.outboundBudgetLeft() > 0) {
             CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_WELCOME_MESSAGE,
                     campaign, null, "Outbound engagement SMS");
             CampaignBroadcastNotification notification = new CampaignBroadcastNotification(
@@ -151,6 +152,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             bundle.addLog(campaignLog);
             bundle.addNotification(notification);
             logsAndNotificationsBroker.storeBundle(bundle);
+            campaign.addToOutboundSpent(campaign.getAccount().getFreeFormCost());
         }
     }
 
@@ -275,7 +277,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
         User user = userManager.load(Objects.requireNonNull(sharingUserUid));
 
-        if (campaign.getSharingSpent() > campaign.getSharingBudget()) {
+        if (campaign.getOutboundSpent() > campaign.getOutboundBudget()) {
             log.error("Error! Got to sharing even though campaign spent is above budget");
             return;
         }
@@ -302,7 +304,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         logsAndNotificationsBroker.storeBundle(bundle);
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);
 
-        campaign.addToSharingSpent(campaign.getAccount().getFreeFormCost());
+        campaign.addToOutboundSpent(campaign.getAccount().getFreeFormCost());
     }
 
     long countCampaignShares(Campaign campaign) {
@@ -346,8 +348,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
         newCampaign.setMasterGroup(masterGroup);
 
         if (smsShare) {
-            newCampaign.setSharingEnabled(true);
-            newCampaign.setSharingBudget(smsLimit * user.getPrimaryAccount().getFreeFormCost());
+            newCampaign.setOutboundTextEnabled(true);
+            newCampaign.setOutboundBudget(smsLimit * user.getPrimaryAccount().getFreeFormCost());
         }
 
         if(joinTopics != null && !joinTopics.isEmpty()){
@@ -552,6 +554,18 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
+    public String getCampaignMessageText(String userUid, String campaignUid) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+
+        validateUserCanModifyCampaign(user, campaign); // since this is only used in modifying
+
+        Broadcast template = broadcastRepository.findTopByCampaignAndBroadcastScheduleAndActiveTrue(campaign, BroadcastSchedule.ENGAGED_CAMPAIGN);
+
+        return template != null ? template.getSmsTemplate1() : null;
+    }
+
+    @Override
     @Transactional
     public void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid, boolean removeImage, Instant endDate, String newCode, String landingUrl, String petitionApi, List<String> joinTopics) {
         User user = userManager.load(Objects.requireNonNull(userUid));
@@ -635,8 +649,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
             throw new IllegalArgumentException("Attempting to enable with no prior or given sharing prompts");
         }
 
-        campaign.setSharingEnabled(smsEnabled);
-        campaign.setSharingBudget(smsBudget);
+        campaign.setOutboundTextEnabled(smsEnabled);
+        campaign.setOutboundBudget(smsBudget);
 
         campaign.addCampaignMessages(transformMessageDTOs(sharingMessages, campaign, user));
 
