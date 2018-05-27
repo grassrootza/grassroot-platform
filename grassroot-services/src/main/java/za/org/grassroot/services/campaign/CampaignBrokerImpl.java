@@ -1,8 +1,6 @@
 package za.org.grassroot.services.campaign;
 
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
@@ -19,6 +17,7 @@ import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
+import za.org.grassroot.core.domain.notification.CampaignResponseNotification;
 import za.org.grassroot.core.domain.notification.CampaignSharingNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.CampaignLogType;
@@ -52,7 +51,9 @@ import java.util.stream.Collectors;
 @Service @Slf4j
 public class CampaignBrokerImpl implements CampaignBroker {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CampaignBrokerImpl.class);
+    // for handling responses
+    private static final String MORE_INFO_STRING = "1";
+    private static final String MISTAKEN_JOIN_STRING = ""; // probably want to do this using
 
     // use this a lot in campaign message handling
     private static final String LOCALE_SEP = "___";
@@ -245,7 +246,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<String, String> getActiveCampaignJoinTopics() {
+    public Map<String, String> getActiveCampaignJoinWords() {
         List<Object[]> tagsWithUids = campaignRepository.fetchAllActiveCampaignTags();
         return tagsWithUids.stream()
                 .filter(object -> object[0] instanceof String && ((String) object[0]).startsWith(Campaign.PUBLIC_JOIN_WORD_PREFIX))
@@ -700,6 +701,46 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Specification<CampaignLog> ofTypeSharing = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType),
                 CampaignLogType.CAMPAIGN_SHARED);
         return logsAndNotificationsBroker.countCampaignLogs(Specifications.where(forUser).and(ofTypeSharing)) > 0;
+    }
+
+    @Override
+    public String handleCampaignTextResponse(String campaignUid, String userUid, String reply, UserInterfaceType channel) {
+        User user = userManager.load(userUid);
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+
+        String returnMsg = "";
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        if (MORE_INFO_STRING.equals(reply)) {
+            returnMsg = getTypeMessage(campaign, CampaignActionType.OPENING, user, channel)
+                    + ". Reply with your name to join us";
+        } else if (MISTAKEN_JOIN_STRING.equals(reply)) {
+            // no message, just remove them from group
+            groupBroker.unsubscribeMember(userUid, campaign.getMasterGroup().getUid());
+            returnMsg = "Okay, we have reversed your join";
+            logsAndNotificationsBroker.removeCampaignLog(user, campaign, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
+        } else {
+            log.info("Okay, adding user to group ...");
+            returnMsg = getTypeMessage(campaign, CampaignActionType.EXIT_POSITIVE, user, channel)
+                    + ". If this was a mistake, respond '0' and we will remove you";
+            addUserToCampaignMasterGroup(campaignUid, userUid, channel);
+        }
+
+        if (!StringUtils.isEmpty(returnMsg)) {
+            final String logMsg = String.format("Responded to user, number %s, with info %s", user.getName(), returnMsg).substring(0, 250);
+            CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_REPLIED, campaign, channel, logMsg);
+            bundle.addLog(campaignLog);
+            bundle.addNotification(new CampaignResponseNotification(user, returnMsg, campaignLog));
+        }
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+        return returnMsg;
+    }
+
+    private String getTypeMessage(Campaign campaign, CampaignActionType actionType, User user, UserInterfaceType channel) {
+        List<CampaignMessage> messages = campaignMessageRepository.findAll(CampaignMessageSpecifications
+                .ofTypeForCampaign(campaign, actionType, user.getLocale(), channel, MessageVariationAssignment.DEFAULT));
+        return messages.isEmpty() ? "" : messages.get(0).getMessage();
     }
 
     @Override

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.Campaign;
@@ -14,8 +15,6 @@ import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.integration.NotificationService;
-import za.org.grassroot.integration.messaging.MessagingServiceBroker;
-import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
@@ -64,7 +63,7 @@ public class IncomingSMSController {
     private static final Duration NOTIFICATION_WINDOW = Duration.of(1, ChronoUnit.DAYS);
 
     @Autowired
-    public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker, MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
+    public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker,
                                  AccountGroupBroker accountGroupBroker, NotificationService notificationService, CampaignBroker campaignBroker,
                                  @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSource, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userResponseBroker = userResponseBroker;
@@ -125,7 +124,7 @@ public class IncomingSMSController {
         User user = userManager.loadOrCreateUser(phoneNumber); // this may be a user we don't know
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        Map<String, String> campaignTags = campaignBroker.getActiveCampaignJoinTopics();
+        Map<String, String> campaignTags = campaignBroker.getActiveCampaignJoinWords();
         log.info("active campaign tags = {}", campaignTags);
 
         Set<String> campaignMatches = campaignTags.entrySet().stream()
@@ -169,6 +168,19 @@ public class IncomingSMSController {
         }
 
         final String trimmedMsg = msg.trim();
+        Page<Notification> latestToUser = logsAndNotificationsBroker.lastNotificationsSentToUser(user, 1);
+        if (latestToUser == null || latestToUser.getContent() == null || latestToUser.getContent().isEmpty()) {
+            log.warn("Message {} from user, but has never had a notification sent");
+            return;
+        }
+
+        Notification notification = latestToUser.getContent().get(0);
+        if (notification.getCampaignLog() != null) {
+            String returnMsg = handleCampaignResponse(user, trimmedMsg, notification);
+            log.info("handled campaign reply, responded with: {}", returnMsg);
+            return;
+        }
+
         EntityForUserResponse likelyEntity = userResponseBroker.checkForEntityForUserResponse(user.getUid(), false);
 
         if (likelyEntity == null || !userResponseBroker.checkValidityOfResponse(likelyEntity, trimmedMsg)) {
@@ -178,7 +190,12 @@ public class IncomingSMSController {
         }
 
         userResponseBroker.recordUserResponse(user.getUid(), likelyEntity.getJpaEntityType(), likelyEntity.getUid(), trimmedMsg);
+    }
 
+    private String handleCampaignResponse(User user, String trimmedMsg, Notification sentNotification) {
+        final Campaign campaign = sentNotification.getCampaignLog().getCampaign();
+        log.info("handling an SMS reply to this campaign: {}", campaign);
+        return campaignBroker.handleCampaignTextResponse(campaign.getUid(), user.getUid(), trimmedMsg, UserInterfaceType.INCOMING_SMS);
     }
 
     private void handleUnknownResponse(User user, String trimmedMsg) {

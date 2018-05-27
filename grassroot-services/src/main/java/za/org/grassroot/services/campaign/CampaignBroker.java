@@ -41,7 +41,7 @@ public interface CampaignBroker {
 
     boolean isCodeTaken(String proposedCode, String campaignUid);
 
-    Map<String, String> getActiveCampaignJoinTopics();
+    Map<String, String> getActiveCampaignJoinWords();
 
     void signPetition(String campaignUid, String userUid, UserInterfaceType channel);
 
@@ -54,6 +54,8 @@ public interface CampaignBroker {
     void setUserJoinTopic(String campaignUid, String userUid, String joinTopic, UserInterfaceType channel);
 
     boolean hasUserShared(String campaignUid, String userUid);
+
+    String handleCampaignTextResponse(String campaignUid, String userUid, String reply, UserInterfaceType channel);
 
     // modifying and adding
     Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate,
