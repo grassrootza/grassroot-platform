@@ -10,8 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.integration.location.LocationInfoBroker;
+import za.org.grassroot.integration.location.TownLookupResult;
 import za.org.grassroot.services.geo.AddressBroker;
-import za.org.grassroot.services.geo.TownLookupResult;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -41,10 +42,12 @@ public class USSDUserController extends USSDBaseController {
     private static final USSDSection thisSection = USSDSection.USER_PROFILE;
 
     private final AddressBroker addressBroker;
+    private final LocationInfoBroker locationInfoBroker;
 
     @Autowired
-    public USSDUserController(AddressBroker addressBroker) {
+    public USSDUserController(AddressBroker addressBroker, LocationInfoBroker locationInfoBroker) {
         this.addressBroker = addressBroker;
+        this.locationInfoBroker = locationInfoBroker;
     }
 
     @RequestMapping(value = homePath + "rename-start")
@@ -66,7 +69,7 @@ public class USSDUserController extends USSDBaseController {
 
     @RequestMapping(value = homePath + userMenus + startMenu)
     @ResponseBody
-    public Request userProfile(@RequestParam(value= phoneNumber, required=true) String inputNumber) throws URISyntaxException {
+    public Request userProfile(@RequestParam(value= phoneNumber) String inputNumber) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
 
@@ -187,7 +190,7 @@ public class USSDUserController extends USSDBaseController {
         if ("0".equals(userInput.trim()))
             return menuBuilder(new USSDMenu(getMessage("campaign.exit_positive.generic", user)));
 
-        final List<TownLookupResult> placeDescriptions = addressBroker.lookupPostCodeOrTown(userInput, user.getProvince());
+        final List<TownLookupResult> placeDescriptions = locationInfoBroker.lookupPostCodeOrTown(userInput, user.getProvince());
         if (placeDescriptions == null || placeDescriptions.isEmpty()) {
             final String prompt = getMessage(thisSection, "town", "none.prompt", user);
             return menuBuilder(new USSDMenu(prompt, userMenus + "town/select"));
