@@ -1,11 +1,16 @@
 package za.org.grassroot.services.util;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.enums.CampaignLogType;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
@@ -27,5 +32,9 @@ public interface LogsAndNotificationsBroker {
 	void updateCache(Collection<ActionLog> actionLogs);
 
 	void abortNotificationSend(Specifications specifications);
+
+	Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve, Instant sinceTime);
+
+	void removeCampaignLog(User user, Campaign campaign, CampaignLogType logType);
 
 }

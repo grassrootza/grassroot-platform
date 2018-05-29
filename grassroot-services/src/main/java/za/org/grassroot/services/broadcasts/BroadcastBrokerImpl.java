@@ -508,6 +508,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             log.info("email, with base ID = {}", email.getBaseId());
 
             log.info("generating unsubscribe tokens ....");
+
             tokenService.generateResponseTokens(recipientUids, broadcast.getGroup().getUid(), null);
 
             boolean deliverySucceeded = messagingServiceBroker.sendEmail(email);

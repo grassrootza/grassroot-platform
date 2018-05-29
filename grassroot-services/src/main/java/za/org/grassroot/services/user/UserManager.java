@@ -663,8 +663,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             String[] welcomeMessageIds = new String[]{
                     "sms.welcome.1",
-                    "sms.welcome.2",
-                    "sms.welcome.3"
+                    "sms.welcome.2"
             };
 
             for (String welcomeMessageId : welcomeMessageIds) {

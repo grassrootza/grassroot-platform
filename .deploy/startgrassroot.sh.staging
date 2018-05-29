@@ -25,5 +25,5 @@ remote_syslog
 # START GRASSROOT
 cd /usr/src/grassroot/
 
-java -Djava.security.egd=file:/dev/urandom -Dspring.profiles.active=$PROFILE,fast -jar -Xmx1024m grassroot-webapp/build/libs/grassroot-webapp-1.1.2.jar > log/grassroot-app.log 2>&1 &
+java -Djava.security.egd=file:/dev/urandom -Dspring.profiles.active=$PROFILE,fast -jar -Xmx1024m grassroot-webapp/build/libs/grassroot-webapp-1.1.3.jar > log/grassroot-app.log 2>&1 &
 

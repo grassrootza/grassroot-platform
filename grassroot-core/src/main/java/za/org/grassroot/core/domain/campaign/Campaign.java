@@ -170,17 +170,21 @@ public class Campaign implements TagHolder {
         setTags(tags);
     }
 
-    public List<String> getPublicJoinWords() {
+    public void setPublicJoinWord(String publicJoinWord) {
+        List<String> tags = getTagList().stream()
+                .filter(s -> !s.startsWith(PUBLIC_JOIN_WORD_PREFIX)).collect(Collectors.toList());
+        // then add the topics
+        if (!StringUtils.isEmpty(publicJoinWord)) {
+            tags.add(PUBLIC_JOIN_WORD_PREFIX + publicJoinWord);
+        }
+        setTags(tags);
+    }
+
+    public String getPublicJoinWord() {
         return this.getTagList().stream().filter(s -> s.startsWith(PUBLIC_JOIN_WORD_PREFIX))
-                .map(s -> s.substring(PUBLIC_JOIN_WORD_PREFIX.length())).collect(Collectors.toList());
-    }
-
-    public void addPublicJoinWords(String publicJoinWord) {
-        addTag(PUBLIC_JOIN_WORD_PREFIX + publicJoinWord);
-    }
-
-    public void removePublicJoinWord(String publicJoinWord) {
-        removeTag(PUBLIC_JOIN_WORD_PREFIX + publicJoinWord);
+                .findFirst()
+                .map(s -> s.substring(PUBLIC_JOIN_WORD_PREFIX.length()))
+                .orElse(null);
     }
 
     public long countUsersInLogs(CampaignLogType logType) {
