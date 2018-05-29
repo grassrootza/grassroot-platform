@@ -5,6 +5,11 @@ import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("CAMPAIGN_RESPONSE_NOTIFICATION")
 public class CampaignResponseNotification extends CampaignNotification {
 
     private CampaignResponseNotification() {

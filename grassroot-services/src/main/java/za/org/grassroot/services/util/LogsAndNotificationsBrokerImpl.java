@@ -217,9 +217,12 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 	@Override
 	@Transactional(readOnly = true)
-	public Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve) {
+	public Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve, Instant sinceTime) {
 		Specifications<Notification> specs = Specifications.where(NotificationSpecifications.wasDelivered());
-		specs.and(NotificationSpecifications.toUser(user));
+		specs = specs.and(NotificationSpecifications.toUser(user));
+		if (sinceTime != null) {
+			specs = specs.and(NotificationSpecifications.sentOrBetterSince(sinceTime));
+		}
 		Pageable page = new PageRequest(0, numberToRetrieve == null ? 1 : numberToRetrieve, Sort.Direction.DESC, "lastStatusChange");
 		return notificationRepository.findAll(specs, page);
 	}

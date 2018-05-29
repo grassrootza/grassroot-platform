@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.enums.CampaignLogType;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
@@ -32,7 +33,7 @@ public interface LogsAndNotificationsBroker {
 
 	void abortNotificationSend(Specifications specifications);
 
-	Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve);
+	Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve, Instant sinceTime);
 
 	void removeCampaignLog(User user, Campaign campaign, CampaignLogType logType);
 
