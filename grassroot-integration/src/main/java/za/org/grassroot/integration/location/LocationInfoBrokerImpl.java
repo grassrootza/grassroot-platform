@@ -1,5 +1,6 @@
 package za.org.grassroot.integration.location;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -9,6 +10,7 @@ import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
@@ -104,7 +106,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             }
 
             ResponseEntity<TownLookupResult[]> lookupResult = restTemplate.getForEntity(uriBuilder.build().toUri(), TownLookupResult[].class);
-            log.info("lookup result: {}", lookupResult);
+            log.info("list: {}, lookup result: {}", Arrays.asList(lookupResult.getBody()), lookupResult);
             return Arrays.asList(lookupResult.getBody());
         } catch (RestClientException e) {
             log.error("Error constructing or executing lookup URL: ", e);
@@ -223,10 +225,12 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             List<String> records = retrieveRecordsForProvince(dataSetLabel, infoSetTag, province, user.getLocale());
             log.info("retrieved records from geo api, looks like: {}", records);
             String logMessage = dataSetLabel + " " + infoSetTag + String.join(", ", records);
-            sendAndLogRecords(records, accountUids, logMessage, user);
+            sendAndLogRecords(dataSetLabel, records, accountUids, logMessage, user);
+
         }
     }
 
+    @Async
     @Override
     public void assembleAndSendForPlace(String dataSetLabel, String infoSetTag, String placeId, String targetUserUid) {
         TownLookupResult place = lookupPlaceDetails(placeId);
@@ -256,11 +260,11 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
         if (!records.isEmpty()) {
             User targetUser = userRepository.findOneByUid(targetUserUid);
-            sendAndLogRecords(records, accountUids, "Place lookup results for Izwe Lami HCFs", targetUser);
+            sendAndLogRecords(IZWE_LAMI_LABEL, records, accountUids, "Place lookup results for Izwe Lami HCFs", targetUser);
         }
     }
 
-    private void sendAndLogRecords(List<String> records, Set<String> accountUids, String logMessage, User user) {
+    private void sendAndLogRecords(String dataSet, List<String> records, Set<String> accountUids, String logMessage, User user) {
         List<Account> accounts = accountRepository.findByUidIn(accountUids);
         if (accounts != null && !accounts.isEmpty()) {
             AccountLog accountLog = new AccountLog.Builder(accounts.get(0))
@@ -268,31 +272,31 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                     .accountLogType(AccountLogType.GEO_API_MESSAGE_SENT)
                     .description(logMessage.substring(0, Math.min(255, logMessage.length()))).build();
             accountLogRepository.saveAndFlush(accountLog);
-            Set<Notification> messages = notificationsFromRecords(records, user, accountLog, 160);
+            Set<Notification> messages = notificationsFromRecords(dataSet, records, user, accountLog, 160);
             log.info("generated messages to send out, in total {} messages", messages.size());
             notificationRepository.save(messages);
         }
     }
 
-    private Set<Notification> notificationsFromRecords(List<String> records, User target,
+    private Set<Notification> notificationsFromRecords(String dataSet, List<String> records, User target,
                                                        AccountLog accountLog, int singleMessageLength) {
         int countChars = String.join(", ", records).length();
         log.info("okay, have this many chars for records: {}", countChars);
+        Set<Notification> notifications = new HashSet<>();
+
         if (countChars < singleMessageLength) {
-            log.info("single message, returning it");
-            return Collections.singleton(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
+            notifications.add(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
         } else {
-            Set<Notification> notifications = new HashSet<>();
             StringBuilder currentMsg = new StringBuilder();
-            log.info("initiated, first message: {}", currentMsg);
+            log.debug("initiated, first message: {}", currentMsg);
             for (String r : records) {
                 if ((currentMsg.length() + r.length() + 2) < singleMessageLength) {
                     final String separator = currentMsg.length() > 0 ? "; " : "";
                     currentMsg.append(separator).append(r);
-                    log.info("continuing assembly, new message: {}", currentMsg);
+                    log.debug("continuing assembly, new message: {}", currentMsg);
                 } else {
                     notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
-                    log.info("appended message, creating new one");
+                    log.info("appended message: {}, creating new one", currentMsg.toString());
                     currentMsg = new StringBuilder(r);
                 }
             }
@@ -300,8 +304,14 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 log.info("adding final message: {}", currentMsg);
                 notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
             }
-            return notifications;
         }
+
+        final String finalMessage = getFinalMessage(dataSet, target.getLocale());
+        if (!StringUtils.isEmpty(finalMessage)) {
+            notifications.add(new FreeFormMessageNotification(target, finalMessage, accountLog));
+        }
+
+        return notifications;
     }
 
     // consider in time altering this to persist it
@@ -357,9 +367,29 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             Set<String> resultSet = outcome.getStringSet(field);
             return resultSet == null ? new ArrayList<>() :
                     sort ? resultSet.stream().sorted().collect(Collectors.toList()) : new ArrayList<>(resultSet);
-        } catch (Exception e) {
+        } catch (AmazonServiceException e) {
             log.error("Error!", e);
             throw new IllegalArgumentException("No results for that dataset and field");
+        }
+    }
+
+    private String getFinalMessage(String dataSetLabel, Locale locale) {
+        DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+        Table geoApiTable = dynamoDB.getTable("geo_apis");
+        GetItemSpec spec = new GetItemSpec()
+                .withPrimaryKey("data_set_label", dataSetLabel)
+                .withProjectionExpression("final_messages");
+        try {
+            log.info("getting final messages for dataset : {} and locale : {}", dataSetLabel, locale);
+            Item outcome = geoApiTable.getItem(spec);
+            log.info("result: {}", outcome);
+            Map<String, String> results = outcome.getMap("final_messages");
+            return results == null || results.isEmpty() ? null :
+                    locale != null && results.containsKey(locale.getLanguage())
+                            ? results.get(locale.getLanguage()) : results.getOrDefault("en", null);
+        } catch (AmazonServiceException e) {
+            log.error("Could not retrieve final messages");
+            return null;
         }
     }
 }

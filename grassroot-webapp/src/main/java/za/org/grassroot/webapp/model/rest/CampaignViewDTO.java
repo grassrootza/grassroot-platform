@@ -44,6 +44,7 @@ public class CampaignViewDTO {
     private long totalJoined;
     private long totalEngaged;
 
+    private String textJoinWord;
     private List<String> joinTopics;
     private List<CampaignMessageDTO> campaignMessages;
 
@@ -110,6 +111,10 @@ public class CampaignViewDTO {
 
         if (campaign.getCampaignImage() != null) {
             this.campaignImageKey = campaign.getCampaignImage().getUid();
+        }
+
+        if (!StringUtils.isEmpty(campaign.getPublicJoinWord())) {
+            this.textJoinWord = campaign.getPublicJoinWord();
         }
     }
 
