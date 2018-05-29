@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDCampaignConstants;
@@ -37,10 +38,12 @@ public class USSDCampaignController extends USSDBaseController {
     private static final String campaignUrl = homePath + campaignMenus;
 
     private final CampaignBroker campaignBroker;
+    private final AddressBroker addressBroker;
 
     @Autowired
-    public USSDCampaignController(CampaignBroker campaignBroker) {
+    public USSDCampaignController(CampaignBroker campaignBroker, AddressBroker addressBroker) {
         this.campaignBroker = campaignBroker;
+        this.addressBroker = addressBroker;
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignConstants.SET_LANGUAGE_URL)
@@ -165,9 +168,13 @@ public class USSDCampaignController extends USSDBaseController {
                     + campaign.getUid() + "&province="));
         } else if (!user.hasName()) {
             final String prompt = promptStart + getMessage("campaign.joined.name", user);
-            menu = new USSDMenu(prompt, campaignMenus + "/user/name?campaignUid=" + campaign.getUid());
-        } else if (campaign.isSharingEnabled() && campaign.sharingBudgetLeft() > 0) {
+            menu = new USSDMenu(prompt, campaignMenus + "user/name?campaignUid=" + campaign.getUid());
+        } else if (campaign.isOutboundTextEnabled() && campaign.outboundBudgetLeft() > 0
+                && !campaignBroker.hasUserShared(campaign.getUid(), user.getUid())) {
             menu = buildSharingMenu(campaign.getUid(), locale);
+        } else if (!addressBroker.hasAddressOrLocation(user.getUid())) {
+            final String prompt = getMessage("campaign.joined.town", user);
+            menu = new USSDMenu(prompt, userMenus + "town/select");
         } else {
             menu = genericPositiveExit(campaign.getUid(), locale);
         }
@@ -231,8 +238,10 @@ public class USSDCampaignController extends USSDBaseController {
     }
 
     private USSDMenu genericPositiveExit(String campaignUid, Locale locale) {
+        log.info("inside generic positive exit ...");
         List<CampaignMessage> campaignMessage = campaignBroker.findCampaignMessage(campaignUid,
                 CampaignActionType.EXIT_POSITIVE, locale);
+        log.info("found a campaign message? : {}", campaignMessage);
         return !campaignMessage.isEmpty() ? buildCampaignUSSDMenu(campaignMessage.get(0)) :
                 new USSDMenu(getMessage("campaign.exit_positive.generic", locale.getLanguage()));
     }

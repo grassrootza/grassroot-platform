@@ -29,7 +29,10 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 
 @RestController @Grassroot2RestController
@@ -143,8 +146,9 @@ public class AdminRestController extends BaseRestController{
                                                         HttpServletRequest request){
         User user;
         try{
-            user = userManagementService.findByInputNumber(phoneNumber);
+            user = userManagementService.findByNumberOrEmail(phoneNumber,email);
         }catch (NoSuchUserException e){
+            log.info("User not found");
             user = null;
         }
         Group group = groupRepository.findOneByUid(groupUid);
@@ -152,15 +156,17 @@ public class AdminRestController extends BaseRestController{
         MembershipInfo membershipInfo;
 
         if(user != null && group.hasMember(user)){
+            log.info("User was found and is part of group,updating only");
             Membership membership = group.getMembership(user);
             if(!user.hasPassword() || !user.isHasSetOwnName()){
                 groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(),displayName,phoneNumber,email,Province.valueOf(province));
                 restMessage = RestMessage.UPDATED;
-            }else{
-                groupBroker.updateMembershipRole(getUserIdFromRequest(request),groupUid,user.getUid(),roleName);
+            } else {
+                groupBroker.updateMembershipRole(getUserIdFromRequest(request), groupUid, user.getUid(), roleName);
                 restMessage = RestMessage.UPDATED;
             }
         }else{
+            log.info("User not found in database,creating membership and adding to group");
             membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
             membershipInfo.setProvince(Province.valueOf(province));
             membershipInfo.setMemberEmail(email);
@@ -169,4 +175,19 @@ public class AdminRestController extends BaseRestController{
         }
         return ResponseEntity.ok(restMessage.name());
     }
+
+    @RequestMapping(value = "/graph/transfer/users", method = RequestMethod.GET)
+    public ResponseEntity initiateUserGraphTransfer() {
+        log.info("alright, seeding the queue");
+        adminService.populateGrassrootGraphUsers();
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/graph/transfer/groups", method = RequestMethod.GET)
+    public ResponseEntity initiateGroupGraphTransfer() {
+        log.info("seeding queue with groups");
+        adminService.populateGrassrootGraphGroups();
+        return ResponseEntity.ok().build();
+    }
+
 }

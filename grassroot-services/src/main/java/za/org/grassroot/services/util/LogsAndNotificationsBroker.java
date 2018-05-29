@@ -4,6 +4,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
 
 import java.util.Collection;
 import java.util.List;
@@ -19,8 +20,12 @@ public interface LogsAndNotificationsBroker {
 
 	List<ActionLog> fetchMembershipLogs(Membership membership);
 
+	long countCampaignLogs(Specifications<CampaignLog> specs);
+
 	List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs);
 
 	void updateCache(Collection<ActionLog> actionLogs);
+
+	void abortNotificationSend(Specifications specifications);
 
 }

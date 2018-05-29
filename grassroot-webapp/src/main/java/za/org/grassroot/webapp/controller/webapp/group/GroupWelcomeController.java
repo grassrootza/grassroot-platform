@@ -45,7 +45,7 @@ public class GroupWelcomeController extends BaseController {
         accountGroupBroker.validateUserAccountAdminForGroup(getUserProfile().getUid(), groupUid);
         model.addAttribute("groupUid", groupUid);
         model.addAttribute("backUrl", String.format("/group/view?groupUid=%s", groupUid));
-        model.addAttribute("existingTemplate", accountGroupBroker.loadTemplate(groupUid));
+        model.addAttribute("existingTemplate", accountGroupBroker.loadWelcomeMessage(groupUid));
         model.addAttribute("hasChildren", accountGroupBroker.hasSubgroups(groupUid));
         return "group/welcome_messages";
     }

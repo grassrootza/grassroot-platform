@@ -1,4 +1,4 @@
-package za.org.grassroot.services.user;
+package za.org.grassroot.services.geo;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -22,19 +22,21 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.AddressLogRepository;
 import za.org.grassroot.core.repository.AddressRepository;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.integration.location.LocationInfoBroker;
+import za.org.grassroot.integration.location.TownLookupResult;
 import za.org.grassroot.services.async.AsyncUserLogger;
-import za.org.grassroot.services.geo.GeoLocationUtils;
-import za.org.grassroot.services.geo.InvertGeoCodeResult;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 
-import static za.org.grassroot.core.specifications.AddressSpecifications.forUser;
-import static za.org.grassroot.core.specifications.AddressSpecifications.matchesStreetArea;
+import static za.org.grassroot.core.specifications.AddressSpecifications.*;
 
 /**
  * Created by paballo on 2016/07/14.
@@ -51,18 +53,27 @@ public class AddressBrokerImpl implements AddressBroker {
 
     private final EntityManager entityManager;
     private final RestTemplate restTemplate;
+    private final LocationInfoBroker locationInfoBroker;
+
+    private UserLocationLogRepository userLocationLogRepository;
 
     @Value("${grassroot.geocoding.api.url:http://nominatim.openstreetmap.org/reverse}")
     private String geocodingApiUrl;
 
     @Autowired
-    public AddressBrokerImpl(UserRepository userRepository, AddressRepository addressRepository, AsyncUserLogger asyncUserLogger, AddressLogRepository addressLogRepository, EntityManager entityManager, RestTemplate restTemplate) {
+    public AddressBrokerImpl(UserRepository userRepository, AddressRepository addressRepository, AsyncUserLogger asyncUserLogger, AddressLogRepository addressLogRepository, EntityManager entityManager, RestTemplate restTemplate, LocationInfoBroker locationInfoBroker) {
         this.userRepository = userRepository;
         this.addressRepository = addressRepository;
         this.asyncUserLogger = asyncUserLogger;
         this.addressLogRepository = addressLogRepository;
         this.entityManager = entityManager;
         this.restTemplate = restTemplate;
+        this.locationInfoBroker = locationInfoBroker;
+    }
+
+    @Autowired(required = false)
+    public void setUserLocationLogRepository(UserLocationLogRepository userLocationLogRepository) {
+        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @Override
@@ -227,5 +238,36 @@ public class AddressBrokerImpl implements AddressBroker {
                 .source(LocationSource.convertFromInterface(interfaceType))
                 .description(description).build();
         addressLogRepository.save(log);
+    }
+
+    @Override
+    @Transactional
+    public void setUserArea(String userUid, String placeId, LocationSource locationAccuracy, boolean setPrimary) {
+        TownLookupResult place = locationInfoBroker.lookupPlaceDetails(placeId);
+        if (place != null) {
+            User user = userRepository.findOneByUid(userUid);
+            Address address = new Address(user, setPrimary);
+            address.setTownOrCity(place.getTownName());
+            address.setPostalCode(place.getPostalCode());
+            if (place.getLatitude() != null) {
+                address.setLocation(new GeoLocation(place.getLatitude(), place.getLongitude()));
+                address.setLocationSource(locationAccuracy);
+            }
+
+            storeAddressRawAfterDuplicateCheck(address);
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean hasAddressOrLocation(String userUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Specifications<Address> specs = Specifications.where(forUser(user)).and(hasLocationTownOrPostalCode());
+
+        if (addressRepository.count(specs) > 0)
+            return true;
+        else
+            return userLocationLogRepository != null && userLocationLogRepository.findFirstByUserUidAndTimestampAfterOrderByTimestampDesc(userUid,
+                Instant.now().minus(180, ChronoUnit.DAYS)) != null;
     }
 }

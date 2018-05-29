@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.TodoCancelledNotification;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
@@ -26,6 +27,7 @@ import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
+import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -60,6 +62,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
     private TaskImageBroker taskImageBroker;
     private PasswordTokenService tokenService;
+    private GraphBroker graphBroker;
 
     @Autowired
     public TodoBrokerImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
@@ -81,6 +84,11 @@ public class TodoBrokerImpl implements TodoBroker {
     @Autowired
     public void setTokenService(PasswordTokenService tokenService) {
         this.tokenService = tokenService;
+    }
+
+    @Autowired(required = false)
+    public void setGraphBroker(GraphBroker graphBroker) {
+        this.graphBroker = graphBroker;
     }
 
     @Override
@@ -136,7 +144,10 @@ public class TodoBrokerImpl implements TodoBroker {
 
         generateResponseTokens(todo, notifications);
 
-        log.info("and now we are done with todo creation ...");
+        log.info("and now we are done with todo creation ... adding to graph, if enabled");
+
+        if (graphBroker != null)
+            graphBroker.addTaskToGraph(todo);
 
         return todo.getUid();
     }
@@ -662,9 +673,17 @@ public class TodoBrokerImpl implements TodoBroker {
         Membership membership = group.getMembership(assignment.getUser());
 
         final String responseTag = assignment.getTodo().getResponseTag();
+        if (StringUtils.isEmpty(responseTag)) {
+            log.error("Error! Legacy of todo bug, with empty response tag, have to exit");
+            return new HashSet<>();
+        }
 
         final String memberTag = responseTag + ":" + response;
-        final Optional<String> currentTag = membership.getTagList().stream().filter(s -> s.startsWith(responseTag)).findFirst();
+
+        log.info("response tag: {}", responseTag);
+        final Optional<String> currentTag = membership.getTagList().stream()
+                .filter(Objects::nonNull)
+                .filter(s -> s.startsWith(responseTag)).findFirst();
 
         log.info("adding tag to member: {}, has already: {}", memberTag, currentTag);
 

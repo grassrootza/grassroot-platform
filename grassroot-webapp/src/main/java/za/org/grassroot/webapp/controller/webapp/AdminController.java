@@ -130,13 +130,13 @@ public class AdminController extends BaseController {
     @RequestMapping(value = "/admin/alpha/user/add", method = RequestMethod.GET)
     public String assignAlphaToUser(RedirectAttributes attributes, HttpServletRequest request,
                                     @RequestParam String phoneNumberOrEmail) {
-        try {
-            User user = userManagementService.findByNumberOrEmail(phoneNumberOrEmail, phoneNumberOrEmail);
+        User user = userManagementService.findByNumberOrEmail(phoneNumberOrEmail, phoneNumberOrEmail);
+        if (user == null) {
+            log.error("No user with phone or email " + phoneNumberOrEmail);
+            addMessage(attributes, MessageType.ERROR, "admin.alpha.error.nouser", request);
+        } else {
             adminService.addSystemRole(getUserProfile().getUid(), user.getUid(), BaseRoles.ROLE_ALPHA_TESTER);
             addMessage(attributes, MessageType.SUCCESS, "admin.alpha.add.done", request);
-        } catch (NoSuchUserException e) {
-            log.error("error! can't find that user", e);
-            addMessage(attributes, MessageType.ERROR, "admin.alpha.error.nouser", request);
         }
         return "redirect:/admin/alpha";
     }

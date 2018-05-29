@@ -33,7 +33,6 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.Random;
 
 /**
  * @author Lesetse Kimwaga
@@ -204,7 +203,6 @@ public class PasswordTokenManager implements PasswordTokenService {
             throw new InvalidOtpException();
         }
     }
-
 
     @Override
     public void validatePwdPhoneOrEmail(String username, String password) {

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignMessage_;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -25,7 +26,7 @@ public final class CampaignMessageSpecifications {
     }
 
     private static Specification<CampaignMessage> activeForCampaign(Campaign campaign) {
-        return (root, query, cb) -> cb.and(cb.equal(root.get("campaign"), campaign), cb.isTrue(root.get("active")));
+        return (root, query, cb) -> cb.and(cb.equal(root.get("campaign"), campaign), cb.isTrue(root.get(CampaignMessage_.active)));
     }
 
     private static Specification<CampaignMessage> ofActionType(CampaignActionType actionType) {
@@ -33,7 +34,7 @@ public final class CampaignMessageSpecifications {
     }
 
     private static Specification<CampaignMessage> forLanguage(Locale locale) {
-        return (root, query, cb) -> cb.equal(root.get("locale"), locale);
+        return (root, query, cb) -> cb.equal(root.get(CampaignMessage_.locale), locale);
     }
 
     private static Specification<CampaignMessage> withUserInterfaceParams(Locale locale, UserInterfaceType channel,

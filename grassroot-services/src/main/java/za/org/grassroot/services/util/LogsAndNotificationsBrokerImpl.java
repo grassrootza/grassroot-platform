@@ -204,7 +204,15 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         actionLogs.forEach(this::updateCacheSingle);
     }
 
-    private void updateCacheSingle(ActionLog actionLog) {
+	@Override
+	@Transactional
+	@SuppressWarnings("unchecked")
+	public void abortNotificationSend(Specifications specifications) {
+		notificationRepository.findAll((Specifications<Notification>) specifications)
+					.forEach(n -> n.setStatus(NotificationStatus.ABORTED));
+	}
+
+	private void updateCacheSingle(ActionLog actionLog) {
         PublicActivityType activityType = null;
 
         log.info("checking for public action type, log = {}", actionLog);
@@ -237,7 +245,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
                 break;
         }
 
-        log.info("okay tested for type, comes out as : {}", activityType);
+        log.debug("okay tested for type, comes out as : {}", activityType);
 
         if (activityType != null) {
             List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
@@ -246,7 +254,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
             }
 
             activityLogs.add(new PublicActivityLog(activityType, actionLog.getUser().getName(), actionLog.getCreationTime().toEpochMilli()));
-            log.info("activity type positive, adding to public cache: {}", activityLogs);
+            log.debug("activity type positive, adding to public cache: {}", activityLogs);
             cacheService.putCachedPublicActivity(activityType, activityLogs);
         }
     }
@@ -256,7 +264,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         return notificationRepository.count(specifications);
     }
 
-	@Override
+    @Override
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly = true)
 	public <T extends Notification> long countNotifications(Specifications<T> specs, Class<T> notificationType) {
@@ -318,7 +326,13 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 				.collect(Collectors.toList());
 	}
 
-    private void saveLog(ActionLog actionLog) {
+	@Override
+	@Transactional(readOnly = true)
+	public long countCampaignLogs(Specifications<CampaignLog> specs) {
+		return campaignLogRepository.count(specs);
+	}
+
+	private void saveLog(ActionLog actionLog) {
 		if (actionLog instanceof GroupLog) {
 			groupLogRepository.save((GroupLog) actionLog);
 			((GroupLog) actionLog).getGroup().setLastGroupChangeTime(Instant.now());

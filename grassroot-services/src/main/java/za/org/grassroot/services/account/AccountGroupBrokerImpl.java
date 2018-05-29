@@ -516,17 +516,16 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     public void createGroupWelcomeMessages(String userUid, String accountUid, String groupUid,
                                            List<String> messages, Duration delayToSend, Locale language, boolean onlyViaFreeChannels) {
         Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(messages);
-        Objects.requireNonNull(delayToSend);
 
         User user = userRepository.findOneByUid(userUid);
-        Account account = accountRepository.findOneByUid(accountUid);
+        Account account = accountUid == null ? user.getPrimaryAccount() : accountRepository.findOneByUid(accountUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        logger.info("account = {}", account);
-        logger.info("group = {}", group);
+        if (account == null) {
+            throw new NoPaidAccountException();
+        }
 
         logger.info("going to check for paid group on account = {}, for group = {}", account.getName(), group.getName());
         PaidGroup paidGroup = getOrCreatePaidGroup(user, account, group);
@@ -548,7 +547,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 .group(group)
                 .paidGroupUid(paidGroup.getUid())
                 .user(user)
-                .description(String.format("Duration: %s, messages: %s", delayToSend.toString(), messages.toString()))
+                .description(String.format("Duration: %s, messages: %s", delayToSend == null ? "none" : delayToSend.toString(), messages.toString()))
                 .build());
 
         // note : could also throw an error here, but would have to be more confident in the overall Account structure's
@@ -562,7 +561,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 .createdByUser(user)
                 .active(true)
                 .creationTime(Instant.now())
-                .delayIntervalMillis(delayToSend.toMillis())
+                .delayIntervalMillis(delayToSend == null ? 0L : delayToSend.toMillis())
                 .smsTemplate1(messages.get(0))
                 .onlyUseFreeChannels(onlyViaFreeChannels)
                 .build();
@@ -671,7 +670,13 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
     @Override
     @Transactional(readOnly = true)
-    public Broadcast loadTemplate(String groupUid) {
+    public boolean hasGroupWelcomeMessages(String groupUid) {
+        return loadWelcomeMessage(groupUid) != null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Broadcast loadWelcomeMessage(String groupUid) {
         Objects.requireNonNull(groupUid);
 
         Account account = findAccountForGroup(groupUid);
@@ -740,7 +745,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         validateUserAccountAdminForGroup(userUid, groupUid);
 
-        Broadcast template = loadTemplate(groupUid);
+        Broadcast template = loadWelcomeMessage(groupUid);
         template.setCascade(true);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
@@ -758,7 +763,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         validateUserAccountAdminForGroup(userUid, groupUid);
 
-        Broadcast template = loadTemplate(groupUid);
+        Broadcast template = loadWelcomeMessage(groupUid);
         template.setCascade(false);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
@@ -827,8 +832,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             logger.info("found no paid group record, creating one ...");
             addGroupToAccount(account.getUid(), group.getUid(), user.getUid());
             paidGroup = fetchLatestPaidGroup(group);
-        } else if (!paidGroup.getAccount().equals(account)) {
-            throw new GroupAlreadyPaidForException();
         }
 
         return paidGroup;

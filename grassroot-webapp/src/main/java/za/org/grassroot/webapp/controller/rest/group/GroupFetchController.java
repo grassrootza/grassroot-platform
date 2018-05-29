@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.rest.group;
 
-import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -131,7 +130,6 @@ public class GroupFetchController extends BaseRestController {
      * @param existingGroups The groups that already exist on the client, with the epochMilli time they were last updated
      * @return
      */
-    @Timed
     @RequestMapping(value = "/updated", method = RequestMethod.POST)
     public ResponseEntity<Set<GroupTimeChangedDTO>> fetchUpdatedGroups(HttpServletRequest request, @RequestBody Map<String, Long> existingGroups) {
         logger.info("checking for groups changes, map sent in: {}", existingGroups);

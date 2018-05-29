@@ -25,6 +25,10 @@ public interface CampaignBroker {
 
     CampaignMessage loadCampaignMessage(String messageUid, String userUid);
 
+    void checkForAndTriggerCampaignText(String campaignUid, String userUid);
+
+    void haltCampaignWelcomeText(String campaignUid, String userUid);
+
     List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale);
 
     List<Campaign> getCampaignsManagedByUser(String userUid);
@@ -49,6 +53,8 @@ public interface CampaignBroker {
 
     void setUserJoinTopic(String campaignUid, String userUid, String joinTopic, UserInterfaceType channel);
 
+    boolean hasUserShared(String campaignUid, String userUid);
+
     // modifying and adding
     Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate,
                     Instant endDate, List<String> joinTopics, CampaignType campaignType, String url, boolean smsShare, long smsLimit, String imageKey);
@@ -56,6 +62,12 @@ public interface CampaignBroker {
     Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages);
 
     Campaign updateMasterGroup(String campaignUid, String groupUid, String userUid);
+
+    void setCampaignMessageText(String userUid, String campaignUid, String message);
+
+    void clearCampaignMessageText(String userUid, String campaignUid);
+
+    String getCampaignMessageText(String userUid, String campaignUid);
 
     void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid,
                                boolean removeImage, Instant endDate, String newCode, String landingUrl, String petitionApi, List<String> joinTopics);
@@ -66,5 +78,7 @@ public interface CampaignBroker {
     void updateCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessageDTO> revisedMessages);
 
     void setCampaignImage(String userUid, String campaignUid, String mediaFileKey);
+
+    void endCampaign(String userUid, String campaignUid);
 
 }

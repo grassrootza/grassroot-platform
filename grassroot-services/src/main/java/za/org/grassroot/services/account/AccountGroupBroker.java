@@ -67,7 +67,9 @@ public interface AccountGroupBroker {
 
     void deactivateGroupWelcomes(String userUid, String groupUid);
 
-    Broadcast loadTemplate(String groupUid);
+    boolean hasGroupWelcomeMessages(String groupUid);
+
+    Broadcast loadWelcomeMessage(String groupUid);
 
     void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberUids);
 

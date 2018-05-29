@@ -417,7 +417,6 @@ public class GroupModifyController extends GroupBaseController {
         }
     }
 
-
     @RequestMapping(value = "/permissions/update/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Update group permissions")
     public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String groupUid,
@@ -437,6 +436,34 @@ public class GroupModifyController extends GroupBaseController {
             response = RestUtil.accessDeniedResponse();
         }
         return response;
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/welcome/check/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Checks for current group welcome message")
+    public ResponseEntity checkForGroupWelcomeMsg(@PathVariable String groupUid,
+                                                  HttpServletRequest request) {
+        Broadcast template = accountGroupBroker.loadWelcomeMessage(groupUid);
+        return template != null ? ResponseEntity.ok(template.getSmsTemplate1()) : ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/welcome/update/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Set a message to welcome users to the group (only possible on Extra accounts")
+    public ResponseEntity setGroupWelcomeMessage(@PathVariable String groupUid,
+                                                 @RequestParam String message,
+                                                 HttpServletRequest request) {
+        accountGroupBroker.createGroupWelcomeMessages(getUserIdFromRequest(request), null, groupUid,
+                Collections.singletonList(message), null, null, false);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/welcome/clear/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Remove a group welcome message")
+    public ResponseEntity removeGroupWelcomeMessage(@PathVariable String groupUid, HttpServletRequest request) {
+        accountGroupBroker.deactivateGroupWelcomes(getUserIdFromRequest(request), groupUid);
+        return ResponseEntity.ok().build();
     }
 
     private List<MembershipInfo> findInvalidMembers(Set<MembershipInfo> members) {
