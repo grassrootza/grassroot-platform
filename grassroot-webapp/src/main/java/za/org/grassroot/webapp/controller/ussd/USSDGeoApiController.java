@@ -125,6 +125,7 @@ public class USSDGeoApiController extends USSDBaseController {
         return menuBuilder(new USSDMenu(prompt, "geo/location/place/select/" + dataSet + "/" + infoSet));
     }
 
+
     @RequestMapping(value = "/location/place/select/{dataSet}/{infoSet}")
     public Request selectTownAndSend(@RequestParam(value = phoneNumber) String inputNumber,
                                      @PathVariable String dataSet,

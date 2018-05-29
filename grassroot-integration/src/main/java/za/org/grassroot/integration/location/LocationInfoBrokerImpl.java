@@ -226,6 +226,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.info("retrieved records from geo api, looks like: {}", records);
             String logMessage = dataSetLabel + " " + infoSetTag + String.join(", ", records);
             sendAndLogRecords(dataSetLabel, records, accountUids, logMessage, user);
+
         }
     }
 
