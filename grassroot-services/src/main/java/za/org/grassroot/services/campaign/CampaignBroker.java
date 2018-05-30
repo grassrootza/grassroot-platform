@@ -23,6 +23,8 @@ public interface CampaignBroker {
     // passing null to and of the last three will set them to defaults
     CampaignMessage getOpeningMessage(String campaignUid, Locale locale, UserInterfaceType interfaceType, MessageVariationAssignment variation);
 
+    void recordEngagement(String campaignUid, String userUid, UserInterfaceType channel, String logDesc);
+
     CampaignMessage loadCampaignMessage(String messageUid, String userUid);
 
     List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale);
@@ -52,6 +54,8 @@ public interface CampaignBroker {
     Campaign addUserToCampaignMasterGroup(String campaignUid, String userUid, UserInterfaceType channel);
 
     void setUserJoinTopic(String campaignUid, String userUid, String joinTopic, UserInterfaceType channel);
+
+    boolean hasUserEngaged(String campaignUid, String userUid);
 
     boolean hasUserShared(String campaignUid, String userUid);
 

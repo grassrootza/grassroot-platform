@@ -10,7 +10,7 @@ public interface CampaignTextBroker {
 
     String getCampaignMessageText(String userUid, String campaignUid);
 
-    void checkForAndTriggerCampaignText(String campaignUid, String userUid);
+    void checkForAndTriggerCampaignText(String campaignUid, String userUid, String callBackNumber, UserInterfaceType channel);
 
     String handleCampaignTextResponse(String campaignUid, String userUid, String reply, UserInterfaceType channel);
 
