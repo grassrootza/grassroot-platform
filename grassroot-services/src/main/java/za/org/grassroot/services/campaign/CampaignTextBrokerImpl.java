@@ -32,6 +32,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 import java.util.Objects;
 
 @Service @Slf4j
@@ -149,33 +150,33 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
     @Async
     @Override
     @Transactional
-    public void checkForAndTriggerCampaignText(String campaignUid, String userUid) {
+    public void checkForAndTriggerCampaignText(String campaignUid, String userUid, String callBackNumber, UserInterfaceType channel) {
         Campaign campaign = campaignBroker.load(campaignUid);
         User user = userManager.load(Objects.requireNonNull(userUid));
         Broadcast template = broadcastRepository.findTopByCampaignAndBroadcastScheduleAndActiveTrue(campaign, BroadcastSchedule.ENGAGED_CAMPAIGN);
         log.info("checked for welcome message, found? : {}", template);
         if (template != null && !StringUtils.isEmpty(template.getSmsTemplate1())
                 && campaign.outboundBudgetLeft() > 0) {
-            triggerCampaignText(campaign, user, template, template.getSmsTemplate1());
+            triggerCampaignText(campaign, user, template, template.getSmsTemplate1(), channel, callBackNumber);
         }
     }
 
-    private void triggerCampaignText(Campaign campaign, User user, Broadcast template, String message) {
+    private void triggerCampaignText(Campaign campaign, User user, Broadcast template, String message, UserInterfaceType channel, String callBackNumber) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_WELCOME_MESSAGE,
-                campaign, null, "Outbound engagement SMS");
+                campaign, channel, "Outbound engagement SMS");
         bundle.addLog(campaignLog);
 
         CampaignBroadcastNotification notification = new CampaignBroadcastNotification(
                 user, message, template, null, campaignLog);
-        notification.setSendOnlyAfter(Instant.now().plus(1, ChronoUnit.MINUTES));
+        Instant sendTime = UserInterfaceType.USSD.equals(channel) ? Instant.now().plus(30, ChronoUnit.SECONDS) : Instant.now();
+        notification.setSendOnlyAfter(sendTime);
         bundle.addNotification(notification);
 
         CampaignType campaignType = campaign.getCampaignType();
         if (userCanJoin(campaignType)) {
-            final String messageKey = "text.campaign.opening." + campaignType.name().toLowerCase();
-            final String respondText = messageSource.getMessage(messageKey, new String[] { MORE_INFO_STRING });
+            final String respondText = getNextStepMessage(campaignType, channel, user.getLocale(), callBackNumber);
             CampaignResponseNotification sendMoreInfo = new CampaignResponseNotification(user, respondText, campaignLog);
             bundle.addNotification(sendMoreInfo);
         }
@@ -184,30 +185,24 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
         campaign.addToOutboundSpent(campaign.getAccount().getFreeFormCost());
     }
 
+    private String getNextStepMessage(CampaignType campaignType, UserInterfaceType channel, Locale locale, String callBack) {
+        if (UserInterfaceType.PLEASE_CALL_ME.equals(channel)) {
+            return messageSource.getMessage("text.campaign.pcm.respond", new String[] { callBack }, locale);
+        } else {
+            final String messageKey = "text.campaign.opening." + campaignType.name().toLowerCase();
+            return messageSource.getMessage(messageKey, new String[]{MORE_INFO_STRING}, locale);
+        }
+    }
+
     @Override
     @Transactional
     public String handleCampaignTextResponse(String campaignUid, String userUid, String reply, UserInterfaceType channel) {
         User user = userManager.load(userUid);
         Campaign campaign = campaignBroker.load(campaignUid);
 
-        String returnMsg = "";
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-        if (MORE_INFO_STRING.equals(reply)) {
-            final String mainMsg = campaignBroker.getMessageOfType(campaignUid, CampaignActionType.MORE_INFO, userUid,
-                    UserInterfaceType.USSD); // since we are actually reusing the USSD channel
-            final String suffix = userCanJoin(campaign.getCampaignType()) ? messageSource.getMessage("text.campaign.moreinfo.respond") : "";
-            returnMsg =  !StringUtils.isEmpty(mainMsg) ? mainMsg.trim() + " " + suffix.trim() : suffix.trim();
-        } else if (MISTAKEN_JOIN_STRING.equals(reply)) {
-            // no message, just remove them from group
-            groupBroker.unsubscribeMember(userUid, campaign.getMasterGroup().getUid());
-            returnMsg = messageSource.getMessage("text.campaign.response.reversed", new String[] { campaign.getCampaignCode() });
-            logsAndNotificationsBroker.removeCampaignLog(user, campaign, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
-        } else {
-            log.info("Okay, adding user to group ...");
-            returnMsg = messageSource.getMessage("text.campaign.response.success", new String[] { MISTAKEN_JOIN_STRING });
-            campaignBroker.addUserToCampaignMasterGroup(campaignUid, userUid, channel);
-        }
+        String returnMsg = channel.equals(UserInterfaceType.PLEASE_CALL_ME) ? handleInboundPcmReply(user, campaign, reply) :
+                handleInboundSmsReply(user, campaign, reply);
 
         if (!StringUtils.isEmpty(returnMsg)) {
             final String logMsg = StringUtils.truncate(String.format("Responded to user, number %s, with info %s", user.getName(), returnMsg), 250);
@@ -218,6 +213,30 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
 
         logsAndNotificationsBroker.storeBundle(bundle);
         return returnMsg;
+    }
+
+    private String handleInboundSmsReply(User user, Campaign campaign, String reply) {
+        if (MORE_INFO_STRING.equals(reply)) {
+            final String mainMsg = campaignBroker.getMessageOfType(campaign.getUid(), CampaignActionType.MORE_INFO, user.getUid(),
+                    UserInterfaceType.USSD); // since we are actually reusing the USSD channel
+            final String suffix = userCanJoin(campaign.getCampaignType()) ? messageSource.getMessage("text.campaign.moreinfo.respond") : "";
+            return !StringUtils.isEmpty(mainMsg) ? mainMsg.trim() + " " + suffix.trim() : suffix.trim();
+        } else if (MISTAKEN_JOIN_STRING.equals(reply)) {
+            // no message, just remove them from group
+            groupBroker.unsubscribeMember(user.getUid(), campaign.getMasterGroup().getUid());
+            logsAndNotificationsBroker.removeCampaignLog(user, campaign, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
+            return messageSource.getMessage("text.campaign.response.reversed", new String[] { campaign.getCampaignCode() });
+        } else {
+            log.info("Okay, adding user to group ...");
+            campaignBroker.addUserToCampaignMasterGroup(campaign.getUid(), user.getUid(), UserInterfaceType.INCOMING_SMS);
+            return messageSource.getMessage("text.campaign.response.success", new String[] { MISTAKEN_JOIN_STRING });
+        }
+    }
+
+    private String handleInboundPcmReply(User user, Campaign campaign, String reply) {
+        log.info("Okay, adding user to group via PCM ...");
+        campaignBroker.addUserToCampaignMasterGroup(campaign.getUid(), user.getUid(), UserInterfaceType.PLEASE_CALL_ME);
+        return messageSource.getMessage("text.campaign.response.success", new String[] { MISTAKEN_JOIN_STRING });
     }
 
     private boolean userCanJoin(CampaignType campaignType) {

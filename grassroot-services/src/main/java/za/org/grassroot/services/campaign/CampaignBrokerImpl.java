@@ -1,6 +1,7 @@
 package za.org.grassroot.services.campaign;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
@@ -9,7 +10,6 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
@@ -18,7 +18,6 @@ import za.org.grassroot.core.domain.notification.CampaignSharingNotification;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.repository.BroadcastRepository;
 import za.org.grassroot.core.repository.CampaignMessageRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
@@ -64,7 +63,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Autowired
     public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, CampaignStatsBroker campaignStatsBroker, GroupBroker groupBroker, AccountGroupBroker accountGroupBroker, UserManagementService userManagementService,
-                              LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, MediaFileBroker mediaFileBroker, ApplicationEventPublisher eventPublisher, BroadcastRepository broadcastRepository){
+                              LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, MediaFileBroker mediaFileBroker, ApplicationEventPublisher eventPublisher){
         this.campaignRepository = campaignRepository;
         this.campaignMessageRepository = campaignMessageRepository;
         this.campaignStatsBroker = campaignStatsBroker;
@@ -112,10 +111,19 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
+    @Transactional
+    public void recordEngagement(String campaignUid, String userUid, UserInterfaceType channel, String logDesc) {
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_FOUND, campaign, channel, StringUtils.truncate(logDesc, 250)));
+        campaignStatsBroker.clearCampaignStatsCache(campaign.getUid());
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public CampaignMessage loadCampaignMessage(String messageUid, String userUid) {
         Objects.requireNonNull(messageUid);
-        Objects.requireNonNull(userUid); // todo: add in logging here
+        Objects.requireNonNull(userUid);
         return campaignMessageRepository.findOneByUid(messageUid);
     }
 
@@ -155,10 +163,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Objects.requireNonNull(campaignCode);
         Campaign campaign = getCampaignByCampaignCode(campaignCode);
         if (campaign != null && storeLog) {
-            Objects.requireNonNull(userUid);
-            User user = userManager.load(userUid);
-            persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_FOUND, campaign, channel, campaignCode));
-            campaignStatsBroker.clearCampaignStatsCache(campaign.getUid());
+            recordEngagement(campaign.getUid(), userUid, channel, campaignCode);
         }
         return campaign;
     }
@@ -583,6 +588,16 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean hasUserEngaged(String campaignUid, String userUid) {
+        final User user = userManager.load(Objects.requireNonNull(userUid));
+        Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
+        Specifications<CampaignLog> specs = Specifications.where(forUser)
+                .and((root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType), CampaignLogType.CAMPAIGN_FOUND));
+        return logsAndNotificationsBroker.countCampaignLogs(specs) > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean hasUserShared(String campaignUid, String userUid) {
         User user = userManager.load(Objects.requireNonNull(userUid));
         Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
@@ -651,18 +666,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private Campaign getCampaignByCampaignCode(String campaignCode){
         Objects.requireNonNull(campaignCode);
         return campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode, Instant.now());
-    }
-
-    // leave this here for a while as may come in handy in future, although not quite yet
-    private String createSearchValue(String value, MessageVariationAssignment assignment, Locale locale, String tag){
-        String AND = " and ";
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(" search by ");
-        stringBuilder.append((value != null)? value:"");
-        stringBuilder.append((assignment != null)? AND.concat(assignment.name()):"");
-        stringBuilder.append((locale !=  null)? AND.concat(locale.getDisplayLanguage()):"");
-        stringBuilder.append((tag != null)? AND.concat(tag):"");
-        return stringBuilder.toString();
     }
 
     private void createAndStoreCampaignLog(CampaignLog campaignLog) {

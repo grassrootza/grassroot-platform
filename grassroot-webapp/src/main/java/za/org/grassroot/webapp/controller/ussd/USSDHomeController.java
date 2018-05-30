@@ -251,7 +251,7 @@ public class USSDHomeController extends USSDBaseController {
 
     private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user) {
         log.info("fire off SMS in background, if exists ...");
-        campaignTextBroker.checkForAndTriggerCampaignText(campaign.getUid(), user.getUid());
+        campaignTextBroker.checkForAndTriggerCampaignText(campaign.getUid(), user.getUid(), null, UserInterfaceType.USSD);
         log.info("fired off ... continue ...");
         Set<Locale> supportedCampaignLanguages = campaignBroker.getCampaignLanguages(campaign.getUid());
         if(supportedCampaignLanguages.size() == 1) {

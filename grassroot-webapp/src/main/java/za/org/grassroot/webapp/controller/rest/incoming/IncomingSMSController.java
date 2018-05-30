@@ -5,8 +5,11 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.Campaign;
@@ -36,6 +39,9 @@ import java.util.stream.Collectors;
 @RestController @Slf4j
 @RequestMapping("/api/inbound/sms/")
 public class IncomingSMSController {
+
+    @Value("${grassroot.pcm.inbound.secret:1234}")
+    private String INBOUND_PCM_TOKEN;
 
     // some prefixes used in logging inbound
     private static final String RECEIVED = "RECEIVED:";
@@ -140,10 +146,10 @@ public class IncomingSMSController {
             // disambiguate somehow ... for the moment, just adding the first
             final String campaignUid = campaignMatches.iterator().next();
             bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, MATCHED + message, UserInterfaceType.INCOMING_SMS));
-
+            campaignBroker.recordEngagement(campaignUid, user.getUid(), UserInterfaceType.INCOMING_SMS, message);
 
             // since there are and may be two such messages, we rather initiate them through the back
-            campaignTextBroker.checkForAndTriggerCampaignText(campaignUid, user.getUid());
+            campaignTextBroker.checkForAndTriggerCampaignText(campaignUid, user.getUid(), null, UserInterfaceType.INCOMING_SMS);
             reply = "";
         } else {
             log.info("received a join word but don't know what to do with it, message: {}", message.trim());
@@ -153,6 +159,27 @@ public class IncomingSMSController {
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
         return reply;
+    }
+
+    @RequestMapping(value = "initiated/campaign/pcm/{campaignUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Receive an incoming please call me, and send a welcome message, or add to group")
+    public ResponseEntity receivePleaseCallMe(@PathVariable String campaignUid,
+                                              @RequestParam String secret,
+                                              @RequestParam(value = FROM_PARAMETER_NEW) String phoneNumber,
+                                              @RequestParam(value = MESSAGE_TEXT_PARAM_REPLY) String message) {
+        if (!secret.equals(INBOUND_PCM_TOKEN)) {
+            log.error("Invalid inbound token received: {}", secret);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        User user = userManager.loadOrCreateUser(phoneNumber);
+        if (!campaignBroker.hasUserEngaged(campaignUid, user.getUid())) {
+            campaignBroker.recordEngagement(campaignUid, user.getUid(), UserInterfaceType.PLEASE_CALL_ME, message);
+            campaignTextBroker.checkForAndTriggerCampaignText(campaignUid, user.getUid(), null, UserInterfaceType.PLEASE_CALL_ME);
+        } else {
+            campaignTextBroker.handleCampaignTextResponse(campaignUid, user.getUid(), message, UserInterfaceType.PLEASE_CALL_ME);
+        }
+        return ResponseEntity.ok().build();
     }
 
     @RequestMapping(value = "reply", method = RequestMethod.GET)
