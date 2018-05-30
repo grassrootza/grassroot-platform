@@ -161,7 +161,7 @@ public class IncomingSMSController {
         return reply;
     }
 
-    @RequestMapping(value = "initiated/campaign/pcm/{campaignUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "initiated/pcm/campaign/{campaignUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Receive an incoming please call me, and send a welcome message, or add to group")
     public ResponseEntity receivePleaseCallMe(@PathVariable String campaignUid,
                                               @RequestParam String secret,
