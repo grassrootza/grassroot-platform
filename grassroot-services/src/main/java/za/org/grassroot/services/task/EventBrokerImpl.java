@@ -37,12 +37,14 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
+import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -933,6 +935,39 @@ public class EventBrokerImpl implements EventBroker {
 		return eventRepository.findAll(specifications, sort);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	@SuppressWarnings("unchecked")
+	public LocalTime getMostFrequentEventTime(String groupUid){
+		Group group = groupRepository.findOneByUid(groupUid);
 
+		String qry = "SELECT to_char(e.eventStartDateTime,'hh24:mi') as event_time, " +
+				"COUNT(e.eventStartDateTime) as count_time " +
+				"FROM Meeting e " +
+				"WHERE e.ancestorGroup= :group " +
+				"group by e.eventStartDateTime " +
+				"order by count_time desc";
+
+		TypedQuery<Object[]> eventTypedQuery =
+				entityManager.createQuery(qry,Object[].class)
+						.setParameter("group",group);
+		//String time = "";
+		String time2 = "";
+		if(eventTypedQuery != null){
+			List<Object[]> events = eventTypedQuery.getResultList();
+			if(events != null && !events.isEmpty()){
+				time2 = String.valueOf(events.get(0)[0]);
+				//String[] parts = String.valueOf(events.get(0)[0]).split(":");
+				//time = parts.length > 0 ? parts[0] + "h" + parts[1] : null;
+			}
+
+		}
+
+		LocalTime localTime = LocalTime.parse(time2);
+
+		log.info("Local time is:{}",localTime);
+
+		return localTime;
+	}
 
 }

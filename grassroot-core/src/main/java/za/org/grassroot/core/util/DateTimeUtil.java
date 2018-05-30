@@ -158,6 +158,20 @@ public class DateTimeUtil {
 
     }
 
+    public static String checkDateString(String userInput,String mostFreqTime){
+        String dateString = null;
+
+        if(userInput.matches(datePatternWithoutYear.toString())){
+            dateString = userInput + " " + mostFreqTime;
+        }
+
+        /*if (!reformatDateInput(userInput).equalsIgnoreCase(userInput.trim())) {
+            dateString = reformatDateInput(userInput);
+            log.info("got a date string: {}", dateString);
+        }*/
+        return dateString;
+    }
+
 
     /**
      * Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than

@@ -16,6 +16,7 @@ import za.org.grassroot.services.task.enums.EventListTimeType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,4 +95,6 @@ public interface EventBroker {
 	Event getMostRecentEvent(String groupUid);
 
 	String getMostFrequentLocation(String groupUid);
+
+	LocalTime getMostFrequentEventTime(String groupUid);
 }

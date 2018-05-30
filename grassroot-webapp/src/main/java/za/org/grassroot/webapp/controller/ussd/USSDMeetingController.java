@@ -24,6 +24,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
@@ -399,6 +400,8 @@ public class USSDMeetingController extends USSDBaseController {
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(placeMenu, mtgRequestUid, revising));
         if (!interrupted) eventUtil.updateEventRequest(user.getUid(), mtgRequestUid, priorMenu, userInput);
 
+        log.info("User input is......................{}",userInput);
+
         MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
         log.info("okay looking up most frequent location ...");
         final String mostFreq = eventBroker.getMostFrequentLocation(eventRequest.getParent().getUid());
@@ -420,12 +423,21 @@ public class USSDMeetingController extends USSDBaseController {
                            @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(timeMenu, mtgRequestUid, false));
+
+        MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
+
+        log.info("Trying to get most frequent time.....={}",eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()));
+
+        final String mostFreqTime = eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()).toString();
+
         if (!interrupted) eventUtil.updateEventRequest(sessionUser.getUid(), mtgRequestUid, priorMenu, userInput);
 
-        String promptMessage = getMessage(thisSection, timeMenu, promptKey, sessionUser);
+        String promptMessage = StringUtils.isEmpty(mostFreqTime) ?
+                getMessage(thisSection, timeMenu, promptKey, sessionUser) :
+                getMessage(thisSection, timeMenu, promptKey + ".freq",mostFreqTime, sessionUser);
+
         String nextUrl = meetingMenus + nextMenu(timeMenu) + entityUidUrlSuffix + mtgRequestUid + "&" + previousMenu + "=" + timeMenu;
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
-
     }
 
     @RequestMapping(value = path + timeOnly)
@@ -469,6 +481,7 @@ public class USSDMeetingController extends USSDBaseController {
                                   @RequestParam(value = userInputParam, required = false) String userInput,
                                   @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
+        log.info("Meeting req uid={}",mtgRequestUid);
 
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(confirmMenu, mtgRequestUid, false));
 
