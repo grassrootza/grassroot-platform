@@ -426,11 +426,10 @@ public class USSDMeetingController extends USSDBaseController {
 
         MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
 
-        log.info("Trying to get most frequent time.....={}",eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()));
-
-        final String mostFreqTime = eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()).toString();
-
         if (!interrupted) eventUtil.updateEventRequest(sessionUser.getUid(), mtgRequestUid, priorMenu, userInput);
+
+        final String mostFreqTime = eventRequest != null ? eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()) :
+                "";
 
         String promptMessage = StringUtils.isEmpty(mostFreqTime) ?
                 getMessage(thisSection, timeMenu, promptKey, sessionUser) :

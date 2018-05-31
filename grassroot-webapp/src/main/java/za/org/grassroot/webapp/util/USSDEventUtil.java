@@ -216,8 +216,8 @@ public class USSDEventUtil extends USSDUtil {
 
         if(dateTime.substring(dateTime.indexOf("T") + 1).equals("00:00")){
             MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(eventUid);
-            LocalTime mostFreqTime = eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid());
-            localDateTime = LocalDateTime.of(parsedDateTime.toLocalDate(), mostFreqTime);
+            String mostFreqTime = eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid());
+            localDateTime = LocalDateTime.of(parsedDateTime.toLocalDate(), LocalTime.parse(mostFreqTime));
         }else{
             localDateTime = parsedDateTime;
         }
