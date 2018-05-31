@@ -165,8 +165,8 @@ public class IncomingSMSController {
     @ApiOperation(value = "Receive an incoming please call me, and send a welcome message, or add to group")
     public ResponseEntity receivePleaseCallMe(@PathVariable String campaignUid,
                                               @RequestParam String secret,
-                                              @RequestParam(value = FROM_PARAMETER_NEW) String phoneNumber,
-                                              @RequestParam(value = MESSAGE_TEXT_PARAM_REPLY) String message) {
+                                              @RequestParam(value = "from_number") String phoneNumber,
+                                              @RequestParam(value = "content") String message) {
         if (!secret.equals(INBOUND_PCM_TOKEN)) {
             log.error("Invalid inbound token received: {}", secret);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
