@@ -1,5 +1,6 @@
 package za.org.grassroot.integration.location;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -9,8 +10,8 @@ import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -36,10 +37,10 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
-// todo : use JWT? though, these are open datasets (similar q on http vs https, esp if these are in same VPC)
 @Component @Slf4j
-@ConditionalOnProperty(name = "grassroot.geo.apis.enabled", matchIfMissing = false)
 public class LocationInfoBrokerImpl implements LocationInfoBroker {
+
+    private static final String IZWE_LAMI_LABEL = "IZWE_LAMI_CONS";
 
     private final Environment environment;
     private final RestTemplate restTemplate;
@@ -50,9 +51,13 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private final NotificationRepository notificationRepository;
 
     private boolean useDynamoDirect;
+    private AmazonDynamoDB dynamoDBClient;
+
     private String geoApiHost;
     private Integer geoApiPort;
-    private AmazonDynamoDB dynamoDBClient;
+
+    private String placeLookupLambda;
+    private String izweLamiLambda;
 
     @Autowired
     public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository, AccountRepository accountRepository, AccountLogRepository accountLogRepository, NotificationRepository notificationRepository) {
@@ -66,13 +71,17 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     @PostConstruct
     public void init() {
-        log.info("GeoAPI integration is active, setting up URLs etc");
+        log.info("GeoAPI integration is active, setting up URLs, tables");
+
         useDynamoDirect = environment.getProperty("grassroot.geo.dynamodb.direct", Boolean.class, false);
         geoApiHost = environment.getProperty("grassroot.geo.apis.host", "localhost");
         geoApiPort = environment.getProperty("grassroot.geo.apis.port", Integer.class, 80);
 
+        placeLookupLambda = environment.getProperty("grassroot.places.lambda.url", "http://localhost:3000");
+        izweLamiLambda = environment.getProperty("grassroot.izwelami.lambda.url", "http://localhost:3001");
+
         if (useDynamoDirect) {
-            log.info("okay we are using dynamo db directly for geo APIs ...");
+            log.info("Using dynamo db directly for geo APIs ...");
             dynamoDBClient = AmazonDynamoDBClientBuilder.standard()
                     .withRegion(Regions.EU_WEST_1)
                     .withCredentials(new ProfileCredentialsProvider("geoApisDynamoDb")).build();
@@ -84,6 +93,42 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 .scheme("http")
                 .host(geoApiHost)
                 .port(geoApiPort);
+    }
+
+    @Override
+    public List<TownLookupResult> lookupPostCodeOrTown(String postCodeOrTown, Province province) {
+        try {
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(placeLookupLambda + "/lookup")
+                    .queryParam("searchTerm", postCodeOrTown.trim());
+
+            if (province != null) {
+                uriBuilder.queryParam("province", Province.CANONICAL_NAMES_ZA.getOrDefault(province, ""));
+            }
+
+            ResponseEntity<TownLookupResult[]> lookupResult = restTemplate.getForEntity(uriBuilder.build().toUri(), TownLookupResult[].class);
+            log.info("list: {}, lookup result: {}", Arrays.asList(lookupResult.getBody()), lookupResult);
+            return Arrays.asList(lookupResult.getBody());
+        } catch (RestClientException e) {
+            log.error("Error constructing or executing lookup URL: ", e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public TownLookupResult lookupPlaceDetails(String placeId) {
+        try {
+            URI uri = UriComponentsBuilder.fromUriString(placeLookupLambda)
+                    .pathSegment("details")
+                    .pathSegment("{placeId}")
+                    .buildAndExpand(placeId).toUri();
+            log.info("calling url: {}", uri);
+            ResponseEntity<TownLookupResult> responseEntity = restTemplate.getForEntity(uri, TownLookupResult.class);
+            log.info("found place: {}", responseEntity.getBody());
+            return responseEntity.getBody();
+        } catch (RestClientException e) {
+            log.error("Error constructing or executing lookup URL: {}", e);
+            return null;
+        }
     }
 
     @Override
@@ -120,19 +165,12 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
-    public List<String> getAvailableInfoForProvince(String dataSetLabel, Province province, Locale locale) {
-        if (!useDynamoDirect) {
-            URI uriToCall = baseBuilder()
-                    .path("/sets/available/{dataset}")
-                    .queryParam("province", province.toString())
-                    .queryParam("locale", locale.toLanguageTag())
-                    .buildAndExpand(dataSetLabel).toUri();
-            log.info("assembled URI string to get list of data sets = {}", uriToCall.toString());
-            return getFromUri(uriToCall);
-        } else {
-            // todo : think about whether / how to differentiate by province in current design
-            return getFromDynamo(dataSetLabel, "info_sets", false);
-        }
+    public Map<String, String> getAvailableInfoAndLowestLevelForDataSet(String dataSetLabel) {
+        List<String> infoSets = getFromDynamo(dataSetLabel, "info_set_geo_level", true);
+        return infoSets.stream().map(s -> s.replaceAll("([0-9]_)", ""))
+                .peek(s -> log.info("replaced string: {}", s))
+                .collect(Collectors.toMap(
+                        s -> s.substring(0, s.indexOf("_")), s -> s.substring(s.indexOf("_") + 1, s.length())));
     }
 
     @Override
@@ -186,41 +224,79 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             User user = userRepository.findOneByUid(targetUid);
             List<String> records = retrieveRecordsForProvince(dataSetLabel, infoSetTag, province, user.getLocale());
             log.info("retrieved records from geo api, looks like: {}", records);
-            String message = dataSetLabel + " " + infoSetTag + String.join(", ", records);
-            List<Account> accounts = accountRepository.findByUidIn(accountUids);
-            if (accounts != null && !accounts.isEmpty()) {
-                // todo : split among sponsoring accounts
-                AccountLog accountLog = new AccountLog.Builder(accounts.get(0))
-                        .user(user)
-                        .accountLogType(AccountLogType.GEO_API_MESSAGE_SENT)
-                        .description(message.substring(0, Math.min(255, message.length()))).build();
-                accountLogRepository.saveAndFlush(accountLog);
-                Set<Notification> messages = notificationsFromRecords(records, user, accountLog, 160);
-                log.info("generated messages to send out, in total {} messages", messages.size());
-                notificationRepository.save(messages);
-            }
+            String logMessage = dataSetLabel + " " + infoSetTag + String.join(", ", records);
+            sendAndLogRecords(dataSetLabel, records, accountUids, logMessage, user);
+
         }
     }
 
-    private Set<Notification> notificationsFromRecords(List<String> records, User target,
+    @Async
+    @Override
+    public void assembleAndSendForPlace(String dataSetLabel, String infoSetTag, String placeId, String targetUserUid) {
+        TownLookupResult place = lookupPlaceDetails(placeId);
+        final Set<String> accountUids = getSponsoringAccountUids(dataSetLabel);
+        if (accountUids == null || accountUids.isEmpty())
+            throw new IllegalArgumentException("Error! Dataset without sponsoring account called");
+
+        log.info("data set {}, info set {}, place ID {}", dataSetLabel, infoSetTag, placeId);
+        if (IZWE_LAMI_LABEL.equals(dataSetLabel)) {
+            assembleAndSendHealthClinics(place, targetUserUid, accountUids);
+        } else {
+            throw new IllegalArgumentException("Error! Unsupported data set for place lookup");
+        }
+    }
+
+    private void assembleAndSendHealthClinics(TownLookupResult place, String targetUserUid, Set<String> accountUids) {
+        UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl(izweLamiLambda)
+                .path("/closest")
+                .queryParam("latitude", place.getLatitude())
+                .queryParam("longitude", place.getLongitude())
+                .queryParam("size", 5);
+        ResponseEntity<RangedInformation[]> results = restTemplate.getForEntity(componentsBuilder.build().toUri(), RangedInformation[].class);
+        List<String> records = Arrays.stream(results.getBody())
+                .sorted(Comparator.comparing(RangedInformation::getDistance))
+                .map(RangedInformation::getInformation).collect(Collectors.toList());
+        log.info("okay, got these results: {}, and records: {}", results.getBody(), records);
+
+        if (!records.isEmpty()) {
+            User targetUser = userRepository.findOneByUid(targetUserUid);
+            sendAndLogRecords(IZWE_LAMI_LABEL, records, accountUids, "Place lookup results for Izwe Lami HCFs", targetUser);
+        }
+    }
+
+    private void sendAndLogRecords(String dataSet, List<String> records, Set<String> accountUids, String logMessage, User user) {
+        List<Account> accounts = accountRepository.findByUidIn(accountUids);
+        if (accounts != null && !accounts.isEmpty()) {
+            AccountLog accountLog = new AccountLog.Builder(accounts.get(0))
+                    .user(user)
+                    .accountLogType(AccountLogType.GEO_API_MESSAGE_SENT)
+                    .description(logMessage.substring(0, Math.min(255, logMessage.length()))).build();
+            accountLogRepository.saveAndFlush(accountLog);
+            Set<Notification> messages = notificationsFromRecords(dataSet, records, user, accountLog, 160);
+            log.info("generated messages to send out, in total {} messages", messages.size());
+            notificationRepository.save(messages);
+        }
+    }
+
+    private Set<Notification> notificationsFromRecords(String dataSet, List<String> records, User target,
                                                        AccountLog accountLog, int singleMessageLength) {
         int countChars = String.join(", ", records).length();
         log.info("okay, have this many chars for records: {}", countChars);
+        Set<Notification> notifications = new HashSet<>();
+
         if (countChars < singleMessageLength) {
-            log.info("single message, returning it");
-            return Collections.singleton(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
+            notifications.add(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
         } else {
-            Set<Notification> notifications = new HashSet<>();
             StringBuilder currentMsg = new StringBuilder();
-            log.info("initiated, first message: {}", currentMsg);
+            log.debug("initiated, first message: {}", currentMsg);
             for (String r : records) {
                 if ((currentMsg.length() + r.length() + 2) < singleMessageLength) {
                     final String separator = currentMsg.length() > 0 ? "; " : "";
                     currentMsg.append(separator).append(r);
-                    log.info("continuing assembly, new message: {}", currentMsg);
+                    log.debug("continuing assembly, new message: {}", currentMsg);
                 } else {
                     notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
-                    log.info("appended message, creating new one");
+                    log.info("appended message: {}, creating new one", currentMsg.toString());
                     currentMsg = new StringBuilder(r);
                 }
             }
@@ -228,8 +304,14 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 log.info("adding final message: {}", currentMsg);
                 notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
             }
-            return notifications;
         }
+
+        final String finalMessage = getFinalMessage(dataSet, target.getLocale());
+        if (!StringUtils.isEmpty(finalMessage)) {
+            notifications.add(new FreeFormMessageNotification(target, finalMessage, accountLog));
+        }
+
+        return notifications;
     }
 
     // consider in time altering this to persist it
@@ -241,7 +323,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.info("retrieving sponsoring account for dataset {}, with URL {}", dataSet, uriToCall);
             try {
                 ResponseEntity<String[]> accountResponse = restTemplate.getForEntity(uriToCall, String[].class);
-                return new HashSet<String>(Arrays.asList(accountResponse.getBody()));
+                return new HashSet<>(Arrays.asList(accountResponse.getBody()));
             } catch (RestClientException e) {
                 return null;
             }
@@ -285,9 +367,29 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             Set<String> resultSet = outcome.getStringSet(field);
             return resultSet == null ? new ArrayList<>() :
                     sort ? resultSet.stream().sorted().collect(Collectors.toList()) : new ArrayList<>(resultSet);
-        } catch (Exception e) {
+        } catch (AmazonServiceException e) {
             log.error("Error!", e);
             throw new IllegalArgumentException("No results for that dataset and field");
+        }
+    }
+
+    private String getFinalMessage(String dataSetLabel, Locale locale) {
+        DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+        Table geoApiTable = dynamoDB.getTable("geo_apis");
+        GetItemSpec spec = new GetItemSpec()
+                .withPrimaryKey("data_set_label", dataSetLabel)
+                .withProjectionExpression("final_messages");
+        try {
+            log.info("getting final messages for dataset : {} and locale : {}", dataSetLabel, locale);
+            Item outcome = geoApiTable.getItem(spec);
+            log.info("result: {}", outcome);
+            Map<String, String> results = outcome.getMap("final_messages");
+            return results == null || results.isEmpty() ? null :
+                    locale != null && results.containsKey(locale.getLanguage())
+                            ? results.get(locale.getLanguage()) : results.getOrDefault("en", null);
+        } catch (AmazonServiceException e) {
+            log.error("Could not retrieve final messages");
+            return null;
         }
     }
 }

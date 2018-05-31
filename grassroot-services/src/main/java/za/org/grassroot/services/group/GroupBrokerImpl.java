@@ -584,6 +584,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (!wasAlreadyMember) {
             notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
+            triggerWelcomeMessagesAfterCommit(user.getUid(), group.getUid(), Collections.singleton(user.getUid()));
         }
 
         storeBundleAfterCommit(bundle);
@@ -969,14 +970,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         logger.info("changing member to this role: " + roleName);
 
-        if (userUid.equals(memberUid))
-            throw new IllegalArgumentException("A user cannot change ther own role: memberUid = " + memberUid);
-
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        boolean isSystemAdmin = permissionBroker.isSystemAdmin(user);
+        if (!isSystemAdmin && userUid.equals(memberUid))
+            throw new IllegalArgumentException("A user cannot change their own role: memberUid = " + memberUid);
+
+        if (!isSystemAdmin) {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
 
         Membership membership = group.getMemberships().stream()
@@ -1005,16 +1007,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         User changingUser = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        if(!changingUser.getStandardRoles().contains("ROLE_SYSTEM_ADMIN") || !permissionBroker.isGroupPermissionAvailable(changingUser,group,Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)){
+        if(!permissionBroker.isSystemAdmin(changingUser) || !permissionBroker.isGroupPermissionAvailable(changingUser,group,Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)){
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
-
-        /*try {
-            //permissionBroker.validateSystemRole(changingUser,"ROLE_SYSTEM_ADMIN");
-            permissionBroker.validateGroupPermission(changingUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        } catch (AccessDeniedException e) {
-            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        }*/
 
         List<String> detailsChanged = new ArrayList<>();
         if (province != null) {
@@ -1779,6 +1774,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     public void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
+
         logger.info("Adding a member via campaign add request: group={}, user={}, code={}", group, user, campaignCode);
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
         Group parentGroup = group.getParent();

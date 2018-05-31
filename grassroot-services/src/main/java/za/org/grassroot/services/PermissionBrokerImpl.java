@@ -108,8 +108,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
 
     private static Set<Permission> constructPermissionSet(Set<Permission> baseSet, Permission... permissions) {
-        Set<Permission> set = new HashSet<>();
-        set.addAll(baseSet);
+        Set<Permission> set = new HashSet<>(baseSet);
         Collections.addAll(set, permissions);
         return java.util.Collections.unmodifiableSet(set);
     }
@@ -221,6 +220,14 @@ public class PermissionBrokerImpl implements PermissionBroker {
     @Override
     public Set<Permission> getProtectedOrganizerPermissions() {
         return protectedOrganizerPermissions;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isSystemAdmin(User user) {
+        List<Role> systemRoles = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_SYSTEM_ADMIN, Role.RoleType.STANDARD);
+        Set<Role> userRoles = user.getStandardRoles();
+        return userRoles.containsAll(systemRoles);
     }
 
     @Override

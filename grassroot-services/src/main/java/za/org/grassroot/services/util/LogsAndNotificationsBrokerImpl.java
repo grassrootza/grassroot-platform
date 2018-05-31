@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.CacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
@@ -28,6 +30,7 @@ import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.specifications.TodoLogSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -207,7 +210,32 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         actionLogs.forEach(this::updateCacheSingle);
     }
 
-    private void updateCacheSingle(ActionLog actionLog) {
+	@Override
+	@Transactional
+	@SuppressWarnings("unchecked")
+	public void abortNotificationSend(Specifications specifications) {
+		notificationRepository.findAll((Specifications<Notification>) specifications)
+					.forEach(n -> n.setStatus(NotificationStatus.ABORTED));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve, Instant sinceTime) {
+		Specifications<Notification> specs = Specifications.where(NotificationSpecifications.wasDelivered());
+		specs = specs.and(NotificationSpecifications.toUser(user));
+		if (sinceTime != null) {
+			specs = specs.and(NotificationSpecifications.sentOrBetterSince(sinceTime));
+		}
+		Pageable page = new PageRequest(0, numberToRetrieve == null ? 1 : numberToRetrieve, Sort.Direction.DESC, "lastStatusChange");
+		return notificationRepository.findAll(specs, page);
+	}
+
+	@Override
+	public void removeCampaignLog(User user, Campaign campaign, CampaignLogType logType) {
+		campaignLogRepository.deleteAllByCampaignAndUserAndCampaignLogType(campaign, user, logType);
+	}
+
+	private void updateCacheSingle(ActionLog actionLog) {
         PublicActivityType activityType = null;
 
         log.info("checking for public action type, log = {}", actionLog);
@@ -240,7 +268,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
                 break;
         }
 
-        log.info("okay tested for type, comes out as : {}", activityType);
+        log.debug("okay tested for type, comes out as : {}", activityType);
 
         if (activityType != null) {
             List<PublicActivityLog> activityLogs = cacheService.getCachedPublicActivity(activityType);
@@ -249,7 +277,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
             }
 
             activityLogs.add(new PublicActivityLog(activityType, actionLog.getUser().getName(), actionLog.getCreationTime().toEpochMilli()));
-            log.info("activity type positive, adding to public cache: {}", activityLogs);
+            log.debug("activity type positive, adding to public cache: {}", activityLogs);
             cacheService.putCachedPublicActivity(activityType, activityLogs);
         }
     }
@@ -259,7 +287,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         return notificationRepository.count(specifications);
     }
 
-	@Override
+    @Override
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly = true)
 	public <T extends Notification> long countNotifications(Specifications<T> specs, Class<T> notificationType) {
@@ -321,7 +349,13 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 				.collect(Collectors.toList());
 	}
 
-    private void saveLog(ActionLog actionLog) {
+	@Override
+	@Transactional(readOnly = true)
+	public long countCampaignLogs(Specifications<CampaignLog> specs) {
+		return campaignLogRepository.count(specs);
+	}
+
+	private void saveLog(ActionLog actionLog) {
 		if (actionLog instanceof GroupLog) {
 			groupLogRepository.save((GroupLog) actionLog);
 			((GroupLog) actionLog).getGroup().setLastGroupChangeTime(Instant.now());

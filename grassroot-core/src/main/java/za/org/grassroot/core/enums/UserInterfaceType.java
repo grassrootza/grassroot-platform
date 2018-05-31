@@ -17,7 +17,8 @@ public enum UserInterfaceType {
     OTHER_WEB("other_web"), // so for other 3rd party joins etc
 
     EMAIL("incoming_email"),
-    WHATSAPP("incoming_whatsapp");
+    WHATSAPP("incoming_whatsapp"),
+    PLEASE_CALL_ME("please_call_me");
 
     private final String text;
 

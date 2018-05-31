@@ -94,13 +94,13 @@ public class Campaign implements TagHolder {
     private Set<CampaignLog> campaignLogs = new HashSet<>();
 
     @Column(name = "sharing_enabled")
-    private boolean sharingEnabled = false;
+    private boolean outboundTextEnabled = false;
 
     @Column(name = "sharing_budget")
-    private long sharingBudget; // in cents
+    private long outboundBudget; // in cents
 
     @Column(name = "sharing_spent")
-    private long sharingSpent; // in cents, also can be calculated from notification count, but double checking (also as price per may alter)
+    private long outboundSpent; // in cents, also can be calculated from notification count, but double checking (also as price per may alter)
 
     @ManyToOne
     @JoinColumn(name = "image_record_uid", referencedColumnName = "uid")
@@ -124,9 +124,9 @@ public class Campaign implements TagHolder {
         this.endDateTime = Objects.requireNonNull(endDateTime);
         this.campaignType = Objects.requireNonNull(campaignType);
         this.landingUrl = campaignUrl;
-        this.sharingEnabled = false;
-        this.sharingBudget = 0L;
-        this.sharingSpent = 0L;
+        this.outboundTextEnabled = false;
+        this.outboundBudget = 0L;
+        this.outboundSpent = 0L;
         log.info("is the account null? {}", this.account);
     }
 
@@ -138,12 +138,12 @@ public class Campaign implements TagHolder {
         return isActive() && !StringUtils.isEmpty(landingUrl);
     }
 
-    public void addToSharingSpent(long amount) {
-        this.sharingSpent += amount;
+    public void addToOutboundSpent(long amount) {
+        this.outboundSpent += amount;
     }
 
-    public long sharingBudgetLeft() {
-        return this.sharingBudget - this.sharingSpent;
+    public long outboundBudgetLeft() {
+        return this.outboundBudget - this.outboundSpent;
     }
 
     @Override
@@ -170,17 +170,21 @@ public class Campaign implements TagHolder {
         setTags(tags);
     }
 
-    public List<String> getPublicJoinWords() {
+    public void setPublicJoinWord(String publicJoinWord) {
+        List<String> tags = getTagList().stream()
+                .filter(s -> !s.startsWith(PUBLIC_JOIN_WORD_PREFIX)).collect(Collectors.toList());
+        // then add the topics
+        if (!StringUtils.isEmpty(publicJoinWord)) {
+            tags.add(PUBLIC_JOIN_WORD_PREFIX + publicJoinWord);
+        }
+        setTags(tags);
+    }
+
+    public String getPublicJoinWord() {
         return this.getTagList().stream().filter(s -> s.startsWith(PUBLIC_JOIN_WORD_PREFIX))
-                .map(s -> s.substring(PUBLIC_JOIN_WORD_PREFIX.length())).collect(Collectors.toList());
-    }
-
-    public void addPublicJoinWords(String publicJoinWord) {
-        addTag(PUBLIC_JOIN_WORD_PREFIX + publicJoinWord);
-    }
-
-    public void removePublicJoinWord(String publicJoinWord) {
-        removeTag(PUBLIC_JOIN_WORD_PREFIX + publicJoinWord);
+                .findFirst()
+                .map(s -> s.substring(PUBLIC_JOIN_WORD_PREFIX.length()))
+                .orElse(null);
     }
 
     public long countUsersInLogs(CampaignLogType logType) {

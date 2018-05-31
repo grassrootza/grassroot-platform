@@ -23,6 +23,8 @@ public interface CampaignBroker {
     // passing null to and of the last three will set them to defaults
     CampaignMessage getOpeningMessage(String campaignUid, Locale locale, UserInterfaceType interfaceType, MessageVariationAssignment variation);
 
+    void recordEngagement(String campaignUid, String userUid, UserInterfaceType channel, String logDesc);
+
     CampaignMessage loadCampaignMessage(String messageUid, String userUid);
 
     List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale);
@@ -37,7 +39,11 @@ public interface CampaignBroker {
 
     boolean isCodeTaken(String proposedCode, String campaignUid);
 
-    Map<String, String> getActiveCampaignJoinTopics();
+    // todo : cache this
+    // returns all in lower case
+    Map<String, String> getActiveCampaignJoinWords();
+
+    boolean isTextJoinWordTaken(String joinWord, String campaignUid);
 
     void signPetition(String campaignUid, String userUid, UserInterfaceType channel);
 
@@ -49,18 +55,26 @@ public interface CampaignBroker {
 
     void setUserJoinTopic(String campaignUid, String userUid, String joinTopic, UserInterfaceType channel);
 
+    boolean hasUserEngaged(String campaignUid, String userUid);
+
+    boolean hasUserShared(String campaignUid, String userUid);
+
+    String getMessageOfType(String campaignUid, CampaignActionType actionType, String userUid, UserInterfaceType channel);
+
     // modifying and adding
     Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate,
                     Instant endDate, List<String> joinTopics, CampaignType campaignType, String url, boolean smsShare, long smsLimit, String imageKey);
+
+    Campaign loadForModification(String userUid, String campaignUid);
 
     Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages);
 
     Campaign updateMasterGroup(String campaignUid, String groupUid, String userUid);
 
     void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid,
-                               boolean removeImage, Instant endDate, String newCode, String landingUrl, String petitionApi, List<String> joinTopics);
+                               boolean removeImage, Instant endDate, String newCode, String newTextWord, String landingUrl, String petitionApi, List<String> joinTopics);
 
-    void alterSmsSharingSettings(String userUid, String campaignUid, boolean smsEnabled, Long smsBudget,
+    void alterSmsSharingSettings(String userUid, String campaignUid, boolean smsEnabled, Long smsBudgetNumberTexts,
                                  Set<CampaignMessageDTO> sharingMessages);
 
     void updateCampaignType(String userUid, String campaignUid, CampaignType newType, Set<CampaignMessageDTO> revisedMessages);

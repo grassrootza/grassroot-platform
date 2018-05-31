@@ -1,8 +1,7 @@
 package za.org.grassroot.services.campaign;
 
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
@@ -11,7 +10,6 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.campaign.*;
@@ -30,6 +28,7 @@ import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
 import za.org.grassroot.services.exception.GroupNotFoundException;
 import za.org.grassroot.services.exception.NoPaidAccountException;
@@ -46,20 +45,18 @@ import java.util.stream.Collectors;
 @Service @Slf4j
 public class CampaignBrokerImpl implements CampaignBroker {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CampaignBrokerImpl.class);
-
     // use this a lot in campaign message handling
     private static final String LOCALE_SEP = "___";
 
     private static final List<String> SYSTEM_CODES = Arrays.asList("123", "911");
-
-    private static final String CAMPAIGN_NOT_FOUND_CODE = "campaign.not.found.error";
 
     private final CampaignRepository campaignRepository;
     private final CampaignMessageRepository campaignMessageRepository;
     private final CampaignStatsBroker campaignStatsBroker;
 
     private final GroupBroker groupBroker;
+    private final AccountGroupBroker accountGroupBroker;
+
     private final UserManagementService userManager;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final PermissionBroker permissionBroker;
@@ -68,12 +65,13 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, CampaignStatsBroker campaignStatsBroker, GroupBroker groupBroker, UserManagementService userManagementService,
+    public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, CampaignStatsBroker campaignStatsBroker, GroupBroker groupBroker, AccountGroupBroker accountGroupBroker, UserManagementService userManagementService,
                               LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, MediaFileBroker mediaFileBroker, ApplicationEventPublisher eventPublisher){
         this.campaignRepository = campaignRepository;
         this.campaignMessageRepository = campaignMessageRepository;
         this.campaignStatsBroker = campaignStatsBroker;
         this.groupBroker = groupBroker;
+        this.accountGroupBroker = accountGroupBroker;
         this.userManager = userManagementService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.permissionBroker = permissionBroker;
@@ -116,13 +114,21 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
+    @Transactional
+    public void recordEngagement(String campaignUid, String userUid, UserInterfaceType channel, String logDesc) {
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_FOUND, campaign, channel, StringUtils.truncate(logDesc, 250)));
+        campaignStatsBroker.clearCampaignStatsCache(campaign.getUid());
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public CampaignMessage loadCampaignMessage(String messageUid, String userUid) {
         Objects.requireNonNull(messageUid);
-        Objects.requireNonNull(userUid); // todo: add in logging here
+        Objects.requireNonNull(userUid);
         return campaignMessageRepository.findOneByUid(messageUid);
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -160,10 +166,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Objects.requireNonNull(campaignCode);
         Campaign campaign = getCampaignByCampaignCode(campaignCode);
         if (campaign != null && storeLog) {
-            Objects.requireNonNull(userUid);
-            User user = userManager.load(userUid);
-            persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_FOUND, campaign, channel, campaignCode));
-            campaignStatsBroker.clearCampaignStatsCache(campaign.getUid());
+            recordEngagement(campaign.getUid(), userUid, channel, campaignCode);
         }
         return campaign;
     }
@@ -193,13 +196,25 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<String, String> getActiveCampaignJoinTopics() {
+    public Map<String, String> getActiveCampaignJoinWords() {
         List<Object[]> tagsWithUids = campaignRepository.fetchAllActiveCampaignTags();
         return tagsWithUids.stream()
                 .filter(object -> object[0] instanceof String && ((String) object[0]).startsWith(Campaign.PUBLIC_JOIN_WORD_PREFIX))
                 .collect(Collectors.toMap(
-                        object -> ((String) object[0]).substring(Campaign.PUBLIC_JOIN_WORD_PREFIX.length()),
+                        object -> ((String) object[0]).substring(Campaign.PUBLIC_JOIN_WORD_PREFIX.length()).toLowerCase(),
                         object -> (String) object[1]));
+    }
+
+    @Override
+    public boolean isTextJoinWordTaken(String joinWord, String campaignUid) {
+        Map<String, String> activeWords = getActiveCampaignJoinWords();
+        final String trimmed = joinWord.trim().toLowerCase();
+        if (campaignUid != null && activeWords.containsKey(trimmed) && activeWords.get(trimmed).equals(campaignUid)) {
+            return false; // since it is 'taken' but by this campaign
+        } else {
+            Set<String> campaignWords = getActiveCampaignJoinWords().keySet().stream().map(String::toLowerCase).collect(Collectors.toSet());
+            return campaignWords.contains(joinWord.toLowerCase());
+        }
     }
 
     @Override
@@ -225,7 +240,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
         User user = userManager.load(Objects.requireNonNull(sharingUserUid));
 
-        if (campaign.getSharingSpent() > campaign.getSharingBudget()) {
+        if (campaign.getOutboundSpent() > campaign.getOutboundBudget()) {
             log.error("Error! Got to sharing even though campaign spent is above budget");
             return;
         }
@@ -252,7 +267,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         logsAndNotificationsBroker.storeBundle(bundle);
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);
 
-        campaign.addToSharingSpent(campaign.getAccount().getFreeFormCost());
+        campaign.addToOutboundSpent(campaign.getAccount().getFreeFormCost());
     }
 
     long countCampaignShares(Campaign campaign) {
@@ -296,8 +311,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
         newCampaign.setMasterGroup(masterGroup);
 
         if (smsShare) {
-            newCampaign.setSharingEnabled(true);
-            newCampaign.setSharingBudget(smsLimit * user.getPrimaryAccount().getFreeFormCost());
+            newCampaign.setOutboundTextEnabled(true);
+            newCampaign.setOutboundBudget(smsLimit * user.getPrimaryAccount().getFreeFormCost());
         }
 
         if(joinTopics != null && !joinTopics.isEmpty()){
@@ -309,6 +324,14 @@ public class CampaignBrokerImpl implements CampaignBroker {
         CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser(), CampaignLogType.CREATED_IN_DB, newCampaign, null, null);
         persistCampaignLog(campaignLog);
         return persistedCampaign;
+    }
+
+    @Override
+    public Campaign loadForModification(String userUid, String campaignUid) {
+        Campaign campaign = load(campaignUid);
+        User user = userManager.load(userUid);
+        validateUserCanModifyCampaign(user, campaign);
+        return campaign;
     }
 
     @Override
@@ -422,7 +445,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid, boolean removeImage, Instant endDate, String newCode, String landingUrl, String petitionApi, List<String> joinTopics) {
+    public void updateCampaignDetails(String userUid, String campaignUid, String name, String description, String mediaFileUid, boolean removeImage, Instant endDate, String newCode, String newTextWord, String landingUrl, String petitionApi, List<String> joinTopics) {
         User user = userManager.load(Objects.requireNonNull(userUid));
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         validateUserCanModifyCampaign(user, campaign);
@@ -469,6 +492,10 @@ public class CampaignBrokerImpl implements CampaignBroker {
             campaign.setJoinTopics(joinTopics);
         }
 
+        if (!StringUtils.isEmpty(newTextWord) && !isTextJoinWordTaken(newTextWord, campaignUid)) {
+            campaign.setPublicJoinWord(newTextWord);
+        }
+
         log.info("campaign still has account? {}", campaign.getAccount());
 
         AfterTxCommitTask task = () -> logsAndNotificationsBroker.storeBundle(bundle);
@@ -492,7 +519,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public void alterSmsSharingSettings(String userUid, String campaignUid, boolean smsEnabled, Long smsBudget, Set<CampaignMessageDTO> sharingMessages) {
+    public void alterSmsSharingSettings(String userUid, String campaignUid, boolean smsEnabled, Long smsBudgetNumberTexts, Set<CampaignMessageDTO> sharingMessages) {
         User user = userManager.load(Objects.requireNonNull(userUid));
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
 
@@ -504,13 +531,13 @@ public class CampaignBrokerImpl implements CampaignBroker {
             throw new IllegalArgumentException("Attempting to enable with no prior or given sharing prompts");
         }
 
-        campaign.setSharingEnabled(smsEnabled);
-        campaign.setSharingBudget(smsBudget);
+        campaign.setOutboundTextEnabled(smsEnabled);
+        campaign.setOutboundBudget(smsBudgetNumberTexts * campaign.getAccount().getFreeFormCost());
 
         campaign.addCampaignMessages(transformMessageDTOs(sharingMessages, campaign, user));
 
         persistCampaignLog(new CampaignLog(user, CampaignLogType.SHARING_SETTINGS_ALTERED, campaign, null,
-                "Enabled: " + smsEnabled + ", budget = " + smsBudget));
+                "Enabled: " + smsEnabled + ", budget = " + smsBudgetNumberTexts));
     }
 
     @Override
@@ -518,13 +545,35 @@ public class CampaignBrokerImpl implements CampaignBroker {
     public Campaign addUserToCampaignMasterGroup(String campaignUid, String userUid, UserInterfaceType channel){
         Objects.requireNonNull(campaignUid);
         Objects.requireNonNull(userUid);
+
         User user = userManager.load(userUid);
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-        groupBroker.addMemberViaCampaign(user.getUid(),campaign.getMasterGroup().getUid(),campaign.getCampaignCode());
+        final String masterGroupUid = campaign.getMasterGroup().getUid();
+
+        if (accountGroupBroker.hasGroupWelcomeMessages(masterGroupUid))
+            haltCampaignWelcome(campaign, user);
+
+        groupBroker.addMemberViaCampaign(user.getUid(), masterGroupUid, campaign.getCampaignCode());
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP, campaign, channel, null);
         persistCampaignLog(campaignLog);
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);
+
         return campaign;
+    }
+
+    private void haltCampaignWelcome(final Campaign campaign, final User user) {
+        Specification<Notification> logFind = (root, query, cb) -> {
+            Join<Notification, CampaignLog> logJoin = root.join(Notification_.campaignLog);
+            query.distinct(true);
+            return cb.and(
+                    cb.equal(logJoin.get(CampaignLog_.campaign), campaign),
+                    cb.equal(logJoin.get(CampaignLog_.user), user),
+                    cb.equal(logJoin.get(CampaignLog_.campaignLogType), CampaignLogType.CAMPAIGN_WELCOME_MESSAGE));
+        };
+
+        Specification<Notification> notSent = (root, query, cb) -> cb.equal(root.get(Notification_.status),
+                NotificationStatus.READY_FOR_SENDING);
+        logsAndNotificationsBroker.abortNotificationSend(Specifications.where(notSent).and(logFind));
     }
 
     @Override
@@ -538,6 +587,35 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         groupBroker.assignMembershipTopics(userUid, campaign.getMasterGroup().getUid(), userUid, Collections.singleton(joinTopic), true);
         persistCampaignLog(campaignLog);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasUserEngaged(String campaignUid, String userUid) {
+        final User user = userManager.load(Objects.requireNonNull(userUid));
+        Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
+        Specifications<CampaignLog> specs = Specifications.where(forUser)
+                .and((root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType), CampaignLogType.CAMPAIGN_FOUND));
+        return logsAndNotificationsBroker.countCampaignLogs(specs) > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasUserShared(String campaignUid, String userUid) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
+        Specification<CampaignLog> ofTypeSharing = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType),
+                CampaignLogType.CAMPAIGN_SHARED);
+        return logsAndNotificationsBroker.countCampaignLogs(Specifications.where(forUser).and(ofTypeSharing)) > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getMessageOfType(String campaignUid, CampaignActionType actionType, String userUid, UserInterfaceType channel) {
+        final User user = userManager.load(userUid);
+        List<CampaignMessage> messages = findCampaignMessage(campaignUid, actionType, user.getLocale());
+        log.info("found a message? : {}", messages);
+        return messages.isEmpty() ? "" : messages.get(0).getMessage();
     }
 
     @Override
@@ -593,18 +671,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         return campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode, Instant.now());
     }
 
-    // leave this here for a while as may come in handy in future, although not quite yet
-    private String createSearchValue(String value, MessageVariationAssignment assignment, Locale locale, String tag){
-        String AND = " and ";
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(" search by ");
-        stringBuilder.append((value != null)? value:"");
-        stringBuilder.append((assignment != null)? AND.concat(assignment.name()):"");
-        stringBuilder.append((locale !=  null)? AND.concat(locale.getDisplayLanguage()):"");
-        stringBuilder.append((tag != null)? AND.concat(tag):"");
-        return stringBuilder.toString();
-    }
-
     private void createAndStoreCampaignLog(CampaignLog campaignLog) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(campaignLog);
@@ -616,7 +682,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         eventPublisher.publishEvent(task);
     }
 
-    private void validateUserCanModifyCampaign(User user, Campaign campaign) {
+    public void validateUserCanModifyCampaign(User user, Campaign campaign) {
         if (!campaign.getCreatedByUser().equals(user)) {
             permissionBroker.validateGroupPermission(user, campaign.getMasterGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }

@@ -140,22 +140,24 @@ public class PasswordTokenManager implements PasswordTokenService {
         VerificationTokenCode checkForPrior = verificationTokenCodeRepository.findOne(
                 TokenSpecifications.forUserAndEntity(userUid, entityUid));
 
+        log.info("prior token: {}", checkForPrior);
+
         Instant expiry = Instant.now().plus(ENTITY_RESPONSE_TOKEN_LIFE_DAYS, ChronoUnit.DAYS);
         if (checkForPrior != null && checkForPrior.getExpiryDateTime().isAfter(Instant.now())) {
             checkForPrior.setExpiryDateTime(expiry);
             return checkForPrior;
         } else {
-            if (checkForPrior != null)
-                verificationTokenCodeRepository.delete(checkForPrior);
-
-            VerificationTokenCode token = new VerificationTokenCode(userUid, entityUid,
-                    VerificationCodeType.RESPOND_ENTITY, user.getUid());
-
-            token.setEntityUid(entityUid);
-            token.setExpiryDateTime(expiry);
-
+            VerificationTokenCode token;
             final String code = String.valueOf(new BigInteger(130, new SecureRandom()));
+            if (checkForPrior != null) {
+                token = checkForPrior; // pure solution would be to delete, but then have to break TX, so this is lesser of evils
+            } else {
+                token = new VerificationTokenCode(userUid, code, VerificationCodeType.RESPOND_ENTITY, user.getUid());
+                token.setEntityUid(entityUid);
+            }
+
             token.setCode(code);
+            token.setExpiryDateTime(expiry);
 
             if (forcePersist)
                 verificationTokenCodeRepository.save(token);

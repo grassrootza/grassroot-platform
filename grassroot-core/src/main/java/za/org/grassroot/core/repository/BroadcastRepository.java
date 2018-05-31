@@ -17,6 +17,8 @@ public interface BroadcastRepository extends JpaRepository<Broadcast, Integer>, 
 
     Broadcast findTopByGroupAndBroadcastScheduleAndActiveTrue(Group group, BroadcastSchedule broadcastType);
 
+    Broadcast findTopByCampaignAndBroadcastScheduleAndActiveTrue(Campaign campaign, BroadcastSchedule broadcastSchedule);
+
     List<Broadcast> findByGroup(Group group); // note: will also fetch historical
 
     Page<Broadcast> findByGroupUidAndSentTimeNotNull(String groupUid, Pageable pageable);

@@ -20,6 +20,7 @@ import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.campaign.CampaignTextBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -56,6 +57,7 @@ public class USSDHomeController extends USSDBaseController {
 
     private final CampaignBroker campaignBroker;
     private final UserResponseBroker userResponseBroker;
+    private CampaignTextBroker campaignTextBroker;
 
     private static final USSDSection thisSection = HOME;
 
@@ -77,7 +79,6 @@ public class USSDHomeController extends USSDBaseController {
     @Value("${grassroot.geo.apis.enabled:false}")
     private boolean geoApisEnabled;
 
-    // todo : think about how to do dynamically
     private final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
             new AbstractMap.SimpleEntry<>("1", "IZWE_LAMI_CONS")
     ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
@@ -97,6 +98,11 @@ public class USSDHomeController extends USSDBaseController {
     @Autowired(required = false)
     public void setGeoApiController(USSDGeoApiController ussdGeoApiController) {
         this.geoApiController = ussdGeoApiController;
+    }
+
+    @Autowired(required = false) // may turn this off / on in future
+    public void setCampaignTextBroker(CampaignTextBroker campaignTextBroker) {
+        this.campaignTextBroker = campaignTextBroker;
     }
 
     @RequestMapping(value = homePath + startMenu)
@@ -244,6 +250,9 @@ public class USSDHomeController extends USSDBaseController {
     }
 
     private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user) {
+        log.info("fire off SMS in background, if exists ...");
+        campaignTextBroker.checkForAndTriggerCampaignText(campaign.getUid(), user.getUid(), null, UserInterfaceType.USSD);
+        log.info("fired off ... continue ...");
         Set<Locale> supportedCampaignLanguages = campaignBroker.getCampaignLanguages(campaign.getUid());
         if(supportedCampaignLanguages.size() == 1) {
             return assembleCampaignResponse(campaign, supportedCampaignLanguages.iterator().next());
@@ -254,7 +263,7 @@ public class USSDHomeController extends USSDBaseController {
         }
     }
 
-    private USSDMenu assembleCampaignResponse(Campaign campaign,Locale userLocale) {
+    private USSDMenu assembleCampaignResponse(Campaign campaign, Locale userLocale) {
         CampaignMessage campaignMessage = campaignBroker.getOpeningMessage(campaign.getUid(), userLocale, UserInterfaceType.USSD, null);
         String promptMessage = campaignMessage.getMessage();
         Map<String, String> linksMap = new HashMap<>();

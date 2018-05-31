@@ -4,24 +4,26 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EntityForUserResponse;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.integration.NotificationService;
-import za.org.grassroot.integration.messaging.MessagingServiceBroker;
-import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.campaign.CampaignTextBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -42,6 +44,9 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/inbound/sms/")
 public class IncomingSMSController {
 
+    @Value("${grassroot.pcm.inbound.secret:1234}")
+    private String INBOUND_PCM_TOKEN;
+
     // some prefixes used in logging inbound
     private static final String RECEIVED = "RECEIVED:";
     private static final String MATCHED = "MATCHED:";
@@ -52,10 +57,10 @@ public class IncomingSMSController {
 
     private final GroupBroker groupBroker;
     private final AccountGroupBroker accountGroupBroker;
-    private final CampaignBroker campaignBroker;
 
-    private final MessageSourceAccessor messageSource;
-    private final NotificationService notificationService;
+    private final CampaignBroker campaignBroker;
+    private final CampaignTextBroker campaignTextBroker;
+
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     private static final String FROM_PARAMETER_REPLY ="fn";
@@ -65,19 +70,18 @@ public class IncomingSMSController {
     private static final String MSG_TEXT_PARAM_NEW = "mesg";
 
     private static final Duration NOTIFICATION_WINDOW = Duration.of(1, ChronoUnit.DAYS);
+    private static final int SEARCH_DEPTH = 5; // number of notifications to check
 
     @Autowired
-    public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker, MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
-                                 AccountGroupBroker accountGroupBroker, NotificationService notificationService, CampaignBroker campaignBroker,
-                                 @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSource, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker,
+                                 AccountGroupBroker accountGroupBroker, CampaignBroker campaignBroker,
+                                 CampaignTextBroker campaignTextBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userResponseBroker = userResponseBroker;
-
         this.userManager = userManager;
         this.groupBroker = groupBroker;
         this.accountGroupBroker = accountGroupBroker;
-        this.messageSource = messageSource;
+        this.campaignTextBroker = campaignTextBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.notificationService = notificationService;
         this.campaignBroker = campaignBroker;
     }
 
@@ -85,6 +89,13 @@ public class IncomingSMSController {
     @ApiOperation(value = "Incoming SMS, under the 'group' short code", notes = "For when we receive an out of the blue SMS, on the group number")
     public @ResponseBody String receiveGroupSms(@RequestParam(value = FROM_PARAMETER_NEW) String phoneNumber,
                     @RequestParam(value = MSG_TEXT_PARAM_NEW) String message) {
+        // temporary fix while we get second inbound number running
+        Map<String, String> campaignTags = campaignBroker.getActiveCampaignJoinWords();
+        if (campaignTags != null && campaignTags.keySet().contains(message.trim().toLowerCase())) {
+            log.info("matched a campaign word, triggering campaign sequence, in precedence to group");
+            return receiveNewlyInitiatedSms(phoneNumber, message);
+        }
+
         log.info("Inside receiving a message on group list, received {} as message", message);
         // join word as key, uid as map
         User user = userManager.loadOrCreateUser(phoneNumber);
@@ -103,12 +114,13 @@ public class IncomingSMSController {
             // disambiguate somehow ... for the moment, just adding the first
             final String groupUid = groupMatches.iterator().next();
             Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), groupUid, message, UserInterfaceType.INCOMING_SMS);
-            reply = membership.getGroup().isPaidFor() ? accountGroupBroker.generateGroupWelcomeReply(user.getUid(), groupUid) : "";
+            // if group has custom welcome messages those will be triggered for everyone, in group broker, so don't do it here
+            reply = membership.getGroup().isPaidFor() && !accountGroupBroker.hasGroupWelcomeMessages(groupUid) ?
+                    accountGroupBroker.generateGroupWelcomeReply(user.getUid(), groupUid) : "";
             bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, MATCHED + message, UserInterfaceType.INCOMING_SMS));
         } else {
             log.info("received a join word but don't know what to do with it");
-            reply = messageSource.getMessage("text.group.welcome.unknown", new String[] { message.trim() },
-                    "Sorry, we couldn't find a Grassroot group with that join word (" + message + "). Try another?");
+            reply = "Sorry, we couldn't find a Grassroot group with that join word (" + message + "). Try another?";
             bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, UNMATCHED + message, UserInterfaceType.INCOMING_SMS));
         }
 
@@ -126,7 +138,7 @@ public class IncomingSMSController {
         User user = userManager.loadOrCreateUser(phoneNumber); // this may be a user we don't know
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        Map<String, String> campaignTags = campaignBroker.getActiveCampaignJoinTopics();
+        Map<String, String> campaignTags = campaignBroker.getActiveCampaignJoinWords();
         log.info("active campaign tags = {}", campaignTags);
 
         Set<String> campaignMatches = campaignTags.entrySet().stream()
@@ -138,22 +150,40 @@ public class IncomingSMSController {
             // disambiguate somehow ... for the moment, just adding the first
             final String campaignUid = campaignMatches.iterator().next();
             bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, MATCHED + message, UserInterfaceType.INCOMING_SMS));
+            campaignBroker.recordEngagement(campaignUid, user.getUid(), UserInterfaceType.INCOMING_SMS, message);
 
-            Campaign campaign = campaignBroker.load(campaignUid);
-            campaignBroker.addUserToCampaignMasterGroup(campaignUid, user.getUid(), UserInterfaceType.INCOMING_SMS);
-            CampaignMessage replyMsg = campaignBroker.getOpeningMessage(campaignUid, null, UserInterfaceType.INCOMING_SMS, null);
-
-            reply = replyMsg != null ? replyMsg.getMessage() :
-                    messageSource.getMessage("text.campaign.joined.default", new String[] { campaign.getName() });
+            // since there are and may be two such messages, we rather initiate them through the back
+            campaignTextBroker.checkForAndTriggerCampaignText(campaignUid, user.getUid(), null, UserInterfaceType.INCOMING_SMS);
+            reply = "";
         } else {
             log.info("received a join word but don't know what to do with it, message: {}", message.trim());
-            reply = messageSource.getMessage("text.campaign.tag.unknown", new String[] { message.trim() },
-                    "Sorry, we couldn't find a campaign with that topic (" + message + "). Try another?");
+            reply = "Sorry, we couldn't find a campaign with that topic (" + message + "). Try another?";
             bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, UNMATCHED + message, UserInterfaceType.INCOMING_SMS));
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
         return reply;
+    }
+
+    @RequestMapping(value = "initiated/pcm/campaign/{campaignUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Receive an incoming please call me, and send a welcome message, or add to group")
+    public ResponseEntity receivePleaseCallMe(@PathVariable String campaignUid,
+                                              @RequestParam String secret,
+                                              @RequestParam(value = "from_number") String phoneNumber,
+                                              @RequestParam(value = "content") String message) {
+        if (!secret.equals(INBOUND_PCM_TOKEN)) {
+            log.error("Invalid inbound token received: {}", secret);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        User user = userManager.loadOrCreateUser(phoneNumber);
+        if (!campaignBroker.hasUserEngaged(campaignUid, user.getUid())) {
+            campaignBroker.recordEngagement(campaignUid, user.getUid(), UserInterfaceType.PLEASE_CALL_ME, message);
+            campaignTextBroker.checkForAndTriggerCampaignText(campaignUid, user.getUid(), null, UserInterfaceType.PLEASE_CALL_ME);
+        } else {
+            campaignTextBroker.handleCampaignTextResponse(campaignUid, user.getUid(), message, UserInterfaceType.PLEASE_CALL_ME);
+        }
+        return ResponseEntity.ok().build();
     }
 
     @RequestMapping(value = "reply", method = RequestMethod.GET)
@@ -170,6 +200,20 @@ public class IncomingSMSController {
         }
 
         final String trimmedMsg = msg.trim();
+        Page<Notification> latestToUser = logsAndNotificationsBroker.lastNotificationsSentToUser(user, 1,
+                Instant.now().minus(NOTIFICATION_WINDOW));
+        if (latestToUser == null || latestToUser.getContent() == null || latestToUser.getContent().isEmpty()) {
+            log.warn("Message {} from user, but has never had a notification sent");
+            return;
+        }
+
+        Notification notification = latestToUser.getContent().get(0);
+        if (notification.getCampaignLog() != null) {
+            String returnMsg = handleCampaignResponse(user, trimmedMsg, notification);
+            log.info("handled campaign reply, responded with: {}", returnMsg);
+            return;
+        }
+
         EntityForUserResponse likelyEntity = userResponseBroker.checkForEntityForUserResponse(user.getUid(), false);
 
         if (likelyEntity == null || !userResponseBroker.checkValidityOfResponse(likelyEntity, trimmedMsg)) {
@@ -179,7 +223,12 @@ public class IncomingSMSController {
         }
 
         userResponseBroker.recordUserResponse(user.getUid(), likelyEntity.getJpaEntityType(), likelyEntity.getUid(), trimmedMsg);
+    }
 
+    private String handleCampaignResponse(User user, String trimmedMsg, Notification sentNotification) {
+        final Campaign campaign = sentNotification.getCampaignLog().getCampaign();
+        log.info("handling an SMS reply to this campaign: {}", campaign);
+        return campaignTextBroker.handleCampaignTextResponse(campaign.getUid(), user.getUid(), trimmedMsg, UserInterfaceType.INCOMING_SMS);
     }
 
     private void handleUnknownResponse(User user, String trimmedMsg) {
@@ -189,8 +238,8 @@ public class IncomingSMSController {
                 trimmedMsg, UserInterfaceType.INCOMING_SMS));
 
         // get the last day's worth of notifications
-        List<Notification> recentNotifications = notificationService
-                .fetchSentOrBetterSince(user.getUid(), Instant.now().minus(NOTIFICATION_WINDOW), null);
+        List<Notification> recentNotifications = logsAndNotificationsBroker
+                .lastNotificationsSentToUser(user, SEARCH_DEPTH, Instant.now().minus(NOTIFICATION_WINDOW)).getContent();
         log.info("since {}, number of recent notifications: {}", Instant.now().minus(NOTIFICATION_WINDOW), recentNotifications.size());
 
         // this will store a possible group and each notification that was sent

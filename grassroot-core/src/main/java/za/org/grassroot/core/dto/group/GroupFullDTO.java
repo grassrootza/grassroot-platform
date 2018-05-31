@@ -36,6 +36,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
     @Setter private List<JoinWordDTO> joinWords = new ArrayList<>();
     @Setter private int joinWordsLeft;
     @Setter private boolean hasInboundMessages;
+    @Setter private String joinMessage;
     private final Integer reminderMinutes;
 
     public GroupFullDTO(Group group, Membership membership) {

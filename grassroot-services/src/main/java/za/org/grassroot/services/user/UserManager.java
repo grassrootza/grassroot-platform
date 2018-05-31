@@ -333,7 +333,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional
     public String regenerateUserVerifier(String phoneNumber, boolean createUserIfNotExists) {
-        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+        //User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+        User user = findByNumberOrEmail(phoneNumber,phoneNumber);
         if (user == null) {
             if (createUserIfNotExists) {
                 UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
@@ -664,8 +665,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             String[] welcomeMessageIds = new String[]{
                     "sms.welcome.1",
-                    "sms.welcome.2",
-                    "sms.welcome.3"
+                    "sms.welcome.2"
             };
 
             for (String welcomeMessageId : welcomeMessageIds) {

@@ -74,8 +74,9 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
         Group group = groupRepository.findOneByUid(groupUid);
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
-        if (accountGroupBroker.numberTodosLeftForGroup(group.getUid()) < 1)
-            throw new AccountLimitExceededException();
+        // todo: get this fixed (under JIRA issue)
+//        if (accountGroupBroker.numberTodosLeftForGroup(group.getUid()) < 1)
+//            throw new AccountLimitExceededException();
 
         request.setParent(group);
     }
@@ -144,6 +145,7 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
                 .parentType(request.getParent().getJpaEntityType())
                 .parentUid(request.getParent().getUid())
                 .subject(request.getMessage())
+                .responseTag(request.getResponseTag())
                 .dueDateTime(request.getActionByDate()).build();
 
 		todoBroker.create(helper);

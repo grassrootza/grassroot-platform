@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -674,9 +675,17 @@ public class TodoBrokerImpl implements TodoBroker {
         Membership membership = group.getMembership(assignment.getUser());
 
         final String responseTag = assignment.getTodo().getResponseTag();
+        if (StringUtils.isEmpty(responseTag)) {
+            log.error("Error! Legacy of todo bug, with empty response tag, have to exit");
+            return new HashSet<>();
+        }
 
         final String memberTag = responseTag + ":" + response;
-        final Optional<String> currentTag = membership.getTagList().stream().filter(s -> s.startsWith(responseTag)).findFirst();
+
+        log.info("response tag: {}", responseTag);
+        final Optional<String> currentTag = membership.getTagList().stream()
+                .filter(Objects::nonNull)
+                .filter(s -> s.startsWith(responseTag)).findFirst();
 
         log.info("adding tag to member: {}, has already: {}", memberTag, currentTag);
 

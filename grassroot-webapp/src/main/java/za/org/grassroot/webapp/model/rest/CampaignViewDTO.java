@@ -44,13 +44,14 @@ public class CampaignViewDTO {
     private long totalJoined;
     private long totalEngaged;
 
+    private String textJoinWord;
     private List<String> joinTopics;
     private List<CampaignMessageDTO> campaignMessages;
 
-    private boolean smsSharingEnabled;
-    private long smsSharingLimit;
-    private long smsSharingSpent;
-    private long smsSharingUnitCost;
+    private boolean outboundSmsEnabled;
+    private long outboundSmsLimit;
+    private long outboundSmsSpent;
+    private long outboundSmsUnitCost;
 
     private String campaignImageKey;
 
@@ -93,10 +94,10 @@ public class CampaignViewDTO {
             this.petitionUrl = campaign.getPetitionApi();
         }
 
-        this.smsSharingEnabled = campaign.isSharingEnabled();
-        this.smsSharingLimit = campaign.getSharingBudget() / campaign.getAccount().getFreeFormCost();
-        this.smsSharingSpent = campaign.getSharingSpent();
-        this.smsSharingUnitCost = campaign.getAccount().getFreeFormCost();
+        this.outboundSmsEnabled = campaign.isOutboundTextEnabled();
+        this.outboundSmsLimit = campaign.getOutboundBudget() / campaign.getAccount().getFreeFormCost();
+        this.outboundSmsSpent = campaign.getOutboundSpent();
+        this.outboundSmsUnitCost = campaign.getAccount().getFreeFormCost();
 
         long startTime = System.currentTimeMillis();
         this.totalEngaged = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_FOUND);
@@ -110,6 +111,10 @@ public class CampaignViewDTO {
 
         if (campaign.getCampaignImage() != null) {
             this.campaignImageKey = campaign.getCampaignImage().getUid();
+        }
+
+        if (!StringUtils.isEmpty(campaign.getPublicJoinWord())) {
+            this.textJoinWord = campaign.getPublicJoinWord();
         }
     }
 

@@ -16,7 +16,7 @@ import za.org.grassroot.core.util.InstantToMilliSerializer;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -49,7 +49,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
         this.profileImageUrl = group.getImageUrl();
 
         List<Event> events = new ArrayList<>(group.getDescendantEvents());
-        Collections.sort(events, (o1, o2) -> (int) (o2.getDeadlineTime().toEpochMilli() - o1.getDeadlineTime().toEpochMilli()));
+        events.sort(Comparator.comparing(Event::getDeadlineTime, Comparator.reverseOrder()));
         for (Event event : events) {
             if (event.getDeadlineTime().isAfter(Instant.now())) {
                 this.nextEventTime = event.getDeadlineTime();
