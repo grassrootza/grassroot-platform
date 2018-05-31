@@ -240,7 +240,7 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
     }
 
     private boolean userCanJoin(CampaignType campaignType) {
-        return CampaignType.ACQUISITION.equals(campaignType) || CampaignType.INFORMATION.equals(campaignType);
+        return CampaignType.ACQUISITION.equals(campaignType) || CampaignType.PETITION.equals(campaignType);
     }
 
 }
