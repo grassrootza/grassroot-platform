@@ -1,18 +1,16 @@
 package za.org.grassroot.core.domain.account;
 
 import za.org.grassroot.core.domain.GrassrootEntity;
-import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.AccountBillingCycle;
-import za.org.grassroot.core.enums.AccountPaymentType;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.time.*;
-import java.time.temporal.ChronoUnit;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -145,14 +143,6 @@ public class Account implements GrassrootEntity, Serializable {
     @Column(name="free_form_cost")
     private int freeFormCost; // stored as cents
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_type", length = 50, nullable = true)
-    private AccountPaymentType defaultPaymentType;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "billing_cycle", length = 50, nullable = false)
-    private AccountBillingCycle billingCycle;
-
     @Basic
     @Column(name="charge_per_message")
     private boolean billPerMessage;
@@ -168,8 +158,7 @@ public class Account implements GrassrootEntity, Serializable {
         // For JPA
     }
 
-    public Account(User createdByUser, String accountName, AccountType accountType, User billingUser,
-                   AccountPaymentType paymentType, AccountBillingCycle billingCycle) {
+    public Account(User createdByUser, String accountName, AccountType accountType, User billingUser) {
         Objects.requireNonNull(createdByUser);
         Objects.requireNonNull(billingUser);
         Objects.requireNonNull(accountName);
@@ -192,8 +181,6 @@ public class Account implements GrassrootEntity, Serializable {
 
         this.type = accountType;
         this.billingUser = billingUser;
-        this.defaultPaymentType = paymentType;
-        this.billingCycle = billingCycle == null ? AccountBillingCycle.MONTHLY : billingCycle;
 
         this.outstandingBalance = 0;
     }
@@ -417,21 +404,12 @@ public class Account implements GrassrootEntity, Serializable {
         this.subscriptionFee = subscriptionFee;
     }
 
-    public int calculatePeriodCost() {
-        return subscriptionFee * (isAnnualAccount() ? 12 : 1);
-    }
-
     public Instant getNextBillingDate() {
         return nextBillingDate;
     }
 
     public void setNextBillingDate(Instant nextBillingDate) {
         this.nextBillingDate = nextBillingDate;
-    }
-
-    public void incrementBillingDate(LocalTime billingTime, ZoneOffset billingTz) {
-        LocalDate nextDate = LocalDate.now().plus(1, isAnnualAccount() ? ChronoUnit.YEARS : ChronoUnit.MONTHS);
-        this.nextBillingDate = nextDate.atTime(billingTime).toInstant(billingTz);
     }
 
     public int getTodosPerGroupPerMonth() {
@@ -462,26 +440,6 @@ public class Account implements GrassrootEntity, Serializable {
 
     public ZonedDateTime getLastPaymentDateAtSAST() {
         return lastPaymentDate == null ? null : DateTimeUtil.convertToUserTimeZone(lastPaymentDate, DateTimeUtil.getSAST());
-    }
-
-    public AccountPaymentType getDefaultPaymentType() {
-        return defaultPaymentType;
-    }
-
-    public void setDefaultPaymentType(AccountPaymentType defaultPaymentType) {
-        this.defaultPaymentType = defaultPaymentType;
-    }
-
-    public AccountBillingCycle getBillingCycle() {
-        return billingCycle;
-    }
-
-    public boolean isAnnualAccount() {
-        return AccountBillingCycle.ANNUAL.equals(billingCycle);
-    }
-
-    public void setBillingCycle(AccountBillingCycle billingCycle) {
-        this.billingCycle = billingCycle;
     }
 
     public boolean isBillPerMessage() {

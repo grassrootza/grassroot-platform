@@ -16,8 +16,6 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.enums.AccountBillingCycle;
-import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
@@ -118,13 +116,13 @@ public class AccountBrokerTest {
     }
 
     private Account createTestAccount() {
-        String accountUid = accountBroker.createAccount(testAdmin.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY, false);
+        String accountUid = accountBroker.createAccount(testAdmin.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, false);
         return accountBroker.loadAccount(accountUid);
     }
 
     @Test
     public void shouldSaveBilling() {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY, false);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, false);
         Account account = accountBroker.loadAccount(accountUid);
         assertNotEquals(null,account.getId());
         assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
@@ -147,7 +145,7 @@ public class AccountBrokerTest {
         Account account = createTestAccount();
         assertNotEquals(null, account.getId());
         assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, AccountPaymentType.CARD_PAYMENT, true, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true, true);
         assertTrue(account.isEnabled());
         assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testAdmin.getPrimaryAccount().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
@@ -181,7 +179,7 @@ public class AccountBrokerTest {
         // todo: add tests to check it fails if not done by admin
         // todo: add lots more asserts, to make sure group added is the actual group
         Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, AccountPaymentType.CARD_PAYMENT, true, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true, true);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         assertTrue(testGroup.isPaidFor());
         assertNotNull(accountGroupBroker.findAccountForGroup(testGroup.getUid()));
@@ -203,9 +201,9 @@ public class AccountBrokerTest {
     public void shouldNotAllowDuplicatePaidGroups() {
         // todo: change this to try/catch, to handle it better
         Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, AccountPaymentType.CARD_PAYMENT, true, true);
-        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY, false);
-        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, null, AccountPaymentType.CARD_PAYMENT, true, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true, true);
+        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD, false);
+        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, null, true, true);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         accountGroupBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
     }

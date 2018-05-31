@@ -41,7 +41,7 @@ public class CampaignRepositoryTest {
     @Test
     public void testCreateCampaign(){
         User user = userRepository.save(new User("3456", null, null));
-        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user, AccountPaymentType.DIRECT_DEPOSIT, AccountBillingCycle.MONTHLY));
+        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user));
         Campaign campaign = campaignRepository.saveAndFlush(new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION,null, account));
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getUid());
@@ -56,7 +56,7 @@ public class CampaignRepositoryTest {
     @Test
     public void testCampaignMessages(){
         User user = userRepository.save(new User("3456", null, null));
-        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user, AccountPaymentType.DIRECT_DEPOSIT, AccountBillingCycle.MONTHLY));
+        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION, null, account);
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage(user, campaign, CampaignActionType.OPENING, "testing_123", Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL);
@@ -74,7 +74,7 @@ public class CampaignRepositoryTest {
         List<String> tags = new ArrayList<>();
         tags.add("braamfontein");
         User user = userRepository.save(new User("3456", null, null));
-        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user, AccountPaymentType.DIRECT_DEPOSIT, AccountBillingCycle.MONTHLY));
+        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX, CampaignType.INFORMATION, null, account);
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage(user, campaign, CampaignActionType.OPENING, "testing_123", Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL);

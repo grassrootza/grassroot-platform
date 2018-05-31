@@ -1,22 +1,20 @@
 package za.org.grassroot.services.account;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.map.HashedMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
-import za.org.grassroot.core.enums.AccountBillingCycle;
+import za.org.grassroot.core.domain.account.Account_;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -33,22 +31,21 @@ import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.core.specifications.AccountSpecifications.*;
 
 /**
  * Created by luke on 2015/11/12.
  */
-@Service
+@Service @Slf4j
 public class AccountBrokerImpl implements AccountBroker {
 
-    private static final Logger log = LoggerFactory.getLogger(AccountBroker.class);
-
     private Map<AccountType, Integer> accountFees = new HashMap<>();
-    private double annualDiscount;
 
     private Map<AccountType, Integer> freeFormPerMonth = new HashMap<>();
     private Map<AccountType, Integer> messagesCost = new HashMap<>();
@@ -85,7 +82,6 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @PostConstruct
     public void init() {
-        annualDiscount = environment.getProperty("accounts.annual.discount", Double.class, (double) (10/12));
         for (AccountType accountType : AccountType.values()) {
             final String key = accountType.name().toLowerCase();
             accountFees.put(accountType, environment.getProperty("accounts.subscription.cost." + key, Integer.class));
@@ -112,6 +108,10 @@ public class AccountBrokerImpl implements AccountBroker {
         }
     }
 
+    private static Specification<Account> isEnabled() {
+        return (root, query, cb) -> cb.isTrue(root.get(Account_.enabled));
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Account loadPrimaryAccountForUser(String userUid, boolean loadEvenIfDisabled) {
@@ -123,7 +123,7 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     @Transactional
     public String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
-                                AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle, boolean enableFreeTrial) {
+                                boolean enableFreeTrial) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(billedUserUid);
         Objects.requireNonNull(accountName);
@@ -132,8 +132,7 @@ public class AccountBrokerImpl implements AccountBroker {
         User creatingUser = userRepository.findOneByUid(userUid);
         User billedUser = userRepository.findOneByUid(billedUserUid);
 
-        Account account = new Account(creatingUser, accountName, accountType, billedUser, accountPaymentType,
-                billingCycle == null ? AccountBillingCycle.MONTHLY : billingCycle);
+        Account account = new Account(creatingUser, accountName, accountType, billedUser);
 
         accountRepository.saveAndFlush(account);
 
@@ -162,7 +161,6 @@ public class AccountBrokerImpl implements AccountBroker {
             account.setEnabledDateTime(Instant.now());
             account.setEnabledByUser(creatingUser);
             account.setNextBillingDate(LocalDateTime.now().plusMonths(1).toInstant(ZoneOffset.UTC));
-            account.setDefaultPaymentType(AccountPaymentType.FREE_TRIAL); // todo : rethink if want to handle it this way, and/or alter payment type selection UX/UI
 
             bundle.addLog(new AccountLog.Builder(account)
                     .accountLogType(AccountLogType.ACCOUNT_ENABLED)
@@ -180,7 +178,6 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     private void setAccountLimits(Account account, AccountType accountType) {
-        account.setSubscriptionFee(calculateSubscriptionFee(account, accountType));
         account.setFreeFormMessages(freeFormPerMonth.get(accountType));
         account.setFreeFormCost(messagesCost.get(accountType));
         account.setMaxSizePerGroup(maxGroupSize.get(accountType));
@@ -190,13 +187,9 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setEventsPerGroupPerMonth(eventsPerMonth.get(accountType));
     }
 
-    private int calculateSubscriptionFee(Account account, AccountType accountType) {
-        return (int) (accountFees.get(accountType) * (account.isAnnualAccount() ? annualDiscount : 1));
-    }
-
     @Override
     @Transactional
-    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, AccountPaymentType paymentType, boolean ensureUserAddedToAdmin, boolean setBillingUser) {
+    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin, boolean setBillingUser) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
 
@@ -211,9 +204,6 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setEnabledDateTime(Instant.now());
         account.setEnabledByUser(user);
         account.setDisabledDateTime(DateTimeUtil.getVeryLongAwayInstant());
-
-        // make sure to store reg in here
-        account.setDefaultPaymentType(paymentType);
 
         if (setBillingUser && !account.getBillingUser().equals(user)) {
             account.setBillingUser(user);
@@ -240,58 +230,6 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
-    }
-
-    @Override
-    @Transactional
-    public void updateAccountPaymentCycleAndMethod(String userUid, String accountUid, AccountPaymentType paymentType, AccountBillingCycle billingCycle, boolean adjustNextBillingDate) {
-        Objects.requireNonNull(accountUid);
-        DebugUtil.transactionRequired("AccountBilling: ");
-
-        // note : not validating user is admin as this may be called by a responding sponsor prior to payment being complete
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        User user = userRepository.findOneByUid(userUid);
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-        if (paymentType != null && !paymentType.equals(account.getDefaultPaymentType())) {
-            account.setDefaultPaymentType(paymentType);
-            bundle.addLog(new AccountLog.Builder(account)
-                    .user(user)
-                    .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
-                    .description(paymentType.name()).build());
-        }
-
-        if (billingCycle != null && !billingCycle.equals(account.getBillingCycle())) {
-            account.setBillingCycle(billingCycle);
-            account.setSubscriptionFee(calculateSubscriptionFee(account, account.getType()));
-            bundle.addLog(new AccountLog.Builder(account)
-                    .user(user)
-                    .accountLogType(AccountLogType.BILLING_CYCLE_CHANGED)
-                    .description(billingCycle.name()).build());
-        }
-
-        logsAndNotificationsBroker.storeBundle(bundle);
-
-    }
-
-    @Override
-    @Transactional
-    public void updateAccountPaymentType(String userUid, String accountUid, AccountPaymentType paymentType) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(paymentType);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        User user = userRepository.findOneByUid(userUid);
-        validateAdmin(user, account);
-
-        account.setDefaultPaymentType(paymentType);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
-                .user(user)
-                .description("Changed to payment method: " + paymentType.name()).build());
     }
 
     @Override
@@ -521,32 +459,6 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Account> loadAllAccounts(boolean visibleOnly, AccountPaymentType paymentMethod, AccountBillingCycle billingCycle) {
-        List<Account> accounts;
-        boolean noSpecifications = !visibleOnly && paymentMethod == null && billingCycle == null;
-        if (noSpecifications) {
-            accounts = accountRepository.findAll();
-        } else {
-            Specifications<Account> specifications = null;
-            if (visibleOnly) {
-                specifications = where(isVisible());
-            }
-            if (paymentMethod != null) {
-                specifications = (specifications == null) ? where(defaultPaymentType(paymentMethod)) :
-                        specifications.and(defaultPaymentType(paymentMethod));
-            }
-            if (billingCycle != null) {
-                specifications = (specifications == null) ? where(billingCycle(billingCycle)) :
-                        specifications.and(billingCycle(billingCycle));
-            }
-            accounts = accountRepository.findAll(specifications);
-        }
-        accounts.sort(Comparator.comparing(Account::getAccountName));
-        return accounts;
-    }
-
-    @Override
     public Map<AccountType, Integer> getNumberGroupsPerType() {
         return maxGroupNumber;
     }
@@ -686,7 +598,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void modifyAccount(String adminUid, String accountUid, AccountType accountType, String accountName, String billingEmail, AccountBillingCycle billingCycle) {
+    public void modifyAccount(String adminUid, String accountUid, AccountType accountType, String accountName, String billingEmail) {
         Objects.requireNonNull(adminUid);
         Objects.requireNonNull(accountUid);
 
@@ -715,12 +627,6 @@ public class AccountBrokerImpl implements AccountBroker {
         if(!account.getBillingUser().getEmailAddress().equals(billingEmail)) {
             account.getBillingUser().setEmailAddress(billingEmail);
             sb.append(" account billing email = ").append(billingEmail).append(";");
-        }
-
-        if(!account.getBillingCycle().equals(billingCycle)) {
-            account.setBillingCycle(billingCycle);
-            sb.append(" account billing cycle = ").append(billingCycle).append(";");
-
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)

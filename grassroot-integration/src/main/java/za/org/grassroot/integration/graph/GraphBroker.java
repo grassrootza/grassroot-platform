@@ -14,6 +14,8 @@ public interface GraphBroker {
 
     void addGroupToGraph(String groupUid, String creatingUserUid);
 
+    void addMovementToGraph(String movementUid, String creatingUserUid);
+
     void addAccountToGraph(String accountUid, List<String> adminUids);
 
     void addMembershipToGraph(String userUid, String groupUid);

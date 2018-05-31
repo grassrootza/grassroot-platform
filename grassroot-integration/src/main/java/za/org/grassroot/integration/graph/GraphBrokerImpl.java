@@ -74,6 +74,16 @@ public class GraphBrokerImpl implements GraphBroker {
     }
 
     @Override
+    public void addMovementToGraph(String movementUid, String creatingUserUid) {
+        log.info("adding movement to Grassroot graph ...");
+        Actor movement = new Actor(ActorType.MOVEMENT, movementUid);
+        IncomingGraphAction action = wrapActorCreation(movement);
+        IncomingRelationship genRel = generatorRelationship(creatingUserUid, movementUid);
+        action.addRelationship(genRel);
+        dispatchAction(action, "movement");
+    }
+
+    @Override
     public void addAccountToGraph(String accountUid, List<String> adminUids) {
         log.info("adding an extra account to Grassroot graph ...");
         Actor account = new Actor(ActorType.ACCOUNT, accountUid);

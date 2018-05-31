@@ -15,7 +15,6 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
-import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.PermissionBroker;
@@ -72,7 +71,6 @@ public class AccountSettingsController extends BaseRestController {
                                                                 @RequestParam String accountName,
                                                                 @RequestParam String billingEmail,
                                                                 @RequestParam AccountType accountType,
-                                                                @RequestParam AccountBillingCycle billingCycle,
                                                                 HttpServletRequest request) {
         User user = getUserFromRequest(request);
         Account account = accountBroker.loadAccount(accountUid);
@@ -80,7 +78,7 @@ public class AccountSettingsController extends BaseRestController {
             if (!account.getAdministrators().contains(user)) {
                 permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
             }
-            accountBroker.modifyAccount(user.getUid(), accountUid, accountType, accountName, billingEmail, billingCycle);
+            accountBroker.modifyAccount(user.getUid(), accountUid, accountType, accountName, billingEmail);
 
             account = accountBroker.loadAccount(accountUid);
             final int groupsLeft = account.isEnabled() ? accountGroupBroker.numberGroupsLeft(account.getUid()) : 0;
@@ -89,15 +87,6 @@ public class AccountSettingsController extends BaseRestController {
         }catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
         }
-    }
-
-    @RequestMapping(value = "/last-cost", method = RequestMethod.GET)
-    public ResponseEntity<Long> getCostSinceLastBill(@RequestParam String accountUid,
-                                                     HttpServletRequest request) {
-        Account account = accountBroker.loadAccount(accountUid);
-        // long costSinceLastBill = billingBroker.calculateMessageCostsInPeriod(account, account.getLastPaymentDate(), Instant.now());
-        // todo: as elsewhere, make this work
-        return ResponseEntity.ok(0L);
     }
 
     @RequestMapping(value = "/account-fees", method = RequestMethod.GET)
@@ -115,49 +104,11 @@ public class AccountSettingsController extends BaseRestController {
                 permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
             }
             List<AccountBillingRecordResponse> accountBillingRecordsResponse = new ArrayList<>();
-            // todo: pull from chargebee or remove
-//            if (account.getAdministrators().contains(user)) {
-//                List<AccountBillingRecord> accountBillingRecords = billingBroker.findRecordsWithStatementDates(accountUid);
-//                accountBillingRecords.forEach(abr -> accountBillingRecordsResponse.add(new AccountBillingRecordResponse(abr.getCreatedDateTime(), abr.getPaymentId())));
-//            }
             return ResponseEntity.ok(accountBillingRecordsResponse);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
         }
     }
-
-    // todo: restore from chargebee or similar
-//    @RequestMapping(value = "/statement", method = RequestMethod.GET)
-//    public ResponseEntity<byte[]> viewAccountBillingStatement(@RequestParam String paymentUid,
-//                                                              @RequestParam String accountUid,
-//                                                              HttpServletRequest request) throws IOException{
-//        User user = getUserFromRequest(request);
-//        Account account = accountBroker.loadAccount(accountUid);
-//        try {
-//            if (!account.getAdministrators().contains(user)) {
-//                permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-//            }
-//
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-//            headers.add("Content-Disposition", "attachment; filename=\"statement.pdf\"");
-//            headers.add("Cache-Control", "no-cache");
-//            headers.add("Pragma", "no-cache");
-//            headers.setDate("Expires", 0);
-//            headers.setContentType(MediaType.APPLICATION_PDF);
-//
-//
-//            AccountBillingRecord accountBillingRecord = billingBroker.fetchRecordByPayment(paymentUid);
-//            File invoiceFile = pdfGeneratingService.generateInvoice(Collections.singletonList(accountBillingRecord.getUid()));
-//            byte[] data = IOUtils.toByteArray(new FileInputStream(invoiceFile));
-//            headers.setContentDispositionFormData("statement.pdf", "statement.pdf");
-//            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-//            return new ResponseEntity<>(data, headers, HttpStatus.OK);
-//        }catch (AccessDeniedException e) {
-//            throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
-//        }
-//    }
-
 
     @RequestMapping(value = "/close", method = RequestMethod.POST)
     public String closeAccount(@RequestParam String accountUid,

@@ -1,9 +1,8 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.AccountBillingCycle;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AccountType;
 
 /**
@@ -40,8 +39,6 @@ public class AccountWrapper {
     private final int groupsLeft;
     private final int messagesLeft;
 
-    private final AccountBillingCycle billingCycle;
-
     public AccountWrapper(Account account, User callingUser, int groupsLeft, int messagesLeft) {
         this.uid = account.getUid();
         this.createdByUserName = account.getCreatedByUser().nameToDisplay();
@@ -70,7 +67,6 @@ public class AccountWrapper {
         this.groupsLeft = groupsLeft;
         this.messagesLeft = messagesLeft;
 
-        this.billingCycle = account.getBillingCycle();
     }
 
     public String getUid() {
@@ -148,8 +144,6 @@ public class AccountWrapper {
     public int getMessagesLeft() {
         return messagesLeft;
     }
-
-    public AccountBillingCycle getBillingCycle() { return billingCycle; }
 
     public String getBillingUserUid() { return billingUserUid; }
 }

@@ -60,7 +60,7 @@ public class CampaignBrokerTest {
         userRepository.save(testUser);
         String groupName = "testGroup";
         testGroup = groupRepository.save(new Group(groupName, testUser));
-        testAccount = accountRepository.save(new Account(testUser, "test", AccountType.ENTERPRISE, testUser, AccountPaymentType.DIRECT_DEPOSIT, AccountBillingCycle.MONTHLY));
+        testAccount = accountRepository.save(new Account(testUser, "test", AccountType.ENTERPRISE, testUser));
         testUser.setPrimaryAccount(testAccount);
         userRepository.save(testUser);
     }

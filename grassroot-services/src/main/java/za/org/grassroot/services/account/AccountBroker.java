@@ -2,12 +2,9 @@ package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.account.Account;
-import za.org.grassroot.core.enums.AccountBillingCycle;
-import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,20 +17,9 @@ public interface AccountBroker {
 
     Account loadPrimaryAccountForUser(String userUid, boolean loadEvenIfDisabled);
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    List<Account> loadAllAccounts(boolean visibleOnly, AccountPaymentType paymentMethod, AccountBillingCycle billingCycle);
+    String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType, boolean enableFreeTrial);
 
-    String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
-                         AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle, boolean enableFreeTrial);
-
-    void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, AccountPaymentType paymentType,
-                       boolean ensureUserAddedToAdmin, boolean setBillingUser);
-
-    // note: should only adjust billing date if this is called at end of successful payment cycle
-    void updateAccountPaymentCycleAndMethod(String userUid, String accountUid, AccountPaymentType paymentType,
-                                            AccountBillingCycle billingCycle, boolean adjustNextBillingDate);
-
-    void updateAccountPaymentType(String userUid, String accountUid, AccountPaymentType paymentType);
+    void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin, boolean setBillingUser);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void setAccountPrimary(String userUid, String accountUid);
@@ -88,7 +74,7 @@ public interface AccountBroker {
     void setAccountVisibility(String adminUid, String accountUid, boolean visible);
 
     void modifyAccount(String adminUid, String accountUid, AccountType accountType,
-                       String accountName, String billingEmail, AccountBillingCycle billingCycle);
+                       String accountName, String billingEmail);
 
     void closeAccountRest(String userUid, String accountUid, boolean generateClosingBill);
 

@@ -1,8 +1,10 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.movement;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import za.org.grassroot.core.domain.GrassrootEntity;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -14,7 +16,7 @@ import java.util.Set;
 // All substantive parts of movement creation/management/etc are through graph
 
 @Entity @Slf4j
-@Table(name = "campaign")
+@Table(name = "movement")
 public class Movement implements GrassrootEntity {
 
     @Id

@@ -159,10 +159,10 @@ public class UserRepositoryTest {
     public void shouldSetAccounts() {
         User userAcc = new User("098765", null, null);
         assertNotNull(userAcc.getUid());
-        Account account = new Account(userAcc,"", AccountType.FREE,userAcc,
-                AccountPaymentType.FREE_TRIAL,AccountBillingCycle.ANNUAL);
-        Account account1 = new Account(userAcc,"", AccountType.FREE,userAcc,
-                AccountPaymentType.FREE_TRIAL,AccountBillingCycle.MONTHLY);
+        Account account = new Account(userAcc,"", AccountType.FREE,userAcc
+        );
+        Account account1 = new Account(userAcc,"", AccountType.FREE,userAcc
+        );
         Set<Account> accounts = new HashSet<>();
         userAcc.setAccountsAdministered(accounts);
         userAcc.setPrimaryAccount(account);
