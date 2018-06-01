@@ -34,6 +34,9 @@ public class Movement implements GrassrootEntity {
     @Column(name = "name", nullable = false, length = 50)
     @Getter @Setter private String name;
 
+    @Column(name = "description")
+    @Getter @Setter private String description;
+
     @ManyToOne()
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     @Getter private User createdByUser;
