@@ -157,7 +157,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .getResultList();
 
         if (dtoResults.isEmpty()) {
-            throw new IllegalArgumentException("Error! Non existent group passed to query");
+            log.error("Error! Non existent group or membership passed to query: group UID: {}", groupUid);
+            return null;
         }
 
         GroupFullDTO groupFullDTO = dtoResults.get(0);

@@ -164,12 +164,10 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
     private void triggerCampaignText(Campaign campaign, User user, Broadcast template, String message, UserInterfaceType channel, String callBackNumber) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_WELCOME_MESSAGE,
-                campaign, channel, "Outbound engagement SMS");
+        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_WELCOME_MESSAGE, campaign, channel, "Outbound engagement SMS");
         bundle.addLog(campaignLog);
 
-        CampaignBroadcastNotification notification = new CampaignBroadcastNotification(
-                user, message, template, null, campaignLog);
+        CampaignBroadcastNotification notification = new CampaignBroadcastNotification(user, message, template, null, campaignLog);
         Instant sendTime = UserInterfaceType.USSD.equals(channel) ? Instant.now().plus(30, ChronoUnit.SECONDS) : Instant.now();
         notification.setSendOnlyAfter(sendTime);
         bundle.addNotification(notification);
@@ -178,6 +176,7 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
         if (userCanJoin(campaignType)) {
             final String respondText = getNextStepMessage(campaignType, channel, user.getLocale(), callBackNumber);
             CampaignResponseNotification sendMoreInfo = new CampaignResponseNotification(user, respondText, campaignLog);
+            sendMoreInfo.setSendOnlyAfter(sendTime.plus(15, ChronoUnit.SECONDS)); // to make sure it comes in second
             bundle.addNotification(sendMoreInfo);
         }
 
@@ -234,7 +233,7 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
     }
 
     private String handleInboundPcmReply(User user, Campaign campaign, String reply) {
-        log.info("Okay, adding user to group via PCM ...");
+        log.info("Okay, adding user to group via PCM ... reply from user: {}", reply);
         campaignBroker.addUserToCampaignMasterGroup(campaign.getUid(), user.getUid(), UserInterfaceType.PLEASE_CALL_ME);
         return messageSource.getMessage("text.campaign.response.success", new String[] { MISTAKEN_JOIN_STRING });
     }
