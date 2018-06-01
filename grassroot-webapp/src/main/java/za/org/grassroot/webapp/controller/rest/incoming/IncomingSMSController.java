@@ -3,10 +3,9 @@ package za.org.grassroot.webapp.controller.rest.incoming;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +15,7 @@ import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
@@ -71,7 +71,7 @@ public class IncomingSMSController {
     @Autowired
     public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker,
                                  AccountGroupBroker accountGroupBroker, CampaignBroker campaignBroker,
-                                 @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSource, CampaignTextBroker campaignTextBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+                                 CampaignTextBroker campaignTextBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userResponseBroker = userResponseBroker;
         this.userManager = userManager;
         this.groupBroker = groupBroker;
@@ -166,16 +166,26 @@ public class IncomingSMSController {
     public ResponseEntity receivePleaseCallMe(@PathVariable String campaignUid,
                                               @RequestParam String secret,
                                               @RequestParam(value = "from_number") String phoneNumber,
-                                              @RequestParam(value = "content") String message) {
+                                              @RequestParam(value = "content") String message,
+                                              @RequestParam(value = "to_number") String toNumber) {
         if (!secret.equals(INBOUND_PCM_TOKEN)) {
             log.error("Invalid inbound token received: {}", secret);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
+        boolean likelyPlsCallMe = StringUtils.containsIgnoreCase(message, "please call") || StringUtils.containsIgnoreCase(message, "call me");
+        if (!likelyPlsCallMe) {
+            log.info("not a please call me, must be different message: ", message);
+            return ResponseEntity.ok().build();
+        }
+
         User user = userManager.loadOrCreateUser(phoneNumber);
+        final String callback = PhoneNumberUtil.formattedNumber(toNumber);
+        log.info("PCM received, responding with callback number: {}, incoming to number: {}, from: {}, msg: {}", callback, toNumber, phoneNumber, message);
+
         if (!campaignBroker.hasUserEngaged(campaignUid, user.getUid())) {
             campaignBroker.recordEngagement(campaignUid, user.getUid(), UserInterfaceType.PLEASE_CALL_ME, message);
-            campaignTextBroker.checkForAndTriggerCampaignText(campaignUid, user.getUid(), null, UserInterfaceType.PLEASE_CALL_ME);
+            campaignTextBroker.checkForAndTriggerCampaignText(campaignUid, user.getUid(), callback, UserInterfaceType.PLEASE_CALL_ME);
         } else {
             campaignTextBroker.handleCampaignTextResponse(campaignUid, user.getUid(), message, UserInterfaceType.PLEASE_CALL_ME);
         }

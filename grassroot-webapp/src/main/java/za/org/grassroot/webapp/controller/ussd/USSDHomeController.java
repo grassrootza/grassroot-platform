@@ -121,10 +121,6 @@ public class USSDHomeController extends USSDBaseController {
         User sessionUser = userManager.loadOrCreateUser(inputNumber);
         userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
 
-        if (!sessionUser.isHasInitiatedSession()) {
-            userManager.setHasInitiatedUssdSession(sessionUser.getUid());
-        }
-
         USSDMenu openingMenu = trailingDigitsPresent ?
                 handleTrailingDigits(enteredUSSD, inputNumber, sessionUser) :
                 checkForResponseOrDefault(sessionUser);
@@ -134,18 +130,25 @@ public class USSDHomeController extends USSDBaseController {
         return menuBuilder(openingMenu, true);
     }
 
-    private USSDMenu handleTrailingDigits(final String enteredUSSD, final String inputNumber, User user) throws URISyntaxException {
+    private USSDMenu handleTrailingDigits(final String enteredUSSD, final String inputNumber, User user) {
         String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
         return userInterrupted(inputNumber) && !safetyCode.equals(trailingDigits) ?
                 interruptedPrompt(inputNumber) : directBasedOnTrailingDigits(trailingDigits, user);
     }
 
     private USSDMenu checkForResponseOrDefault(final User user) throws URISyntaxException {
+        recordInitiatedAndSendWelcome(user, true);
         EntityForUserResponse entity = userResponseBroker.checkForEntityForUserResponse(user.getUid(), true);
         USSDResponseTypes neededResponse = neededResponse(entity, user);
         return neededResponse.equals(USSDResponseTypes.NONE)
                 ? defaultStartMenu(user)
                 : requestUserResponse(user, neededResponse, entity);
+    }
+
+    private void recordInitiatedAndSendWelcome(User user, boolean sendWelcome) {
+        if (!user.isHasInitiatedSession()) {
+            userManager.setHasInitiatedUssdSession(user.getUid(), sendWelcome);
+        }
     }
 
     /*
@@ -185,21 +188,29 @@ public class USSDHomeController extends USSDBaseController {
     private USSDMenu directBasedOnTrailingDigits(String trailingDigits, User user) {
         USSDMenu returnMenu;
         log.info("Processing trailing digits ..." + trailingDigits);
+        boolean sendWelcomeIfNew = false;
         if (safetyCode.equals(trailingDigits)) {
             returnMenu = safetyController.assemblePanicButtonActivationMenu(user);
         } else if (livewireSuffix.equals(trailingDigits)) {
             returnMenu = liveWireController.assembleLiveWireOpening(user, 0);
+            sendWelcomeIfNew = true;
         } else if (sendMeLink.equals(trailingDigits)) {
             returnMenu = assembleSendMeAndroidLinkMenu(user);
+            sendWelcomeIfNew = true;
         } else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
             returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
+            sendWelcomeIfNew = false;
         } else {
             returnMenu = groupController.lookForJoinCode(user, trailingDigits);
-            if (returnMenu == null) {
+            boolean groupJoin = returnMenu != null;
+            if (!groupJoin) {
                 log.info("checking if campaign: {}", trailingDigits);
                 returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
             }
+            sendWelcomeIfNew = groupJoin;
+            log.info("group or campaign join, trailing digits ={}, send welcome = {}", trailingDigits, sendWelcomeIfNew);
         }
+        recordInitiatedAndSendWelcome(user, sendWelcomeIfNew);
         return returnMenu;
     }
 
