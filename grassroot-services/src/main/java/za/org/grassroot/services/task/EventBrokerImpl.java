@@ -47,6 +47,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.domain.task.EventReminderType.CUSTOM;
@@ -941,24 +942,24 @@ public class EventBrokerImpl implements EventBroker {
 	public String getMostFrequentEventTime(String groupUid){
 		Group group = groupRepository.findOneByUid(groupUid);
 
-		String qry = "SELECT to_char(e.eventStartDateTime,'hh24:mi') as event_time, " +
-				"COUNT(e.eventStartDateTime) as count_time " +
+		String qry = "SELECT to_char(e.eventStartDateTime,'hh24:mi') " +
 				"FROM Meeting e " +
-				"WHERE e.ancestorGroup= :group " +
-				"group by e.eventStartDateTime " +
-				"order by count_time desc";
+				"WHERE e.ancestorGroup= :group ";
 
-		TypedQuery<Object[]> eventTypedQuery =
-				entityManager.createQuery(qry,Object[].class)
+		TypedQuery<String> eventTypedQuery = entityManager.createQuery(qry,String.class)
 						.setParameter("group",group);
 
-		String time = "";
-		if(eventTypedQuery != null){
-			List<Object[]> events = eventTypedQuery.getResultList();
-			if(events != null && !events.isEmpty()){
-				time = String.valueOf(events.get(0)[0].toString());
-			}
-		}
+		List<String> times = eventTypedQuery.getResultList();
+
+		log.info("List of all{}",times);
+
+		Map<String, Long> result = times.stream()
+				.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+		Map.Entry<String,Long> entry = result.entrySet().iterator().next();
+
+		String time = entry.getKey();
+
 		return time;
 	}
 
