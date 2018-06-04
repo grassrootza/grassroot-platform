@@ -26,7 +26,11 @@ public class USSDMessageAssembler {
     }
 
     protected String getMessage(String key, Object[] params, User user) {
-        return messageSource.getMessage("ussd." + key, params, new Locale(getLanguage(user)));
+        try {
+            return messageSource.getMessage("ussd." + key, params, new Locale(getLanguage(user)));
+        } catch (NoSuchMessageException e) {
+            return messageSource.getMessage("ussd." + key, params, Locale.ENGLISH);
+        }
     }
 
     protected String getMessage(USSDSection section, String menu, String messageType, User user) {
@@ -38,29 +42,39 @@ public class USSDMessageAssembler {
         }
     }
 
+    // convenience function with guaranteed response, for below
+    private String getMessage(String key, Object[] params, Locale locale) {
+        try {
+            return messageSource.getMessage(key, params, locale);
+        } catch (NoSuchMessageException e) {
+            return messageSource.getMessage(key, params, Locale.ENGLISH);
+        }
+    }
+
     // convenience function for when passing just a name (of user or group, for example)
     protected String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, User sessionUser) {
         final String messageKey = "ussd." + section.toKey() + menuKey + "." + messageLocation;
-        return messageSource.getMessage(messageKey, new String[]{ parameter }, new Locale(getLanguage(sessionUser)));
+        return getMessage(messageKey, new String[]{ parameter }, new Locale(getLanguage(sessionUser)));
     }
 
     protected String getMessage(USSDSection section, String menu, String messageType, String[] parameters, User user) {
         final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;
-        return messageSource.getMessage(messageKey, parameters, new Locale(getLanguage(user)));
+        return getMessage(messageKey, parameters, new Locale(getLanguage(user)));
     }
 
     // for convenience, sometimes easier to read this way than passing around user instance
     protected String getMessage(String section, String menuKey, String messageLocation, Locale sessionLocale) {
         final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
-        return messageSource.getMessage(messageKey, null, sessionLocale);
+        return getMessage(messageKey, null, sessionLocale);
     }
 
     // final convenience version, for the root strings, stripping out "."
     protected String getMessage(String messageKey, User sessionUser) {
-        return messageSource.getMessage("ussd." + messageKey, null, new Locale(getLanguage(sessionUser)));
+        return getMessage("ussd." + messageKey, null, new Locale(getLanguage(sessionUser)));
     }
+
     protected String getMessage(String messageKey, String language) {
-        return messageSource.getMessage("ussd." + messageKey, null, new Locale(language));
+        return getMessage("ussd." + messageKey, null, new Locale(language));
     }
 
     // provides a null safe helper method to get language code from user

@@ -623,6 +623,14 @@ public class TaskBrokerImpl implements TaskBroker {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Task> loadAllTasks() {
+        List<Task> allTasks = new ArrayList<>(eventRepository.findAll(EventSpecifications.notCancelled()));
+        allTasks.addAll(todoBroker.loadAllTodos());
+        return allTasks;
+    }
+
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {
         return t-> {
             TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), getUserResponse(t, user));

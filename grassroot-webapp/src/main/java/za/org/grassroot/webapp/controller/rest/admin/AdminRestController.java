@@ -190,4 +190,11 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok().build();
     }
 
+    @RequestMapping(value = "/graph/transfer/tasks", method = RequestMethod.GET)
+    public ResponseEntity initiateTasksGraphTransfer() {
+        log.info("seeding queue with tasks");
+        adminService.populateGrassrootGraphTasks();
+        return ResponseEntity.ok().build();
+    }
+
 }

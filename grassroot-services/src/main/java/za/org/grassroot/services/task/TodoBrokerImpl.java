@@ -666,6 +666,12 @@ public class TodoBrokerImpl implements TodoBroker {
 
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Todo> loadAllTodos() {
+        return todoRepository.findAll(TodoSpecifications.notCancelled());
+    }
+
     private Set<Notification> recordInformationResponse(TodoAssignment assignment, String response, TodoLog todoLog, boolean sendConfirmation) {
         Set<Notification> notifications = new HashSet<>();
 
