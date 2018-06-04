@@ -34,6 +34,8 @@ import za.org.grassroot.core.repository.UserRepository;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -308,7 +310,9 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
         final String finalMessage = getFinalMessage(dataSet, target.getLocale());
         if (!StringUtils.isEmpty(finalMessage)) {
-            notifications.add(new FreeFormMessageNotification(target, finalMessage, accountLog));
+            Notification finalNotification = new FreeFormMessageNotification(target, finalMessage, accountLog);
+            finalNotification.setSendOnlyAfter(Instant.now().plus(15, ChronoUnit.SECONDS));
+            notifications.add(finalNotification);
         }
 
         return notifications;

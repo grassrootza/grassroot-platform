@@ -126,6 +126,7 @@ public class CampaignManagerController extends BaseRestController {
             }
             Campaign campaign = campaignBroker.load(campaignUid);
             viewDto = new CampaignViewDTO(campaign);
+            log.info("sending back DTO with messages: {}", viewDto.getCampaignMessages());
             cacheCampaignFull(viewDto, getUserIdFromRequest(request));
             return ResponseEntity.ok(viewDto);
         } catch (AccessDeniedException e) {
