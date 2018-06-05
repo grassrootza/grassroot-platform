@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventRequest;
+import za.org.grassroot.core.domain.task.MeetingRequest;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.LearningService;
@@ -134,7 +135,7 @@ public class USSDEventUtil extends USSDUtil {
 
             case dateTimeMenu:
                 userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation:", USSD);
-                eventRequestBroker.updateEventDateTime(userUid, eventUid, parseDateTime(userInput));
+                eventRequestBroker.updateEventDateTime(userUid, eventUid, parseDateTime(userInput, eventUid));
                 break;
 
             case timeOnly:
@@ -190,9 +191,10 @@ public class USSDEventUtil extends USSDUtil {
      * Method that invokes the date time parser directly, with no attempt to map to a predefined format or regex. Should
      * likely move to a single class in language, once updated that module to Java 8 and Antlr 4
      * @param passedValue
+     * @param eventUid
      * @return LocalDateTime of most likely match; if no match, returns the current date time rounded up to next hour
      */
-    public LocalDateTime parseDateTime(String passedValue) throws SeloParseDateTimeFailure {
+    public LocalDateTime parseDateTime(String passedValue, String eventUid) throws SeloParseDateTimeFailure {
 
         LocalDateTime parsedDateTime = DateTimeUtil.tryParseString(passedValue);
 
@@ -205,8 +207,20 @@ public class USSDEventUtil extends USSDUtil {
             }
         }
 
-        return parsedDateTime;
+        LocalDateTime localDateTime;
+
+        if(parsedDateTime.getHour() == 0 && parsedDateTime.getMinute() == 0){
+            MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(eventUid);
+            LocalTime mostFreqTime = eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid());
+            localDateTime = LocalDateTime.of(parsedDateTime.toLocalDate(), mostFreqTime);
+        }else{
+            localDateTime = parsedDateTime;
+        }
+
+        return localDateTime;
     }
+
+
 
     /**
      * Method that will take a string representing a date and update a timestamp, leaving the time unchanged. It will
@@ -223,7 +237,7 @@ public class USSDEventUtil extends USSDUtil {
         try {
             revisedDate = LocalDate.parse(revisedDateString, DateTimeUtil.getPreferredDateFormat());
         } catch (DateTimeParseException e) {
-            revisedDate = LocalDate.from(parseDateTime(revisedDateString));
+            revisedDate = LocalDate.from(parseDateTime(revisedDateString, null));
         }
         LocalDateTime newDateTime = LocalDateTime.of(revisedDate, originalDateTime.toLocalTime());
         return newDateTime;
@@ -244,7 +258,7 @@ public class USSDEventUtil extends USSDUtil {
         try {
             revisedTime = LocalTime.parse(revisedTimeString, DateTimeUtil.getPreferredTimeFormat());
         } catch (DateTimeParseException e) {
-            revisedTime = LocalTime.from(parseDateTime(revisedTimeString));
+            revisedTime = LocalTime.from(parseDateTime(revisedTimeString, null));
         }
         LocalDateTime newDateTime = LocalDateTime.of(originalDateTime.toLocalDate(), revisedTime);
         return newDateTime;

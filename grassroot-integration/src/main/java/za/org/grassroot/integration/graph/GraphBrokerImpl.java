@@ -29,6 +29,7 @@ import za.org.grassroot.graph.dto.IncomingGraphAction;
 import za.org.grassroot.graph.dto.IncomingRelationship;
 
 import javax.annotation.PostConstruct;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +47,7 @@ public class GraphBrokerImpl implements GraphBroker {
     private String grassrootQueue;
     private String sqsQueueUrl;
 
+
     public GraphBrokerImpl() {
         log.info("Graph broker enabled, constructing object mapper ...");
         this.objectMapper = new ObjectMapper().findAndRegisterModules()
@@ -56,11 +58,13 @@ public class GraphBrokerImpl implements GraphBroker {
     public void init() {
         this.sqs = AmazonSQSClientBuilder.defaultClient();
         this.sqsQueueUrl = sqs.getQueueUrl(grassrootQueue).getQueueUrl();
+
     }
 
     @Override
     public void addUserToGraph(String userUid) {
         log.info("adding user to Grassroot graph ... {}", userUid);
+
         Actor actor = new Actor(ActorType.INDIVIDUAL, userUid);
         IncomingGraphAction action = wrapActorCreation(actor);
         dispatchAction(action, "user");
@@ -69,6 +73,7 @@ public class GraphBrokerImpl implements GraphBroker {
     @Override
     public void addGroupToGraph(String groupUid, String creatingUserUid) {
         log.info("adding group to Grassroot graph ...");
+
         Actor group = new Actor(ActorType.GROUP, groupUid);
         IncomingGraphAction action = wrapActorCreation(group);
         IncomingRelationship genRel = generatorRelationship(creatingUserUid, groupUid);
