@@ -88,7 +88,7 @@ public class NotificationManager implements NotificationService{
     public void updateNotificationsViewedAndRead(Set<String> notificationUids) {
         List<Notification> notifications = notificationRepository.findByUidIn(notificationUids);
         notifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false, false, null));
-        notificationRepository.save(notifications); // TX management not being super reliable on this
+        notificationRepository.saveAll(notifications); // TX management not being super reliable on this
         Set<String> userUids = notifications.stream().map(n -> n.getTarget().getUid()).collect(Collectors.toSet());
         clearUnreadCaches(userUids);
     }
@@ -101,7 +101,7 @@ public class NotificationManager implements NotificationService{
                 .where(messageNotRead()).and(toUser(user)).and(createdTimeBetween(sinceTime, Instant.now()));
         List<Notification> unreadNotifications = notificationRepository.findAll(specs);
         unreadNotifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false, false, null));
-        notificationRepository.save(unreadNotifications);
+        notificationRepository.saveAll(unreadNotifications);
         // update cache, since this may happen & get a next call within 10 secs on front end
         clearUnreadCaches(Collections.singleton(userUid));
     }

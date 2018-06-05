@@ -8,8 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -315,7 +313,7 @@ public class DateTimeUtil {
         return 60 * 24 * days;
     }
 
-    public static LocalDate getStartTimeForEntityStats(@Nullable Integer year, @Nullable Integer month, @Nonnull Instant entityCreationTime) {
+    public static LocalDate getStartTimeForEntityStats(Integer year, Integer month, Instant entityCreationTime) {
         if (year != null && month != null)
             return LocalDate.of(year, month, 1);
         else if (year != null)
@@ -324,7 +322,7 @@ public class DateTimeUtil {
             return entityCreationTime.atZone(Clock.systemDefaultZone().getZone()).toLocalDate();
     }
 
-    public static LocalDate getEndTime(@Nullable Integer year, @Nullable Integer month, @Nonnull  LocalDate startTime) {
+    public static LocalDate getEndTime(Integer year, Integer month, LocalDate startTime) {
         if (year != null && month != null) {
             LocalDate endDay = startTime.plus(1, ChronoUnit.MONTHS);
             LocalDate thisDay = LocalDate.now();

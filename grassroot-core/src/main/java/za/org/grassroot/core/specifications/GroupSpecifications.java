@@ -3,7 +3,9 @@ package za.org.grassroot.core.specifications;
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Group_;
 import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.Membership_;
 
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Predicate;

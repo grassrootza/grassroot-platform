@@ -1,6 +1,6 @@
 package za.org.grassroot.core;
 
-import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 

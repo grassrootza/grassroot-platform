@@ -138,7 +138,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
 
         VerificationTokenCode checkForPrior = verificationTokenCodeRepository.findOne(
-                TokenSpecifications.forUserAndEntity(userUid, entityUid));
+                TokenSpecifications.forUserAndEntity(userUid, entityUid)).orElse(null);
 
         log.info("prior token: {}", checkForPrior);
 
@@ -174,7 +174,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         if (taskUid != null) {
             userUids.forEach(uid -> tokens.add(generateEntityResponseToken(uid, taskUid, false)));
         }
-        verificationTokenCodeRepository.save(tokens);
+        verificationTokenCodeRepository.saveAll(tokens);
     }
 
     @Override
@@ -308,10 +308,10 @@ public class PasswordTokenManager implements PasswordTokenService {
         Objects.requireNonNull(entityUid);
         Objects.requireNonNull(code);
 
-        VerificationTokenCode possibleToken = verificationTokenCodeRepository.findOne(
+        Optional<VerificationTokenCode> possibleToken = verificationTokenCodeRepository.findOne(
                 TokenSpecifications.forUserAndEntity(userUid, entityUid).and(TokenSpecifications.withCode(code)));
 
-        if (possibleToken == null || possibleToken.getExpiryDateTime().isBefore(Instant.now())) {
+        if (!possibleToken.isPresent() || possibleToken.get().getExpiryDateTime().isBefore(Instant.now())) {
             throw new AccessDeniedException("Error! No matching entity/code combination, or match, but expired");
         }
     }

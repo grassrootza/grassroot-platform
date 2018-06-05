@@ -274,7 +274,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             accountLogRepository.saveAndFlush(accountLog);
             Set<Notification> messages = notificationsFromRecords(dataSet, records, user, accountLog, 160);
             log.info("generated messages to send out, in total {} messages", messages.size());
-            notificationRepository.save(messages);
+            notificationRepository.saveAll(messages);
         }
     }
 

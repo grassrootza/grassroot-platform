@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.campaign.CampaignLog_;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.GroupLog_;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.domain.notification.BroadcastNotification_;
 import za.org.grassroot.core.domain.notification.NotificationStatus;
