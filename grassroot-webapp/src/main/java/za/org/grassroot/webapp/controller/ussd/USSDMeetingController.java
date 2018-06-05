@@ -400,8 +400,6 @@ public class USSDMeetingController extends USSDBaseController {
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(placeMenu, mtgRequestUid, revising));
         if (!interrupted) eventUtil.updateEventRequest(user.getUid(), mtgRequestUid, priorMenu, userInput);
 
-        log.info("User input is......................{}",userInput);
-
         MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
         log.info("okay looking up most frequent location ...");
         final String mostFreq = eventBroker.getMostFrequentLocation(eventRequest.getParent().getUid());
@@ -428,7 +426,7 @@ public class USSDMeetingController extends USSDBaseController {
 
         if (!interrupted) eventUtil.updateEventRequest(sessionUser.getUid(), mtgRequestUid, priorMenu, userInput);
 
-        final String mostFreqTime = eventRequest != null ? eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()) :
+        final String mostFreqTime = eventRequest != null ? eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()).toString() :
                 "";
 
         String promptMessage = StringUtils.isEmpty(mostFreqTime) ?
@@ -479,8 +477,6 @@ public class USSDMeetingController extends USSDBaseController {
                                   @RequestParam(value = previousMenu, required = false) String priorMenu,
                                   @RequestParam(value = userInputParam, required = false) String userInput,
                                   @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
-
-        log.info("Meeting req uid={}",mtgRequestUid);
 
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(confirmMenu, mtgRequestUid, false));
 

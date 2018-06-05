@@ -198,15 +198,10 @@ public class USSDEventUtil extends USSDUtil {
 
         LocalDateTime parsedDateTime = DateTimeUtil.tryParseString(passedValue);
 
-        log.info("Local Date Time processed******************{}",parsedDateTime);
-
-        String dateTime = "";
-
         if (parsedDateTime == null) {
             try {
                 parsedDateTime = learningService.parse(passedValue);
                 log.info("Date time processed: " + parsedDateTime.toString());
-                dateTime = parsedDateTime.toString();
             } catch (Exception e) {
                 throw new SeloParseDateTimeFailure();
             }
@@ -214,10 +209,10 @@ public class USSDEventUtil extends USSDUtil {
 
         LocalDateTime localDateTime;
 
-        if(dateTime.substring(dateTime.indexOf("T") + 1).equals("00:00")){
+        if(parsedDateTime.getHour() == 0 && parsedDateTime.getMinute() == 0){
             MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(eventUid);
-            String mostFreqTime = eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid());
-            localDateTime = LocalDateTime.of(parsedDateTime.toLocalDate(), LocalTime.parse(mostFreqTime));
+            LocalTime mostFreqTime = eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid());
+            localDateTime = LocalDateTime.of(parsedDateTime.toLocalDate(), mostFreqTime);
         }else{
             localDateTime = parsedDateTime;
         }

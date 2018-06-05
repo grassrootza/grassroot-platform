@@ -96,5 +96,5 @@ public interface EventBroker {
 
 	String getMostFrequentLocation(String groupUid);
 
-	String getMostFrequentEventTime(String groupUid);
+	LocalTime getMostFrequentEventTime(String groupUid);
 }

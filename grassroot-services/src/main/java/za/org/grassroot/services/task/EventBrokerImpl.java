@@ -939,7 +939,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional(readOnly = true)
 	@SuppressWarnings("unchecked")
-	public String getMostFrequentEventTime(String groupUid){
+	public LocalTime getMostFrequentEventTime(String groupUid){
 		Group group = groupRepository.findOneByUid(groupUid);
 
 		String qry = "SELECT to_char(e.eventStartDateTime,'hh24:mi') " +
@@ -950,16 +950,16 @@ public class EventBrokerImpl implements EventBroker {
 						.setParameter("group",group);
 
 		List<String> times = eventTypedQuery.getResultList();
-		String time = "";
+		LocalTime localTime = null;
 		if(times != null && !times.isEmpty()){
 			Map<String, Long> result = times.stream()
 					.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
 			Map.Entry<String,Long> entry = result.entrySet().iterator().next();
-			time = entry.getKey();
+			localTime = LocalTime.parse(entry.getKey());
 		}
 
-		return time;
+		return localTime;
 	}
 
 }
