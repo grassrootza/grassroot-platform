@@ -2,11 +2,13 @@ package za.org.grassroot.integration.graph;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.TaskType;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 @Async
 public interface GraphBroker {
@@ -21,6 +23,6 @@ public interface GraphBroker {
 
     void removeMembershipFromGraph(String userUid, String groupUid);
 
-    void addTaskToGraph(Task task);
+    void addTaskToGraph(Task task, List<String> assignedUserUids);
 
 }

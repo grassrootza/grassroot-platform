@@ -48,7 +48,6 @@ public class NluController {
         return ResponseEntity.ok(nluBroker.parseText(text, conversationUid));
     }
 
-
     @RequestMapping(value = "/speech", method = RequestMethod.POST)
     @ApiOperation(value = "Convert speech to text, optionally parsing for entities")
     public ResponseEntity parseSpeech(@RequestParam(required = false) String encoding,

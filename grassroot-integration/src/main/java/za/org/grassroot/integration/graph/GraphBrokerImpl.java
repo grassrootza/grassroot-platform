@@ -112,7 +112,7 @@ public class GraphBrokerImpl implements GraphBroker {
     @Override
     @Transactional
     @SuppressWarnings("unchecked")
-    public void addTaskToGraph(Task task) {
+    public void addTaskToGraph(Task task, List<String> assignedUserUids) {
         try {
             DebugUtil.transactionRequired("");
             log.info("adding a task to Grassroot Graph ... ");
@@ -126,11 +126,15 @@ public class GraphBrokerImpl implements GraphBroker {
             Actor creatingUser = new Actor(ActorType.INDIVIDUAL, task.getCreatedByUser().getUid());
             graphEvent.setCreator(creatingUser);
 
-            final Set<User> assignedMembers = (Set<User>) task.getMembers();
-            List<Actor> participatingActors = assignedMembers.stream()
-                    .map(u -> new Actor(ActorType.INDIVIDUAL, u.getUid())).collect(Collectors.toList());
-            graphEvent.setParticipants(participatingActors);
-            log.info("processed {} assigned members, participants: {}", assignedMembers.size(), graphEvent.getParticipants());
+            List<Actor> participatingActors = new ArrayList<>();
+            if (assignedUserUids != null && !assignedUserUids.isEmpty()) {
+                participatingActors.addAll(assignedUserUids.stream()
+                        .map(uid -> new Actor(ActorType.INDIVIDUAL, uid)).collect(Collectors.toList()));
+                graphEvent.setParticipants(participatingActors);
+                log.info("processed {} assigned members, participants: {}", assignedUserUids.size(), graphEvent.getParticipants());
+            } else {
+                log.info("no assigned users, task type: {}", taskType);
+            }
 
             final Group parentGroup = task.getAncestorGroup();
             Actor graphParent = new Actor(ActorType.GROUP, parentGroup.getUid());
@@ -147,7 +151,7 @@ public class GraphBrokerImpl implements GraphBroker {
 
             dispatchAction(graphAction, "task");
         } catch (LazyInitializationException e) {
-            log.error("Spring hell continues, can't add to graph, Lazy Init as usual");
+            log.error("Spring-Hibernate hell continues, can't add to graph, Lazy Init as usual");
         }
     }
 

@@ -1,6 +1,5 @@
 package za.org.grassroot.services.task;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.task.Task;
@@ -88,6 +87,9 @@ public interface TaskBroker {
 
     List<Membership> fetchMembersAssignedToTask(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders);
 
+    // getting around Spring-Hibernate TX hell for some async methods
+    List<String> fetchUserUidsForTask(String userUid, String taskUid, TaskType taskType);
+
     @Transactional(readOnly = true)
     List<TaskFullDTO> fetchUpcomingGroupTasks(String userUid, String groupUid);
 
@@ -96,7 +98,6 @@ public interface TaskBroker {
     void respondToTask(String userUid, String taskUid, TaskType taskType, String response);
 
     // we use this to populate the graph (temporary convenience)
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<Task> loadAllTasks();
 
 }

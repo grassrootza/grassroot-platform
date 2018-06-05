@@ -155,8 +155,10 @@ public class EventBrokerImpl implements EventBroker {
 		generateResponseTokens(meeting);
 
 		log.info("called store bundle, exiting create mtg method ... triggering graph if enabled");
-		if (graphBroker != null)
-			graphBroker.addTaskToGraph(meeting);
+		if (graphBroker != null) {
+			List<String> assignedUids = meeting.getMembers().stream().map(User::getUid).collect(Collectors.toList());
+			graphBroker.addTaskToGraph(meeting, assignedUids);
+		}
 
 		return meeting;
 	}
@@ -482,8 +484,10 @@ public class EventBrokerImpl implements EventBroker {
 
 		generateResponseTokens(vote);
 
-		if (graphBroker != null)
-			graphBroker.addTaskToGraph(vote);
+		if (graphBroker != null) {
+			List<String> assignedUids = vote.getMembers().stream().map(User::getUid).collect(Collectors.toList());
+			graphBroker.addTaskToGraph(vote, assignedUids);
+		}
 
 		return vote;
 	}

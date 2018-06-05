@@ -538,22 +538,54 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         List<Membership> members = new ArrayList<>();
 
-        if (TaskType.MEETING.equals(taskType)) {
-            Meeting meeting = eventBroker.loadMeeting(taskUid);
-
-            Group ancestorGroup = meeting.getAncestorGroup();
-            if (!ancestorGroup.hasMember(user)) {
-                throw new AccessDeniedException("Error! Must be part of group");
-            }
-
-            List<User> assignedUsers = onlyPositiveResponders ? userRepository.findUsersThatRSVPForEvent(meeting)
-                    : new ArrayList<>(meeting.getMembers());
+        if (TaskType.MEETING.equals(taskType) || TaskType.VOTE.equals(taskType)) {
+            Event event = eventBroker.load(taskUid);
+            Group ancestorGroup = event.getAncestorGroup();
+            validateUserPartOfGroupOrSystemAdmin(ancestorGroup, user);
+            Set<User> assignedUsers = onlyPositiveResponders ?
+                    new HashSet<>(userRepository.findUsersThatRSVPForEvent(event)) : event.getMembers();
             // this could be very big, so don't user group.getMemberships which may induce graph problems
             members.addAll(membershipRepository.findByGroupAndUserIn(ancestorGroup, assignedUsers));
             log.info("added members from meeting, number: {}", members.size());
+        } else {
+            Todo todo = todoBroker.load(taskUid);
+            Group ancestorGroup = todo.getAncestorGroup();
+            validateUserPartOfGroupOrSystemAdmin(ancestorGroup, user);
+            Set<User> users = todo.getAssignedMembers();
+            members.addAll(membershipRepository.findByGroupAndUserIn(ancestorGroup, users));
         }
 
         return members;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> fetchUserUidsForTask(String userUid, String taskUid, TaskType taskType) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+
+        if (TaskType.TODO.equals(taskType)) {
+            Todo todo = todoBroker.load(taskUid);
+            validateUserPartOfGroupOrSystemAdmin(todo.getAncestorGroup(), user);
+            Set<TodoAssignment> todoAssignments = new HashSet<>(todoAssignmentRepository.findByTodo(todo));
+            return todoAssignments.stream().map(TodoAssignment::getUser).map(User::getUid).collect(Collectors.toList());
+        } else {
+            Event event = eventBroker.load(taskUid);
+            Group ancestorGroup = event.getAncestorGroup();
+            validateUserPartOfGroupOrSystemAdmin(ancestorGroup, user);
+            Set<User> assignedUsers = userRepository.findByEvents(event);
+            log.info("assigned users: {}", assignedUsers);
+            if (assignedUsers == null || assignedUsers.isEmpty()) {
+                assignedUsers = event.getAncestorGroup().getMembers();
+            }
+            log.info("after group check, assigned users: {}", assignedUsers);
+            return assignedUsers.stream().map(User::getUid).collect(Collectors.toList());
+        }
+    }
+
+    private void validateUserPartOfGroupOrSystemAdmin(Group group, User user) {
+        if (!group.hasMember(user) && !permissionBroker.isSystemAdmin(user)) {
+            throw new AccessDeniedException("Error! Must be part of group");
+        }
     }
 
     @Override
