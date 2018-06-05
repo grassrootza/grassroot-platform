@@ -33,6 +33,7 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -218,11 +219,9 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	@Override
 	@Transactional(readOnly = true)
 	public Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve, Instant sinceTime) {
-		Specifications<Notification> specs = Specifications.where(NotificationSpecifications.wasDelivered());
-		specs = specs.and(NotificationSpecifications.toUser(user));
-		if (sinceTime != null) {
-			specs = specs.and(NotificationSpecifications.sentOrBetterSince(sinceTime));
-		}
+		Instant sinceSentTime = sinceTime != null ? sinceTime : Instant.now().minus(30, ChronoUnit.DAYS); // using a sensible default
+		Specifications<Notification> specs = Specifications.where(NotificationSpecifications.sentOrBetterSince(sinceSentTime))
+				.and(NotificationSpecifications.toUser(user));
 		Pageable page = new PageRequest(0, numberToRetrieve == null ? 1 : numberToRetrieve, Sort.Direction.DESC, "lastStatusChange");
 		return notificationRepository.findAll(specs, page);
 	}
