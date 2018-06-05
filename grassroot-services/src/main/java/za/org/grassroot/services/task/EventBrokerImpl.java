@@ -950,15 +950,14 @@ public class EventBrokerImpl implements EventBroker {
 						.setParameter("group",group);
 
 		List<String> times = eventTypedQuery.getResultList();
+		String time = "";
+		if(times != null && !times.isEmpty()){
+			Map<String, Long> result = times.stream()
+					.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
-		log.info("List of all{}",times);
-
-		Map<String, Long> result = times.stream()
-				.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-		Map.Entry<String,Long> entry = result.entrySet().iterator().next();
-
-		String time = entry.getKey();
+			Map.Entry<String,Long> entry = result.entrySet().iterator().next();
+			time = entry.getKey();
+		}
 
 		return time;
 	}

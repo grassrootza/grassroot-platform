@@ -53,7 +53,7 @@ public class DateTimeUtil {
     some delimiters, patterns for regex, etc (may be able to remove, given Selo / SUTime)
      */
 
-    private static final String possibleTimeDelimiters = "[-,:hH]+";
+    private static final String possibleTimeDelimiters = "[,:hH]+";
     private static final String meridian = ".*pm?";
     private static final Joiner timeJoiner = Joiner.on(":").skipNulls();
     private static final Pattern timePatternWithDelimiters = Pattern.compile("\\d{1,2}" + possibleTimeDelimiters + "\\d\\d");
@@ -136,6 +136,7 @@ public class DateTimeUtil {
         String dateString = null;
 
         log.info("will be trying to parse: {}", strings);
+
         for (String str : strings) {
             log.info("testing: {}", str);
             if (!reformatTimeInput(str).equalsIgnoreCase(str.trim())) {
