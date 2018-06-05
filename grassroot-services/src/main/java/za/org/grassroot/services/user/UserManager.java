@@ -646,7 +646,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void setHasInitiatedUssdSession(String userUid) {
+    public void setHasInitiatedUssdSession(String userUid, boolean sendWelcomeMessage) {
         User sessionUser = userRepository.findOneByUid(userUid);
 
         sessionUser.setHasInitiatedSession(true);
@@ -659,12 +659,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
         UserLog userLog = new UserLog(sessionUser.getUid(), UserLogType.INITIATED_USSD, "First USSD active session", UserInterfaceType.UNKNOWN);
         bundle.addLog(userLog);
 
-        if (welcomeMessageEnabled) {
+        if (welcomeMessageEnabled && sendWelcomeMessage) {
 
             String[] welcomeMessageIds = new String[]{
                     "sms.welcome.1",
-                    "sms.welcome.2",
-                    "sms.welcome.3"
+                    "sms.welcome.2"
             };
 
             for (String welcomeMessageId : welcomeMessageIds) {

@@ -29,7 +29,8 @@ public class NewSecurityConfig extends WebSecurityConfigurerAdapter {
             "/v2/api/jwt/public/credentials",
             "/v2/api/user/profile/image/view/**",
             "/v2/api/inbound/respond/**", // both of these use a complex token-matching to auth, without needing full user, for various UX reasons
-            "/v2/api/inbound/unsubscribe/**"
+            "/v2/api/inbound/unsubscribe/**",
+            "/v2/api/language/parse/**"
     };
 
     private static final String[] AUTH_ENDPOINTS = {

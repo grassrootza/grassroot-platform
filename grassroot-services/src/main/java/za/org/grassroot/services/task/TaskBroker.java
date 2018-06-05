@@ -1,5 +1,6 @@
 package za.org.grassroot.services.task;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.task.Task;
@@ -93,4 +94,9 @@ public interface TaskBroker {
     void cancelTask(String userUid, String taskUid, TaskType taskType, boolean notifyMembers, String attachedReason);
 
     void respondToTask(String userUid, String taskUid, TaskType taskType, String response);
+
+    // we use this to populate the graph (temporary convenience)
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    List<Task> loadAllTasks();
+
 }

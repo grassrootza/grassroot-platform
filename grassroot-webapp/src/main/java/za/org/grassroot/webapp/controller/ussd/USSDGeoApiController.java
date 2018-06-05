@@ -125,20 +125,24 @@ public class USSDGeoApiController extends USSDBaseController {
         return menuBuilder(new USSDMenu(prompt, "geo/location/place/select/" + dataSet + "/" + infoSet));
     }
 
+
     @RequestMapping(value = "/location/place/select/{dataSet}/{infoSet}")
     public Request selectTownAndSend(@RequestParam(value = phoneNumber) String inputNumber,
                                      @PathVariable String dataSet,
                                      @PathVariable String infoSet,
-
                                      @RequestParam(value = userInputParam) String userInput) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, saveUrl("/location/place/select/" + dataSet + "/" + infoSet, null));
         List<TownLookupResult> results = locationInfoBroker.lookupPostCodeOrTown(userInput.trim(), null);
-        if (results.size() == 1) {
+        if (results.isEmpty()) {
+            final String prompt = getMessage("user.town.none.prompt", user);
+            final String currentUrl = "geo/location/place/select/" + dataSet + "/" + infoSet;
+            return menuBuilder(new USSDMenu(prompt, currentUrl));
+        } else if (results.size() == 1) {
             return sendInfoForPlace(inputNumber, dataSet, infoSet, results.get(0).getPlaceId());
         } else {
             final String prompt = getMessage("user.town.many.prompt", user);
             final USSDMenu menu = new USSDMenu(prompt);
-            final String baseUrl = "/info/send/place/" + dataSet + "/" + infoSet + "?placeId=";
+            final String baseUrl = "geo/info/send/place/" + dataSet + "/" + infoSet + "?placeId=";
             menu.addMenuOptions(results.stream().collect(Collectors.toMap(
                     lookup -> baseUrl + USSDUrlUtil.encodeParameter(lookup.getPlaceId()),
                     TownLookupResult::getDescription)));

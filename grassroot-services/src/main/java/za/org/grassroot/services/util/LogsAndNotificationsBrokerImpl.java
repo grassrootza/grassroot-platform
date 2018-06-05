@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.CacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
@@ -25,6 +27,7 @@ import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.specifications.TodoLogSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -210,6 +213,23 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	public void abortNotificationSend(Specifications specifications) {
 		notificationRepository.findAll((Specifications<Notification>) specifications)
 					.forEach(n -> n.setStatus(NotificationStatus.ABORTED));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve, Instant sinceTime) {
+		Specifications<Notification> specs = Specifications.where(NotificationSpecifications.wasDelivered());
+		specs = specs.and(NotificationSpecifications.toUser(user));
+		if (sinceTime != null) {
+			specs = specs.and(NotificationSpecifications.sentOrBetterSince(sinceTime));
+		}
+		Pageable page = new PageRequest(0, numberToRetrieve == null ? 1 : numberToRetrieve, Sort.Direction.DESC, "lastStatusChange");
+		return notificationRepository.findAll(specs, page);
+	}
+
+	@Override
+	public void removeCampaignLog(User user, Campaign campaign, CampaignLogType logType) {
+		campaignLogRepository.deleteAllByCampaignAndUserAndCampaignLogType(campaign, user, logType);
 	}
 
 	private void updateCacheSingle(ActionLog actionLog) {

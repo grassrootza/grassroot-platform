@@ -1,11 +1,9 @@
 package za.org.grassroot.integration.language;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
-@Getter @AllArgsConstructor @ToString
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @ToString
 public class LanguageEntity {
 
     @JsonProperty("entity")

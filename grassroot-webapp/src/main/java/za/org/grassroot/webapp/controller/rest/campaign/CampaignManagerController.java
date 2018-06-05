@@ -8,16 +8,12 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.config.CacheConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
@@ -28,6 +24,7 @@ import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignMessageDTO;
+import za.org.grassroot.services.campaign.CampaignTextBroker;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
 import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.group.GroupBroker;
@@ -35,7 +32,6 @@ import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
-import za.org.grassroot.webapp.controller.rest.exception.RestValidationMessage;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.CampaignViewDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequest;
@@ -45,7 +41,9 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
@@ -55,6 +53,7 @@ import java.util.stream.Collectors;
 public class CampaignManagerController extends BaseRestController {
 
     private final CampaignBroker campaignBroker;
+    private final CampaignTextBroker campaignTextBroker;
     private final UserManagementService userManager;
     private final GroupBroker groupBroker;
     private final CacheManager cacheManager;
@@ -66,20 +65,17 @@ public class CampaignManagerController extends BaseRestController {
     private Cache groupCampaignsCache;
     private Cache fullCampaignsCache;
 
-    private MessageSource messageSource;
-
     private static final CacheConfiguration CAMPAIGN_CACHE_CONFIG = new CacheConfiguration()
             .eternal(false).timeToLiveSeconds(300).maxEntriesLocalHeap(20);
 
     @Autowired
-    public CampaignManagerController(JwtService jwtService, CampaignBroker campaignBroker, UserManagementService userManager, GroupBroker groupBroker, CacheManager cacheManager, @Qualifier("messageSource")
-            MessageSource messageSource) {
+    public CampaignManagerController(JwtService jwtService, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, UserManagementService userManager, GroupBroker groupBroker, CacheManager cacheManager) {
         super(jwtService, userManager);
         this.campaignBroker = campaignBroker;
+        this.campaignTextBroker = campaignTextBroker;
         this.userManager = userManager;
         this.groupBroker = groupBroker;
         this.cacheManager = cacheManager;
-        this.messageSource = messageSource;
     }
 
     @PostConstruct
@@ -130,6 +126,7 @@ public class CampaignManagerController extends BaseRestController {
             }
             Campaign campaign = campaignBroker.load(campaignUid);
             viewDto = new CampaignViewDTO(campaign);
+            log.info("sending back DTO with messages: {}", viewDto.getCampaignMessages());
             cacheCampaignFull(viewDto, getUserIdFromRequest(request));
             return ResponseEntity.ok(viewDto);
         } catch (AccessDeniedException e) {
@@ -147,7 +144,7 @@ public class CampaignManagerController extends BaseRestController {
 
         if (bindingResult.hasErrors()) {
             log.info("error! binding result has errors: {}", bindingResult);
-            return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
+            return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_CREATION_INVALID_INPUT, bindingResult.getFieldErrors());
         }
 
         if (createCampaignRequest.hasNoGroup()) {
@@ -207,13 +204,20 @@ public class CampaignManagerController extends BaseRestController {
         return !campaignBroker.isCodeTaken(code, currentCampaignUid);
     }
 
+    @RequestMapping(value = "/words/check", method = RequestMethod.GET)
+    @ApiOperation(value = "Check if a campaign join word is available")
+    public Boolean isJoinWordAvailable(@RequestParam String word, @RequestParam(required = false) String currentCampaignUid) {
+        log.info("is this join word available: {}, for campaign uid: {}", word, currentCampaignUid);
+        return !campaignBroker.isTextJoinWordTaken(word.trim(), currentCampaignUid);
+    }
+
     @RequestMapping(value = "/messages/set/{campaignUid}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "add a set of messages to a campaign")
     public ResponseEntity addCampaignMessages(HttpServletRequest request, @PathVariable String campaignUid,
                                               @Valid @RequestBody Set<CampaignMessageDTO> campaignMessages,
                                               BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_MESSAGE_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
+            return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_MESSAGE_CREATION_INVALID_INPUT, bindingResult.getFieldErrors());
         }
 
         log.info("campaign messages received: {}", campaignMessages);
@@ -239,6 +243,7 @@ public class CampaignManagerController extends BaseRestController {
                                                       @RequestParam(required = false) String mediaFileUid,
                                                       @RequestParam(required = false) Long endDateMillis,
                                                       @RequestParam(required = false) String newCode,
+                                                      @RequestParam(required = false) String newJoinWord,
                                                       @RequestParam(required = false) CampaignType campaignType,
                                                       @RequestParam(required = false) String landingUrl,
                                                       @RequestParam(required = false) String petitionApi,
@@ -251,7 +256,7 @@ public class CampaignManagerController extends BaseRestController {
         Instant endDate = endDateMillis != null ? Instant.ofEpochMilli(endDateMillis) : null;
         log.info("and end date instant = {}", endDate);
         campaignBroker.updateCampaignDetails(userUid, campaignUid, name, description, mediaFileUid, removeImage != null && removeImage,
-                endDate, newCode, landingUrl, petitionApi, joinTopics);
+                endDate, newCode, newJoinWord, landingUrl, petitionApi, joinTopics);
 
         // doing this separately as is more important than other changes but not quite important enough for own method
         if (!StringUtils.isEmpty(newMasterGroupUid)) {
@@ -298,13 +303,13 @@ public class CampaignManagerController extends BaseRestController {
     @RequestMapping(value = "/update/welcome/set/{campaignUid}", method = RequestMethod.POST)
     public ResponseEntity updateCampaignWelcomeMessage(HttpServletRequest request, @PathVariable String campaignUid,
                                                        @RequestParam String message) {
-        campaignBroker.setCampaignMessageText(getUserIdFromRequest(request), campaignUid, message);
+        campaignTextBroker.setCampaignMessageText(getUserIdFromRequest(request), campaignUid, message);
         return ResponseEntity.ok().build();
     }
 
     @RequestMapping(value = "/update/welcome/clear/{campaignUid}", method = RequestMethod.POST)
     public ResponseEntity clearCampaignWelcomeMsg(HttpServletRequest request, @PathVariable String campaignUid) {
-        campaignBroker.clearCampaignMessageText(getUserIdFromRequest(request), campaignUid);
+        campaignTextBroker.clearCampaignMessageText(getUserIdFromRequest(request), campaignUid);
         return ResponseEntity.ok().build();
     }
 
@@ -313,7 +318,7 @@ public class CampaignManagerController extends BaseRestController {
     @RequestMapping(value = "/update/welcome/current/{campaignUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch campaign welcome message, if one exists")
     public ResponseEntity checkForExistingCampaignWelcome(HttpServletRequest request, @PathVariable String campaignUid) {
-        final String message = campaignBroker.getCampaignMessageText(getUserIdFromRequest(request), campaignUid);
+        final String message = campaignTextBroker.getCampaignMessageText(getUserIdFromRequest(request), campaignUid);
         return StringUtils.isEmpty(message) ? ResponseEntity.ok().build() : ResponseEntity.ok(message);
     }
 
@@ -332,20 +337,6 @@ public class CampaignManagerController extends BaseRestController {
             userCampaignsCache.remove(userUid);
         if (groupUid != null)
             groupCampaignsCache.remove(groupUid);
-    }
-
-    private List<RestValidationMessage> getFieldValidationErrors(List<FieldError> errors) {
-        List<RestValidationMessage> fieldValidationErrorList = new ArrayList<>();
-        for (FieldError field : errors) {
-            fieldValidationErrorList
-                    .add(new RestValidationMessage(field.getField(),getMessage(field.getDefaultMessage())));
-        }
-        return fieldValidationErrorList;
-    }
-
-    private String getMessage(String msgKey) {
-        Locale locale = LocaleContextHolder.getLocale();
-        return messageSource.getMessage("web." + msgKey, null, locale);
     }
 
     private List<CampaignViewDTO> checkForCampaignsInCache(String userUid) {

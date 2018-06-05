@@ -7,13 +7,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.LazyInitializationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.graph.domain.Actor;
 import za.org.grassroot.graph.domain.Event;
 import za.org.grassroot.graph.domain.enums.ActorType;
@@ -112,41 +115,45 @@ public class GraphBrokerImpl implements GraphBroker {
     }
 
     @Override
+    @Transactional
     @SuppressWarnings("unchecked")
     public void addTaskToGraph(Task task) {
-        log.info("adding a task to Grassroot Graph ... ");
-        List<IncomingDataObject> graphDataObjects = new ArrayList<>();
+        try {
+            DebugUtil.transactionRequired("");
+            log.info("adding a task to Grassroot Graph ... ");
+            List<IncomingDataObject> graphDataObjects = new ArrayList<>();
 
-        final TaskType taskType = task.getTaskType();
-        EventType graphEventType = TaskType.TODO.equals(taskType) ? EventType.TODO :
-                TaskType.VOTE.equals(taskType) ? EventType.VOTE : EventType.MEETING;
-        Event graphEvent = new Event(graphEventType, task.getUid(), task.getDeadlineTime().toEpochMilli());
+            final TaskType taskType = task.getTaskType();
+            EventType graphEventType = TaskType.TODO.equals(taskType) ? EventType.TODO :
+                    TaskType.VOTE.equals(taskType) ? EventType.VOTE : EventType.MEETING;
+            Event graphEvent = new Event(graphEventType, task.getUid(), task.getDeadlineTime().toEpochMilli());
 
-        Actor creatingUser = new Actor(ActorType.INDIVIDUAL, task.getCreatedByUser().getUid());
-        graphEvent.setCreator(creatingUser);
+            Actor creatingUser = new Actor(ActorType.INDIVIDUAL, task.getCreatedByUser().getUid());
+            graphEvent.setCreator(creatingUser);
 
-        final Set<User> assignedMembers = (Set<User>) task.getMembers();
-        List<Actor> participatingActors = assignedMembers.stream()
-                .map(u -> new Actor(ActorType.INDIVIDUAL, u.getUid())).collect(Collectors.toList());
-        graphEvent.setParticipants(participatingActors);
-        log.info("processed {} assigned members, participants: {}", assignedMembers.size(), graphEvent.getParticipants());
+            final Set<User> assignedMembers = (Set<User>) task.getMembers();
+            List<Actor> participatingActors = assignedMembers.stream()
+                    .map(u -> new Actor(ActorType.INDIVIDUAL, u.getUid())).collect(Collectors.toList());
+            graphEvent.setParticipants(participatingActors);
+            log.info("processed {} assigned members, participants: {}", assignedMembers.size(), graphEvent.getParticipants());
 
-        final Group parentGroup = task.getAncestorGroup();
-        Actor graphParent = new Actor(ActorType.GROUP, parentGroup.getUid());
-        graphEvent.setParticipatesIn(Collections.singletonList(graphParent));
+            final Group parentGroup = task.getAncestorGroup();
+            Actor graphParent = new Actor(ActorType.GROUP, parentGroup.getUid());
+            graphEvent.setParticipatesIn(Collections.singletonList(graphParent));
 
-        // note: neo4j on other end is supposed to take care of these relationships
-        graphDataObjects.add(new IncomingDataObject(GraphEntityType.ACTOR, creatingUser));
-        graphDataObjects.addAll(participatingActors.stream().map(a -> new IncomingDataObject(GraphEntityType.ACTOR, a)).collect(Collectors.toList()));
-        graphDataObjects.add(new IncomingDataObject(GraphEntityType.ACTOR, graphParent));
-        graphDataObjects.add(new IncomingDataObject(GraphEntityType.EVENT, graphEvent));
+            // note: neo4j on other end is supposed to take care of these relationships
+            graphDataObjects.add(new IncomingDataObject(GraphEntityType.ACTOR, creatingUser));
+            graphDataObjects.addAll(participatingActors.stream().map(a -> new IncomingDataObject(GraphEntityType.ACTOR, a)).collect(Collectors.toList()));
+            graphDataObjects.add(new IncomingDataObject(GraphEntityType.ACTOR, graphParent));
+            graphDataObjects.add(new IncomingDataObject(GraphEntityType.EVENT, graphEvent));
 
-        IncomingGraphAction graphAction = new IncomingGraphAction(task.getUid(), ActionType.CREATE_ENTITY,
-                graphDataObjects, null);
+            IncomingGraphAction graphAction = new IncomingGraphAction(task.getUid(), ActionType.CREATE_ENTITY,
+                    graphDataObjects, null);
 
-
-
-        dispatchAction(graphAction, "task");
+            dispatchAction(graphAction, "task");
+        } catch (LazyInitializationException e) {
+            log.error("Spring hell continues, can't add to graph, Lazy Init as usual");
+        }
     }
 
     private IncomingGraphAction wrapActorCreation(Actor actor) {

@@ -35,6 +35,7 @@ public enum NotificationDetailedType {
 
 	SEND_JOIN_CODE,
 
-	CAMPAIGN_SHARE
+	CAMPAIGN_SHARE,
+	CAMPAIGN_RESPONSE
 
 }

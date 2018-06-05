@@ -1,6 +1,7 @@
 package za.org.grassroot.integration.graph;
 
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.TaskType;
 

@@ -44,6 +44,7 @@ public class CampaignViewDTO {
     private long totalJoined;
     private long totalEngaged;
 
+    private String textJoinWord;
     private List<String> joinTopics;
     private List<CampaignMessageDTO> campaignMessages;
 
@@ -97,6 +98,7 @@ public class CampaignViewDTO {
         this.outboundSmsLimit = campaign.getOutboundBudget() / campaign.getAccount().getFreeFormCost();
         this.outboundSmsSpent = campaign.getOutboundSpent();
         this.outboundSmsUnitCost = campaign.getAccount().getFreeFormCost();
+        log.debug("campaign with sms unit cost: {}", this.outboundSmsUnitCost);
 
         long startTime = System.currentTimeMillis();
         this.totalEngaged = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_FOUND);
@@ -105,11 +107,15 @@ public class CampaignViewDTO {
 
         if (!campaign.getCampaignMessages().isEmpty()){
             this.campaignMessages = groupCampaignMessages(campaign);
-            log.debug("campaign DTO message list: {}", campaign.getCampaignMessages());
+            log.info("campaign DTO message list: {}", campaign.getCampaignMessages());
         }
 
         if (campaign.getCampaignImage() != null) {
             this.campaignImageKey = campaign.getCampaignImage().getUid();
+        }
+
+        if (!StringUtils.isEmpty(campaign.getPublicJoinWord())) {
+            this.textJoinWord = campaign.getPublicJoinWord();
         }
     }
 
@@ -123,6 +129,8 @@ public class CampaignViewDTO {
             msgLocales.add(cm.getMessageGroupId(), cm.getLocale());
             mappedMsgs.put(cm.getMessageGroupId() + "__" + cm.getLocale(), cm);
         });
+
+        log.info("message locales: {}", msgLocales);
 
         return messageGroupIds.stream().filter(msgLocales::containsKey).map(msgId -> {
             CampaignMessageDTO cmDto = new CampaignMessageDTO();

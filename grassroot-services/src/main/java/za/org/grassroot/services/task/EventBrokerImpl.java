@@ -37,10 +37,9 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
+
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
