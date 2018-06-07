@@ -23,4 +23,6 @@ public class JoinInfoExternal {
 
     private List<String> groupJoinTopics;
 
+    private boolean hasActiveCampaign;
+
 }

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.*;
+import za.org.grassroot.core.domain.Group_;
+import za.org.grassroot.core.domain.Membership_;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.notification.CampaignSharingNotification;
@@ -556,6 +558,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);
 
         return campaign;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean doesGroupHaveActiveCampaign(String groupUid) {
+        return campaignRepository.countByMasterGroupUidAndEndDateTimeAfter(groupUid, Instant.now()) > 0;
     }
 
     private void haltCampaignWelcome(final Campaign campaign, final User user) {
