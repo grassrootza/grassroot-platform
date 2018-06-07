@@ -12,7 +12,8 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
@@ -161,10 +162,10 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Override
     public Optional<Group> findGroupFromJoinCode(String joinCode) {
-        Group groupToReturn = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode));
-        if (groupToReturn == null) return Optional.empty();
-        if (groupToReturn.getTokenExpiryDateTime().isBefore(Instant.now())) return null;
-        return Optional.of(groupToReturn);
+        Optional<Group> groupToReturn = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode));
+        if (!groupToReturn.isPresent()) return Optional.empty();
+        if (groupToReturn.get().getTokenExpiryDateTime().isBefore(Instant.now())) return null;
+        return groupToReturn;
     }
 
     @Override
@@ -326,7 +327,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     private List<Group> parentChain(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        List<Group> parentGroups = new ArrayList<Group>();
+        List<Group> parentGroups = new ArrayList<>();
         recursiveParentGroups(group, parentGroups);
         return parentGroups;
     }

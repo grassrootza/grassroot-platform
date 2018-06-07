@@ -296,7 +296,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
                 results.put(channel.name(), groupLogsByTime(logs, log -> channel.equals(log.getChannel()), groupingFormatter, timeKeys));
             });
         } else {
-            List<User> users = userRepository.findAll(lastStageMap.keySet());
+            List<User> users = userRepository.findAllById(lastStageMap.keySet());
             List<Province> provinces = users.stream().map(User::getProvince).filter(Objects::nonNull).collect(Collectors.toList());
             provinces.forEach(province -> {
                 // these user entities should be Hibernate-cached by this stage, but watch this query in any case

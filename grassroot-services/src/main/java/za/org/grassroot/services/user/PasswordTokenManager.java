@@ -330,7 +330,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         String letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789+@";
         StringBuilder password = new StringBuilder();
 
-        for (int i = 0; i < 8; i++){
+        for (int i = 0; i < 8; i++) {
             int index = (int)(RANDOM.nextDouble()*letters.length());
             password.append(letters.substring(index, index + 1));
         }

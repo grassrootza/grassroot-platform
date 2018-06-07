@@ -3,12 +3,11 @@ package za.org.grassroot.webapp.interceptor;
 import com.google.api.client.http.HttpMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.integration.messaging.JwtService;
-import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.http.AuthorizationHeader;
 
 import javax.servlet.FilterChain;
@@ -50,23 +49,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             JwtBasedAuthentication auth = new JwtBasedAuthentication(userRoles, token, userId);
             SecurityContextHolder.getContext().setAuthentication(auth);
         } else {
-            boolean isTokenExpired = authorizationHeader.hasBearerToken() && jwtService.isJwtTokenExpired(token);
-//            setResponseBody(isTokenExpired, response);
             SecurityContextHolder.getContext().setAuthentication(new AnonAuthentication()); // to avoid redirects etc
         }
 
         filterChain.doFilter(request, response);
     }
-
-    private void setResponseBody(boolean isTokenExpired, HttpServletResponse response) throws IOException {
-        RestMessage message = isTokenExpired ? RestMessage.TOKEN_EXPIRED : RestMessage.INVALID_TOKEN;
-
-        response.setContentType("text/plain");
-        response.getWriter().write(message.name());
-        response.setStatus(HttpStatus.UNAUTHORIZED.value());
-
-        log.info("Returning invalid token response, rest message: {}", message);
-    }
-
 
 }

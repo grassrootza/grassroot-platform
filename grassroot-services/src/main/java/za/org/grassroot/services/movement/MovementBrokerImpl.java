@@ -18,12 +18,16 @@ public class MovementBrokerImpl implements MovementBroker {
 
     private final UserRepository userRepository;
     private final MovementRepository movementRepository;
-    private final GraphBroker graphBroker;
+    private GraphBroker graphBroker;
 
     @Autowired
-    public MovementBrokerImpl(UserRepository userRepository, MovementRepository movementRepository, GraphBroker graphBroker) {
+    public MovementBrokerImpl(UserRepository userRepository, MovementRepository movementRepository) {
         this.userRepository = userRepository;
         this.movementRepository = movementRepository;
+    }
+
+    @Autowired(required = false)
+    public void setGraphBroker(GraphBroker graphBroker) {
         this.graphBroker = graphBroker;
     }
 
@@ -46,7 +50,9 @@ public class MovementBrokerImpl implements MovementBroker {
             throw new IllegalArgumentException("Error! ");
         }
         Movement movement = movementRepository.save(new Movement(name, user));
-        graphBroker.addMovementToGraph(movement.getUid(), user.getUid());
+        if (graphBroker != null) {
+            graphBroker.addMovementToGraph(movement.getUid(), user.getUid());
+        }
         return movement.getUid();
     }
 

@@ -12,7 +12,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.TodoCancelledNotification;
@@ -159,7 +162,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Instant intervalEnd = helper.getDueDateTime().plus(180, ChronoUnit.SECONDS);
 
         return todoRepository.findOne(TodoSpecifications.checkForDuplicates(intervalStart, intervalEnd, creator, group,
-                helper.getSubject()));
+                helper.getSubject())).orElse(null);
     }
 
     private Todo setTodoImage(Todo todo, User user, TodoHelper todoHelper) {
@@ -223,7 +226,8 @@ public class TodoBrokerImpl implements TodoBroker {
             todoAssignment.setValidator(true);
             todoAssignment.setShouldRespond(true);
         });
-        todoAssignmentRepository.save(duplicateAssignments);
+
+        todoAssignmentRepository.saveAll(duplicateAssignments);
 
         Set<String> newAssignments = new HashSet<>(confirmingMemberUids);
         newAssignments.removeAll(duplicateAssignments.stream().map(a -> a.getUser().getUid()).collect(Collectors.toSet()));
@@ -592,7 +596,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
         User user = userRepository.findOneByUid(userUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
-        return todoAssignmentRepository.findOne(TodoSpecifications.userAssignment(user, todo));
+        return todoAssignmentRepository.findOne(TodoSpecifications.userAssignment(user, todo)).orElse(null);
     }
 
     @Override
@@ -771,14 +775,7 @@ public class TodoBrokerImpl implements TodoBroker {
     }
 
     private TodoAssignment validateUserCanRespondToTodo(User user, Todo todo) {
-        TodoAssignment todoAssignment = todoAssignmentRepository.findOne(
-                TodoSpecifications.userAssignment(user, todo));
-        if (todoAssignment == null) {
-            throw new ResponseNotAllowedException();
-        }
-        if (TodoType.VALIDATION_REQUIRED.equals(todo.getType()) && !todoAssignment.isValidator() && todo.getAncestorGroup().getMembership(user) != null) {
-            throw new ResponseNotAllowedException();
-        }
-        return todoAssignment;
+        return todoAssignmentRepository.findOne(TodoSpecifications.userAssignment(user, todo))
+                .orElseThrow(ResponseNotAllowedException::new);
     }
 }

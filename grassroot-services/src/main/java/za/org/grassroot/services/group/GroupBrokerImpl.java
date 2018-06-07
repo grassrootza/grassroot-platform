@@ -9,6 +9,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
@@ -308,6 +309,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             group.addTopics(memberTopics); // method will take care of removing duplicates
         } catch (InvalidPhoneNumberException e) {
             logger.error("Error! Invalid phone number : " + e.getMessage());
+        } catch (DataIntegrityViolationException e) {
+            logger.error("Error! Uncaught unique key violation, in group add member method");
         }
     }
 
@@ -653,8 +656,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
                 if (groupLogs.size() < 4) { // create explicit list of phone numbers / display names to send to people
                     joinedUserDescriptions = new ArrayList<>();
-                    for (GroupLog log : groupLogs)
-                        joinedUserDescriptions.add(userRepository.findOne(log.getUser().getId()).nameToDisplay());
+                    groupLogs.forEach(log -> userRepository.findById(log.getUser().getId())
+                            .ifPresent(user -> joinedUserDescriptions.add(user.getName())));
                 } else {
                     joinedUserDescriptions = null;
                 }
@@ -708,7 +711,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 .filter(MembershipInfo::hasValidEmail)
                 .map(MembershipInfo::getMemberEmail).collect(Collectors.toSet());
 
-        logger.debug("phoneNumbers returned: ...." + memberPhoneNumbers);
+        logger.info("phoneNumbers returned: .... {}, email addresses: {}", memberPhoneNumbers, emailAddresses);
 
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
         existingUsers.addAll(userRepository.findByEmailAddressIn(emailAddresses));
@@ -720,7 +723,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 .filter(User::hasEmailAddress)
                 .collect(Collectors.toMap(User::getEmailAddress, user -> user));
 
-        logger.info("Number of existing users ... {}", existingUsers.size() + existingUserEmailMap.size());
+        logger.info("Number of existing users ... {} by phone, {} by email", existingUserPhoneMap.size() + existingUserPhoneMap.size());
+        logger.info("Existing email addresses: {}", existingUserEmailMap);
 
         Set<User> createdUsers = new HashSet<>();
         Set<Membership> memberships = new HashSet<>();
@@ -737,8 +741,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             User user = existingUserPhoneMap.containsKey(msidn) ? existingUserPhoneMap.get(msidn) :
                     existingUserEmailMap.get(emailAddress);
 
+            if (user == null && emailAddress != null && existingEmails.contains(emailAddress.trim().toLowerCase())) {
+                logger.info("Look up of existing user by email addresses failed: {}", emailAddress);
+                break;
+            }
+
             if (user == null) {
-                logger.debug("Adding a new user, via group creation, with phone number ... " + msidn);
+                logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msidn, emailAddress);
                 user = new User(msidn, membershipInfo.getDisplayName(), emailAddress);
                 user.setFirstName(membershipInfo.getFirstName());
                 user.setLastName(membershipInfo.getSurname());
@@ -785,8 +794,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         logger.info("completed iteration, added {} users", validNumberMembers.size());
-        // make sure the newly created users are stored
-        userRepository.save(createdUsers);
+        // make sure the newly created users are stored, but do it one by one, so one mistake on email does not torch this
+        userRepository.saveAll(createdUsers);
         userRepository.flush();
 
         // adding action logs and event notifications ...
@@ -825,10 +834,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private void triggerAddMembersToParentGroup(User initiator, Group group, Set<MembershipInfo> membershipInfos,
                                                 GroupJoinMethod joinMethod) {
-        AfterTxCommitTask afterTxCommitTask = () -> {
-            applicationContext.getBean(GroupBroker.class)
+        AfterTxCommitTask afterTxCommitTask = () -> applicationContext.getBean(GroupBroker.class)
                     .asyncAddMemberships(initiator.getUid(), group.getUid(), membershipInfos, joinMethod, null, false, false);
-        };
         applicationEventPublisher.publishEvent(afterTxCommitTask);
     }
 

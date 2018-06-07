@@ -7,14 +7,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
@@ -39,7 +40,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
 
 /**
@@ -717,8 +717,8 @@ public class TaskBrokerImpl implements TaskBroker {
     private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {
         Set<TaskDTO> taskDtos = new HashSet<>();
         for (Event event : events) {
-            EventLog userResponseLog = eventLogRepository.findOne(where(forEvent(event))
-                    .and(forUser(user)).and(isResponseToAnEvent()));
+            EventLog userResponseLog = eventLogRepository.findOne(Specification.where(forEvent(event))
+                    .and(forUser(user)).and(isResponseToAnEvent())).orElse(null);
             if (changedSince == null || isEventAddedOrUpdatedSince(event, userResponseLog, changedSince)) {
                 TaskDTO taskDTO = new TaskDTO(event, user, userResponseLog);
                 if (event instanceof Vote) {

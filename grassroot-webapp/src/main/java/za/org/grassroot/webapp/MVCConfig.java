@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.filter.CharacterEncodingFilter;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -18,7 +17,6 @@ import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import za.org.grassroot.webapp.interceptor.SimpleLoggingInterceptor;
 import za.org.grassroot.webapp.interceptor.TokenValidationInterceptor;
 
-import javax.servlet.Filter;
 import java.util.Locale;
 
 /**
@@ -29,15 +27,7 @@ import java.util.Locale;
 
 @Configuration
 @ControllerAdvice @Slf4j
-public class MVCConfig extends WebMvcConfigurerAdapter {
-
-    @Bean
-    public Filter characterEncodingFilter() {
-        CharacterEncodingFilter filter = new CharacterEncodingFilter();
-        filter.setEncoding("UTF-8");
-        filter.setForceEncoding(true);
-        return filter;
-    }
+public class MVCConfig implements WebMvcConfigurer {
 
     @Bean
     public TokenValidationInterceptor tokenValidationInterceptor() {

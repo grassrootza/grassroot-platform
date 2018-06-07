@@ -14,7 +14,10 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
@@ -23,6 +26,7 @@ import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
+import za.org.grassroot.core.domain.notification.NotificationStatus;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TaskLog;
 import za.org.grassroot.core.domain.task.TodoLog;
@@ -111,7 +115,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 			log.info("Storing {} notifications", notifications.size());
 		}
 
-		notificationRepository.save(notifications);
+		notificationRepository.saveAll(notifications);
 
 		Instant now = Instant.now();
 		groupsToUpdateLogTimestamp.forEach(g -> g.setLastGroupChangeTime(now));

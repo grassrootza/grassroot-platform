@@ -172,7 +172,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 			userLocations.add(userLocation);
 		}
 
-		previousPeriodUserLocationRepository.save(userLocations);
+		previousPeriodUserLocationRepository.saveAll(userLocations);
 	}
 
 	private Instant convertStartOfDayToSASTInstant(LocalDate date) {

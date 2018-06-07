@@ -13,7 +13,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinCode;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
@@ -445,8 +448,7 @@ public class GroupModifyController extends GroupBaseController {
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/welcome/check/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Checks for current group welcome message")
-    public ResponseEntity checkForGroupWelcomeMsg(@PathVariable String groupUid,
-                                                  HttpServletRequest request) {
+    public ResponseEntity checkForGroupWelcomeMsg(@PathVariable String groupUid) {
         Broadcast template = accountGroupBroker.loadWelcomeMessage(groupUid);
         return template != null ? ResponseEntity.ok(template.getSmsTemplate1()) : ResponseEntity.ok().build();
     }

@@ -2,6 +2,7 @@ package za.org.grassroot.services.async;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +23,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.springframework.data.jpa.domain.Specifications.where;
+import static org.springframework.data.jpa.domain.Specification.where;
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
 import static za.org.grassroot.core.enums.UserInterfaceType.USSD;
 import static za.org.grassroot.core.specifications.UserLogSpecifications.*;
@@ -79,7 +80,7 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Override
     @Transactional
     public void storeUserLogs(Set<UserLog> userLogSet) {
-        userLogRepository.save(userLogSet);
+        userLogRepository.saveAll(userLogSet);
     }
 
     @Async

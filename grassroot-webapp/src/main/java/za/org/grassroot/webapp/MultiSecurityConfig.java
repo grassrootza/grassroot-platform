@@ -11,6 +11,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -19,8 +20,8 @@ import za.org.grassroot.webapp.interceptor.JwtAuthenticationFilter;
 import java.util.Arrays;
 import java.util.List;
 
-@Configuration @Slf4j
-public class NewSecurityConfig extends WebSecurityConfigurerAdapter {
+@EnableWebSecurity @Slf4j
+public class MultiSecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/v2/api/news/**",
@@ -33,7 +34,7 @@ public class NewSecurityConfig extends WebSecurityConfigurerAdapter {
             "/v2/api/jwt/public/credentials",
             "/v2/api/user/profile/image/view/**",
             "/v2/api/inbound/respond/**", // both of these use a complex token-matching to auth, without needing full user, for various UX reasons
-            "/v2/api/inbound/unsubscribe/**"
+            "/v2/api/inbound/unsubscribe/**",
     };
 
     private static final String[] AUTH_ENDPOINTS = {
@@ -41,18 +42,19 @@ public class NewSecurityConfig extends WebSecurityConfigurerAdapter {
     };
 
     private static final String[] DEV_ENDPOINTS = {
-            "/v2/api-docs"
+            "/v2/api-docs",
+            "/swagger-ui.html"
     };
 
     private final Environment environment;
 
     @Autowired
-    public NewSecurityConfig(Environment environment) {
+    public MultiSecurityConfig(Environment environment) {
         this.environment = environment;
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationTokenFilter() throws Exception {
+    public JwtAuthenticationFilter jwtAuthenticationTokenFilter() {
         return new JwtAuthenticationFilter();
     }
 
@@ -63,37 +65,58 @@ public class NewSecurityConfig extends WebSecurityConfigurerAdapter {
         return registration;
     }
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-                .csrf().disable()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+    @Configuration
+    @Order(1)
+    public class ApiWebSecurityConfigurationAdapter extends WebSecurityConfigurerAdapter {
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
+            log.info("Setting up API security configuration");
+            http
+                    .antMatcher("/v2/api/**")
+                    .csrf().disable()
+                    .sessionManagement()
+                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                     .and()
-                .authorizeRequests()
+                    .addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class)
+                    .authorizeRequests()
                     .antMatchers(HttpMethods.OPTIONS, "/v2/**").permitAll()
-                    .antMatchers(PUBLIC_ENDPOINTS).permitAll()
-                    .antMatchers(AUTH_ENDPOINTS).permitAll()
-                    .antMatchers("/ussd/**").access(assembleUssdGatewayAccessString())
-                .anyRequest().authenticated();
+                        .antMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .antMatchers(AUTH_ENDPOINTS).permitAll();
+        }
 
-        http.addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+        @Override
+        public void configure(WebSecurity web) {
+            log.info("API JWT security excluding paths");
+            web.ignoring()
+                    .antMatchers(HttpMethod.OPTIONS)
+                    .antMatchers("/api/**") // since this is Android
+                    .antMatchers(PUBLIC_ENDPOINTS)
+                    .antMatchers(AUTH_ENDPOINTS);
+
+            if (!environment.acceptsProfiles("production"))
+                web.ignoring().antMatchers(DEV_ENDPOINTS);
+        }
     }
 
-    @Override
-    public void configure(WebSecurity web) throws Exception {
-        web.ignoring()
-                .antMatchers(HttpMethod.OPTIONS)
-                .antMatchers("/api/**") // since this is Android
-                .antMatchers(PUBLIC_ENDPOINTS)
-                .antMatchers(AUTH_ENDPOINTS);
-
-        if (!environment.acceptsProfiles("production"))
-            web.ignoring().antMatchers(DEV_ENDPOINTS);
+    @Configuration
+    @Order(2)
+    public class USSDSecurityConfigurationAdapter extends WebSecurityConfigurerAdapter {
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
+            log.info("Setting up USSD configuration");
+            http
+                    .antMatcher("/ussd/**")
+                    .authorizeRequests()
+                        .antMatchers("/**").access(assembleUssdGatewayAccessString())
+                    .anyRequest().authenticated();
+        }
     }
 
     private String assembleUssdGatewayAccessString() {
-        if (environment.acceptsProfiles("localpg"))
+        if (environment.acceptsProfiles("localpg")) {
+            log.info("permitting all requests ...");
             return "permitAll";
+        }
 
         final String ussdGateways = environment.getProperty("grassroot.ussd.gateway", "127.0.0.1");
         List<String> gatewayAddresses = Arrays.asList(ussdGateways.split(";"));
