@@ -10,6 +10,7 @@ import java.util.List;
 @Getter
 public class MembershipFullDTO {
 
+    private final String displayName;
     private final UserFullDTO user;
     private final GroupMinimalDTO group;
     private final String roleName;
@@ -20,6 +21,7 @@ public class MembershipFullDTO {
     private final boolean canEditDetails;
 
     public MembershipFullDTO(Membership membership) {
+        this.displayName = membership.getDisplayName();
         this.user = new UserFullDTO(membership.getUser());
         this.group = new GroupMinimalDTO(membership.getGroup(), membership);
         this.roleName = membership.getRole().getName();
