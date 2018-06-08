@@ -17,6 +17,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -70,7 +71,8 @@ public class EventCreateController extends BaseRestController{
                                                              "members of the parent are assigned") Set<String> assignedMemberUids,
                                                      @RequestParam(required = false)
                                                      @ApiParam(value = "Server UID of an optional image to include " +
-                                                             "in the meeting call") String mediaFileUid) {
+                                                             "in the meeting call") String mediaFileUid,
+                                                     @RequestParam MeetingImportance meetingImportance) {
         String userUid = getUserIdFromRequest(request);
         log.info("creating a meeting, subject ={}, location = {}, parentUid = {}", subject, location,parentUid);
 
@@ -81,7 +83,8 @@ public class EventCreateController extends BaseRestController{
                 .name(subject)
                 .location(location)
                 .description(description)
-                .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis));
+                .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis))
+                .importance(meetingImportance);
 
         if (publicMeeting) {
             helper = helper.isPublic(true);

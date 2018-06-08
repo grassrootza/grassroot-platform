@@ -32,7 +32,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 import java.util.Set;
 
 @RestController @Grassroot2RestController @Slf4j
-@RequestMapping(value = "/api/livewire") @Api("/api/livewire")
+@RequestMapping(value = "/v2/api/livewire") @Api("/api/livewire")
 @PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class LiveWireController extends BaseRestController{
 
