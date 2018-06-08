@@ -682,10 +682,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 
-    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos,
+    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> rawMembershipInfos,
                                                       GroupJoinMethod joinMethod, String joinMethodDescriptor,
                                                       boolean duringGroupCreation, boolean createWelcomeNotifications) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
+        Set<MembershipInfo> membershipInfos = stripDuplicateEmailsAndPhones(rawMembershipInfos);
 
         Comparator<MembershipInfo> byPhoneNumber = (MembershipInfo m1, MembershipInfo m2) -> {
             if (m1.hasPhoneNumber() && m2.hasPhoneNumber())
@@ -828,6 +829,32 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         return bundle;
+    }
+
+    private Set<MembershipInfo> stripDuplicateEmailsAndPhones(Set<MembershipInfo> membershipInfos) {
+        Set<MembershipInfo> safeMembers = new HashSet<>();
+        Set<String> phones = new HashSet<>();
+        Set<String> emails = new HashSet<>();
+
+        for (MembershipInfo member: membershipInfos) {
+            if (member.hasValidEmail() && emails.contains(member.getMemberEmail())) {
+                member.setMemberEmail(null); // i.e., remove it
+            } else if (member.hasValidEmail()) {
+                emails.add(member.getMemberEmail());
+            }
+
+            if (member.hasValidPhoneNumber() && phones.contains(member.getPhoneNumberWithCCode())) {
+                member.setPhoneNumber(null);
+            } else if (member.hasValidPhoneNumber()) {
+                phones.add(member.getPhoneNumberWithCCode());
+            }
+
+            if (member.hasValidPhoneOrEmail()) {
+                safeMembers.add(member);
+            }
+        }
+
+        return safeMembers;
     }
 
     private void triggerAddMembersToParentGroup(User initiator, Group group, Set<MembershipInfo> membershipInfos,
