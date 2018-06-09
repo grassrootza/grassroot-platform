@@ -13,7 +13,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DebugUtil;
@@ -29,11 +28,9 @@ import za.org.grassroot.graph.dto.IncomingGraphAction;
 import za.org.grassroot.graph.dto.IncomingRelationship;
 
 import javax.annotation.PostConstruct;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service @Slf4j

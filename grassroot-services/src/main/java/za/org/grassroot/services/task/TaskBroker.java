@@ -1,5 +1,6 @@
 package za.org.grassroot.services.task;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.task.Task;
