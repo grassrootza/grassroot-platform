@@ -21,10 +21,17 @@ public class TaskPublicMinimalDTO {
     private boolean hasResponded;
     private String userResponse;
 
+    private String createdByUserPhone;
+    private String emailAddress;
+
     public TaskPublicMinimalDTO(Task task, String userResponse) {
         this.title = task.getName();
         this.deadlineMillis = task.getDeadlineTime().toEpochMilli();
         this.createdByUserName = task.getCreatedByUser().getName();
+
+        this.emailAddress = task.getCreatedByUser().getEmailAddress() == null ? "(Email not set)" :
+                            task.getCreatedByUser().getEmailAddress();
+        this.createdByUserPhone = task.getCreatedByUser().getPhoneNumber();
 
         switch (task.getTaskType()) {
             case MEETING:

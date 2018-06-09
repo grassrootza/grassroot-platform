@@ -9,6 +9,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
@@ -306,6 +307,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             group.addTopics(memberTopics); // method will take care of removing duplicates
         } catch (InvalidPhoneNumberException e) {
             logger.error("Error! Invalid phone number : " + e.getMessage());
+        } catch (DataIntegrityViolationException e) {
+            logger.error("Error! Uncaught unique key violation, in group add member method");
         }
     }
 
@@ -679,10 +682,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 
-    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos,
+    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> rawMembershipInfos,
                                                       GroupJoinMethod joinMethod, String joinMethodDescriptor,
                                                       boolean duringGroupCreation, boolean createWelcomeNotifications) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
+        Set<MembershipInfo> membershipInfos = stripDuplicateEmailsAndPhones(rawMembershipInfos);
 
         Comparator<MembershipInfo> byPhoneNumber = (MembershipInfo m1, MembershipInfo m2) -> {
             if (m1.hasPhoneNumber() && m2.hasPhoneNumber())
@@ -706,7 +710,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 .filter(MembershipInfo::hasValidEmail)
                 .map(MembershipInfo::getMemberEmail).collect(Collectors.toSet());
 
-        logger.debug("phoneNumbers returned: ...." + memberPhoneNumbers);
+        logger.info("phoneNumbers returned: .... {}, email addresses: {}", memberPhoneNumbers, emailAddresses);
 
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
         existingUsers.addAll(userRepository.findByEmailAddressIn(emailAddresses));
@@ -718,7 +722,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 .filter(User::hasEmailAddress)
                 .collect(Collectors.toMap(User::getEmailAddress, user -> user));
 
-        logger.info("Number of existing users ... {}", existingUsers.size() + existingUserEmailMap.size());
+        logger.info("Number of existing users ... {} by phone, {} by email", existingUserPhoneMap.size(), existingUserEmailMap.size());
+        logger.info("Existing email addresses: {}", existingUserEmailMap.keySet());
 
         Set<User> createdUsers = new HashSet<>();
         Set<Membership> memberships = new HashSet<>();
@@ -735,8 +740,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             User user = existingUserPhoneMap.containsKey(msidn) ? existingUserPhoneMap.get(msidn) :
                     existingUserEmailMap.get(emailAddress);
 
+            if (user == null && emailAddress != null && existingEmails.contains(emailAddress.trim().toLowerCase())) {
+                logger.info("Look up of existing user by email addresses failed: {}", emailAddress);
+                break;
+            }
+
             if (user == null) {
-                logger.debug("Adding a new user, via group creation, with phone number ... " + msidn);
+                logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msidn, emailAddress);
                 user = new User(msidn, membershipInfo.getDisplayName(), emailAddress);
                 user.setFirstName(membershipInfo.getFirstName());
                 user.setLastName(membershipInfo.getSurname());
@@ -819,6 +829,32 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         return bundle;
+    }
+
+    private Set<MembershipInfo> stripDuplicateEmailsAndPhones(Set<MembershipInfo> membershipInfos) {
+        Set<MembershipInfo> safeMembers = new HashSet<>();
+        Set<String> phones = new HashSet<>();
+        Set<String> emails = new HashSet<>();
+
+        for (MembershipInfo member: membershipInfos) {
+            if (member.hasValidEmail() && emails.contains(member.getMemberEmail())) {
+                member.setMemberEmail(null); // i.e., remove it
+            } else if (member.hasValidEmail()) {
+                emails.add(member.getMemberEmail());
+            }
+
+            if (member.hasValidPhoneNumber() && phones.contains(member.getPhoneNumberWithCCode())) {
+                member.setPhoneNumber(null);
+            } else if (member.hasValidPhoneNumber()) {
+                phones.add(member.getPhoneNumberWithCCode());
+            }
+
+            if (member.hasValidPhoneOrEmail()) {
+                safeMembers.add(member);
+            }
+        }
+
+        return safeMembers;
     }
 
     private void triggerAddMembersToParentGroup(User initiator, Group group, Set<MembershipInfo> membershipInfos,

@@ -41,15 +41,6 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
 
 	N.B. do not remove start_date_time > current_timestamp as it will force the query to do an
 	index scan, when there is enough data
-
-select * from event e
-where e.canceled = FALSE
-	  and start_date_time > current_timestamp -- index for start_date_time and so we can read by index - local timestamp???
-	  and (start_date_time - e.reminderminutes * INTERVAL '1 minute') < current_timestamp
-	  and (start_date_time - e.reminderminutes * INTERVAL '1 minute') > e.created_date_time
-	  and e.reminderminutes > 0
-	  and e.noreminderssent = 0
-
 	 */
 	@Transactional
 	@Query(value = "select e from Event e " +

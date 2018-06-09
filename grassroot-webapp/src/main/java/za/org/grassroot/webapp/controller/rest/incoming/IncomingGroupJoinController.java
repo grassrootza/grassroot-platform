@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserFullDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
@@ -32,12 +33,14 @@ public class IncomingGroupJoinController extends BaseRestController {
     private final GroupBroker groupBroker;
     private final UserManagementService userManager;
     private final PasswordTokenService tokenService;
+    private final CampaignBroker campaignBroker;
 
-    public IncomingGroupJoinController(JwtService jwtService, UserManagementService userManagementService, GroupBroker groupBroker, PasswordTokenService tokenService) {
+    public IncomingGroupJoinController(JwtService jwtService, UserManagementService userManagementService, GroupBroker groupBroker, PasswordTokenService tokenService, CampaignBroker campaignBroker) {
         super(jwtService, userManagementService);
         this.groupBroker = groupBroker;
         this.userManager = userManagementService;
         this.tokenService = tokenService;
+        this.campaignBroker = campaignBroker;
     }
 
     @RequestMapping(value = "/start/{groupUid}", method = RequestMethod.GET)
@@ -47,12 +50,14 @@ public class IncomingGroupJoinController extends BaseRestController {
                                                                   @RequestParam(required = false) String code,
                                                                   @RequestParam(required = false) String broadcastId) {
         Group group = groupBroker.loadAndRecordUse(groupUid, code, broadcastId);
+
         JoinInfoExternal.JoinInfoExternalBuilder builder = JoinInfoExternal.builder()
                 .groupName(group.getName())
                 .groupUid(group.getUid())
                 .groupDescription(group.getDescription())
                 .groupImageUrl(group.getImageUrl())
-                .groupJoinTopics(group.getJoinTopics());
+                .groupJoinTopics(group.getJoinTopics())
+                .hasActiveCampaign(campaignBroker.doesGroupHaveActiveCampaign(group.getUid()));
 
         String userUid = getUserIdFromRequest(request);
         if (!StringUtils.isEmpty(userUid)) {

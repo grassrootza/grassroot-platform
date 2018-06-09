@@ -13,7 +13,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DebugUtil;
@@ -32,7 +31,6 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
@@ -46,6 +44,7 @@ public class GraphBrokerImpl implements GraphBroker {
     private String grassrootQueue;
     private String sqsQueueUrl;
 
+
     public GraphBrokerImpl() {
         log.info("Graph broker enabled, constructing object mapper ...");
         this.objectMapper = new ObjectMapper().findAndRegisterModules()
@@ -56,11 +55,13 @@ public class GraphBrokerImpl implements GraphBroker {
     public void init() {
         this.sqs = AmazonSQSClientBuilder.defaultClient();
         this.sqsQueueUrl = sqs.getQueueUrl(grassrootQueue).getQueueUrl();
+
     }
 
     @Override
     public void addUserToGraph(String userUid) {
         log.info("adding user to Grassroot graph ... {}", userUid);
+
         Actor actor = new Actor(ActorType.INDIVIDUAL, userUid);
         IncomingGraphAction action = wrapActorCreation(actor);
         dispatchAction(action, "user");
@@ -69,6 +70,7 @@ public class GraphBrokerImpl implements GraphBroker {
     @Override
     public void addGroupToGraph(String groupUid, String creatingUserUid) {
         log.info("adding group to Grassroot graph ...");
+
         Actor group = new Actor(ActorType.GROUP, groupUid);
         IncomingGraphAction action = wrapActorCreation(group);
         IncomingRelationship genRel = generatorRelationship(creatingUserUid, groupUid);
@@ -112,7 +114,7 @@ public class GraphBrokerImpl implements GraphBroker {
     @Override
     @Transactional
     @SuppressWarnings("unchecked")
-    public void addTaskToGraph(Task task) {
+    public void addTaskToGraph(Task task, List<String> assignedUserUids) {
         try {
             DebugUtil.transactionRequired("");
             log.info("adding a task to Grassroot Graph ... ");
@@ -126,11 +128,15 @@ public class GraphBrokerImpl implements GraphBroker {
             Actor creatingUser = new Actor(ActorType.INDIVIDUAL, task.getCreatedByUser().getUid());
             graphEvent.setCreator(creatingUser);
 
-            final Set<User> assignedMembers = (Set<User>) task.getMembers();
-            List<Actor> participatingActors = assignedMembers.stream()
-                    .map(u -> new Actor(ActorType.INDIVIDUAL, u.getUid())).collect(Collectors.toList());
-            graphEvent.setParticipants(participatingActors);
-            log.info("processed {} assigned members, participants: {}", assignedMembers.size(), graphEvent.getParticipants());
+            List<Actor> participatingActors = new ArrayList<>();
+            if (assignedUserUids != null && !assignedUserUids.isEmpty()) {
+                participatingActors.addAll(assignedUserUids.stream()
+                        .map(uid -> new Actor(ActorType.INDIVIDUAL, uid)).collect(Collectors.toList()));
+                graphEvent.setParticipants(participatingActors);
+                log.info("processed {} assigned members, participants: {}", assignedUserUids.size(), graphEvent.getParticipants());
+            } else {
+                log.info("no assigned users, task type: {}", taskType);
+            }
 
             final Group parentGroup = task.getAncestorGroup();
             Actor graphParent = new Actor(ActorType.GROUP, parentGroup.getUid());
@@ -147,7 +153,7 @@ public class GraphBrokerImpl implements GraphBroker {
 
             dispatchAction(graphAction, "task");
         } catch (LazyInitializationException e) {
-            log.error("Spring hell continues, can't add to graph, Lazy Init as usual");
+            log.error("Spring-Hibernate hell continues, can't add to graph, Lazy Init as usual");
         }
     }
 

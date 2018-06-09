@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -186,7 +187,8 @@ public class AdminManager implements AdminService {
     @Transactional(readOnly = true)
     public void populateGrassrootGraphUsers() {
         if (graphBroker != null) {
-            Specifications<User> users = Specifications.where((root, query, cb) -> cb.isTrue(root.get(User_.enabled)));
+            Specifications<User> users = Specifications.where((root, query, cb) -> cb.and(
+                    cb.isTrue(root.get(User_.enabled)), cb.isTrue(root.get(User_.hasInitiatedSession))));
             userRepository.findAll(users).forEach(user -> graphBroker.addUserToGraph(user.getUid()));
         }
     }
@@ -200,13 +202,15 @@ public class AdminManager implements AdminService {
         }
     }
 
+    @Async
     @Override
     @Transactional(readOnly = true)
-    public void populateGrassrootGraphTasks() {
+    public void populateGrassrootGraphTasks(String userUid) {
         DebugUtil.transactionRequired("");
         if (graphBroker != null) {
             DebugUtil.transactionRequired("");
-            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task));
+            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task,
+                    taskBroker.fetchUserUidsForTask(userUid, task.getUid(), task.getTaskType())));
         }
     }
 

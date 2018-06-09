@@ -41,6 +41,6 @@ public interface AdminService {
 
     void populateGrassrootGraphGroups();
 
-    void populateGrassrootGraphTasks();
+    void populateGrassrootGraphTasks(String userUid);
 
 }

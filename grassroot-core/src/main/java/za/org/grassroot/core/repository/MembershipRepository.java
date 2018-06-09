@@ -11,13 +11,14 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 public interface MembershipRepository extends JpaRepository<Membership, Long>, JpaSpecificationExecutor<Membership> {
 
     Membership findByGroupUidAndUserUid(String groupId, String userUid);
 
-    List<Membership> findByGroupAndUserIn(Group group, List<User> users);
+    List<Membership> findByGroupAndUserIn(Group group, Collection<User> users);
 
     Page<Membership> findByGroupUid(String groupUid, Pageable pageable);
 
