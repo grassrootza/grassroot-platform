@@ -46,6 +46,7 @@ import za.org.grassroot.webapp.util.USSDGroupUtil;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -426,12 +427,12 @@ public class USSDMeetingController extends USSDBaseController {
 
         if (!interrupted) eventUtil.updateEventRequest(sessionUser.getUid(), mtgRequestUid, priorMenu, userInput);
 
-        final String mostFreqTime = eventRequest != null ? eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()).toString() :
-                "";
+        final LocalTime mostFreqTime = eventRequest != null && eventRequest.getParent() != null?
+                eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()) : null;
 
-        String promptMessage = StringUtils.isEmpty(mostFreqTime) ?
+        String promptMessage = mostFreqTime == null ?
                 getMessage(thisSection, timeMenu, promptKey, sessionUser) :
-                getMessage(thisSection, timeMenu, promptKey + ".freq",mostFreqTime, sessionUser);
+                getMessage(thisSection, timeMenu, promptKey + ".freq", mostFreqTime.toString(), sessionUser);
 
         String nextUrl = meetingMenus + nextMenu(timeMenu) + entityUidUrlSuffix + mtgRequestUid + "&" + previousMenu + "=" + timeMenu;
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));

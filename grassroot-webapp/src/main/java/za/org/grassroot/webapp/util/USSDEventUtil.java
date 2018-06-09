@@ -212,7 +212,7 @@ public class USSDEventUtil extends USSDUtil {
         if(parsedDateTime.getHour() == 0 && parsedDateTime.getMinute() == 0){
             MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(eventUid);
             LocalTime mostFreqTime = eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid());
-            localDateTime = LocalDateTime.of(parsedDateTime.toLocalDate(), mostFreqTime);
+            localDateTime = mostFreqTime != null ? LocalDateTime.of(parsedDateTime.toLocalDate(), mostFreqTime) : parsedDateTime;
         }else{
             localDateTime = parsedDateTime;
         }

@@ -61,7 +61,6 @@ public class GraphBrokerImpl implements GraphBroker {
     @Override
     public void addUserToGraph(String userUid) {
         log.info("adding user to Grassroot graph ... {}", userUid);
-
         Actor actor = new Actor(ActorType.INDIVIDUAL, userUid);
         IncomingGraphAction action = wrapActorCreation(actor);
         dispatchAction(action, "user");
@@ -172,7 +171,10 @@ public class GraphBrokerImpl implements GraphBroker {
 
     private void dispatchAction(IncomingGraphAction action, String actionDescription) {
         try {
-            sqs.sendMessage(new SendMessageRequest(sqsQueueUrl, objectMapper.writeValueAsString(action)));
+            log.info("dispatching message to URL: {}", sqsQueueUrl);
+            SendMessageRequest request = new SendMessageRequest(sqsQueueUrl, objectMapper.writeValueAsString(action));
+            request.setMessageGroupId("graphCrudActions");
+            sqs.sendMessage(request);
             log.info("successfully dispatched {} to graph entity queue ...", actionDescription);
         } catch (JsonProcessingException e) {
             log.error("error adding graph action to queue ... ", e);
