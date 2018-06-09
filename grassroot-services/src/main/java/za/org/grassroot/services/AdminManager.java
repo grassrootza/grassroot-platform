@@ -187,7 +187,8 @@ public class AdminManager implements AdminService {
     @Transactional(readOnly = true)
     public void populateGrassrootGraphUsers() {
         if (graphBroker != null) {
-            Specifications<User> users = Specifications.where((root, query, cb) -> cb.isTrue(root.get(User_.enabled)));
+            Specifications<User> users = Specifications.where((root, query, cb) -> cb.and(
+                    cb.isTrue(root.get(User_.enabled)), cb.isTrue(root.get(User_.hasInitiatedSession))));
             userRepository.findAll(users).forEach(user -> graphBroker.addUserToGraph(user.getUid()));
         }
     }
