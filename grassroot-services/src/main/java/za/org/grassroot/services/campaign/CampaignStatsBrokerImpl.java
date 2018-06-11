@@ -116,7 +116,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         Map<Long, CampaignLog> lastStageMap = new LinkedHashMap<>();
         matchingLogs.stream().filter(log -> !lastStageMap.containsKey(log.getUser().getId()))
                 .forEach(log -> lastStageMap.put(log.getUser().getId(), log));
-        log.info("latest stage map: {}", lastStageMap);
+        log.debug("latest stage map: {}", lastStageMap);
 
         int currentMemberCount = 0; // replace with count of group at start
 
@@ -211,7 +211,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         });
 
         // step 3: count the number of interfaces
-        log.info("okay, channel map now looks like: {}", channelMap);
+        log.debug("okay, channel map now looks like: {}", channelMap);
         Map<String, Long> result = channelMap.entrySet().stream()
                 .collect(Collectors.groupingBy(entry -> entry.getValue().name(), Collectors.counting()));
 

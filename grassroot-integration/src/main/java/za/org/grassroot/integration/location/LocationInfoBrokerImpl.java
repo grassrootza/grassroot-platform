@@ -282,6 +282,12 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     private Set<Notification> notificationsFromRecords(String dataSet, List<String> records, User target,
                                                        AccountLog accountLog, int singleMessageLength) {
+        final String openingMessage = getOpeningNote(dataSet, target.getLocale());
+        if (openingMessage != null) {
+            log.info("Have an opening message for records: {}", openingMessage);
+            records.add(0, openingMessage);
+        }
+
         int countChars = String.join(", ", records).length();
         log.info("okay, have this many chars for records: {}", countChars);
         Set<Notification> notifications = new HashSet<>();
@@ -377,17 +383,25 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
+    private String getOpeningNote(String dataSetLabel, Locale locale) {
+        return getFromSpec("opening_messages", dataSetLabel, locale);
+    }
+
     private String getFinalMessage(String dataSetLabel, Locale locale) {
+        return getFromSpec("final_messages", dataSetLabel, locale);
+    }
+
+    private String getFromSpec(String fieldName, String dataSetLabel, Locale locale) {
         DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
         Table geoApiTable = dynamoDB.getTable("geo_apis");
         GetItemSpec spec = new GetItemSpec()
                 .withPrimaryKey("data_set_label", dataSetLabel)
-                .withProjectionExpression("final_messages");
+                .withProjectionExpression(fieldName);
         try {
-            log.info("getting final messages for dataset : {} and locale : {}", dataSetLabel, locale);
+            log.info("getting {} messages for dataset : {} and locale : {}", fieldName, dataSetLabel, locale);
             Item outcome = geoApiTable.getItem(spec);
             log.info("result: {}", outcome);
-            Map<String, String> results = outcome.getMap("final_messages");
+            Map<String, String> results = outcome.getMap(fieldName);
             return results == null || results.isEmpty() ? null :
                     locale != null && results.containsKey(locale.getLanguage())
                             ? results.get(locale.getLanguage()) : results.getOrDefault("en", null);
