@@ -1,0 +1,101 @@
+version: 2
+
+step-library:
+  - &fetch-aws-cli
+      run:
+        name:
+        command: |
+          pip install awscli
+          pip install awsebcli
+
+jobs:
+    test:
+      docker:
+        - image: circleci/openjdk:8
+      steps:
+        - checkout
+        - restore_cache:
+            keys:
+              - v2-gradle-deps-{{ checksum "build.gradle" }}-{{ checksum "grassroot-core/build.gradle" }}-{{ checksum "grassroot-integration/build.gradle" }}-{{ checksum "grassroot-services/build.grade" }}-{{ checksum "grassroot-webapp/build.gradle" }}
+              - v2-gradle-deps
+        - run: ./gradlew test
+        - save_cache:
+            key: v2-gradle-deps-{{ checksum "build.gradle" }}-{{ checksum "grassroot-core/build.gradle" }}-{{ checksum "grassroot-integration/build.gradle" }}-{{ checksum "grassroot-services/build.grade" }}-{{ checksum "grassroot-webapp/build.gradle" }}
+            paths:
+              - .gradle/
+
+    build:
+      docker:
+        - image: circleci/openjdk:8
+      steps:
+        - checkout
+        - restore_cache:
+            keys:
+              - v2-gradle-deps-{{ checksum "build.gradle" }}-{{ checksum "grassroot-core/build.gradle" }}-{{ checksum "grassroot-integration/build.gradle" }}-{{ checksum "grassroot-services/build.grade" }}-{{ checksum "grassroot-webapp/build.gradle" }}
+              - v2-gradle-deps
+        - run: ./gradlew build -x test
+        - save_cache:
+            key: v2-built-jar-{{ .BuildNum }}
+            paths:
+              - grassroot-webapp/build
+
+    deploy-staging:
+      docker:
+        - image: ubuntu:16.04
+      steps:
+        - restore_cache:
+            keys:
+              - v2-built-jar-{{ .BuildNum }}
+        - *fetch-aws-cli
+        - run:
+            name: Define environment
+            command: |
+              echo 'export ENVIRONMENT=staging' >> ~/.circlerc
+              echo 'export EBENVIRONMENT=gr-stg' >> ~/.circlerc
+              echo $ENVIRONMENT
+        - run:
+            name: Build image and deploy to Docker Hub
+            command: |
+              mv .deploy/buildimage.sh buildimage.sh
+              chmod +x buildimage.sh
+              ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
+        - run:
+            name: Deploy files to beanstalk, after copying over config
+            command: |
+              mv .deploy/templates/nginx.staging.config .deploy/.ebextensions/001_nginx_http-https.config
+              mv .deploy/ebdeploy.sh ebdeploy.sh
+              chmod +x ebdeploy.sh
+              ./ebdeploy.sh $CIRCLE_SHA1 $ENVIRONMENT $EBENVIRONMENT
+
+workflows:
+  version: 2
+  default:
+    - test
+    - build
+    - deploy-staging:
+        filters:
+          branches:
+            only: preprod
+    - deploy-production:
+        filters:
+          branches:
+            only: master
+
+#deployment:
+#  production:
+#    branch: master
+#    commands:
+#      # define environment
+#      - echo 'export ENVIRONMENT=production' >> ~/.circlerc
+#      - echo 'export EBENVIRONMENT=gr-prod' >> ~/.circlerc
+#      - echo $ENVIRONMENT
+#
+#      # build image and deploy to docker hub
+#      - mv .deploy/buildimage.sh buildimage.sh
+#      - chmod +x buildimage.sh
+#      - ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
+#
+#      # deploy files to beanstalk
+#      - mv .deploy/ebdeploy.sh ebdeploy.sh
+#      - chmod +x ebdeploy.sh
+#      - ./ebdeploy.sh $CIRCLE_SHA1 $ENVIRONMENT $EBENVIRONMENT
