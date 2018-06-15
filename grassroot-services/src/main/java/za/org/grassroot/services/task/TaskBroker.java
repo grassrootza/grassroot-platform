@@ -12,6 +12,7 @@ import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.task.enums.TaskSortType;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -95,6 +96,8 @@ public interface TaskBroker {
     List<TaskFullDTO> fetchUpcomingGroupTasks(String userUid, String groupUid);
 
     void cancelTask(String userUid, String taskUid, TaskType taskType, boolean notifyMembers, String attachedReason);
+
+    TaskFullDTO changeTaskDate(String userUid, String taskUid, TaskType taskType, Instant newDateTime);
 
     void respondToTask(String userUid, String taskUid, TaskType taskType, String response);
 

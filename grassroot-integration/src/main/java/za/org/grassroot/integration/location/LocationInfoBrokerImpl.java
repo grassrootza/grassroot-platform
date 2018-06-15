@@ -282,18 +282,23 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     private Set<Notification> notificationsFromRecords(String dataSet, List<String> records, User target,
                                                        AccountLog accountLog, int singleMessageLength) {
-        final String openingMessage = getOpeningNote(dataSet, target.getLocale());
-        if (openingMessage != null) {
-            log.info("Have an opening message for records: {}", openingMessage);
-            records.add(0, openingMessage);
-        }
-
-        int countChars = String.join(", ", records).length();
-        log.info("okay, have this many chars for records: {}", countChars);
         Set<Notification> notifications = new HashSet<>();
 
+        final String openingMessage = getOpeningNote(dataSet, target.getLocale());
+        boolean hasOpeningMessage = openingMessage != null;
+
+        if (hasOpeningMessage) {
+            log.info("Have an opening message for records: {}", openingMessage);
+            Notification opening = new FreeFormMessageNotification(target, openingMessage, accountLog);
+            notifications.add(opening);
+        }
+
+        List<Notification> infoMessages = new ArrayList<>();
+        int countChars = String.join(", ", records).length();
+        log.info("okay, have this many chars for records: {}", countChars);
+
         if (countChars < singleMessageLength) {
-            notifications.add(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
+            infoMessages.add(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
         } else {
             StringBuilder currentMsg = new StringBuilder();
             log.debug("initiated, first message: {}", currentMsg);
@@ -303,21 +308,27 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                     currentMsg.append(separator).append(r);
                     log.debug("continuing assembly, new message: {}", currentMsg);
                 } else {
-                    notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
                     log.info("appended message: {}, creating new one", currentMsg.toString());
+                    infoMessages.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
                     currentMsg = new StringBuilder(r);
                 }
             }
             if (currentMsg.length() > 0) {
                 log.info("adding final message: {}", currentMsg);
-                notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
+                infoMessages.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
             }
         }
+
+        if (hasOpeningMessage) {
+            infoMessages.forEach(n -> n.setSendOnlyAfter(Instant.now().plus(15, ChronoUnit.SECONDS)));
+        }
+
+        notifications.addAll(infoMessages);
 
         final String finalMessage = getFinalMessage(dataSet, target.getLocale());
         if (!StringUtils.isEmpty(finalMessage)) {
             Notification finalNotification = new FreeFormMessageNotification(target, finalMessage, accountLog);
-            finalNotification.setSendOnlyAfter(Instant.now().plus(15, ChronoUnit.SECONDS));
+            finalNotification.setSendOnlyAfter(Instant.now().plus(hasOpeningMessage ? 30 : 15, ChronoUnit.SECONDS));
             notifications.add(finalNotification);
         }
 
