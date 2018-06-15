@@ -1,6 +1,7 @@
 package za.org.grassroot.services.task;
 
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
@@ -635,6 +637,27 @@ public class TaskBrokerImpl implements TaskBroker {
             default:
                 log.error("Error! Unknown task type");
         }
+    }
+
+    @Override
+    @Transactional
+    public TaskFullDTO changeTaskDate(String userUid, String taskUid, TaskType taskType, Instant newDateTime) {
+        // todo : fix the whole LDT / instant mess and just use instant
+        LocalDateTime ldt = DateTimeUtil.convertToUserTimeZone(newDateTime, DateTimeUtil.getSAST()).toLocalDateTime();
+        switch (taskType) {
+            case MEETING:
+                eventBroker.updateMeeting(userUid, taskUid, null, ldt, null);
+                break;
+            case VOTE:
+                voteBroker.updateVote(userUid, taskUid, ldt, null);
+                break;
+            case TODO:
+                todoBroker.extend(userUid, taskUid, newDateTime);
+                break;
+            default:
+                log.error("Error! Unknown task type");
+        }
+        return fetchSpecifiedTasks(userUid, ImmutableMap.of(taskUid, taskType), null).get(0);
     }
 
     @Override
