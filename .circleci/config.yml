@@ -55,6 +55,9 @@ jobs:
     deploy-staging:
       docker:
         - image: circleci/openjdk:8
+      environment:
+        ENVIRONMENT: "staging"
+        EBENVIRONMENT: "gr-stg"
       steps:
         - checkout
         - restore_cache:
@@ -66,9 +69,6 @@ jobs:
         - run:
             name: Build image and deploy to Docker Hub
             command: |
-              echo 'export ENVIRONMENT=staging' >> ~/.circlerc
-              echo 'export EBENVIRONMENT=gr-stg' >> ~/.circlerc
-              echo $ENVIRONMENT
               mv .deploy/buildimage.sh buildimage.sh
               chmod +x buildimage.sh
               ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT

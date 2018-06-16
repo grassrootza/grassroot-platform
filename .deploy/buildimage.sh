@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# Check this
+echo "environment: $ENVIRONMENT"
+
 # GET THE COMMIT ID TO SET AS PART OF THE INSTANCE NAME
 COMMITID=$(git rev-parse --short HEAD)
 sed -i "s/<BUILDID>/$COMMITID/" .deploy/startgrassroot.sh.$ENVIRONMENT
