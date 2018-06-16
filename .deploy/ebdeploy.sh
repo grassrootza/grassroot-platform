@@ -46,7 +46,7 @@ git commit -m "$ENVIRONMENT-$COMMIT_MESSAGE"
 echo "Finished with Git, proceeding to deploy to $EBENVIRONMENT, with message $ENVIRONMENT-$COMMIT_MESSAGE"
 
 # DEPLOY APP
-eb init --access-key-id $AWS_ACCESS_KEY_ID -- secret-key $AWS_SECRET_ACCESS_KEY
+eb init --access-key-id $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY
 eb list
 eb use $EBENVIRONMENT
 eb deploy $EBENVIRONMENT --label "$ENVIRONMENT-$COMMIT_MESSAGE" --timeout 20 --verbose
