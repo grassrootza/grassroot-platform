@@ -64,14 +64,11 @@ jobs:
         - setup_remote_docker:
             docker_layer_caching: true
         - run:
-            name: Define environment
+            name: Build image and deploy to Docker Hub
             command: |
               echo 'export ENVIRONMENT=staging' >> ~/.circlerc
               echo 'export EBENVIRONMENT=gr-stg' >> ~/.circlerc
               echo $ENVIRONMENT
-        - run:
-            name: Build image and deploy to Docker Hub
-            command: |
               mv .deploy/buildimage.sh buildimage.sh
               chmod +x buildimage.sh
               ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
@@ -91,12 +88,12 @@ workflows:
 #    - test:
 #        requires:
 #          - dependencies
-    - build
+#    - build
 #        requires:
 #          - test
     - deploy-staging:
-        requires:
-          - build
+#        requires:
+#          - build
         filters:
           branches:
             only: circle2-main
