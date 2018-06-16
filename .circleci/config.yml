@@ -126,7 +126,7 @@ workflows:
     - test:
         requires:
           - dependencies
-    - build
+    - build:
         requires:
           - test
     - deploy-staging:
