@@ -176,17 +176,17 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok(restMessage.name());
     }
 
-    @RequestMapping(value = "/graph/transfer/users", method = RequestMethod.GET)
-    public ResponseEntity initiateUserGraphTransfer() {
-        log.info("alright, seeding the queue");
-        adminService.populateGrassrootGraphUsers();
-        return ResponseEntity.ok().build();
-    }
-
     @RequestMapping(value = "/graph/transfer/groups", method = RequestMethod.GET)
     public ResponseEntity initiateGroupGraphTransfer() {
         log.info("seeding queue with groups");
         adminService.populateGrassrootGraphGroups();
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/graph/transfer/memberships", method = RequestMethod.GET)
+    public ResponseEntity initiateGroupMembershipTransfer() {
+        log.info("seeding queue with memberships");
+        adminService.populateGrassrootGraphMemberships();
         return ResponseEntity.ok().build();
     }
 

@@ -33,5 +33,7 @@ public interface MembershipRepository extends JpaRepository<Membership, Long>, J
             "where m.group_id = ?1 and u.province in ?2 and m.tags && ?3 and m.join_time > ?4", nativeQuery = true)
     List<Membership> findByGroupProvinceTopicsAndJoinedDate(long groupId, List<Province> provinces, String[] tags, Instant joinTime);
 
+    // basically, every active membership, for populating graph ...
+    List<Membership> findByGroupActiveTrue();
 
 }

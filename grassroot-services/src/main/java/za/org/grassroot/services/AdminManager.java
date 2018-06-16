@@ -38,6 +38,7 @@ public class AdminManager implements AdminService {
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
+    private final MembershipRepository membershipRepository;
     private final RoleRepository roleRepository;
     private final GroupBroker groupBroker;
     private final GroupLogRepository groupLogRepository;
@@ -48,9 +49,10 @@ public class AdminManager implements AdminService {
     private TaskBroker taskBroker;
 
     @Autowired
-    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
+    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.membershipRepository = membershipRepository;
         this.roleRepository = roleRepository;
         this.groupBroker = groupBroker;
         this.groupLogRepository = groupLogRepository;
@@ -185,20 +187,20 @@ public class AdminManager implements AdminService {
 
     @Override
     @Transactional(readOnly = true)
-    public void populateGrassrootGraphUsers() {
+    public void populateGrassrootGraphGroups() {
         if (graphBroker != null) {
-            Specifications<User> users = Specifications.where((root, query, cb) -> cb.and(
-                    cb.isTrue(root.get(User_.enabled)), cb.isTrue(root.get(User_.hasInitiatedSession))));
-            userRepository.findAll(users).forEach(user -> graphBroker.addUserToGraph(user.getUid()));
+            Specifications<Group> groups = Specifications.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
+            groupRepository.findAll(groups).forEach(group -> graphBroker.addGroupToGraph(group.getUid(), group.getCreatedByUser().getUid(), null));
         }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public void populateGrassrootGraphGroups() {
+    public void populateGrassrootGraphMemberships() {
         if (graphBroker != null) {
-            Specifications<Group> groups = Specifications.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
-            groupRepository.findAll(groups).forEach(group -> graphBroker.addGroupToGraph(group.getUid(), group.getCreatedByUser().getUid()));
+            // could also get all groups then get all memberships within them, but actually Hibernate caching makes this likely better approach
+            membershipRepository.findByGroupActiveTrue()
+                    .forEach(membership -> graphBroker.addMembershipToGraph(Collections.singleton(membership.getUser().getUid()), membership.getGroup().getUid()));
         }
     }
 
