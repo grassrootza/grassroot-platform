@@ -85,45 +85,59 @@ jobs:
               chmod +x ebdeploy.sh
               ./ebdeploy.sh $CIRCLE_SHA1 $ENVIRONMENT $EBENVIRONMENT
 
+    deploy-production:
+      docker:
+        - image: circleci/openjdk:8
+          auth:
+            username: $DOCKER_USER
+            password: $DOCKER_PASS
+      environment:
+        ENVIRONMENT: "production"
+        EBENVIRONMENT: "gr-prod"
+      steps:
+        - checkout
+        - restore_cache:
+            keys:
+              - v2-built-jar-{{ .BuildNum }}
+        - setup_remote_docker:
+            docker_layer_caching: true
+        - run:
+            name: Build image and deploy to Docker Hub
+            command: |
+              mv .deploy/buildimage.sh buildimage.sh
+              chmod +x buildimage.sh
+              ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
+        - *fetch-aws-cli
+        - run:
+            name: Deploy files to beanstalk, after copying over config
+            command: |
+              export PATH=~/.local/bin:$PATH
+              mv .deploy/templates/nginx.staging.config .deploy/.ebextensions/001_nginx_http-https.config
+              mv .deploy/ebdeploy.sh ebdeploy.sh
+              chmod +x ebdeploy.sh
+              ./ebdeploy.sh $CIRCLE_SHA1 $ENVIRONMENT $EBENVIRONMENT
+
+
 workflows:
   version: 2
   build_and_test:
     jobs:
-#    - dependencies
-#    - test:
-#        requires:
-#          - dependencies
-#    - build
-#        requires:
-#          - test
+    - dependencies
+    - test:
+        requires:
+          - dependencies
+    - build
+        requires:
+          - test
     - deploy-staging:
-#        requires:
-#          - build
+        requires:
+          - build
         filters:
           branches:
-            only: circle2-main
-#    - deploy-production:
-#        requires:
-#          - build
-#        filters:
-#          branches:
-#            only: master
-
-#deployment:
-#  production:
-#    branch: master
-#    commands:
-#      # define environment
-#      - echo 'export ENVIRONMENT=production' >> ~/.circlerc
-#      - echo 'export EBENVIRONMENT=gr-prod' >> ~/.circlerc
-#      - echo $ENVIRONMENT
-#
-#      # build image and deploy to docker hub
-#      - mv .deploy/buildimage.sh buildimage.sh
-#      - chmod +x buildimage.sh
-#      - ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
-#
-#      # deploy files to beanstalk
-#      - mv .deploy/ebdeploy.sh ebdeploy.sh
-#      - chmod +x ebdeploy.sh
-#      - ./ebdeploy.sh $CIRCLE_SHA1 $ENVIRONMENT $EBENVIRONMENT
+            only: staging
+    - deploy-production:
+        requires:
+          - build
+        filters:
+          branches:
+            only: master
