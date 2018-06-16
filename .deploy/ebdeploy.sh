@@ -31,15 +31,11 @@ echo "Finished downloading, proceeding to move files in"
 # STORE DEPLOYMENT DETAILS FOR FURTHER DEBUG
 echo $COMMIT_MESSAGE > deploy_status.txt
 
-# For debugging, print out deploy folder
-ls -l .deploy/
-
 # COMMIT
 mv .deploy/.elasticbeanstalk .elasticbeanstalk
 mv .deploy/.ebextensions .ebextensions
 mv .deploy/.ebignore .ebignore
 mv .deploy/Dockerrun.aws.json Dockerrun.aws.json
-mv .deploy/log_files.yml log_files.yml
 
 # thats just a "virtual" commit since we do not send anything back to the repository, but this is requred for beasntalke to get the latest staged version to be deployed
 git config --global user.email "grassroot@grassroot.com"
@@ -47,7 +43,7 @@ git config --global user.name "GRASSROOT"
 git add .
 git commit -m "$ENVIRONMENT-$COMMIT_MESSAGE"
 
-echo "Finished with Git, proceeding to deploy"
+echo "Finished with Git, proceeding to deploy to $EBENVIRONMENT, with message $ENVIRONMENT-$COMMIT_MESSAGE"
 
 # DEPLOY APP
 eb use $EBENVIRONMENT
