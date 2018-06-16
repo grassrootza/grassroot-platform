@@ -57,16 +57,14 @@ subprojects {
     testCompile group: 'org.powermock', name: 'powermock-module-junit4', version:'1.6.5'
   }
 
-  jacocoTestReport {
-    group = "Reporting"
-    reports {
-      xml.enabled true
-      csv.enabled false
-    }
-  }
+}
 
-  task showMeCache << {
-    configurations.compile.each { println it }
+allprojects {
+  task downloadDependencies() {
+    description 'Download all dependencies to the Gradle cache'
+    doLast {
+      configurations.findAll { it.canBeResolved }.files
+    }
   }
   
 }
