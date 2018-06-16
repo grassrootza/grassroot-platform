@@ -66,7 +66,6 @@ jobs:
         - restore_cache:
             keys:
               - v2-built-jar-{{ .BuildNum }}
-        - *fetch-aws-cli
         - setup_remote_docker:
             docker_layer_caching: true
         - run:
@@ -75,6 +74,7 @@ jobs:
               mv .deploy/buildimage.sh buildimage.sh
               chmod +x buildimage.sh
               ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
+        - *fetch-aws-cli
         - run:
             name: Deploy files to beanstalk, after copying over config
             command: |
