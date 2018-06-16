@@ -186,8 +186,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         logger.info("returning group now ... group has {} members", group.getMemberships().size());
 
-        if (graphBroker != null)
-            graphBroker.addGroupToGraph(group.getUid(), userUid);
+        if (graphBroker != null) {
+            graphBroker.addGroupToGraph(group.getUid(), userUid, null);
+        }
 
         return group;
     }
@@ -826,6 +827,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (!taskTeamMembers.isEmpty()) {
             addMembersToSubgroupsAfterCommit(initiator.getUid(), group.getUid(), taskTeamMembers);
+        }
+
+        if (!duringGroupCreation && graphBroker != null) {
+            graphBroker.addMembershipToGraph(addedUserUids, group.getUid());
         }
 
         return bundle;

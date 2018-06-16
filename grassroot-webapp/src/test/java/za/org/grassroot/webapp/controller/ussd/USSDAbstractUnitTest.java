@@ -130,7 +130,7 @@ public abstract class USSDAbstractUnitTest {
     protected static final String interruptedChoice = "1";
 
     protected static final LocalDate testDay = LocalDate.of(Year.now().getValue(), 6, 16);
-    protected static final Year testYear = testDay.isAfter(LocalDate.now()) ? Year.now() : Year.now().plusYears(1);
+    protected static final Year testYear = LocalDate.now().isBefore(testDay) ? Year.now() : Year.now().plusYears(1);
 
     private static final String baseForOthers = "2781000111";
     protected User testUserZu = new User(baseForOthers + "2", null, null);

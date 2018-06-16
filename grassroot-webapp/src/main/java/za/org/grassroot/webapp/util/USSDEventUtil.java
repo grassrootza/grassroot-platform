@@ -181,6 +181,7 @@ public class USSDEventUtil extends USSDUtil {
                 oldTimestamp = eventRequestBroker.load(requestUid).getEventDateTimeAtSAST();
                 String reformattedDate = DateTimeUtil.reformatDateInput(newValue);
                 newTimestamp = changeTimestampDates(oldTimestamp, reformattedDate);
+                log.info("oldTimestamp: {}, new timestamp: {}", oldTimestamp, newTimestamp);
                 userLogger.recordUserInputtedDateTime(userUid, newValue, "meeting-edit-date-only", USSD);
                 eventRequestBroker.updateEventDateTime(userUid, requestUid, newTimestamp);
                 break;
@@ -237,6 +238,7 @@ public class USSDEventUtil extends USSDUtil {
         Objects.requireNonNull(originalDateTime);
         Objects.requireNonNull(revisedDateString);
 
+        log.info("changing date, string: {}", revisedDateString);
         LocalDate revisedDate;
         try {
             revisedDate = LocalDate.parse(revisedDateString, DateTimeUtil.getPreferredDateFormat());
