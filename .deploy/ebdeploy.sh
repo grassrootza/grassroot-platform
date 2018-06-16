@@ -26,8 +26,13 @@ aws s3 cp s3://$S3BUCKET/jwt_keystore.jks.$ENVIRONMENT environment/jwt_keystore.
 # DOWNLOAD PDF TEMPLATES (AT SOME POINT JUST FETCH FROM S3 DIRECTLY IN APP)
 aws s3 cp s3://$S3BUCKET/pdf_templates/ templates/pdf/ --region $S3REGION --recursive
 
+echo "Finished downloading, proceeding to move files in"
+
 # STORE DEPLOYMENT DETAILS FOR FURTHER DEBUG
 echo $COMMIT_MESSAGE > deploy_status.txt
+
+# For debugging, print out deploy folder
+ls -l .deploy/
 
 # COMMIT
 mv .deploy/.elasticbeanstalk .elasticbeanstalk
@@ -42,6 +47,10 @@ git config --global user.name "GRASSROOT"
 git add .
 git commit -m "$ENVIRONMENT-$COMMIT_MESSAGE"
 
+echo "Finished with Git, proceeding to deploy"
+
 # DEPLOY APP
 eb use $EBENVIRONMENT
 eb deploy $EBENVIRONMENT --label "$ENVIRONMENT-$COMMIT_MESSAGE" --timeout 20
+
+echo "Deployment completed"
