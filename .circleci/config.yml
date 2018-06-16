@@ -99,7 +99,7 @@ workflows:
           - build
         filters:
           branches:
-            only: preprod
+            only: circle2-main
 #    - deploy-production:
 #        requires:
 #          - build
