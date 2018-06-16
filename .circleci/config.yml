@@ -5,8 +5,8 @@ step-library:
       run:
         name:
         command: |
-          pip install awscli
-          pip install awsebcli
+          sudo apt-get update && sudo apt-get install python && sudo apt-get install python-pip && sudo apt-get install python-dev
+          pip install awscli --upgrade --user
 
 jobs:
     dependencies:
@@ -87,13 +87,13 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-    - dependencies
-    - test:
-        requires:
-          - dependencies
+#    - dependencies
+#    - test:
+#        requires:
+#          - dependencies
     - build:
-        requires:
-          - test
+#        requires:
+#          - test
     - deploy-staging:
         requires:
           - build
