@@ -41,12 +41,13 @@ mv .deploy/Dockerrun.aws.json Dockerrun.aws.json
 git config --global user.email "grassroot@grassroot.com"
 git config --global user.name "GRASSROOT"
 git add .
-git commit -m "$CIRCLE_BRANCH-$COMMIT_MESSAGE"
+git commit -m "$ENVIRONMENT-$COMMIT_MESSAGE"
 
-echo "Finished with Git, proceeding to deploy to $EBENVIRONMENT, with message $CIRCLE_BRANCH-$COMMIT_MESSAGE"
+echo "Finished with Git, proceeding to deploy to $EBENVIRONMENT, with message $ENVIRONMENT-$COMMIT_MESSAGE"
 
 # DEPLOY APP
+eb list
 eb use $EBENVIRONMENT
-eb deploy $EBENVIRONMENT --label "$CIRCLE_BRANCH-$COMMIT_MESSAGE" --timeout 20
+eb deploy $EBENVIRONMENT --label "$ENVIRONMENT-$COMMIT_MESSAGE" --timeout 20 --verbose
 
 echo "Deployment completed"
