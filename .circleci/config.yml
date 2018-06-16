@@ -55,6 +55,9 @@ jobs:
     deploy-staging:
       docker:
         - image: circleci/openjdk:8
+          auth:
+            username: $DOCKER_USER
+            password: $DOCKER_PASS
       environment:
         ENVIRONMENT: "staging"
         EBENVIRONMENT: "gr-stg"
