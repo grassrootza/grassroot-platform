@@ -69,13 +69,14 @@ jobs:
               - v2-built-jar-{{ .BuildNum }}
         - setup_remote_docker:
             docker_layer_caching: true
+        - *fetch-aws-cli
         - run:
             name: Build image and deploy to Docker Hub
             command: |
+              export PATH=~/.local/bin:$PATH
               mv .deploy/buildimage.sh buildimage.sh
               chmod +x buildimage.sh
               ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
-        - *fetch-aws-cli
         - run:
             name: Deploy files to beanstalk, after copying over config
             command: |
@@ -101,13 +102,14 @@ jobs:
               - v2-built-jar-{{ .BuildNum }}
         - setup_remote_docker:
             docker_layer_caching: true
+        - *fetch-aws-cli
         - run:
             name: Build image and deploy to Docker Hub
             command: |
+              export PATH=~/.local/bin:$PATH
               mv .deploy/buildimage.sh buildimage.sh
               chmod +x buildimage.sh
               ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
-        - *fetch-aws-cli
         - run:
             name: Deploy files to beanstalk, after copying over config
             command: |
@@ -134,7 +136,7 @@ workflows:
           - build
         filters:
           branches:
-            only: staging
+            only: circle2-main
     - deploy-production:
         requires:
           - build
