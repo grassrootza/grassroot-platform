@@ -95,13 +95,17 @@ workflows:
         requires:
           - test
     - deploy-staging:
+        requires:
+          - build
         filters:
           branches:
             only: preprod
-    - deploy-production:
-        filters:
-          branches:
-            only: master
+#    - deploy-production:
+#        requires:
+#          - build
+#        filters:
+#          branches:
+#            only: master
 
 #deployment:
 #  production:
