@@ -80,8 +80,8 @@ public class USSDGeoApiController extends USSDBaseController {
         } else {
             menu = languageMenu(dataSetLabel, "/infoset?dataSet=" + dataSetLabel + "&language=", availableLocales, user);
         }
-        log.info("GeoAPI opening menu took {} msecs", System.currentTimeMillis() - startTime);
-        userLogger.recordUserLog(user.getUid(), UserLogType.INITIATED_USSD, dataSetLabel, UserInterfaceType.USSD);
+        log.info("GeoAPI opening menu took {} msecs, now recording use", System.currentTimeMillis() - startTime);
+        userLogger.recordUserLog(user.getUid(), UserLogType.GEO_APIS_CALLED, dataSetLabel, UserInterfaceType.USSD);
         return menu;
     }
 
