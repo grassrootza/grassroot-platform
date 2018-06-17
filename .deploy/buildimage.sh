@@ -19,9 +19,6 @@ chmod +x build-jar.sh
 chmod +x startgrassroot.sh
 chmod +x stopgrassroot.sh
 
-# DOWNLOAD PDF TEMPLATES (AT SOME POINT JUST FETCH FROM S3 DIRECTLY IN APP)
-aws s3 cp s3://$S3BUCKET/pdf_templates/ templates/pdf/ --region $S3REGION --recursive
-
 echo "Finished downloading, proceeding to build docker image"
 
 #docker build --rm=false -t awsassembly/grassroot:$ENVIRONMENT$SHA1 .
