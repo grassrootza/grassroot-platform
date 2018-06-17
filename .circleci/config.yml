@@ -114,7 +114,6 @@ jobs:
             name: Deploy files to beanstalk, after copying over config
             command: |
               export PATH=~/.local/bin:$PATH
-              mv .deploy/templates/nginx.staging.config .deploy/.ebextensions/001_nginx_http-https.config
               mv .deploy/ebdeploy.sh ebdeploy.sh
               chmod +x ebdeploy.sh
               ./ebdeploy.sh $CIRCLE_SHA1 $ENVIRONMENT $EBENVIRONMENT
@@ -136,7 +135,7 @@ workflows:
           - build
         filters:
           branches:
-            only: circle2-main
+            only: preprod
     - deploy-production:
         requires:
           - build

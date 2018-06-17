@@ -33,6 +33,6 @@ echo "Finished with Git, proceeding to deploy to $EBENVIRONMENT, with message $E
 
 # DEPLOY APP
 eb use $EBENVIRONMENT --verbose
-eb deploy $EBENVIRONMENT --label "$ENVIRONMENT-$COMMIT_MESSAGE" --timeout 20 --verbose
+eb deploy $EBENVIRONMENT --label "$ENVIRONMENT-$COMMIT_MESSAGE" --timeout 20
 
 echo "Deployment completed"
