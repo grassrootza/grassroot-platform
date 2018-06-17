@@ -4,7 +4,7 @@ WORKDIR /usr/src/grassroot
 
 # SETUP SUPERVISORD TO RUN JAVA AS A PROCESS + OTHER FANCY THINGS SUPERVISORD PROVIDES
 RUN apk add --no-cache supervisor vim nano
-COPY .deploy/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY .deploy/supervisord.conf /etc/supervisord.conf
 
 # DEFINE ENVIRONMENT VARIABLES
 ENV GRADLE_USER_HOME=/usr/src/grassroot/.gradle
