@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.integration.location.TownLookupResult;
@@ -59,7 +60,7 @@ public class USSDUserController extends USSDBaseController {
         String welcomeMessage;
         if ("0".equals(userName) || "".equals(userName.trim())) {
             welcomeMessage = getMessage(USSDSection.HOME, startMenu, promptKey, sessionUser);
-            userLogger.recordUserLog(sessionUser.getUid(), UserLogType.USER_SKIPPED_NAME, "");
+            userLogger.recordUserLog(sessionUser.getUid(), UserLogType.USER_SKIPPED_NAME, "", UserInterfaceType.USSD);
         } else {
             userManager.updateDisplayName(sessionUser.getUid(), sessionUser.getUid(), userName.trim());
             welcomeMessage = getMessage(USSDSection.HOME, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
