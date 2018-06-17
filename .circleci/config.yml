@@ -49,7 +49,7 @@ jobs:
               - v2-gradle-deps
         - run: ./gradlew build -x test
         - save_cache:
-            key: v2-built-jar-{{ .BuildNum }}
+            key: v2-built-jar-{{ .Branch }}-{{ .Revision }}
             paths:
               - grassroot-webapp/build
 
@@ -66,7 +66,7 @@ jobs:
         - checkout
         - restore_cache:
             keys:
-              - v2-built-jar-{{ .BuildNum }}
+              - v2-built-jar-{{ .Branch }}-{{ .Revision }}
         - setup_remote_docker:
             docker_layer_caching: true
         - *fetch-aws-cli
@@ -99,7 +99,7 @@ jobs:
         - checkout
         - restore_cache:
             keys:
-              - v2-built-jar-{{ .BuildNum }}
+              - v2-built-jar-{{ .Branch }}-{{ .Revision }}
         - setup_remote_docker:
             docker_layer_caching: true
         - *fetch-aws-cli
