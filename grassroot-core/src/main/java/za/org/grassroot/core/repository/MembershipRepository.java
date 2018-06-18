@@ -18,6 +18,8 @@ public interface MembershipRepository extends JpaRepository<Membership, Long>, J
 
     Membership findByGroupUidAndUserUid(String groupId, String userUid);
 
+    List<Membership> findByGroupAndUserUidIn(Group group, Collection<String> userUids);
+
     List<Membership> findByGroupAndUserIn(Group group, Collection<User> users);
 
     Page<Membership> findByGroupUid(String groupUid, Pageable pageable);
