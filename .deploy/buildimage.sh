@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# Check this
+echo "environment: $ENVIRONMENT"
+
 # GET THE COMMIT ID TO SET AS PART OF THE INSTANCE NAME
 COMMITID=$(git rev-parse --short HEAD)
 sed -i "s/<BUILDID>/$COMMITID/" .deploy/startgrassroot.sh.$ENVIRONMENT
@@ -15,7 +18,10 @@ mv .deploy/log_files.yml log_files.yml
 chmod +x build-jar.sh
 chmod +x startgrassroot.sh
 chmod +x stopgrassroot.sh
+
+echo "Finished downloading, proceeding to build docker image"
+
 #docker build --rm=false -t awsassembly/grassroot:$ENVIRONMENT$SHA1 .
 docker build --rm=false -t grassrootdocker/gr-app:$ENVIRONMENT .
-docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+docker login -u $DOCKER_USER -p $DOCKER_PASS
 docker push grassrootdocker/gr-app:$ENVIRONMENT

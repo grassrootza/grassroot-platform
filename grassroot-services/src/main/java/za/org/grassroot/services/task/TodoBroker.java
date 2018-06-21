@@ -71,7 +71,6 @@ public interface TodoBroker {
     void sendScheduledReminder(String todoUid);
 
     // we use this to populate the graph (temporary convenience)
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<Todo> loadAllTodos();
 
 }

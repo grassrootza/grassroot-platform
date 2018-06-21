@@ -1,10 +1,10 @@
 ## PULL UBUNTU IMAGE WITH OPENJDK 8 SETUP
-FROM openjdk:8
+FROM openjdk:8-alpine
 WORKDIR /usr/src/grassroot
 
 # SETUP SUPERVISORD TO RUN JAVA AS A PROCESS + OTHER FANCY THINGS SUPERVISORD PROVIDES
-RUN apt-get update && apt-get install supervisor vim nano -y
-COPY .deploy/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+RUN apk add --no-cache supervisor vim nano
+COPY .deploy/supervisord.conf /etc/supervisord.conf
 
 # DEFINE ENVIRONMENT VARIABLES
 ENV GRADLE_USER_HOME=/usr/src/grassroot/.gradle
@@ -15,7 +15,8 @@ RUN mkdir -p /usr/src/grassroot/environment && mkdir -p /usr/src/grassroot/log &
 # COPY ALL SOURCE CODE, ALTERNATIVELY WE COULD BE COPYING JUST THE JAR FILES (TO REVIEW LATER)
 COPY . /usr/src/grassroot
 
-RUN /usr/src/grassroot/build-jar.sh
+# BUT NO NEED TO BUILD IT AGAIN (ASSUMES FAT JAR WAS BUILT PRIOR)
+# RUN /usr/src/grassroot/build-jar.sh
 
 # START SUPERVISORD
 CMD ["supervisord", "-n"]

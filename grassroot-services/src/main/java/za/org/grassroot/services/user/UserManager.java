@@ -151,7 +151,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (!userExists)
                 asyncRecordNewUser(userToReturn.getUid(), "Web");
-            asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_WEB, "User created web profile");
+            asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_WEB, "User created web profile", null);
             return userToReturn;
         } catch (final Exception e) {
             throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
@@ -159,7 +159,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     private void asyncRecordNewUser(final String userUid, final String logDescription) {
-        asyncUserService.recordUserLog(userUid, UserLogType.CREATED_IN_DB, logDescription);
+        asyncUserService.recordUserLog(userUid, UserLogType.CREATED_IN_DB, logDescription, null);
         if (graphBroker != null)
             graphBroker.addUserToGraph(userUid);
     }
@@ -213,7 +213,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (!userExists)
                 asyncRecordNewUser(userToReturn.getUid(), "Android");
-            asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.REGISTERED_ANDROID, "User created android profile");
+            asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.REGISTERED_ANDROID, "User created android profile",
+                    UserInterfaceType.ANDROID);
             return userToReturn;
         } catch (final Exception e) {
             e.printStackTrace();

@@ -39,9 +39,8 @@ public interface CampaignBroker {
 
     boolean isCodeTaken(String proposedCode, String campaignUid);
 
-    // todo : cache this
     // returns all in lower case
-    Map<String, String> getActiveCampaignJoinWords();
+    Map<String, String> getActiveCampaignJoinWords(); // todo : cache this
 
     boolean isTextJoinWordTaken(String joinWord, String campaignUid);
 
@@ -52,6 +51,8 @@ public interface CampaignBroker {
     boolean isUserInCampaignMasterGroup(String campaignUid, String userUid);
 
     Campaign addUserToCampaignMasterGroup(String campaignUid, String userUid, UserInterfaceType channel);
+
+    boolean doesGroupHaveActiveCampaign(String groupUid);
 
     void setUserJoinTopic(String campaignUid, String userUid, String joinTopic, UserInterfaceType channel);
 

@@ -113,9 +113,10 @@ public class USSDHomeController extends USSDBaseController {
         Long startTime = System.currentTimeMillis();
 
         final boolean trailingDigitsPresent = codeHasTrailingDigits(enteredUSSD);
+        log.info("Initiating USSD, trailing digits present: {}", trailingDigitsPresent);
 
         if (!trailingDigitsPresent && userInterrupted(inputNumber)) {
-            return menuBuilder(interruptedPrompt(inputNumber));
+            return menuBuilder(interruptedPrompt(inputNumber, null));
         }
 
         User sessionUser = userManager.loadOrCreateUser(inputNumber);
@@ -133,7 +134,7 @@ public class USSDHomeController extends USSDBaseController {
     private USSDMenu handleTrailingDigits(final String enteredUSSD, final String inputNumber, User user) {
         String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
         return userInterrupted(inputNumber) && !safetyCode.equals(trailingDigits) ?
-                interruptedPrompt(inputNumber) : directBasedOnTrailingDigits(trailingDigits, user);
+                interruptedPrompt(inputNumber, trailingDigits) : directBasedOnTrailingDigits(trailingDigits, user);
     }
 
     private USSDMenu checkForResponseOrDefault(final User user) throws URISyntaxException {
@@ -156,18 +157,24 @@ public class USSDHomeController extends USSDBaseController {
      */
     @RequestMapping(value = homePath + startMenu + "_force")
     @ResponseBody
-    public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-        return menuBuilder(defaultStartMenu(userManager.loadOrCreateUser(inputNumber)));
+    public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(required = false) String trailingDigits) throws URISyntaxException {
+        final User user = userManager.loadOrCreateUser(inputNumber);
+        return menuBuilder(trailingDigits != null ?
+                directBasedOnTrailingDigits(trailingDigits, user) :  defaultStartMenu(user));
     }
 
-    private USSDMenu interruptedPrompt(String inputNumber) {
+    private USSDMenu interruptedPrompt(String inputNumber, String trailingDigits) {
         String returnUrl = cacheManager.fetchUssdMenuForUser(inputNumber);
-        log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
+        log.info("The user was interrupted somewhere: trailing digits: {}, URL: {}", trailingDigits, returnUrl);
 
         User user = userManager.findByInputNumber(inputNumber);
         USSDMenu promptMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-interrupted", user));
         promptMenu.addMenuOption(returnUrl, getMessage(thisSection, startMenu, "interrupted.resume", user));
-        promptMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", user));
+
+        final String startMenuOption = startMenu + "_force" + (!StringUtils.isEmpty(trailingDigits) ? "?trailingDigits=" + trailingDigits : "");
+        log.info("User interrupted, start menu option: {}", startMenuOption);
+        promptMenu.addMenuOption(startMenuOption, getMessage(thisSection, startMenu, "interrupted.start", user));
 
         // set the user's "last USSD menu" back to null, so avoids them always coming back here
         userLogger.recordUssdInterruption(user.getUid(), returnUrl);

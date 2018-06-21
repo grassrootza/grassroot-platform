@@ -52,6 +52,8 @@ public enum UserLogType {
     INBOUND_JOIN_WORD("User sent an inbound join word"),
     INBOUND_CAMPAIGN_WORD("User sent an inbound campaign word"),
 
+    GEO_APIS_CALLED("User initiated a call to Geo APIs (e.g., Izwe Lami)"),
+
     WHATSAPP_CONFIRMED("User added us to contact book, confirming WhatsApp channel");
 
     private final String text;

@@ -16,6 +16,7 @@ import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
+import za.org.grassroot.services.exception.TodoDeadlineNotInFutureException;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.TodoHelper;
@@ -100,6 +101,9 @@ public class TodoLegacyController {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TODO_LIMIT_REACHED);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
+        } catch (TodoDeadlineNotInFutureException e) {
+            log.error("Error, received a todo deadline in the past: {}", dueDate);
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TODO_LIMIT_REACHED);
         }
     }
 

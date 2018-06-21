@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.integration.location.TownLookupResult;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -78,7 +80,8 @@ public class USSDGeoApiController extends USSDBaseController {
         } else {
             menu = languageMenu(dataSetLabel, "/infoset?dataSet=" + dataSetLabel + "&language=", availableLocales, user);
         }
-        log.info("GeoAPI opening menu took {} msecs", System.currentTimeMillis() - startTime);
+        log.info("GeoAPI opening menu took {} msecs, now recording use", System.currentTimeMillis() - startTime);
+        userLogger.recordUserLog(user.getUid(), UserLogType.GEO_APIS_CALLED, dataSetLabel, UserInterfaceType.USSD);
         return menu;
     }
 

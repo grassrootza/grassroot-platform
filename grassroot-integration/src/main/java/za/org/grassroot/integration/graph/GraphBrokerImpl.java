@@ -13,7 +13,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DebugUtil;
@@ -45,6 +44,8 @@ public class GraphBrokerImpl implements GraphBroker {
     @Value("${grassroot.graph.sqs.queue:grassroot-graph-test}")
     private String grassrootQueue;
     private String sqsQueueUrl;
+    private boolean isQueueFifo;
+
 
     public GraphBrokerImpl() {
         log.info("Graph broker enabled, constructing object mapper ...");
@@ -56,6 +57,7 @@ public class GraphBrokerImpl implements GraphBroker {
     public void init() {
         this.sqs = AmazonSQSClientBuilder.defaultClient();
         this.sqsQueueUrl = sqs.getQueueUrl(grassrootQueue).getQueueUrl();
+        this.isQueueFifo = grassrootQueue.endsWith(".fifo");
     }
 
     @Override
@@ -67,12 +69,22 @@ public class GraphBrokerImpl implements GraphBroker {
     }
 
     @Override
-    public void addGroupToGraph(String groupUid, String creatingUserUid) {
+    public void addGroupToGraph(String groupUid, String creatingUserUid, Set<String> memberUids) {
         log.info("adding group to Grassroot graph ...");
+
         Actor group = new Actor(ActorType.GROUP, groupUid);
+
         IncomingGraphAction action = wrapActorCreation(group);
         IncomingRelationship genRel = generatorRelationship(creatingUserUid, groupUid);
         action.addRelationship(genRel);
+
+        if (memberUids != null) {
+            memberUids.forEach(memberUid -> {
+                action.addDataObject(new IncomingDataObject(GraphEntityType.ACTOR, new Actor(ActorType.INDIVIDUAL, memberUid)));
+                action.addRelationship(participatingRelationship(memberUid, groupUid, GraphEntityType.ACTOR));
+            });
+        }
+
         dispatchAction(action, "group");
     }
 
@@ -88,13 +100,22 @@ public class GraphBrokerImpl implements GraphBroker {
     }
 
     @Override
-    public void addMembershipToGraph(String userUid, String groupUid) {
-        IncomingRelationship relationship = new IncomingRelationship(userUid, GraphEntityType.ACTOR,
-                groupUid, GraphEntityType.ACTOR, GrassrootRelationship.Type.PARTICIPATES);
-        IncomingGraphAction graphAction = new IncomingGraphAction(userUid, ActionType.CREATE_RELATIONSHIP,
-                null, Collections.singletonList(relationship));
+    public void addMembershipToGraph(Set<String> memberUids, String groupUid) {
+        // just in case member or group doesn't exist (broker will just skip if they do)
+        List<IncomingDataObject> objects = new ArrayList<>();
+        List<IncomingRelationship> relationships = new ArrayList<>();
 
-        log.info("about to dispatch adding membership: userId = {}, graphId = {}", userUid, groupUid);
+        objects.add(new IncomingDataObject(GraphEntityType.ACTOR, new Actor(ActorType.GROUP, groupUid)));
+
+        memberUids.forEach(memberUid -> {
+            objects.add(new IncomingDataObject(GraphEntityType.ACTOR, new Actor(ActorType.INDIVIDUAL, memberUid)));
+            relationships.add(participatingRelationship(memberUid, groupUid, GraphEntityType.ACTOR));
+        });
+
+        IncomingGraphAction graphAction = new IncomingGraphAction(groupUid, ActionType.CREATE_RELATIONSHIP,
+                objects, relationships);
+
+        log.info("about to dispatch adding membership: userIds = {}, graphId = {}", memberUids.size(), groupUid);
         dispatchAction(graphAction, "membership");
     }
 
@@ -112,7 +133,7 @@ public class GraphBrokerImpl implements GraphBroker {
     @Override
     @Transactional
     @SuppressWarnings("unchecked")
-    public void addTaskToGraph(Task task) {
+    public void addTaskToGraph(Task task, List<String> assignedUserUids) {
         try {
             DebugUtil.transactionRequired("");
             log.info("adding a task to Grassroot Graph ... ");
@@ -126,11 +147,10 @@ public class GraphBrokerImpl implements GraphBroker {
             Actor creatingUser = new Actor(ActorType.INDIVIDUAL, task.getCreatedByUser().getUid());
             graphEvent.setCreator(creatingUser);
 
-            final Set<User> assignedMembers = (Set<User>) task.getMembers();
-            List<Actor> participatingActors = assignedMembers.stream()
-                    .map(u -> new Actor(ActorType.INDIVIDUAL, u.getUid())).collect(Collectors.toList());
-            graphEvent.setParticipants(participatingActors);
-            log.info("processed {} assigned members, participants: {}", assignedMembers.size(), graphEvent.getParticipants());
+            // note: do not add participants as generates huge TXs that fail, instead loop and add to relationships
+            List<Actor> participatingActors = assignedUserUids == null || assignedUserUids.isEmpty() ?
+                    new ArrayList<>() : assignedUserUids.stream().map(uid -> new Actor(ActorType.INDIVIDUAL, uid)).collect(Collectors.toList());
+            log.info("adding {} participants to graph ...", participatingActors.size());
 
             final Group parentGroup = task.getAncestorGroup();
             Actor graphParent = new Actor(ActorType.GROUP, parentGroup.getUid());
@@ -142,12 +162,15 @@ public class GraphBrokerImpl implements GraphBroker {
             graphDataObjects.add(new IncomingDataObject(GraphEntityType.ACTOR, graphParent));
             graphDataObjects.add(new IncomingDataObject(GraphEntityType.EVENT, graphEvent));
 
+            List<IncomingRelationship> relationships = participatingActors.stream().map(participant ->
+                participatingRelationship(participant.getPlatformUid(), task.getUid(), GraphEntityType.EVENT)).collect(Collectors.toList());
+
             IncomingGraphAction graphAction = new IncomingGraphAction(task.getUid(), ActionType.CREATE_ENTITY,
-                    graphDataObjects, null);
+                    graphDataObjects, relationships);
 
             dispatchAction(graphAction, "task");
         } catch (LazyInitializationException e) {
-            log.error("Spring hell continues, can't add to graph, Lazy Init as usual");
+            log.error("Spring-Hibernate hell continues, can't add to graph, Lazy Init as usual");
         }
     }
 
@@ -164,9 +187,19 @@ public class GraphBrokerImpl implements GraphBroker {
                 generatedUid, GraphEntityType.ACTOR, GrassrootRelationship.Type.GENERATOR);
     }
 
+    private IncomingRelationship participatingRelationship(String participantUid, String targetUid, GraphEntityType targetType) {
+        return new IncomingRelationship(participantUid, GraphEntityType.ACTOR, targetUid, targetType,
+                GrassrootRelationship.Type.PARTICIPATES);
+    }
+
     private void dispatchAction(IncomingGraphAction action, String actionDescription) {
         try {
-            sqs.sendMessage(new SendMessageRequest(sqsQueueUrl, objectMapper.writeValueAsString(action)));
+            log.info("dispatching message to URL: {}", sqsQueueUrl);
+            SendMessageRequest request = new SendMessageRequest(sqsQueueUrl, objectMapper.writeValueAsString(action));
+            if (isQueueFifo) {
+                request.setMessageGroupId("graphCrudActions");
+            }
+            sqs.sendMessage(request);
             log.info("successfully dispatched {} to graph entity queue ...", actionDescription);
         } catch (JsonProcessingException e) {
             log.error("error adding graph action to queue ... ", e);

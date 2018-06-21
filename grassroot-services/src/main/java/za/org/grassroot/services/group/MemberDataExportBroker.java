@@ -1,6 +1,7 @@
 package za.org.grassroot.services.group;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
 
@@ -11,6 +12,8 @@ public interface MemberDataExportBroker {
     XSSFWorkbook exportGroup(String groupUid, String userUid);
 
     XSSFWorkbook exportGroupErrorReport(String groupUid, String userUid);
+
+    XSSFWorkbook exportGroupMembersFiltered(String groupUid, String userUid, List<String> memberUids);
 
     XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupUidsToExport);
 

@@ -109,7 +109,7 @@ public class AddressBrokerImpl implements AddressBroker {
     private Address createAddress(User resident) {
         Address address = new Address(resident, true);
         addressRepository.save(address);
-        asyncUserLogger.recordUserLog(resident.getUid(), UserLogType.ADDED_ADDRESS, "user added address");
+        asyncUserLogger.recordUserLog(resident.getUid(), UserLogType.ADDED_ADDRESS, "user added address", null);
         return address;
     }
 
@@ -121,7 +121,7 @@ public class AddressBrokerImpl implements AddressBroker {
         Address address = addressRepository.findTopByResidentAndPrimaryTrueOrderByCreatedDateTimeDesc(user);
         if (address != null) {
             addressRepository.delete(address);
-            asyncUserLogger.recordUserLog(user.getUid(), UserLogType.REMOVED_ADDRESS, "user deleted address");
+            asyncUserLogger.recordUserLog(user.getUid(), UserLogType.REMOVED_ADDRESS, "user deleted address", null);
             log.info("deleting user address from db");
         }
     }

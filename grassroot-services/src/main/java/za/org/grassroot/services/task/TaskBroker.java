@@ -12,6 +12,7 @@ import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.task.enums.TaskSortType;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -88,15 +89,19 @@ public interface TaskBroker {
 
     List<Membership> fetchMembersAssignedToTask(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders);
 
+    // getting around Spring-Hibernate TX hell for some async methods
+    List<String> fetchUserUidsForTask(String userUid, String taskUid, TaskType taskType);
+
     @Transactional(readOnly = true)
     List<TaskFullDTO> fetchUpcomingGroupTasks(String userUid, String groupUid);
 
     void cancelTask(String userUid, String taskUid, TaskType taskType, boolean notifyMembers, String attachedReason);
 
+    TaskFullDTO changeTaskDate(String userUid, String taskUid, TaskType taskType, Instant newDateTime);
+
     void respondToTask(String userUid, String taskUid, TaskType taskType, String response);
 
     // we use this to populate the graph (temporary convenience)
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<Task> loadAllTasks();
 
 }
