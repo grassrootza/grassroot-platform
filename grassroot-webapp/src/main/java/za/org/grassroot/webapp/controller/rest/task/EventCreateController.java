@@ -72,7 +72,7 @@ public class EventCreateController extends BaseRestController{
                                                      @RequestParam(required = false)
                                                      @ApiParam(value = "Server UID of an optional image to include " +
                                                              "in the meeting call") String mediaFileUid,
-                                                     @RequestParam MeetingImportance meetingImportance) {
+                                                     @RequestParam(required = false) MeetingImportance meetingImportance) {
         String userUid = getUserIdFromRequest(request);
         log.info("creating a meeting, subject ={}, location = {}, parentUid = {}", subject, location,parentUid);
 
@@ -83,8 +83,7 @@ public class EventCreateController extends BaseRestController{
                 .name(subject)
                 .location(location)
                 .description(description)
-                .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis))
-                .importance(meetingImportance);
+                .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis));
 
         if (publicMeeting) {
             helper = helper.isPublic(true);
@@ -100,6 +99,10 @@ public class EventCreateController extends BaseRestController{
 
         if (!StringUtils.isEmpty(mediaFileUid)) {
             helper.taskImageKey(mediaFileUid);
+        }
+
+        if(meetingImportance != null){
+            helper = helper.importance(meetingImportance);
         }
 
         log.info("Helper={}",helper);
