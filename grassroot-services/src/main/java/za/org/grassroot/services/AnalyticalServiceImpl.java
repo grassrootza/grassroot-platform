@@ -12,7 +12,6 @@ import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
-import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
@@ -40,7 +39,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     private String listOfWordsToExcludeFromStat;
 
     private final UserRepository userRepository;
-    private final UserLogRepository userLogRepository;
     private final GroupRepository groupRepository;
     private final VoteRepository voteRepository;
     private final MeetingRepository meetingRepository;
@@ -48,15 +46,11 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     private final GeoLocationBroker geoLocationBroker;
     private final EntityManager entityManager;
     private final SafetyEventRepository safetyEventRepository;
-    private final LiveWireAlertRepository liveWireAlertRepository;
-    private final NotificationRepository notificationRepository;
 
     @Autowired
-    public AnalyticalServiceImpl(UserRepository userRepository, UserLogRepository userLogRepository, GroupRepository groupRepository,
-                                 VoteRepository voteRepository, MeetingRepository meetingRepository, EntityManager entityManager,
-                                 TodoRepository todoRepository, GeoLocationBroker geoLocationBroker, SafetyEventRepository safetyRepository, LiveWireAlertRepository liveWireAlertRepository, NotificationRepository notificationRepository) {
+    public AnalyticalServiceImpl(UserRepository userRepository, GroupRepository groupRepository, VoteRepository voteRepository, MeetingRepository meetingRepository, EntityManager entityManager,
+                                 TodoRepository todoRepository, GeoLocationBroker geoLocationBroker, SafetyEventRepository safetyRepository) {
         this.userRepository = userRepository;
-        this.userLogRepository = userLogRepository;
         this.groupRepository = groupRepository;
         this.voteRepository = voteRepository;
         this.meetingRepository = meetingRepository;
@@ -64,8 +58,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
         this.todoRepository = todoRepository;
         this.geoLocationBroker = geoLocationBroker;
         this.safetyEventRepository = safetyRepository;
-        this.liveWireAlertRepository = liveWireAlertRepository;
-        this.notificationRepository = notificationRepository;
     }
 
     @Override
@@ -104,14 +96,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
 
     @Override
     @Transactional(readOnly = true)
-    public int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end) {
-        return (int) userRepository.count(where(hasWebProfile())
-                .and(createdAfter(convertToSystemTime(start, getSAST())))
-                .and(createdBefore(convertToSystemTime(end, getSAST()))));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public int countUsersWithGeoLocationData() {
         return geoLocationBroker.fetchUsersWithRecordedAverageLocations(LocalDate.now()).size();
     }
@@ -126,14 +110,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Transactional(readOnly = true)
     public int countUsersThatHaveAndroidProfile(){
         return (int) userRepository.count(hasAndroidProfile());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public int countUsersCreatedWithAndroidProfileInPeriod(LocalDateTime start, LocalDateTime end) {
-        return (int) userRepository.count(where(hasAndroidProfile())
-                .and(createdAfter(convertToSystemTime(start, getSAST())))
-                .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
 
     @Override
@@ -205,16 +181,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
                 .forEach(filteredTerms::add);
 
         return filteredTerms;
-    }
-
-    @Override
-    public long countLiveWireAlertsInInterval(Instant start, Instant end) {
-        return liveWireAlertRepository.countByCreationTimeBetween(start, end);
-    }
-
-    @Override
-    public long countNotificationsInInterval(Instant start, Instant end) {
-        return notificationRepository.count(NotificationSpecifications.createdTimeBetween(start, end));
     }
 
     @SuppressWarnings("unchecked")

@@ -13,6 +13,8 @@ dependencies {
     compile group: 'za.org.grassroot', name: 'grassroot-graph-domain', version: '0.0.2b'
 
     compile group: 'org.springframework', name: 'spring-web', version: libs.springVersion
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-webflux', version: libs.springBootVersion
+
 
     compile group: 'org.springframework.ws', name: 'spring-ws-core', version: '2.4.0.RELEASE'
 
