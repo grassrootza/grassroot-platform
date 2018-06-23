@@ -5,11 +5,13 @@ import reactor.core.publisher.Mono;
 
 public interface BillingServiceBroker {
 
-    Flux<String> fetchListOfSubscriptions(boolean activeOnly, String authToken);
+    Flux<SubscriptionRecordDTO> fetchListOfSubscriptions(boolean activeOnly, String authToken);
 
-    Mono<Void> createSubscription(String accountName, String billingAddress);
+    Mono<SubscriptionRecordDTO> createSubscription(String accountName, String billingAddress, String authToken);
 
-    Mono<Void> cancelSubscription(String subscriptionId); // ID in whatever managed service does accounts
+    Mono<SubscriptionRecordDTO> enableSubscription(String subscriptionId, String authToken);
+
+    Mono<SubscriptionRecordDTO> cancelSubscription(String subscriptionId, String authToken); // ID in whatever managed service does accounts
 
     Mono<Boolean> isSubscriptionValid(String subscriptionId);
 

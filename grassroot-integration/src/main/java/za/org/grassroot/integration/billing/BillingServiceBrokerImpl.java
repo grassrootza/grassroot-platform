@@ -1,12 +1,14 @@
 package za.org.grassroot.integration.billing;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 
+@Service
 public class BillingServiceBrokerImpl implements BillingServiceBroker {
 
     @Value("${grassroot.subscriptions.lambda.url:http://localhost:3000}")
@@ -20,34 +22,46 @@ public class BillingServiceBrokerImpl implements BillingServiceBroker {
     }
 
     @Override
-    public Flux<String> fetchListOfSubscriptions(boolean activeOnly, String authToken) {
+    public Flux<SubscriptionRecordDTO> fetchListOfSubscriptions(boolean activeOnly, String authToken) {
         return webClient.get()
                 .uri("/accounts/list")
                 .header("Authorization", "Bearer " + authToken)
                 .retrieve()
-                .bodyToFlux(String.class);
+                .bodyToFlux(SubscriptionRecordDTO.class);
     }
 
     @Override
-    public Mono<Void> createSubscription(String accountName, String billingAddress) {
+    public Mono<SubscriptionRecordDTO> createSubscription(String accountName, String billingAddress, String authToken) {
         return webClient.post()
-                .uri("/account/create")
+                .uri("/account/create?accountName={name}&emailAddress={email}", accountName, billingAddress)
                 .header("Authorization", "Bearer ")
                 .retrieve()
-                .bodyToMono(Void.class);
+                .bodyToMono(SubscriptionRecordDTO.class);
     }
 
     @Override
-    public Mono<Void> cancelSubscription(String subscriptionId) {
+    public Mono<SubscriptionRecordDTO> enableSubscription(String subscriptionId, String authToken) {
         return webClient.post()
-                .uri("/account/cancel")
-                .header("Authorization", "Bearer ")
+                .uri("/account/enable?subscriptionId={subscriptionId}", subscriptionId)
+                .header("Authorization" , "Bearer " + authToken)
                 .retrieve()
-                .bodyToMono(Void.class);
+                .bodyToMono(SubscriptionRecordDTO.class);
+    }
+
+    @Override
+    public Mono<SubscriptionRecordDTO> cancelSubscription(String subscriptionId, String authToken) {
+        return webClient.post()
+                .uri("/account/cancel?subscriptionId={subscriptionId}", subscriptionId)
+                .header("Authorization", "Bearer " + authToken)
+                .retrieve()
+                .bodyToMono(SubscriptionRecordDTO.class);
     }
 
     @Override
     public Mono<Boolean> isSubscriptionValid(String subscriptionId) {
-        return Mono.just(true);
+        return webClient.post()
+                .uri("/account/validity?subscriptionId={subscriptionId}", subscriptionId)
+                .retrieve()
+                .bodyToMono(Boolean.class);
     }
 }
