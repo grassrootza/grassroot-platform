@@ -466,6 +466,24 @@ public class GroupModifyController extends GroupBaseController {
         return ResponseEntity.ok().build();
     }
 
+
+    @RequestMapping(value = "/member/unsubscribe",method = RequestMethod.POST)
+    @ApiOperation(value = "Unsubscribe member from a group")
+    public ResponseEntity<String> unsubscribeFromGroup(@RequestParam String groupUid,
+                                               HttpServletRequest request){
+        groupBroker.unsubscribeMember(getUserIdFromRequest(request),groupUid);
+        return ResponseEntity.ok(RestMessage.MEMBER_UNSUBSCRIBED.name());
+    }
+
+    @RequestMapping(value = "/member/alias/update",method = RequestMethod.POST)
+    @ApiOperation(value = "Changes the member name in the group")
+    public ResponseEntity<String> updateMemberName(@RequestParam String groupUid,
+                                                   @RequestParam String alias,
+                                                   HttpServletRequest request){
+        groupBroker.updateMemberAlias(getUserIdFromRequest(request),groupUid,alias);
+        return ResponseEntity.ok(RestMessage.MEMBER_ALIAS_CHANGED.name());
+    }
+
     private List<MembershipInfo> findInvalidMembers(Set<MembershipInfo> members) {
         return members.stream()
                 .filter(m -> !m.hasValidPhoneOrEmail() || StringUtils.isEmpty(m.getDisplayName()))

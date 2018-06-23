@@ -305,7 +305,7 @@ function initiate_dockers {
   DOCKERFILE=Dockerfile.localdeploy
   LOCAL_USER=$(whoami)
   cp .deploy/$DOCKERFILE Dockerfile
-  sed -i '/#ADD LOCALHOST USER/a RUN useradd -ms /bin/bash '"$LOCAL_USER"'\nRUN echo "user='"$LOCAL_USER"'" >> /etc/supervisor/conf.d/supervisord.conf' Dockerfile 
+  #sed -i '/#ADD LOCALHOST USER/a RUN useradd -ms /bin/bash '"$LOCAL_USER"'\nRUN echo "user='"$LOCAL_USER"'" >> /etc/supervisor/conf.d/supervisord.conf' Dockerfile
 
   # COPY THE STARTUP SCRIPT TO THE ROOT DIR FOLDER
   { echo "copying startup scripts to the root folder"; } 2> /dev/null
