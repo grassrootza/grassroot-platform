@@ -254,8 +254,13 @@ public class DateTimeUtil {
             log.info("reformDateInput .... valid dd-MM string found, extracted as: {}", dateOnly);
             List<String> dividedUp = Lists.newArrayList(
                     Splitter.on(CharMatcher.anyOf(possibleDateDelimiters)).omitEmptyStrings().split(dateOnly));
-            LocalDate date = LocalDate.of(Year.now().getValue(), Integer.parseInt(dividedUp.get(1)),
-                    Integer.parseInt(dividedUp.get(0)));
+            int putativeMonth = Integer.parseInt(dividedUp.get(1));
+            int putativeDay = Integer.parseInt(dividedUp.get(0));
+            if (putativeMonth > 12 || putativeDay > 31) {
+                log.info("Error, thought date but fields don't match up");
+                return trimmedResponse;
+            }
+            LocalDate date = LocalDate.of(Year.now().getValue(), putativeMonth, putativeDay);
             if (date.isBefore(LocalDate.now())) {
                 date = date.plusYears(1);
             }
