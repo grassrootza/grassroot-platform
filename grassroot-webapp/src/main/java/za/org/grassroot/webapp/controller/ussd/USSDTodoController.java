@@ -494,7 +494,7 @@ public class USSDTodoController extends USSDBaseController {
         User user = userManager.findByInputNumber(msisdn, saveModifyUrl("/", todoUid, null));
         Todo todo = todoBroker.load(todoUid);
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.change.prompt", new String[] { todo.getName() }, user));
-        final String keyRoot = "ussd.todo.change.options";
+        final String keyRoot = "todo.change.options";
         menu.addMenuOption(REL_PATH + "/modify/subject?todoUid=" + todoUid,
                 messageAssembler.getMessage(keyRoot + ".subject", user));
         menu.addMenuOption(REL_PATH + "/modify/date?todoUid=" + todoUid,

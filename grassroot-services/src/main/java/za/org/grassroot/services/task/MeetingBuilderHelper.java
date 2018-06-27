@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.MeetingContainer;
@@ -154,7 +155,7 @@ public class MeetingBuilderHelper {
                         " is not in the future");
         }
 
-        if (name.length() > 50) {
+        if (name.length() > Event.MAX_NAME_LENGTH) {
             throw new TaskNameTooLongException();
         }
     }
