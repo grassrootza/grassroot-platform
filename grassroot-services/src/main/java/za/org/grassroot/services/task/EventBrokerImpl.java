@@ -37,9 +37,10 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
-
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.*;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -57,9 +58,6 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 @Service @Slf4j
 public class EventBrokerImpl implements EventBroker {
-
-	// for present
-	private static final int MAX_NAME_LENGTH = 50;
 
 	@Value("${grassroot.events.limit.enabled:false}")
 	private boolean eventMonthlyLimitActive;
@@ -297,7 +295,7 @@ public class EventBrokerImpl implements EventBroker {
 			throw new AccessDeniedException("Error! Only meeting caller can change meeting");
 		}
 
-		if (!StringUtils.isEmpty(name) && name.length() > MAX_NAME_LENGTH) {
+		if (!StringUtils.isEmpty(name) && name.length() > Event.MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 
@@ -368,7 +366,7 @@ public class EventBrokerImpl implements EventBroker {
 			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
 		}
 
-		if (name.length() > MAX_NAME_LENGTH) {
+		if (name.length() > Event.MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 
@@ -455,7 +453,7 @@ public class EventBrokerImpl implements EventBroker {
 			}
 		}
 
-		if (name.length() > MAX_NAME_LENGTH) {
+		if (name.length() > Event.MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 

@@ -141,7 +141,6 @@ public class EventCreateController extends BaseRestController{
             assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
             log.info("title={}, description={}, time={}, members={}, options={}", title, description, eventStartDateTime, assignedMemberUids, voteOptions);
 
-
             Vote vote = eventBroker.createVote(user.getUid(), parentUid, parentType, title, eventStartDateTime,
                     false, description, mediaFileUid, assignedMemberUids, voteOptions);
 
