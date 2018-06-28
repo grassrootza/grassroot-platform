@@ -29,7 +29,6 @@ import za.org.grassroot.core.repository.AccountLogRepository;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
@@ -44,7 +43,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static java.time.temporal.ChronoUnit.DAYS;
 import static org.springframework.util.StringUtils.isEmpty;
 import static za.org.grassroot.core.specifications.AccountSpecifications.*;
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
@@ -488,11 +486,9 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private AccountBillingRecord generateStandardBill(Account account, AccountBillingRecord lastBill,
                                                       LogsAndNotificationsBundle bundle, String logDescription) {
         Instant periodStart = getPeriodStart(account, lastBill);
-        long billForPeriod = calculateSubscriptionFeeForPeriod(account, periodStart, Instant.now());
         log.info("okay, now calculating message costs ...");
         long costForPeriod = calculateMessageCostsInPeriod(account, periodStart, Instant.now());
-        long amountToBill = account.isBillPerMessage() ? (billForPeriod + costForPeriod) : costForPeriod;
-        return generateBillForAmount(account, amountToBill, costForPeriod, periodStart, bundle, logDescription);
+        return generateBillForAmount(account, costForPeriod, costForPeriod, periodStart, bundle, logDescription);
     }
 
     private AccountBillingRecord generateBillForAmount(Account account, long billForPeriod, long costForPeriod, Instant periodStart,
@@ -527,18 +523,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         account.addToBalance(billForPeriod);
 
         return record;
-    }
-
-    private long calculateSubscriptionFeeForPeriod(Account account, Instant billingPeriodStart, Instant billingPeriodEnd) {
-        // note : be careful about not running this around midnight, or date calcs could get messy / false (and keep an eye on floating points)
-        if (DateTimeUtil.areDatesOneMonthApart(LocalDateTime.ofInstant(billingPeriodStart, BILLING_TZ),
-                LocalDateTime.ofInstant(billingPeriodEnd, BILLING_TZ))) {
-            return account.getSubscriptionFee();
-        } else {
-            double proportionOfMonth = (double) (DAYS.between(billingPeriodStart, billingPeriodEnd)) / (double) DEFAULT_MONTH_LENGTH;
-            log.info("Proportion of month: {}", proportionOfMonth);
-            return (long) Math.max(Math.ceil(proportionOfMonth * (double) account.getSubscriptionFee()), 0);
-        }
     }
 
     @Override

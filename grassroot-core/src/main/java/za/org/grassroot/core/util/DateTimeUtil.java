@@ -1,12 +1,8 @@
 package za.org.grassroot.core.util;
 
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
+import org.apache.commons.collections.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -14,11 +10,10 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by aakilomar on 9/19/15.
@@ -53,20 +48,56 @@ public class DateTimeUtil {
     some delimiters, patterns for regex, etc (may be able to remove, given Selo / SUTime)
      */
 
-    private static final String possibleTimeDelimiters = "[,:hH]+";
-    private static final String meridian = ".*pm?";
-    private static final Joiner timeJoiner = Joiner.on(":").skipNulls();
-    private static final Pattern timePatternWithDelimiters = Pattern.compile("\\d{1,2}" + possibleTimeDelimiters + "\\d\\d");
-    private static final Pattern timePatternWithoutDelimiters = Pattern.compile("\\d{3,4}");
-    private static final Pattern timeWithHourOnly = Pattern.compile("\\d{1,2}[am|pm]?");
-    private static final Pattern neededTimePattern = Pattern.compile("\\d{2}:\\d{2}");
-
     private static final String possibleDateDelimiters = "[- /.]";
-    private static final Joiner dateJoiner = Joiner.on("-").skipNulls();
-    private static final Pattern datePatternWithYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}[- /.]\\d{4}$");
-    private static final Pattern datePatternWithoutYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}");
-    private static final Pattern datePatternWithoutDelimiters = Pattern.compile("\\d{3,4}");
-    private static final Pattern neededDatePattern = Pattern.compile("\\d{2}-\\d{2}-\\d{4}");
+
+    // we use a lot of these, because they are cheap to cycle through, and Java 8 parsing is
+    // highly esoteric in how it actually handles digit length, optional delimiters, etc
+    private static final List<DateTimeFormatter> commonDateTimeFormats = Arrays.asList(
+            DateTimeFormatter.ofPattern("dd-MM HH:mm"),
+            DateTimeFormatter.ofPattern("dd MM HHmm"),
+            DateTimeFormatter.ofPattern("dd.MM.yyyy HH[.]mm"),
+            DateTimeFormatter.ofPattern("d-M-yy HH[:]mm[a]"),
+            DateTimeFormatter.ofPattern("d-M-yy HH['h']mm"),
+            DateTimeFormatter.ofPattern("d-M-yyyy HH[:]mm"),
+            DateTimeFormatter.ofPattern("d-M-yyyy HH['h']mm"),
+            DateTimeFormatter.ofPattern("d-M HH[:]mm"),
+            DateTimeFormatter.ofPattern("d-M HH['h']mm")
+    );
+
+    private static final List<DateTimeFormatter> commonDateFormats = Arrays.asList(
+            DateTimeFormatter.ofPattern("dd-MM"),
+            DateTimeFormatter.ofPattern("dd MM"),
+            DateTimeFormatter.ofPattern("ddMM"),
+            DateTimeFormatter.ofPattern("dd-MM-yy"),
+            DateTimeFormatter.ofPattern("dd-MM-yyyy"),
+            DateTimeFormatter.ofPattern("d M yy"),
+            DateTimeFormatter.ofPattern("d-M yy"),
+            DateTimeFormatter.ofPattern("d.M.yy"),
+            DateTimeFormatter.ofPattern("d M yyyy"),
+            DateTimeFormatter.ofPattern("d-M-yyyy"),
+            DateTimeFormatter.ofPattern("d.M.yyyy"),
+            DateTimeFormatter.ofPattern("ddMMyyyy")
+    );
+
+    private static final List<DateTimeFormatter> commonTimeFormats = Arrays.asList(
+            DateTimeFormatter.ofPattern("HH['h']mm"),
+            DateTimeFormatter.ofPattern("HH-mm"),
+            DateTimeFormatter.ofPattern("HH:mm"),
+            DateTimeFormatter.ofPattern("hh:mm[a]"),
+            DateTimeFormatter.ofPattern("hh mm a"),
+            DateTimeFormatter.ofPattern("HH mm"),
+            DateTimeFormatter.ofPattern("hh mm")
+    );
+
+    public static ZoneId getSAST() { return zoneSAST; }
+
+    public static DateTimeFormatter getPreferredDateFormat() { return preferredDateFormat; }
+    public static DateTimeFormatter getPreferredTimeFormat() { return preferredTimeFormat; }
+    public static DateTimeFormatter getPreferredDateTimeFormat() { return preferredDateTimeFormat; }
+    public static DateTimeFormatter getPreferredRestFormat() { return preferredRestFormat; }
+
+    public static Instant getVeryLongAwayInstant() { return veryLongTimeAway.toInstant(ZoneOffset.UTC); }
+    public static Instant getEarliestInstant() { return earliestInstant; }
 
     public static Instant convertToSystemTime(LocalDateTime userInput, ZoneId userZoneId) {
         Objects.requireNonNull(userInput, "Local date time is required");
@@ -99,64 +130,25 @@ public class DateTimeUtil {
         }
     }
 
-    public static ZoneId getSAST() { return zoneSAST; }
-
-    public static DateTimeFormatter getPreferredDateFormat() { return preferredDateFormat; }
-    public static DateTimeFormatter getPreferredTimeFormat() { return preferredTimeFormat; }
-    public static DateTimeFormatter getPreferredDateTimeFormat() { return preferredDateTimeFormat; }
-    public static DateTimeFormatter getPreferredRestFormat() { return preferredRestFormat; }
-
-    public static Instant getVeryLongAwayInstant() { return veryLongTimeAway.toInstant(ZoneOffset.UTC); }
-    public static Instant getEarliestInstant() { return earliestInstant; }
-
-    public static boolean areDatesOneMonthApart(LocalDateTime start, LocalDateTime end) {
-        final int startDay = start.getDayOfMonth();
-        final int endDay = end.getDayOfMonth();
-
-        if (startDay == endDay && (start.getMonth() != start.getMonth())) {
-            return true;
-        } else {
-            // could be because one of the two is the last day of the month
-            final boolean startAtMonthEnd = (startDay == start.getMonth().length(start.toLocalDate().isLeapYear()));
-            final boolean endAtMonthEnd = (endDay == end.getMonth().length(end.toLocalDate().isLeapYear()));
-            if (startAtMonthEnd) {
-                return endAtMonthEnd || endDay > startDay; // i.e., either both are month ends, or end day is 'usual' day and start day was month-constrained
-            } else {
-                return endAtMonthEnd && endDay < startDay; // i.e., this is a short month (and since above has evaluated false, can't be both at month end
-            }
-        }
-    }
-
     /*
     SECTION : regex for handling preformatted date time (may be able to remove given introduction of Selo & SUTime)
      */
     public static LocalDateTime tryParseString(String userResponse) {
-        List<String> strings = Arrays.asList(userResponse.split(" "));
-        String timeString = null;
-        String dateString = null;
-
-        log.info("will be trying to parse: {}", strings);
-
-        for (String str : strings) {
-            log.info("testing: {}", str);
-            if (!reformatTimeInput(str).equalsIgnoreCase(str.trim())) {
-                timeString = reformatTimeInput(str);
-                log.info("got a time string! : {}", timeString);
-            }
-            if (!reformatDateInput(str).equalsIgnoreCase(str.trim())) {
-                dateString = reformatDateInput(str);
-                log.info("got a date string: {}", dateString);
+        log.info("Trying formal parse of {}", userResponse);
+        final List<DateTimeFormatter> allCommonFormats = new ArrayList<>(commonDateTimeFormats);
+        allCommonFormats.addAll(commonDateFormats);
+        allCommonFormats.addAll(commonTimeFormats);
+        for (DateTimeFormatter formatter : allCommonFormats) {
+            try {
+                LocalDateTime parsed = LocalDateTime.parse(userResponse, formatter);
+                log.info("Succeeded! Parsed to {}", parsed);
+                return parsed;
+            } catch (DateTimeParseException e) {
+                log.debug("That one didn't work, formatter: {}, user input: {}", formatter, userResponse);
             }
         }
-
-        try {
-            return !StringUtils.isEmpty(timeString) && !StringUtils.isEmpty(dateString) ?
-                    preferredDateTimeFormat.parse(dateString + " " + timeString, LocalDateTime::from) : null;
-        } catch (DateTimeParseException e) {
-            log.error("preprocessing failed, hand over to service");
-            return null;
-        }
-
+        log.info("No formatter caught that, returning null");
+        return null;
     }
 
     /**
@@ -169,57 +161,21 @@ public class DateTimeUtil {
      * @return The string reformated as mm:HH, if it matched any of the known patterns, else the string as-is
      */
     public static String reformatTimeInput(String userResponse) {
+        String trimmedResponse = userResponse.trim().toUpperCase(); // since pm expected in upper case
+        log.info("Trying to harmonize a time input: {}", trimmedResponse);
 
-        String reformattedTime;
-
-        final String trimmedResponse = userResponse.trim().toLowerCase().replace(possibleTimeDelimiters,":");
-        boolean pmEntered = Pattern.matches(meridian, trimmedResponse);
-
-        log.debug("reformTimeInput... given this as input:{}, trimmed to this: {}, and found pm: {}", userResponse, trimmedResponse, pmEntered);
-
-        final Matcher tryMatchWithDelimiters = timePatternWithDelimiters.matcher(trimmedResponse);
-        final Matcher tryMatchWithoutDelimiters = timePatternWithoutDelimiters.matcher(trimmedResponse);
-        final Matcher tryMatchOnlyHavingHours = timeWithHourOnly.matcher(trimmedResponse);
-
-        if (tryMatchWithDelimiters.find()) {
-
-            String timeWithoutDelims = tryMatchWithDelimiters.group(0);
-            log.debug("reformatTimeInput ... matched XX:YY, or variant, extracted as: {}", timeWithoutDelims);
-            List<String> splitDigits = Lists.newArrayList(
-                    Splitter.on(CharMatcher.anyOf(possibleTimeDelimiters)).omitEmptyStrings().split(timeWithoutDelims));
-            int hours = Integer.parseInt(splitDigits.get(0)) + (pmEntered ? 12 : 0);
-            reformattedTime = timeJoiner.join(new String[]{String.format("%02d", hours), splitDigits.get(1)});
-
-        } else if (tryMatchWithoutDelimiters.find()) {
-
-            String digitString = tryMatchWithoutDelimiters.group(0);
-            int digitsForHours = digitString.length() - 2; // safest assumption is last two digits are minutes (converse is rare)
-            log.debug("reformatTimeInput ... no delimiter, 3-4 digits in a row, trying for hours={}", digitString.substring(0,2));
-            reformattedTime = timeJoiner.join(new String[]{
-                    String.format("%02d", Integer.parseInt(digitString.substring(0, digitsForHours))),
-                    String.format("%02d", Integer.parseInt(digitString.substring(digitString.length() - digitsForHours))) });
-
-        } else if (tryMatchOnlyHavingHours.find()) {
-
-            log.debug("reformatTimeInput ... no delimiter, only a couple digits, assuming hours ...");
-            List<String> split = Lists.newArrayList(
-                    Splitter.on(CharMatcher.anyOf("[ap ]")).omitEmptyStrings().split(trimmedResponse));
+        LocalTime localTime = null;
+        List<DateTimeFormatter> formatters = ListUtils.union(commonTimeFormats, commonDateTimeFormats);
+        for (DateTimeFormatter formatter : formatters) {
             try {
-                int hours = Integer.parseInt(split.get(0)) + (pmEntered ? 12 : 0);
-                reformattedTime = timeJoiner.join(new String[]{String.format("%02d", hours), "00"});
-            } catch (NumberFormatException e) {
-                log.info("reformatTimeInput error when trying to parse hours, return string without white space");
-                return trimmedResponse;
+                localTime = LocalTime.parse(trimmedResponse, formatter);
+                log.info("Succeeded, local time parsed as : {}", localTime);
+            } catch (DateTimeParseException e) {
+                log.debug("Failed using formatter {} for {}", formatter, trimmedResponse);
             }
-
-        } else {
-            log.debug("reformatTimeInput ... no patterns matched, return the string just without white space");
-            return trimmedResponse;
         }
 
-        log.debug("reformatTimeInput .... at conclusion, trying to return: {}", reformattedTime);
-        return (neededTimePattern.matcher(reformattedTime).matches()) ? reformattedTime : trimmedResponse;
-
+        return localTime == null ? trimmedResponse : localTime.format(preferredTimeFormat);
     }
 
     /**
@@ -229,69 +185,20 @@ public class DateTimeUtil {
      * @return String reformatted, if understood, else the paramater as-is
      */
     public static String reformatDateInput(String userResponse) {
-
-        String trimmedResponse = userResponse.trim().toLowerCase().replace(possibleDateDelimiters,"-");
-
-        log.info("reformDateInput... given this as input:{}, trimmed to this: {}", userResponse, trimmedResponse);
-
-        final Matcher yearMatcher = datePatternWithYear.matcher(trimmedResponse);
-        final Matcher noYearMatcher = datePatternWithoutYear.matcher(trimmedResponse);
-        final Matcher noDelimMatcher = datePatternWithoutDelimiters.matcher(trimmedResponse);
-
-        String reformattedDate;
-
-        if (yearMatcher.find()) {
-            String dateOnly = yearMatcher.group(0);
-            log.info("reformDateInput ... valid date string with years: {}", dateOnly);
-            List<String> dividedUp = Lists.newArrayList(
-                    Splitter.on(CharMatcher.anyOf(possibleDateDelimiters)).omitEmptyStrings().split(dateOnly));
-            reformattedDate = dateJoiner.join(new String[]{
-                    String.format("%02d", Integer.parseInt(dividedUp.get(0))), // day
-                    String.format("%02d", Integer.parseInt(dividedUp.get(1))), // month
-                    dividedUp.get(2)}); // year
-        } else if (noYearMatcher.find()) {
-            String dateOnly = noYearMatcher.group(0);
-            log.info("reformDateInput .... valid dd-MM string found, extracted as: {}", dateOnly);
-            List<String> dividedUp = Lists.newArrayList(
-                    Splitter.on(CharMatcher.anyOf(possibleDateDelimiters)).omitEmptyStrings().split(dateOnly));
-            int putativeMonth = Integer.parseInt(dividedUp.get(1));
-            int putativeDay = Integer.parseInt(dividedUp.get(0));
-            if (putativeMonth > 12 || putativeDay > 31) {
-                log.info("Error, thought date but fields don't match up");
-                return trimmedResponse;
-            }
-            LocalDate date = LocalDate.of(Year.now().getValue(), putativeMonth, putativeDay);
-            if (date.isBefore(LocalDate.now())) {
-                date = date.plusYears(1);
-            }
-            reformattedDate = preferredDateFormat.format(date);
-        } else if (noDelimMatcher.find()) {
+        String trimmedResponse = userResponse.trim().toLowerCase();
+        log.info("Given as input: {}, trimmed to: {}", userResponse, trimmedResponse);
+        LocalDate localDate = null;
+        List<DateTimeFormatter> formatters = new ArrayList<>(commonDateFormats);
+        for (DateTimeFormatter formatter : formatters) {
             try {
-                log.info("reformDateInput ... no delimiter, found 3-4 digits in a row, assuming those are it ..");
-                String digitString = noDelimMatcher.group(0);
-                // not failsafe, but as good as we can make it (will interpret 104 as 1 april, most of rest will get)
-                int digitsForMonths = (Integer.parseInt(digitString.substring(digitString.length() - 2)) < 13) ? 2 : 1;
-                String month = digitString.substring(digitString.length() - digitsForMonths);
-
-                if (Integer.parseInt(month) == 0 || Integer.parseInt(month) > 12) // means we have a time string, basically
-                    return null;
-
-                String days = digitString.substring(0, digitString.length() - digitsForMonths);
-                String year = (Integer.parseInt(month) >= LocalDateTime.now().getMonthValue()) ?
-                        Year.now().toString() : Year.now().plusYears(1).toString();
-                reformattedDate = dateJoiner.join(new String[]{
-                        String.format("%02d", Integer.parseInt(days)),
-                        String.format("%02d", Integer.parseInt(month)), year});
-            } catch (Exception e) { // lots could go wrong
-                log.info("reformDateInput ... something went wrong: {}", e.toString());
-                return trimmedResponse;
+                localDate = LocalDate.parse(trimmedResponse, formatter);
+                log.info("Succeeded, local date parsed as : {}", localDate);
+            } catch (DateTimeParseException e) {
+                log.info("Failed using formatter {} for {}", formatter, trimmedResponse);
             }
-        } else {
-            return trimmedResponse;
         }
-
-        log.info("reformDateInput .... at conclusion, trying to return: {}" + reformattedDate);
-        return (neededDatePattern.matcher(reformattedDate).matches()) ? reformattedDate : trimmedResponse;
+        log.info("reformDateInput .... at conclusion, trying to return: {}", localDate);
+        return localDate == null ? trimmedResponse : localDate.format(preferredDateFormat);
     }
 
 
