@@ -38,7 +38,6 @@ public class DateTimeUtil {
     private static DateTimeFormatter buildFormatter(String pattern) {
         return new DateTimeFormatterBuilder().appendPattern(pattern)
                 .parseDefaulting(ChronoField.YEAR_OF_ERA, Year.now().getValue()).toFormatter();
-//                .parseDefaulting(ChronoField.AMPM_OF_DAY, 1).toFormatter();
     }
 
     private static final List<DateTimeFormatter> commonDateTimeFormats = Arrays.asList(
