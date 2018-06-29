@@ -1,37 +1,26 @@
 package za.org.grassroot.core.util;
 
-import org.apache.commons.collections.ListUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
-/**
- * Created by aakilomar on 9/19/15.
- */
+@Slf4j
 public class DateTimeUtil {
-
-    private static final Logger log = LoggerFactory.getLogger(DateTimeUtil.class);
-
-    /*
-    Initial set of variabels is for common date / time manipulation
-     */
 
     private static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     private static final DateTimeFormatter preferredRestFormat = DateTimeFormatter.ISO_DATE_TIME;
-    private static final DateTimeFormatter webFormFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a");
 
     private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
     private static final Instant earliestInstant = LocalDateTime.of(2015, 1, 1, 0 , 0).toInstant(ZoneOffset.UTC);
@@ -44,49 +33,32 @@ public class DateTimeUtil {
     private static final LocalTime latestHour = LocalTime.of(latestHourForAutomatedMessages, 0);
     private static final LocalTime earliestHour = LocalTime.of(earliestHourForAutomatedMessage, 0);
 
-    /*
-    some delimiters, patterns for regex, etc (may be able to remove, given Selo / SUTime)
-     */
-
-    private static final String possibleDateDelimiters = "[- /.]";
-
     // we use a lot of these, because they are cheap to cycle through, and Java 8 parsing is
     // highly esoteric in how it actually handles digit length, optional delimiters, etc
+    private static DateTimeFormatter buildFormatter(String pattern) {
+        return new DateTimeFormatterBuilder().appendPattern(pattern)
+                .parseDefaulting(ChronoField.YEAR_OF_ERA, Year.now().getValue()).toFormatter();
+//                .parseDefaulting(ChronoField.AMPM_OF_DAY, 1).toFormatter();
+    }
+
     private static final List<DateTimeFormatter> commonDateTimeFormats = Arrays.asList(
-            DateTimeFormatter.ofPattern("dd-MM HH:mm"),
-            DateTimeFormatter.ofPattern("dd MM HHmm"),
-            DateTimeFormatter.ofPattern("dd.MM.yyyy HH[.]mm"),
-            DateTimeFormatter.ofPattern("d-M-yy HH[:]mm[a]"),
-            DateTimeFormatter.ofPattern("d-M-yy HH['h']mm"),
-            DateTimeFormatter.ofPattern("d-M-yyyy HH[:]mm"),
-            DateTimeFormatter.ofPattern("d-M-yyyy HH['h']mm"),
-            DateTimeFormatter.ofPattern("d-M HH[:]mm"),
-            DateTimeFormatter.ofPattern("d-M HH['h']mm")
+            buildFormatter("dd[-][ ]MM H[:][ ]['H']mm"),
+            buildFormatter("dd[-][ ]MM[-][ ]yyyy H[:][ ]['H']mm"),
+            buildFormatter("dd[-][ ]MM[-][ ]yyyy h[:][ ]['H']mm[ ]a"),
+            buildFormatter("dd[-][ ]MM[-][ ]yy H[:][ ]['H']mm"),
+            buildFormatter("dd[-][ ]MM[-][ ]yy h[:][ ]['H']mm[ ]a")
     );
 
     private static final List<DateTimeFormatter> commonDateFormats = Arrays.asList(
-            DateTimeFormatter.ofPattern("dd-MM"),
-            DateTimeFormatter.ofPattern("dd MM"),
-            DateTimeFormatter.ofPattern("ddMM"),
-            DateTimeFormatter.ofPattern("dd-MM-yy"),
-            DateTimeFormatter.ofPattern("dd-MM-yyyy"),
-            DateTimeFormatter.ofPattern("d M yy"),
-            DateTimeFormatter.ofPattern("d-M yy"),
-            DateTimeFormatter.ofPattern("d.M.yy"),
-            DateTimeFormatter.ofPattern("d M yyyy"),
-            DateTimeFormatter.ofPattern("d-M-yyyy"),
-            DateTimeFormatter.ofPattern("d.M.yyyy"),
-            DateTimeFormatter.ofPattern("ddMMyyyy")
+            buildFormatter("dd[-][ ][.]MM"),
+            buildFormatter("dd[-][ ][.]MM[-][ ][.]yy"),
+            buildFormatter("dd[-][ ][.]MM[-][ ][.]yyyy")
     );
 
     private static final List<DateTimeFormatter> commonTimeFormats = Arrays.asList(
-            DateTimeFormatter.ofPattern("HH['h']mm"),
-            DateTimeFormatter.ofPattern("HH-mm"),
-            DateTimeFormatter.ofPattern("HH:mm"),
-            DateTimeFormatter.ofPattern("hh:mm[a]"),
-            DateTimeFormatter.ofPattern("hh mm a"),
-            DateTimeFormatter.ofPattern("HH mm"),
-            DateTimeFormatter.ofPattern("hh mm")
+            buildFormatter("H[:][ ]['H']mm"),
+            buildFormatter("h[:][ ]['H']mm[ ]a"),
+            buildFormatter("Ha")
     );
 
     public static ZoneId getSAST() { return zoneSAST; }
@@ -133,72 +105,58 @@ public class DateTimeUtil {
     /*
     SECTION : regex for handling preformatted date time (may be able to remove given introduction of Selo & SUTime)
      */
-    public static LocalDateTime tryParseString(String userResponse) {
-        log.info("Trying formal parse of {}", userResponse);
-        final List<DateTimeFormatter> allCommonFormats = new ArrayList<>(commonDateTimeFormats);
-        allCommonFormats.addAll(commonDateFormats);
-        allCommonFormats.addAll(commonTimeFormats);
-        for (DateTimeFormatter formatter : allCommonFormats) {
-            try {
-                LocalDateTime parsed = LocalDateTime.parse(userResponse, formatter);
-                log.info("Succeeded! Parsed to {}", parsed);
+    private static LocalDateTime tryToParse(String input, DateTimeFormatter formatter, boolean dateOnly, boolean timeOnly) {
+        try {
+            if (timeOnly) {
+                LocalTime parsed = LocalTime.parse(input, formatter);
+                log.info("Succeeded on time only! Parsed {} to {}", input, parsed);
+                return parsed.atDate(LocalDate.now());
+            } else if (dateOnly) {
+                LocalDate parsed = LocalDate.parse(input, formatter);
+                log.info("Succeeded on date only! Parsed {} to {}", input, parsed);
+                return parsed.atStartOfDay();
+            } else {
+                LocalDateTime parsed = LocalDateTime.parse(input, formatter);
+                log.info("Succeeded! Parsed {} to {}", input, parsed);
                 return parsed;
-            } catch (DateTimeParseException e) {
-                log.debug("That one didn't work, formatter: {}, user input: {}", formatter, userResponse);
             }
+        } catch (DateTimeParseException e) {
+            log.error("Parse error, formatter: {}, error: {}", formatter, e.getMessage());
+            return null;
         }
-        log.info("No formatter caught that, returning null");
-        return null;
     }
 
-    /**
-     * Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than
-     * free form parsing above. The menu prompt does give the preferred format of HH:mm, but never know, so check for a
-     * range of possible delimiters, and three basic patterns -- 15:30, 3:30 pm, 1530. Since there may be stuff around the
-     * outside, all we care about is finding a match, not the whole input matching, and then whether we have to add 12 to
-     * hour if 'pm' has been entered. We check for those, then give up if none work
-     * @param userResponse The string that the user has entered
-     * @return The string reformated as mm:HH, if it matched any of the known patterns, else the string as-is
-     */
+    public static LocalDateTime tryParseString(String userResponse) {
+        final String input = userResponse.trim().toUpperCase();
+        log.info("Trying formal parse of {}", input);
+
+        Optional<LocalDateTime> dateTimeAttempt = commonDateTimeFormats.stream()
+                .map(format -> tryToParse(input, format, false, false)).filter(Objects::nonNull).findFirst();
+
+        log.info("result of date time attempt: {}", dateTimeAttempt);
+        return dateTimeAttempt.orElseGet(()
+                -> tryParseDate(input).orElseGet(()
+                -> tryParseTime(input).orElse(null)));
+    }
+
+    private static Optional<LocalDateTime> tryParseDate(String input) {
+        return commonDateFormats.stream().map(formatter -> tryToParse(input, formatter, true, false)).filter(Objects::nonNull).findFirst();
+    }
+
+    private static Optional<LocalDateTime> tryParseTime(String input) {
+        return commonTimeFormats.stream().map(formatter -> tryToParse(input, formatter, false, true)).filter(Objects::nonNull).findFirst();
+    }
+
     public static String reformatTimeInput(String userResponse) {
         String trimmedResponse = userResponse.trim().toUpperCase(); // since pm expected in upper case
         log.info("Trying to harmonize a time input: {}", trimmedResponse);
-
-        LocalTime localTime = null;
-        List<DateTimeFormatter> formatters = ListUtils.union(commonTimeFormats, commonDateTimeFormats);
-        for (DateTimeFormatter formatter : formatters) {
-            try {
-                localTime = LocalTime.parse(trimmedResponse, formatter);
-                log.info("Succeeded, local time parsed as : {}", localTime);
-            } catch (DateTimeParseException e) {
-                log.debug("Failed using formatter {} for {}", formatter, trimmedResponse);
-            }
-        }
-
-        return localTime == null ? trimmedResponse : localTime.format(preferredTimeFormat);
+        return tryParseTime(trimmedResponse).map(ldt -> ldt.format(preferredTimeFormat)).orElse(trimmedResponse);
     }
 
-    /**
-     * Helper method, similar to reformatTimeInput, that checks user input against common/suggested date formats, and
-     * returns formatted as dd-mm-yyyy, or else just returns the string if no pattern matches
-     * @param userResponse
-     * @return String reformatted, if understood, else the paramater as-is
-     */
     public static String reformatDateInput(String userResponse) {
         String trimmedResponse = userResponse.trim().toLowerCase();
         log.info("Given as input: {}, trimmed to: {}", userResponse, trimmedResponse);
-        LocalDate localDate = null;
-        List<DateTimeFormatter> formatters = new ArrayList<>(commonDateFormats);
-        for (DateTimeFormatter formatter : formatters) {
-            try {
-                localDate = LocalDate.parse(trimmedResponse, formatter);
-                log.info("Succeeded, local date parsed as : {}", localDate);
-            } catch (DateTimeParseException e) {
-                log.info("Failed using formatter {} for {}", formatter, trimmedResponse);
-            }
-        }
-        log.info("reformDateInput .... at conclusion, trying to return: {}", localDate);
-        return localDate == null ? trimmedResponse : localDate.format(preferredDateFormat);
+        return tryParseDate(trimmedResponse).map(ldt -> ldt.format(preferredDateFormat)).orElse(trimmedResponse);
     }
 
 
@@ -227,7 +185,7 @@ public class DateTimeUtil {
         return 60 * 24 * days;
     }
 
-    public static LocalDate getStartTimeForEntityStats(@Nullable Integer year, @Nullable Integer month, @Nonnull Instant entityCreationTime) {
+    public static LocalDate getStartTimeForEntityStats(Integer year, Integer month, Instant entityCreationTime) {
         if (year != null && month != null)
             return LocalDate.of(year, month, 1);
         else if (year != null)
@@ -236,7 +194,7 @@ public class DateTimeUtil {
             return entityCreationTime.atZone(Clock.systemDefaultZone().getZone()).toLocalDate();
     }
 
-    public static LocalDate getEndTime(@Nullable Integer year, @Nullable Integer month, @Nonnull  LocalDate startTime) {
+    public static LocalDate getEndTime(Integer year, Integer month, LocalDate startTime) {
         if (year != null && month != null) {
             LocalDate endDay = startTime.plus(1, ChronoUnit.MONTHS);
             LocalDate thisDay = LocalDate.now();

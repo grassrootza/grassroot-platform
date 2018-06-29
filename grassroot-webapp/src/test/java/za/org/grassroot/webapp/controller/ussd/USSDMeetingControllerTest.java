@@ -506,8 +506,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventRequestBrokerMock.load(requestUid)).thenReturn(meetingForTest);
 
-        List<String> nineAmVariations = Arrays.asList("09:00", "09 00", "900", "9:00 am", "9am");
-        List<String> onePmVariations = Arrays.asList("13:00", "13 00", "1300", "1:00 pm", "1pm");
+        List<String> nineAmVariations = Arrays.asList("09:00", "09 00", "9h00", "9:00 am", "9am");
+        List<String> onePmVariations = Arrays.asList("13:00", "13 00", "13h00", "1:00 pm", "1pm");
 
         for (String time : nineAmVariations) {
             mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
@@ -520,7 +520,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         }
 
         // not doing the full range of checks as those are tested above, here just verifying no extraneous calls
-        log.info("heere is the timestamp at present = " + timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        log.info("here is the timestamp at present = " + timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         verify(eventRequestBrokerMock, times(nineAmVariations.size())).updateEventDateTime(testUser.getUid(), requestUid, timestamp);
         verify(eventRequestBrokerMock, times(onePmVariations.size())).updateEventDateTime(testUser.getUid(), requestUid, timestamp);
     }

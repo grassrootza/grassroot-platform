@@ -48,6 +48,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
@@ -402,38 +403,63 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids) {
+    public void copyMembersIntoGroup(String userUid, String fromGroupUid, String toGroupUid, Set<String> memberUids, boolean keepTopics, String addTopic) {
         User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+        Group toGroup = groupRepository.findOneByUid(toGroupUid);
 
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        permissionBroker.validateGroupPermission(user, toGroup, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
 
-        if (!checkGroupSizeLimit(group, memberUids.size())) {
+        if (!checkGroupSizeLimit(toGroup, memberUids.size())) {
             throw new GroupSizeLimitExceededException();
         }
 
         List<User> users = userRepository.findByUidIn(memberUids);
         Set<User> userSet = new HashSet<>(users);
         logger.info("list size {}, set size {}", users.size(), userSet.size());
-        group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, null);
+        Set<Membership> memberships = toGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupUid);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         // recursively add users to all parent groups
-        Group parentGroup = group.getParent();
+        Group parentGroup = toGroup.getParent();
         while (parentGroup != null) {
             parentGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, null);
-            createSubGroupAddedLogs(parentGroup, group, user, users, bundle);
+            createSubGroupAddedLogs(parentGroup, toGroup, user, users, bundle);
             parentGroup = parentGroup.getParent();
         }
 
         for (User u  : users) {
-            GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, null);
+            GroupLog groupLog = new GroupLog(toGroup, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, null);
             bundle.addLog(groupLog);
-            notifyNewMembersOfUpcomingMeetings(bundle, u, group, groupLog);
+            notifyNewMembersOfUpcomingMeetings(bundle, u, toGroup, groupLog);
+        }
+
+        if (keepTopics) {
+            transferTopics(fromGroupUid, memberUids, memberships);
+        }
+
+        if (!StringUtils.isEmpty(addTopic)) {
+            Set<String> topic = Collections.singleton(addTopic);
+            memberships.forEach(m -> m.addTopics(topic));
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    private void transferTopics(String fromGroupUid, Set<String> userUids, Set<Membership> newMemberships) {
+        Group fromGroup = groupRepository.findOneByUid(fromGroupUid);
+        List<Membership> oldMemberships = membershipRepository.findByGroupAndUserUidIn(fromGroup, userUids);
+
+        // this is going to be painful one way or another, this seems least so - assemble two maps, then user uid to transfer
+        Map<String, Membership> oldMap = oldMemberships.stream().collect(Collectors.toMap(m -> m.getUser().getUid(), Function.identity()));
+        Map<String, Membership> newMap = newMemberships.stream().collect(Collectors.toMap(m -> m.getUser().getUid(), Function.identity()));
+
+        userUids.forEach(uid -> {
+            Membership oldMember = oldMap.get(uid);
+            Membership newMember = newMap.get(uid);
+            if (oldMember != null && newMember != null)
+                newMember.addTopics(new HashSet<>(oldMember.getTopics()));
+        });
     }
 
     private void createSubGroupAddedLogs(Group parent, Group child, User initiator, List<User> users, LogsAndNotificationsBundle bundle) {
