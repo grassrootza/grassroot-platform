@@ -35,6 +35,7 @@ import java.util.Set;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.HOURS;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.*;
 
@@ -282,15 +283,21 @@ public class EventRepositoryTest {
         Group newGroup = groupRepository.save(new Group("Events", newUser));
 
         Instant newTime = Instant.now().plus(14, ChronoUnit.MINUTES);
-        Event newEvent = eventRepository.save(new MeetingBuilder().setName("Welcome new Members").setStartDateTime(newTime).setUser(newUser).setParent(newGroup).setEventLocation("Polokwane").createMeeting());
+        Event newEvent = eventRepository.save(new MeetingBuilder()
+                .setName("Welcome new Members")
+                .setStartDateTime(newTime)
+                .setUser(newUser)
+                .setParent(newGroup)
+                .setEventLocation("Polokwane")
+                .createMeeting());
 
         assertNotNull(newEvent.getUid());
-        assertThat(newEvent.getScheduledReminderTime(), is(nullValue()));
+        assertThat(newEvent.getScheduledReminderTime(), is(notNullValue()));
         eventRepository.save(newEvent);
         Event eventFromDb = eventRepository.findAll().iterator().next();
         assertNotNull(eventFromDb.getUid());
         assertThat(eventFromDb.getEventStartDateTime(), is(newTime));
-        assertThat(eventFromDb.getScheduledReminderTime(), is(nullValue()));
+        assertThat(eventFromDb.getScheduledReminderTime(), is(notNullValue()));
 
     }
 

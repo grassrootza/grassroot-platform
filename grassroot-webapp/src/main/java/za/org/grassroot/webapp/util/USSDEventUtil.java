@@ -197,8 +197,8 @@ public class USSDEventUtil extends USSDUtil {
      * @return LocalDateTime of most likely match; if no match, returns the current date time rounded up to next hour
      */
     public LocalDateTime parseDateTime(String passedValue, String eventUid) throws SeloParseDateTimeFailure {
-
         LocalDateTime parsedDateTime = DateTimeUtil.tryParseString(passedValue);
+        log.info("result of parse attempt: {}", parsedDateTime);
 
         if (parsedDateTime == null) {
             try {

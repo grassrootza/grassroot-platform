@@ -90,7 +90,7 @@ public class MeetingBuilder {
         logger.debug("creating a meeting in builder, starting ... type = {}", reminderType);
         validateMeetingFields();
         Meeting mtg = new Meeting(name, startDateTime, user, parent, eventLocation);
-        mtg.setReminderType(reminderType == null ? EventReminderType.DISABLED : reminderType);
+        mtg.setReminderType(reminderType == null ? EventReminderType.GROUP_CONFIGURED : reminderType);
         mtg.setIncludeSubGroups(includeSubGroups);
         mtg.setCustomReminderMinutes(customReminderMinutes == null ? 0 : customReminderMinutes);
         mtg.setDescription(description);

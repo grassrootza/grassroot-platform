@@ -1,7 +1,6 @@
 package za.org.grassroot.integration;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -22,10 +21,8 @@ import java.util.Map;
 /**
  * Created by shakka on 8/15/16.
  */
-@Service
+@Service @Slf4j
 public class LearningManager implements LearningService {
-
-    private Logger log = LoggerFactory.getLogger(LearningManager.class);
 
     private static final String ERROR_PARSING = "ERROR_PARSING";
     private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;

@@ -32,9 +32,9 @@ import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberPicker;
@@ -521,12 +521,12 @@ public class GroupController extends BaseController {
                         getUserProfile().getDisplayName());
                 Group group = groupBroker.create(getUserProfile().getUid(), groupName, null, Collections.singleton(thisMember),
                         GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false);
-                groupBroker.copyMembersIntoGroup(getUserProfile().getUid(), group.getUid(), memberUids);
+                groupBroker.copyMembersIntoGroup(getUserProfile().getUid(), null, group.getUid(), memberUids, false, null);
                 addMessage(attributes, MessageType.SUCCESS, "group.transfer." + (removeMembers ? "move" : "copy") + ".new", request);
                 redirectUid = group.getUid();
             }
         } else {
-            groupBroker.copyMembersIntoGroup(getUserProfile().getUid(), targetGroupUid, memberUids);
+            groupBroker.copyMembersIntoGroup(getUserProfile().getUid(), null, targetGroupUid, memberUids, false, null);
             addMessage(attributes, MessageType.SUCCESS, "group.transfer." + (removeMembers ? "move" : "copy") + ".existing", request);
             redirectUid = targetGroupUid;
         }

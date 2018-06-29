@@ -172,6 +172,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         sb.append(", email='").append(memberEmail).append('\'');
         sb.append(", roleName=").append(roleName);
         sb.append(", displayName='").append(displayName).append('\'');
+        sb.append(", topics='").append(topics).append('\'');
         sb.append('}');
         return sb.toString();
     }
