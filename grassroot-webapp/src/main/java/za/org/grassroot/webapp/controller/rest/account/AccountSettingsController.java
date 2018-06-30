@@ -38,7 +38,6 @@ import java.util.Map;
 public class AccountSettingsController extends BaseRestController {
 
     private final AccountBroker accountBroker;
-    private final AccountGroupBroker accountGroupBroker;
     private final PermissionBroker permissionBroker;
 
 
@@ -47,7 +46,6 @@ public class AccountSettingsController extends BaseRestController {
                                      PermissionBroker permissionBroker, JwtService jwtService) {
         super(jwtService, userService);
         this.accountBroker = accountBroker;
-        this.accountGroupBroker = accountGroupBroker;
         this.permissionBroker = permissionBroker;
     }
 
@@ -60,9 +58,8 @@ public class AccountSettingsController extends BaseRestController {
         if (account == null) {
             return ResponseEntity.ok(null);
         } else {
-            final int groupsLeft = account.isEnabled() ? accountGroupBroker.numberGroupsLeft(account.getUid()) : 0;
-            final int messagesLeft = account.isEnabled() ? accountGroupBroker.numberMessagesLeft(account.getUid()) : 0;
-            return ResponseEntity.ok(new AccountWrapper(account, user, groupsLeft, messagesLeft));
+            final int limitsLeft = account.isEnabled() ? 1 : 0;
+            return ResponseEntity.ok(new AccountWrapper(account, user, limitsLeft, limitsLeft));
         }
     }
 
@@ -81,9 +78,8 @@ public class AccountSettingsController extends BaseRestController {
             accountBroker.modifyAccount(user.getUid(), accountUid, accountType, accountName, billingEmail);
 
             account = accountBroker.loadAccount(accountUid);
-            final int groupsLeft = account.isEnabled() ? accountGroupBroker.numberGroupsLeft(account.getUid()) : 0;
-            final int messagesLeft = account.isEnabled() ? accountGroupBroker.numberMessagesLeft(account.getUid()) : 0;
-            return ResponseEntity.ok(new AccountWrapper(account, user, groupsLeft, messagesLeft));
+            final int limitsLeft = account.isEnabled() ? 1 : 0;
+            return ResponseEntity.ok(new AccountWrapper(account, user, limitsLeft, limitsLeft));
         }catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
         }
@@ -121,7 +117,7 @@ public class AccountSettingsController extends BaseRestController {
                 permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
             }
 
-            accountBroker.closeAccountRest(user.getUid(), accountUid, true);
+            accountBroker.closeAccount(user.getUid(), accountUid, null);
             return "closed";
         }catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);

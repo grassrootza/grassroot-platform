@@ -63,7 +63,7 @@ public class GroupAjaxController extends BaseController {
 
         map.put(IS_PAID_FOR, groupAccount != null);
         map.put(USER_HAS_ACCOUNT, userAccount != null);
-        map.put(CAN_ADD_GROUPS_TO_ACCOUNT, userAccount != null && (accountGroupBroker.numberGroupsLeft(userAccount.getUid()) > 0));
+        map.put(CAN_ADD_GROUPS_TO_ACCOUNT, userAccount != null && userAccount.isEnabled());
         return map;
     }
 

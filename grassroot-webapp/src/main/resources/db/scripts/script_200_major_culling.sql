@@ -12,3 +12,5 @@ where pg.group_id = g.id and pg.status = 'ACTIVE';
 drop table account_billing_record;
 drop table paid_group;
 drop table acc_sponsor_request;
+
+-- todo : cull account limit columns

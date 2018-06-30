@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -19,7 +19,6 @@ import za.org.grassroot.core.domain.broadcast.BroadcastSchedule;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
@@ -47,8 +46,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 import static za.org.grassroot.core.specifications.TodoSpecifications.createdDateBetween;
 import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAsAncestor;
 
@@ -113,7 +110,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             ldEventLimitStart = LocalDate.parse(eventLimitStartString, DateTimeFormatter.ISO_LOCAL_DATE);
         } catch (DateTimeParseException e) {
             logger.error("Error parsing! {}", e);
-            ldEventLimitStart = LocalDate.of(2017, 04, 01);
+            ldEventLimitStart = LocalDate.of(2017, 4, 1);
         }
         eventLimitStart = ldEventLimitStart.atStartOfDay().toInstant(ZoneOffset.UTC);
     }
@@ -122,14 +119,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         if (!account.getAdministrators().contains(user)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Group> fetchGroupsSponsoredByAccount(String accountUid) {
-        Account account = accountRepository.findOneByUid(accountUid);
-        return account.getPaidGroups().stream().filter(group -> group.isPaidFor() && group.isActive())
-                .collect(Collectors.toList());
     }
 
     @Override
@@ -163,10 +152,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             throw new AccountExpiredException();
         }
 
-        if (numberGroupsLeft(account.getUid()) < 1) {
-            throw new AccountLimitExceededException();
-        }
-
         if (group == null) {
             throw new GroupNotFoundException();
         }
@@ -178,71 +163,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         account.addPaidGroup(group);
         group.setPaidFor(true);
         storeGroupAddOrRemoveLogs(AccountLogType.GROUP_ADDED, account, group, group.getUid(), addingUser);
-    }
-
-    @Override
-    @Transactional
-    public void addGroupsToAccount(String accountUid, Set<String> groupUids, String userUid) {
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(groupUids);
-        Objects.requireNonNull(userUid);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        User user = userRepository.findOneByUid(userUid);
-        validateAdmin(user, account);
-
-        List<Group> groups = groupRepository.findAll(where(GroupSpecifications.uidIn(groupUids)));
-        logger.info("number of groups matching list: {}", groups.size());
-
-        addGroupsToAccount(groups, account, user);
-    }
-
-    @Override
-    @Transactional
-    public int addUserCreatedGroupsToAccount(String accountUid, String userUid) {
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(userUid);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        User user = userRepository.findOneByUid(userUid);
-
-        if (!account.getAdministrators().contains(user)) {
-            throw new IllegalArgumentException("Error! Add all groups can only be called by an admin of the account");
-        }
-
-        List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
-        return addGroupsToAccount(groups, account, user);
-    }
-
-    private int addGroupsToAccount(List<Group> groups, Account account, User user) {
-        DebugUtil.transactionRequired("AddingGroupsToAccount");
-
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        int spaceOnAccount = groupsLeftOnAccount(account);
-
-        for (int i = 0; i < groups.size() && (spaceOnAccount - i) > 0; i++) {
-            Group group = groups.get(i);
-            if (group.isPaidFor()) {
-                continue;
-            }
-
-            account.addPaidGroup(group);
-            group.setPaidFor(true);
-
-            bundle.addLog(new AccountLog.Builder(account)
-                    .user(user)
-                    .accountLogType(AccountLogType.GROUP_ADDED)
-                    .group(group)
-                    .paidGroupUid(group.getUid())
-                    .description(group.getName()).build());
-
-            bundle.addLog(new GroupLog(group, user, GroupLogType.ADDED_TO_ACCOUNT,
-                    null, null, account, addedDescription));
-        }
-
-        logsAndNotificationsBroker.asyncStoreBundle(bundle);
-
-        return groups.size();
     }
 
     @Override
@@ -272,45 +192,9 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     public List<Group> fetchUserCreatedGroupsUnpaidFor(String userUid, Sort sort) {
         User user = userRepository.findOneByUid(userUid);
         return groupRepository.findAll(
-                where(GroupSpecifications.createdByUser(user))
+                Specification.where(GroupSpecifications.createdByUser(user))
                 .and(GroupSpecifications.isActive())
                 .and(GroupSpecifications.paidForStatus(false)));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean canAddGroupToAccount(String userUid, String accountUid) {
-        Account account;
-        if (StringUtils.isEmpty(accountUid)) {
-            User user = userRepository.findOneByUid(userUid);
-            account = user.getPrimaryAccount();
-        } else {
-            account = accountRepository.findOneByUid(accountUid);
-        }
-        return account != null && account.isEnabled() && groupsLeftOnAccount(account) > 0;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean canAddAllCreatedGroupsToAccount(String userUid, String accountUid) {
-        User user = userRepository.findOneByUid(userUid);
-        Account account = accountRepository.findOneByUid(accountUid);
-        if (user.getPrimaryAccount() == null) {
-            return false;
-        } else {
-            List<Group> userGroups = groupRepository.findAll(
-                    where(GroupSpecifications.createdByUser(user))
-                    .and(GroupSpecifications.paidForStatus(false))
-                    .and(GroupSpecifications.isActive()));
-
-            logger.info("number of user groups: {}, groups left on account: {}", userGroups.size(), groupsLeftOnAccount(account));
-            return userGroups.size() < groupsLeftOnAccount(account);
-        }
-    }
-
-    private int groupsLeftOnAccount(Account account) {
-        return account.getMaxNumberGroups() -
-                (int) account.getPaidGroups().size(); // todo: replace with count query, probably
     }
 
     @Override
@@ -326,24 +210,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             return null;
         } else {
             return group.getAccount();
-        }
-    }
-
-    @Override
-    public void validateUserAccountAdminForGroup(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-        Account account = findAccountForGroup(groupUid);
-
-        if (account == null) {
-            throw new GroupNotPaidForException();
-        }
-
-        if (!account.getAdministrators().contains(user)) {
-            throw new AccessDeniedException("User is not an administrator of the group account");
         }
     }
 
@@ -386,103 +252,38 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     }
 
     @Override
-    @Transactional
-    public void sendFreeFormMessage(String userUid, String groupUid, String message) {
-        // for now, just let the notification async handle the group loading etc., here just check the user
-        // has permission (is account admin--later, account admin and it's a paid group, with enough credit
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-        Account account = user.getPrimaryAccount();
-
-        Objects.requireNonNull(user);
-        Objects.requireNonNull(group);
-        Objects.requireNonNull(account);
-
-        authorizeFreeFormMessageSending(user, account, group);
-
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-        String description = group.getMembers().size() + " members @ : " + account.getFreeFormCost(); // so it's recorded at cost of sending
-
-        AccountLog accountLog = new AccountLog.Builder(account)
-                .user(user)
-                .accountLogType(AccountLogType.MESSAGE_SENT)
-                .group(group)
-                .paidGroupUid(group.getUid())
-                .description(description)
-                .build();
-
-        bundle.addLog(accountLog);
-        for (User member : group.getMembers()) {
-            bundle.addNotification(new FreeFormMessageNotification(member, message, accountLog));
-        }
-
-        logsAndNotificationsBroker.storeBundle(bundle);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public int numberGroupsLeft(String accountUid) {
-        // until this is fixed properly, switching this out to permanent
-        return 10;
-//        Account account = accountRepository.findOneByUid(accountUid);
-//        return account == null ? 0 : account.isEnabled() ? groupsLeftOnAccount(account) : 0;
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public int numberTodosLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        int todosThisMonth = (int) todoRepository.count(where(hasGroupAsAncestor(group))
+
+        boolean isSmallGroup = group.getMemberships().size() < eventMonthlyLimitThreshold;
+        boolean isOnAccount = group.isPaidFor() && group.getAccount() != null && group.getAccount().isEnabled();
+
+        if (isSmallGroup || isOnAccount)
+            return LARGE_EVENT_LIMIT;
+
+        int todosThisMonth = (int) todoRepository.count(Specification.where(hasGroupAsAncestor(group))
                 .and(createdDateBetween(LocalDateTime.now().withDayOfMonth(1).withHour(0).toInstant(ZoneOffset.UTC), Instant.now())));
 
-        int monthlyLimit;
-        if (!group.isPaidFor()) {
-            monthlyLimit = FREE_TODOS_PER_MONTH;
-        } else {
-            try {
-                Account account = group.getAccount();
-                monthlyLimit = account.getTodosPerGroupPerMonth();
-            } catch (NullPointerException e) {
-                logger.warn("Error! Group is marked as paid for but has no paid group record associated to it");
-                monthlyLimit = FREE_TODOS_PER_MONTH;
-            }
-        }
-
-        return monthlyLimit - todosThisMonth;
+        return Math.max(0, FREE_TODOS_PER_MONTH - todosThisMonth);
     }
 
     @Override
     @Transactional(readOnly = true)
     public int numberEventsLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-
-        if (group.getMemberships().size() < eventMonthlyLimitThreshold) {
+        boolean isSmallGroup = group.getMemberships().size() < eventMonthlyLimitThreshold;
+        boolean isOnAccount = group.isPaidFor() && group.getAccount() != null && group.getAccount().isEnabled();
+        if (isSmallGroup || isOnAccount) {
             return LARGE_EVENT_LIMIT;
         } else {
-
             Instant startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC);
             Instant startOfCheck = startOfMonth.isAfter(eventLimitStart) ? startOfMonth : eventLimitStart;
 
-            int eventsThisMonth = (int) eventRepository.count(where(EventSpecifications.hasGroupAsAncestor(group))
+            int eventsThisMonth = (int) eventRepository.count(Specification.where(EventSpecifications.hasGroupAsAncestor(group))
                     .and(EventSpecifications.createdDateTimeBetween(startOfCheck, Instant.now())));
-            int monthlyLimit;
 
-            if (!group.isPaidFor()) {
-                monthlyLimit = FREE_EVENTS_PER_MONTH;
-            } else {
-                try {
-                    Account account = group.getAccount();
-                    monthlyLimit = account.getEventsPerGroupPerMonth();
-                } catch (NullPointerException e) {
-                    logger.warn("Error! Group is marked as paid for but has no paid group record associated to it");
-                    monthlyLimit = FREE_EVENTS_PER_MONTH;
-                }
-            }
-
-            logger.info("Counting events left, limit: {}, this month: {}", monthlyLimit, eventsThisMonth);
-            return Math.max(0, monthlyLimit - eventsThisMonth);
+            return Math.max(0, FREE_EVENTS_PER_MONTH - eventsThisMonth);
         }
     }
 
@@ -717,49 +518,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
     @Override
     @Transactional
-    public void cascadeWelcomeMessages(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        validateUserAccountAdminForGroup(userUid, groupUid);
-
-        Broadcast template = loadWelcomeMessage(groupUid);
-        template.setCascade(true);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
-                .user(userRepository.findOneByUid(userUid))
-                .group(template.getGroup())
-                .accountLogType(AccountLogType.GROUP_WELCOME_CASCADE_ON)
-                .build());
-    }
-
-    @Override
-    @Transactional
-    public void disableCascadingMessages(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        validateUserAccountAdminForGroup(userUid, groupUid);
-
-        Broadcast template = loadWelcomeMessage(groupUid);
-        template.setCascade(false);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
-                .user(userRepository.findOneByUid(userUid))
-                .group(template.getGroup())
-                .accountLogType(AccountLogType.GROUP_WELCOME_CASCADE_OFF)
-                .build());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean hasSubgroups(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        return group.getDirectChildren() != null && !group.getDirectChildren().isEmpty();
-    }
-
-    @Override
-    @Transactional
     public String generateGroupWelcomeReply(String userUid, String groupUid) {
         final User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         final Group group = groupRepository.findOneByUid(Objects.requireNonNull(groupUid));
@@ -804,19 +562,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         return message.substring(0, Math.min(message.length(), maxChars));
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public int numberMessagesLeft(String accountUid) {
-        Account account = accountRepository.findOneByUid(accountUid);
-
-        long messagesThisMonth = logsAndNotificationsBroker.countNotifications(where(
-                accountLogTypeIs(AccountLogType.MESSAGE_SENT))
-                .and(belongsToAccount(account))
-                .and(createdTimeBetween(LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC), Instant.now())));
-
-        return Math.max(0, account.getFreeFormMessages() - (int) messagesThisMonth);
-    }
-
     private void storeGroupAddOrRemoveLogs(AccountLogType accountLogType, Account account, Group group, String paidGroupUid, User user) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
@@ -834,26 +579,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 null, null, account,
                 isAdded ? addedDescription : removedDescription));
         logsAndNotificationsBroker.storeBundle(bundle);
-    }
-
-    private void authorizeFreeFormMessageSending(User user, Account account, Group group) {
-        logger.info("Authorizing message, group = {}", group);
-
-        if (account == null || !account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
-
-        if (!group.isPaidFor()) {
-            throw new GroupNotPaidForException();
-        }
-
-        if (!group.getAccount().equals(account)) {
-            throw new GroupAccountMismatchException();
-        }
-
-        if (group.getMemberships().size() > numberMessagesLeft(account.getUid())) {
-            throw new AccountLimitExceededException();
-        }
     }
 
 }

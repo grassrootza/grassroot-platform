@@ -10,7 +10,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -393,12 +393,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("now wiring up sub group addition, should be off main thread");
         Map<String, Set<String>> subgroupMap = new HashMap<>();
         // probably a more elegant way to do this using flatmaps etc., but this will do for now
-        membershipInfos.stream().filter(MembershipInfo::hasTaskTeams).forEach(m -> {
-            m.getTaskTeams().forEach(suid -> {
-                subgroupMap.computeIfAbsent(suid, k -> new HashSet<>());
-                subgroupMap.get(suid).add(m.getUserUid());
-            });
-        });
+        membershipInfos.stream().filter(MembershipInfo::hasTaskTeams).forEach(m ->
+                m.getTaskTeams().forEach(suid -> {
+                    subgroupMap.computeIfAbsent(suid, k -> new HashSet<>());
+                    subgroupMap.get(suid).add(m.getUserUid());
+            }));
         logger.info("okay, wiring up task teams: {}", subgroupMap);
         subgroupMap.forEach((suid, members) -> addMembersToSubgroup(userUid, groupUid, suid, members));
     }
@@ -1485,7 +1484,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         group.setDefaultLanguage(newLocale);
 
         if (includeSubGroups) {
-            groupRepository.findAll(Specifications.where(
+            groupRepository.findAll(Specification.where(
                     GroupSpecifications.hasParent(group)).and(GroupSpecifications.isActive()))
             .forEach(g -> {
                 try {
@@ -1847,11 +1846,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     private int membersLeftForGroup(Group group) {
-        Account account = accountGroupBroker.findAccountForGroup(group.getUid());
+        Account account = group.getAccount();
         int currentMembers = group.getMemberships().size();
-        return !limitGroupSize ? 99999 :
-                account == null ? Math.max(0, freeGroupSizeLimit - currentMembers) :
-                        Math.max(0, account.getMaxSizePerGroup() - currentMembers);
+        return !limitGroupSize || (account != null && account.isEnabled()) ? 99999 :
+                Math.max(0, freeGroupSizeLimit - currentMembers);
     }
 
 }
