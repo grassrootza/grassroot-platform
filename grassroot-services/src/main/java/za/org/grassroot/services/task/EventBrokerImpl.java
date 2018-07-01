@@ -167,7 +167,9 @@ public class EventBrokerImpl implements EventBroker {
 
 	private Meeting setReminder(Meeting meeting, MeetingBuilderHelper helper) {
 		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to 1 hours
-		if (!helper.getReminderType().equals(DISABLED) && meeting.getScheduledReminderTime().isBefore(Instant.now())) {
+		if (!helper.getReminderType().equals(DISABLED) &&
+				meeting.getScheduledReminderTime() != null &&
+				meeting.getScheduledReminderTime().isBefore(Instant.now())) {
 			meeting.setCustomReminderMinutes(60);
 			meeting.setReminderType(CUSTOM);
 			meeting.updateScheduledReminderTime();
