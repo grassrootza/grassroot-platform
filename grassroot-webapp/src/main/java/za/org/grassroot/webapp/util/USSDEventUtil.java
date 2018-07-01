@@ -5,9 +5,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventRequest;
+import za.org.grassroot.core.domain.task.MeetingRequest;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.LearningService;
@@ -134,7 +136,7 @@ public class USSDEventUtil extends USSDUtil {
 
             case dateTimeMenu:
                 userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation:", USSD);
-                eventRequestBroker.updateEventDateTime(userUid, eventUid, parseDateTime(userInput));
+                eventRequestBroker.updateEventDateTime(userUid, eventUid, parseDateTime(userInput, eventUid));
                 break;
 
             case timeOnly:
@@ -148,7 +150,7 @@ public class USSDEventUtil extends USSDUtil {
             case dateOnly:
                 eventReq = eventRequestBroker.load(eventUid);
                 String reformattedDate = DateTimeUtil.reformatDateInput(userInput);
-                newTimestamp = changeTimestampDates(eventReq.getEventDateTimeAtSAST(), reformattedDate);
+                newTimestamp = changeTimestampDates(eventReq.getEventDateTimeAtSAST(), reformattedDate, eventUid);
                 log.info("This is what we got back ... " + getPreferredDateTimeFormat().format(newTimestamp));
                 userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation-date-only", USSD);
                 eventRequestBroker.updateEventDateTime(userUid, eventUid, newTimestamp);
@@ -179,7 +181,8 @@ public class USSDEventUtil extends USSDUtil {
             case newDate:
                 oldTimestamp = eventRequestBroker.load(requestUid).getEventDateTimeAtSAST();
                 String reformattedDate = DateTimeUtil.reformatDateInput(newValue);
-                newTimestamp = changeTimestampDates(oldTimestamp, reformattedDate);
+                newTimestamp = changeTimestampDates(oldTimestamp, reformattedDate, requestUid);
+                log.info("oldTimestamp: {}, new timestamp: {}", oldTimestamp, newTimestamp);
                 userLogger.recordUserInputtedDateTime(userUid, newValue, "meeting-edit-date-only", USSD);
                 eventRequestBroker.updateEventDateTime(userUid, requestUid, newTimestamp);
                 break;
@@ -190,11 +193,12 @@ public class USSDEventUtil extends USSDUtil {
      * Method that invokes the date time parser directly, with no attempt to map to a predefined format or regex. Should
      * likely move to a single class in language, once updated that module to Java 8 and Antlr 4
      * @param passedValue
+     * @param eventUid
      * @return LocalDateTime of most likely match; if no match, returns the current date time rounded up to next hour
      */
-    public LocalDateTime parseDateTime(String passedValue) throws SeloParseDateTimeFailure {
-
+    public LocalDateTime parseDateTime(String passedValue, String eventUid) throws SeloParseDateTimeFailure {
         LocalDateTime parsedDateTime = DateTimeUtil.tryParseString(passedValue);
+        log.info("result of parse attempt: {}", parsedDateTime);
 
         if (parsedDateTime == null) {
             try {
@@ -205,25 +209,43 @@ public class USSDEventUtil extends USSDUtil {
             }
         }
 
-        return parsedDateTime;
+        LocalDateTime localDateTime;
+
+        if(parsedDateTime.getHour() == 0 && parsedDateTime.getMinute() == 0){
+            MeetingRequest eventRequest = !StringUtils.isEmpty(eventUid) ? (MeetingRequest) eventRequestBroker.load(eventUid): null;
+            if (eventRequest != null && eventRequest.getParent() != null) {
+                LocalTime mostFreqTime = eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid());
+                localDateTime = mostFreqTime != null ? LocalDateTime.of(parsedDateTime.toLocalDate(), mostFreqTime) : parsedDateTime;
+            } else {
+                localDateTime = parsedDateTime;
+            }
+        } else {
+            localDateTime = parsedDateTime;
+        }
+
+        return localDateTime;
     }
+
+
 
     /**
      * Method that will take a string representing a date and update a timestamp, leaving the time unchanged. It will
      * first try to process the string in the preferred format; if it fails, it invokes the language processor
      * @param originalDateTime The original date and time
      * @param revisedDateString The string representing the new date
+     * @param eventRequestUid
      * @return The revised timestamp, with the new date, but original time
      */
-    private LocalDateTime changeTimestampDates(LocalDateTime originalDateTime, String revisedDateString) {
+    private LocalDateTime changeTimestampDates(LocalDateTime originalDateTime, String revisedDateString, String eventRequestUid) {
         Objects.requireNonNull(originalDateTime);
         Objects.requireNonNull(revisedDateString);
 
+        log.info("changing date, string: {}", revisedDateString);
         LocalDate revisedDate;
         try {
             revisedDate = LocalDate.parse(revisedDateString, DateTimeUtil.getPreferredDateFormat());
         } catch (DateTimeParseException e) {
-            revisedDate = LocalDate.from(parseDateTime(revisedDateString));
+            revisedDate = LocalDate.from(parseDateTime(revisedDateString, eventRequestUid));
         }
         LocalDateTime newDateTime = LocalDateTime.of(revisedDate, originalDateTime.toLocalTime());
         return newDateTime;
@@ -244,7 +266,7 @@ public class USSDEventUtil extends USSDUtil {
         try {
             revisedTime = LocalTime.parse(revisedTimeString, DateTimeUtil.getPreferredTimeFormat());
         } catch (DateTimeParseException e) {
-            revisedTime = LocalTime.from(parseDateTime(revisedTimeString));
+            revisedTime = LocalTime.from(parseDateTime(revisedTimeString, null));
         }
         LocalDateTime newDateTime = LocalDateTime.of(originalDateTime.toLocalDate(), revisedTime);
         return newDateTime;

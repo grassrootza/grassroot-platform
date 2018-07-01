@@ -38,12 +38,17 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
-import javax.persistence.criteria.*;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.domain.task.EventReminderType.CUSTOM;
@@ -54,9 +59,6 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 @Service @Slf4j
 public class EventBrokerImpl implements EventBroker {
-
-	// for present
-	private static final int MAX_NAME_LENGTH = 50;
 
 	@Value("${grassroot.events.limit.enabled:false}")
 	private boolean eventMonthlyLimitActive;
@@ -156,8 +158,10 @@ public class EventBrokerImpl implements EventBroker {
 		generateResponseTokens(meeting);
 
 		log.info("called store bundle, exiting create mtg method ... triggering graph if enabled");
-		if (graphBroker != null)
-			graphBroker.addTaskToGraph(meeting);
+		if (graphBroker != null) {
+			List<String> assignedUids = meeting.getMembers().stream().map(User::getUid).collect(Collectors.toList());
+			graphBroker.addTaskToGraph(meeting, assignedUids);
+		}
 
 		return meeting;
 	}
@@ -292,7 +296,7 @@ public class EventBrokerImpl implements EventBroker {
 			throw new AccessDeniedException("Error! Only meeting caller can change meeting");
 		}
 
-		if (!StringUtils.isEmpty(name) && name.length() > MAX_NAME_LENGTH) {
+		if (!StringUtils.isEmpty(name) && name.length() > Event.MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 
@@ -363,7 +367,7 @@ public class EventBrokerImpl implements EventBroker {
 			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
 		}
 
-		if (name.length() > MAX_NAME_LENGTH) {
+		if (name.length() > Event.MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 
@@ -450,7 +454,7 @@ public class EventBrokerImpl implements EventBroker {
 			}
 		}
 
-		if (name.length() > MAX_NAME_LENGTH) {
+		if (name.length() > Event.MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 
@@ -483,8 +487,10 @@ public class EventBrokerImpl implements EventBroker {
 
 		generateResponseTokens(vote);
 
-		if (graphBroker != null)
-			graphBroker.addTaskToGraph(vote);
+		if (graphBroker != null) {
+			List<String> assignedUids = vote.getMembers().stream().map(User::getUid).collect(Collectors.toList());
+			graphBroker.addTaskToGraph(vote, assignedUids);
+		}
 
 		return vote;
 	}
@@ -932,6 +938,30 @@ public class EventBrokerImpl implements EventBroker {
 		return eventRepository.findAll(specifications, sort);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	@SuppressWarnings("unchecked")
+	public LocalTime getMostFrequentEventTime(String groupUid){
+		Group group = groupRepository.findOneByUid(groupUid);
 
+		String qry = "SELECT to_char(e.eventStartDateTime,'hh24:mi') " +
+				"FROM Meeting e " +
+				"WHERE e.ancestorGroup= :group ";
+
+		TypedQuery<String> eventTypedQuery = entityManager.createQuery(qry,String.class)
+						.setParameter("group",group);
+
+		List<String> times = eventTypedQuery.getResultList();
+		LocalTime localTime = null;
+		if(times != null && !times.isEmpty()){
+			Map<String, Long> result = times.stream()
+					.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+			Map.Entry<String,Long> entry = result.entrySet().iterator().next();
+			localTime = LocalTime.parse(entry.getKey());
+		}
+
+		return localTime;
+	}
 
 }

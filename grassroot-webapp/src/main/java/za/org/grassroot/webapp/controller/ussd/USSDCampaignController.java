@@ -24,12 +24,10 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDCampaignConstants;
 
+import javax.annotation.PostConstruct;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -43,10 +41,29 @@ public class USSDCampaignController extends USSDBaseController {
     private final CampaignBroker campaignBroker;
     private final AddressBroker addressBroker;
 
+    // needed because of Java locale hell
+    private Map<String, Locale> localeMap;
+
     @Autowired
     public USSDCampaignController(CampaignBroker campaignBroker, AddressBroker addressBroker) {
         this.campaignBroker = campaignBroker;
         this.addressBroker = addressBroker;
+    }
+
+    @PostConstruct
+    public void init() {
+        localeMap = new HashMap<>();
+        localeMap.put("eng", new Locale("en"));
+        localeMap.put("zul", new Locale("zu"));
+        localeMap.put("xho", new Locale("xh"));
+        localeMap.put("afr", new Locale("af"));
+        localeMap.put("sot", new Locale("st"));
+        log.info("locale map: {}", localeMap);
+    }
+
+    private String iso3CountryCodeToIso2CountryCode(String iso3CountryCode) {
+        log.info("iso 3 country code: {}", iso3CountryCode);
+        return localeMap.getOrDefault(iso3CountryCode, Locale.ENGLISH).getLanguage();
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignConstants.SET_LANGUAGE_URL)
@@ -223,7 +240,9 @@ public class USSDCampaignController extends USSDBaseController {
         Map<String, String> linksMap = new LinkedHashMap<>();
         campaignMessage.getNextMessages().forEach((msgUid, actionType) -> {
             String optionKey = USSDCampaignConstants.CAMPAIGN_PREFIX + actionType.name().toLowerCase();
-            String option = getMessage(optionKey, campaignMessage.getLocale().getLanguage());
+            final String converted = iso3CountryCodeToIso2CountryCode(campaignMessage.getLocale().getLanguage());
+            log.info("USSD campaign message key: {}, converted: {}", optionKey, converted);
+            String option = getMessage(optionKey, converted);
             String embeddedUrl = campaignMenus +
                     USSDCampaignConstants.getCampaignUrlPrefixs().get(actionType) + "?" +
                     USSDCampaignConstants.MESSAGE_UID_PARAMETER + msgUid;

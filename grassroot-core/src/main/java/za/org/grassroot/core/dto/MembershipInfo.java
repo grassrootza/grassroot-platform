@@ -84,13 +84,16 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     }
 
     // need to use PhoneNumberUtil here to make sure return number with country code (or vice versa)
-
     public String getPhoneNumberWithCCode() {
         try {
             return PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         }  catch (InvalidPhoneNumberException e) {
             return phoneNumber;
         }
+    }
+
+    public Optional<String> getConvertedNumber() {
+        return StringUtils.isEmpty(phoneNumber) ? Optional.empty() : Optional.of(getPhoneNumberWithCCode());
     }
 
     public String getPhoneNumberWithoutCCode() {
@@ -134,6 +137,10 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         return !StringUtils.isEmpty(memberEmail) && EmailValidator.getInstance().isValid(memberEmail);
     }
 
+    public Optional<String> getFormattedEmail() {
+        return StringUtils.isEmpty(memberEmail) ? Optional.empty() : Optional.of(memberEmail.trim().toLowerCase());
+    }
+
     public boolean hasValidPhoneOrEmail() {
         return hasValidPhoneNumber() || hasValidEmail();
     }
@@ -165,6 +172,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         sb.append(", email='").append(memberEmail).append('\'');
         sb.append(", roleName=").append(roleName);
         sb.append(", displayName='").append(displayName).append('\'');
+        sb.append(", topics='").append(topics).append('\'');
         sb.append('}');
         return sb.toString();
     }

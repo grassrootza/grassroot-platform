@@ -169,6 +169,8 @@ public class BroadcastController extends BaseRestController {
         log.info("broadcast send time millis = {}", createRequest.getSendDateTimeMillis());
         log.info("broadcast create request, = {}", createRequest);
 
+        log.info("broadcast campaign UID = {}", campaignUid);
+
         final String userUid = getUserIdFromRequest(request);
         BroadcastComponents bc = BroadcastComponents.builder()
                 .title(createRequest.getTitle())
@@ -182,7 +184,7 @@ public class BroadcastController extends BaseRestController {
                 .build();
 
         fillInContent(createRequest, bc);
-        String broadcastUid = broadcastBroker.sendGroupBroadcast(bc);
+        String broadcastUid = broadcastBroker.sendCampaignBroadcast(bc);
 
         return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid, userUid));
     }

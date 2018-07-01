@@ -113,17 +113,14 @@ public class USSDHomeController extends USSDBaseController {
         Long startTime = System.currentTimeMillis();
 
         final boolean trailingDigitsPresent = codeHasTrailingDigits(enteredUSSD);
+        log.info("Initiating USSD, trailing digits present: {}", trailingDigitsPresent);
 
         if (!trailingDigitsPresent && userInterrupted(inputNumber)) {
-            return menuBuilder(interruptedPrompt(inputNumber));
+            return menuBuilder(interruptedPrompt(inputNumber, null));
         }
 
         User sessionUser = userManager.loadOrCreateUser(inputNumber);
         userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
-
-        if (!sessionUser.isHasInitiatedSession()) {
-            userManager.setHasInitiatedUssdSession(sessionUser.getUid());
-        }
 
         USSDMenu openingMenu = trailingDigitsPresent ?
                 handleTrailingDigits(enteredUSSD, inputNumber, sessionUser) :
@@ -134,13 +131,14 @@ public class USSDHomeController extends USSDBaseController {
         return menuBuilder(openingMenu, true);
     }
 
-    private USSDMenu handleTrailingDigits(final String enteredUSSD, final String inputNumber, User user) throws URISyntaxException {
+    private USSDMenu handleTrailingDigits(final String enteredUSSD, final String inputNumber, User user) {
         String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
         return userInterrupted(inputNumber) && !safetyCode.equals(trailingDigits) ?
-                interruptedPrompt(inputNumber) : directBasedOnTrailingDigits(trailingDigits, user);
+                interruptedPrompt(inputNumber, trailingDigits) : directBasedOnTrailingDigits(trailingDigits, user);
     }
 
     private USSDMenu checkForResponseOrDefault(final User user) throws URISyntaxException {
+        recordInitiatedAndSendWelcome(user, true);
         EntityForUserResponse entity = userResponseBroker.checkForEntityForUserResponse(user.getUid(), true);
         USSDResponseTypes neededResponse = neededResponse(entity, user);
         return neededResponse.equals(USSDResponseTypes.NONE)
@@ -148,23 +146,35 @@ public class USSDHomeController extends USSDBaseController {
                 : requestUserResponse(user, neededResponse, entity);
     }
 
+    private void recordInitiatedAndSendWelcome(User user, boolean sendWelcome) {
+        if (!user.isHasInitiatedSession()) {
+            userManager.setHasInitiatedUssdSession(user.getUid(), sendWelcome);
+        }
+    }
+
     /*
     Method to go straight to start menu, over-riding prior interruptions, and/or any responses, etc.
      */
     @RequestMapping(value = homePath + startMenu + "_force")
     @ResponseBody
-    public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-        return menuBuilder(defaultStartMenu(userManager.loadOrCreateUser(inputNumber)));
+    public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(required = false) String trailingDigits) throws URISyntaxException {
+        final User user = userManager.loadOrCreateUser(inputNumber);
+        return menuBuilder(trailingDigits != null ?
+                directBasedOnTrailingDigits(trailingDigits, user) :  defaultStartMenu(user));
     }
 
-    private USSDMenu interruptedPrompt(String inputNumber) {
+    private USSDMenu interruptedPrompt(String inputNumber, String trailingDigits) {
         String returnUrl = cacheManager.fetchUssdMenuForUser(inputNumber);
-        log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
+        log.info("The user was interrupted somewhere: trailing digits: {}, URL: {}", trailingDigits, returnUrl);
 
         User user = userManager.findByInputNumber(inputNumber);
         USSDMenu promptMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-interrupted", user));
         promptMenu.addMenuOption(returnUrl, getMessage(thisSection, startMenu, "interrupted.resume", user));
-        promptMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", user));
+
+        final String startMenuOption = startMenu + "_force" + (!StringUtils.isEmpty(trailingDigits) ? "?trailingDigits=" + trailingDigits : "");
+        log.info("User interrupted, start menu option: {}", startMenuOption);
+        promptMenu.addMenuOption(startMenuOption, getMessage(thisSection, startMenu, "interrupted.start", user));
 
         // set the user's "last USSD menu" back to null, so avoids them always coming back here
         userLogger.recordUssdInterruption(user.getUid(), returnUrl);
@@ -185,21 +195,29 @@ public class USSDHomeController extends USSDBaseController {
     private USSDMenu directBasedOnTrailingDigits(String trailingDigits, User user) {
         USSDMenu returnMenu;
         log.info("Processing trailing digits ..." + trailingDigits);
+        boolean sendWelcomeIfNew = false;
         if (safetyCode.equals(trailingDigits)) {
             returnMenu = safetyController.assemblePanicButtonActivationMenu(user);
         } else if (livewireSuffix.equals(trailingDigits)) {
             returnMenu = liveWireController.assembleLiveWireOpening(user, 0);
+            sendWelcomeIfNew = true;
         } else if (sendMeLink.equals(trailingDigits)) {
             returnMenu = assembleSendMeAndroidLinkMenu(user);
+            sendWelcomeIfNew = true;
         } else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
             returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
+            sendWelcomeIfNew = false;
         } else {
             returnMenu = groupController.lookForJoinCode(user, trailingDigits);
-            if (returnMenu == null) {
+            boolean groupJoin = returnMenu != null;
+            if (!groupJoin) {
                 log.info("checking if campaign: {}", trailingDigits);
                 returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
             }
+            sendWelcomeIfNew = groupJoin;
+            log.info("group or campaign join, trailing digits ={}, send welcome = {}", trailingDigits, sendWelcomeIfNew);
         }
+        recordInitiatedAndSendWelcome(user, sendWelcomeIfNew);
         return returnMenu;
     }
 

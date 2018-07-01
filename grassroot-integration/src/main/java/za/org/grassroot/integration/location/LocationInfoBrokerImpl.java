@@ -34,6 +34,8 @@ import za.org.grassroot.core.repository.UserRepository;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -280,12 +282,23 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     private Set<Notification> notificationsFromRecords(String dataSet, List<String> records, User target,
                                                        AccountLog accountLog, int singleMessageLength) {
-        int countChars = String.join(", ", records).length();
-        log.info("okay, have this many chars for records: {}", countChars);
         Set<Notification> notifications = new HashSet<>();
 
+        final String openingMessage = getOpeningNote(dataSet, target.getLocale());
+        boolean hasOpeningMessage = openingMessage != null;
+
+        if (hasOpeningMessage) {
+            log.info("Have an opening message for records: {}", openingMessage);
+            Notification opening = new FreeFormMessageNotification(target, openingMessage, accountLog);
+            notifications.add(opening);
+        }
+
+        List<Notification> infoMessages = new ArrayList<>();
+        int countChars = String.join(", ", records).length();
+        log.info("okay, have this many chars for records: {}", countChars);
+
         if (countChars < singleMessageLength) {
-            notifications.add(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
+            infoMessages.add(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
         } else {
             StringBuilder currentMsg = new StringBuilder();
             log.debug("initiated, first message: {}", currentMsg);
@@ -295,20 +308,28 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                     currentMsg.append(separator).append(r);
                     log.debug("continuing assembly, new message: {}", currentMsg);
                 } else {
-                    notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
                     log.info("appended message: {}, creating new one", currentMsg.toString());
+                    infoMessages.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
                     currentMsg = new StringBuilder(r);
                 }
             }
             if (currentMsg.length() > 0) {
                 log.info("adding final message: {}", currentMsg);
-                notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
+                infoMessages.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
             }
         }
 
+        if (hasOpeningMessage) {
+            infoMessages.forEach(n -> n.setSendOnlyAfter(Instant.now().plus(15, ChronoUnit.SECONDS)));
+        }
+
+        notifications.addAll(infoMessages);
+
         final String finalMessage = getFinalMessage(dataSet, target.getLocale());
         if (!StringUtils.isEmpty(finalMessage)) {
-            notifications.add(new FreeFormMessageNotification(target, finalMessage, accountLog));
+            Notification finalNotification = new FreeFormMessageNotification(target, finalMessage, accountLog);
+            finalNotification.setSendOnlyAfter(Instant.now().plus(hasOpeningMessage ? 30 : 15, ChronoUnit.SECONDS));
+            notifications.add(finalNotification);
         }
 
         return notifications;
@@ -373,17 +394,25 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
+    private String getOpeningNote(String dataSetLabel, Locale locale) {
+        return getFromSpec("opening_messages", dataSetLabel, locale);
+    }
+
     private String getFinalMessage(String dataSetLabel, Locale locale) {
+        return getFromSpec("final_messages", dataSetLabel, locale);
+    }
+
+    private String getFromSpec(String fieldName, String dataSetLabel, Locale locale) {
         DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
         Table geoApiTable = dynamoDB.getTable("geo_apis");
         GetItemSpec spec = new GetItemSpec()
                 .withPrimaryKey("data_set_label", dataSetLabel)
-                .withProjectionExpression("final_messages");
+                .withProjectionExpression(fieldName);
         try {
-            log.info("getting final messages for dataset : {} and locale : {}", dataSetLabel, locale);
+            log.info("getting {} messages for dataset : {} and locale : {}", fieldName, dataSetLabel, locale);
             Item outcome = geoApiTable.getItem(spec);
             log.info("result: {}", outcome);
-            Map<String, String> results = outcome.getMap("final_messages");
+            Map<String, String> results = outcome.getMap(fieldName);
             return results == null || results.isEmpty() ? null :
                     locale != null && results.containsKey(locale.getLanguage())
                             ? results.get(locale.getLanguage()) : results.getOrDefault("en", null);

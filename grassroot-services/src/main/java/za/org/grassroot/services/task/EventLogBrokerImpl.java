@@ -144,7 +144,7 @@ public class EventLogBrokerImpl implements EventLogBroker {
 
     private void generateMeetingResponseMessage(Event event, EventLog eventLog, EventRSVPResponse rsvpResponse) {
         if (event.getCreatedByUser().getMessagingPreference().equals(DeliveryRoute.ANDROID_APP)) {
-            String message = messageAssemblingService.createEventResponseMessage(event.getCreatedByUser(), event, rsvpResponse);
+            String message = messageAssemblingService.createEventResponseMessage(eventLog.getUser(), event, rsvpResponse);
             Notification notification = new EventResponseNotification(event.getCreatedByUser(), message, eventLog);
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
             bundle.addNotification(notification);

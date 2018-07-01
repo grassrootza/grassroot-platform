@@ -11,13 +11,16 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 public interface MembershipRepository extends JpaRepository<Membership, Long>, JpaSpecificationExecutor<Membership> {
 
     Membership findByGroupUidAndUserUid(String groupId, String userUid);
 
-    List<Membership> findByGroupAndUserIn(Group group, List<User> users);
+    List<Membership> findByGroupAndUserUidIn(Group group, Collection<String> userUids);
+
+    List<Membership> findByGroupAndUserIn(Group group, Collection<User> users);
 
     Page<Membership> findByGroupUid(String groupUid, Pageable pageable);
 
@@ -32,5 +35,7 @@ public interface MembershipRepository extends JpaRepository<Membership, Long>, J
             "where m.group_id = ?1 and u.province in ?2 and m.tags && ?3 and m.join_time > ?4", nativeQuery = true)
     List<Membership> findByGroupProvinceTopicsAndJoinedDate(long groupId, List<Province> provinces, String[] tags, Instant joinTime);
 
+    // basically, every active membership, for populating graph ...
+    List<Membership> findByGroupActiveTrue();
 
 }

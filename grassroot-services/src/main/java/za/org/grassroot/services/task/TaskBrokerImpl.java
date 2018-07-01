@@ -1,6 +1,7 @@
 package za.org.grassroot.services.task;
 
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
@@ -538,22 +540,54 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         List<Membership> members = new ArrayList<>();
 
-        if (TaskType.MEETING.equals(taskType)) {
-            Meeting meeting = eventBroker.loadMeeting(taskUid);
-
-            Group ancestorGroup = meeting.getAncestorGroup();
-            if (!ancestorGroup.hasMember(user)) {
-                throw new AccessDeniedException("Error! Must be part of group");
-            }
-
-            List<User> assignedUsers = onlyPositiveResponders ? userRepository.findUsersThatRSVPForEvent(meeting)
-                    : new ArrayList<>(meeting.getMembers());
+        if (TaskType.MEETING.equals(taskType) || TaskType.VOTE.equals(taskType)) {
+            Event event = eventBroker.load(taskUid);
+            Group ancestorGroup = event.getAncestorGroup();
+            validateUserPartOfGroupOrSystemAdmin(ancestorGroup, user);
+            Set<User> assignedUsers = onlyPositiveResponders ?
+                    new HashSet<>(userRepository.findUsersThatRSVPForEvent(event)) : event.getMembers();
             // this could be very big, so don't user group.getMemberships which may induce graph problems
             members.addAll(membershipRepository.findByGroupAndUserIn(ancestorGroup, assignedUsers));
             log.info("added members from meeting, number: {}", members.size());
+        } else {
+            Todo todo = todoBroker.load(taskUid);
+            Group ancestorGroup = todo.getAncestorGroup();
+            validateUserPartOfGroupOrSystemAdmin(ancestorGroup, user);
+            Set<User> users = todo.getAssignedMembers();
+            members.addAll(membershipRepository.findByGroupAndUserIn(ancestorGroup, users));
         }
 
         return members;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> fetchUserUidsForTask(String userUid, String taskUid, TaskType taskType) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+
+        if (TaskType.TODO.equals(taskType)) {
+            Todo todo = todoBroker.load(taskUid);
+            validateUserPartOfGroupOrSystemAdmin(todo.getAncestorGroup(), user);
+            Set<TodoAssignment> todoAssignments = new HashSet<>(todoAssignmentRepository.findByTodo(todo));
+            return todoAssignments.stream().map(TodoAssignment::getUser).map(User::getUid).collect(Collectors.toList());
+        } else {
+            Event event = eventBroker.load(taskUid);
+            Group ancestorGroup = event.getAncestorGroup();
+            validateUserPartOfGroupOrSystemAdmin(ancestorGroup, user);
+            Set<User> assignedUsers = userRepository.findByEvents(event);
+            log.info("assigned users: {}", assignedUsers);
+            if (assignedUsers == null || assignedUsers.isEmpty()) {
+                assignedUsers = event.getAncestorGroup().getMembers();
+            }
+            log.info("after group check, assigned users: {}", assignedUsers);
+            return assignedUsers.stream().map(User::getUid).collect(Collectors.toList());
+        }
+    }
+
+    private void validateUserPartOfGroupOrSystemAdmin(Group group, User user) {
+        if (!group.hasMember(user) && !permissionBroker.isSystemAdmin(user)) {
+            throw new AccessDeniedException("Error! Must be part of group");
+        }
     }
 
     @Override
@@ -606,6 +640,27 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     @Override
+    @Transactional
+    public TaskFullDTO changeTaskDate(String userUid, String taskUid, TaskType taskType, Instant newDateTime) {
+        // todo : fix the whole LDT / instant mess and just use instant
+        LocalDateTime ldt = DateTimeUtil.convertToUserTimeZone(newDateTime, DateTimeUtil.getSAST()).toLocalDateTime();
+        switch (taskType) {
+            case MEETING:
+                eventBroker.updateMeeting(userUid, taskUid, null, ldt, null);
+                break;
+            case VOTE:
+                voteBroker.updateVote(userUid, taskUid, ldt, null);
+                break;
+            case TODO:
+                todoBroker.extend(userUid, taskUid, newDateTime);
+                break;
+            default:
+                log.error("Error! Unknown task type");
+        }
+        return fetchSpecifiedTasks(userUid, ImmutableMap.of(taskUid, taskType), null).get(0);
+    }
+
+    @Override
     public void respondToTask(String userUid, String taskUid, TaskType taskType, String response) {
         log.info("responding to task, userUid: {}, task type: {}", userUid, taskType);
         switch (taskType) {
@@ -621,6 +676,14 @@ public class TaskBrokerImpl implements TaskBroker {
             default:
                 throw new IllegalArgumentException("Error! Unsupported task type");
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Task> loadAllTasks() {
+        List<Task> allTasks = new ArrayList<>(eventRepository.findAll(EventSpecifications.notCancelled()));
+        allTasks.addAll(todoBroker.loadAllTodos());
+        return allTasks;
     }
 
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {

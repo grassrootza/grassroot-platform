@@ -182,7 +182,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         TwitterAccount twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
         builder.isTwitterConnected(twitterAccount != null).twitterAccount(twitterAccount);
 
-        int campaignMembersSize = getCampaignEngagedUsers(campaign).size();
+        int campaignMembersSize = getCampaignJoinedUsers(campaign).size();
         builder.allMemberCount(campaignMembersSize);
         log.info("count of engaged users fo campaign: {}", campaignMembersSize);
 
@@ -197,7 +197,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         return Specifications.where(forCampaign).and(engaged);
     }
 
-    private List<User> getCampaignEngagedUsers(Campaign campaign) {
+    private List<User> getCampaignJoinedUsers(Campaign campaign) {
         return campaignLogRepository.findAll(engagementLogsForCampaign(campaign))
                 .stream().map(CampaignLog::getUser).distinct().collect(Collectors.toList());
     }
@@ -648,14 +648,17 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private LogsAndNotificationsBundle generateCampaignBroadcastBundle(Broadcast bc) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
+        log.info("generating campaign broadcast bundle from broadcast: {}", bc);
         Campaign campaign = bc.getCampaign();
         CampaignLog campaignLog = new CampaignLog(bc.getCreatedByUser(), CampaignLogType.CAMPAIGN_BROADCAST_SENT,
                 campaign, null, null);
         campaignLog.setBroadcast(bc);
         bundle.addLog(campaignLog);
 
+        log.info("should be about to filter, has filter? : {}", bc.hasFilter());
         Set<User> usersToReceive = bc.hasFilter() ? filterCampaignUsers(bc, campaign) :
-                new HashSet<>(getCampaignEngagedUsers(campaign));
+                new HashSet<>(getCampaignJoinedUsers(campaign));
+        log.info("post-filtering, for campaign, {} many users", usersToReceive.size());
 
         if (bc.hasEmail()) {
             Set<User> emailUsers = usersToReceive.stream().filter(User::hasEmailAddress).collect(Collectors.toSet());
@@ -688,20 +691,25 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private Set<User> filterCampaignUsers(Broadcast bc, Campaign campaign) {
+        log.info("filtering campaign users, or should be, with provinces: {}", bc.getProvinces());
+
         Specifications<CampaignLog> specs = engagementLogsForCampaign(campaign);
 
         if (!bc.getProvinces().isEmpty()) {
-            specs.and((root, query, cb) -> root.get(CampaignLog_.user).get(User_.province).in(bc.getProvinces()));
+            log.info("wiring up for province: {}", bc.getProvinces());
+            specs = specs.and((root, query, cb) -> root.get(CampaignLog_.user).get(User_.province).in(bc.getProvinces()));
         }
 
         if (bc.getJoinDateCondition().isPresent()) {
-            specs.and(joinDateCondition(bc.getJoinDateCondition().get(), bc.getJoinDate()
+            log.info("join date condition present, setting");
+            specs = specs.and(joinDateCondition(bc.getJoinDateCondition().get(), bc.getJoinDate()
                     .orElseThrow(() -> new IllegalArgumentException("Join date condition without join date"))));
         }
 
         if (!bc.getTopics().isEmpty()) {
+            log.info("topics present, setting: {}", bc.getTopics());
             List<String> prefixedTopics = bc.getTopics().stream().map(s -> Campaign.JOIN_TOPIC_PREFIX + s).collect(Collectors.toList());
-            specs.and((root, query, cb) -> root.get(CampaignLog_.description).in(prefixedTopics));
+            specs = specs.and((root, query, cb) -> root.get(CampaignLog_.description).in(prefixedTopics));
         }
 
         return campaignLogRepository.findAll(specs).stream().distinct().map(CampaignLog::getUser).distinct()

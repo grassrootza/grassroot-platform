@@ -50,10 +50,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toCollection;
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
 
@@ -188,8 +187,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         logger.info("returning group now ... group has {} members", group.getMemberships().size());
 
-        if (graphBroker != null)
-            graphBroker.addGroupToGraph(group.getUid(), userUid);
+        if (graphBroker != null) {
+            graphBroker.addGroupToGraph(group.getUid(), userUid, null);
+        }
 
         return group;
     }
@@ -404,38 +404,63 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids) {
+    public void copyMembersIntoGroup(String userUid, String fromGroupUid, String toGroupUid, Set<String> memberUids, boolean keepTopics, String addTopic) {
         User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+        Group toGroup = groupRepository.findOneByUid(toGroupUid);
 
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        permissionBroker.validateGroupPermission(user, toGroup, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
 
-        if (!checkGroupSizeLimit(group, memberUids.size())) {
+        if (!checkGroupSizeLimit(toGroup, memberUids.size())) {
             throw new GroupSizeLimitExceededException();
         }
 
         List<User> users = userRepository.findByUidIn(memberUids);
         Set<User> userSet = new HashSet<>(users);
         logger.info("list size {}, set size {}", users.size(), userSet.size());
-        group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, null);
+        Set<Membership> memberships = toGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupUid);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         // recursively add users to all parent groups
-        Group parentGroup = group.getParent();
+        Group parentGroup = toGroup.getParent();
         while (parentGroup != null) {
             parentGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, null);
-            createSubGroupAddedLogs(parentGroup, group, user, users, bundle);
+            createSubGroupAddedLogs(parentGroup, toGroup, user, users, bundle);
             parentGroup = parentGroup.getParent();
         }
 
         for (User u  : users) {
-            GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, null);
+            GroupLog groupLog = new GroupLog(toGroup, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, null);
             bundle.addLog(groupLog);
-            notifyNewMembersOfUpcomingMeetings(bundle, u, group, groupLog);
+            notifyNewMembersOfUpcomingMeetings(bundle, u, toGroup, groupLog);
+        }
+
+        if (keepTopics) {
+            transferTopics(fromGroupUid, memberUids, memberships);
+        }
+
+        if (!StringUtils.isEmpty(addTopic)) {
+            Set<String> topic = Collections.singleton(addTopic);
+            memberships.forEach(m -> m.addTopics(topic));
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    private void transferTopics(String fromGroupUid, Set<String> userUids, Set<Membership> newMemberships) {
+        Group fromGroup = groupRepository.findOneByUid(fromGroupUid);
+        List<Membership> oldMemberships = membershipRepository.findByGroupAndUserUidIn(fromGroup, userUids);
+
+        // this is going to be painful one way or another, this seems least so - assemble two maps, then user uid to transfer
+        Map<String, Membership> oldMap = oldMemberships.stream().collect(Collectors.toMap(m -> m.getUser().getUid(), Function.identity()));
+        Map<String, Membership> newMap = newMemberships.stream().collect(Collectors.toMap(m -> m.getUser().getUid(), Function.identity()));
+
+        userUids.forEach(uid -> {
+            Membership oldMember = oldMap.get(uid);
+            Membership newMember = newMap.get(uid);
+            if (oldMember != null && newMember != null)
+                newMember.addTopics(new HashSet<>(oldMember.getTopics()));
+        });
     }
 
     private void createSubGroupAddedLogs(Group parent, Group child, User initiator, List<User> users, LogsAndNotificationsBundle bundle) {
@@ -683,131 +708,84 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 
-    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos,
+    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> rawMembershipInfos,
                                                       GroupJoinMethod joinMethod, String joinMethodDescriptor,
                                                       boolean duringGroupCreation, boolean createWelcomeNotifications) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
-
-        Comparator<MembershipInfo> byPhoneNumber = (MembershipInfo m1, MembershipInfo m2) -> {
-            if (m1.hasPhoneNumber() && m2.hasPhoneNumber())
-                return m1.getPhoneNumberWithCCode().compareTo(m2.getPhoneNumberWithCCode());
-            else if (m1.hasValidEmail() && m2.hasValidEmail())
-                return m1.getMemberEmail().compareTo(m2.getMemberEmail());
-            else
-                return 1; // since by definition they have no basis for comparison, so point is just they're different
-        };
-
-        Set<MembershipInfo> validNumberMembers = membershipInfos.stream()
+        Set<MembershipInfo> membershipInfos = stripDuplicateEmailsAndPhones(rawMembershipInfos).stream()
                 .filter(MembershipInfo::hasValidPhoneOrEmail)
-                .collect(collectingAndThen(toCollection(() -> new TreeSet<>(byPhoneNumber)), HashSet::new));
-        logger.info("number of valid members in import: {}", validNumberMembers.size());
-
-        Set<String> memberPhoneNumbers = validNumberMembers.stream()
-                .filter(MembershipInfo::hasValidPhoneNumber)
-                .map(MembershipInfo::getPhoneNumberWithCCode)
                 .collect(Collectors.toSet());
-        Set<String> emailAddresses = validNumberMembers.stream()
-                .filter(MembershipInfo::hasValidEmail)
+
+        logger.info("number of valid members in import: {}", membershipInfos.size());
+
+        Set<String> memberPhoneNumbers = membershipInfos.stream().filter(MembershipInfo::hasValidPhoneNumber)
+                .map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
+
+        Set<String> emailAddresses = membershipInfos.stream().filter(MembershipInfo::hasValidEmail)
                 .map(MembershipInfo::getMemberEmail).collect(Collectors.toSet());
 
         logger.info("phoneNumbers returned: .... {}, email addresses: {}", memberPhoneNumbers, emailAddresses);
 
-        Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
-        existingUsers.addAll(userRepository.findByEmailAddressIn(emailAddresses));
+        Set<Membership> addedMemberships = new HashSet<>();
 
-        Map<String, User> existingUserPhoneMap = existingUsers.stream()
-                .filter(User::hasPhoneNumber)
-                .collect(Collectors.toMap(User::getPhoneNumber, user -> user));
-        Map<String, User> existingUserEmailMap = existingUsers.stream()
-                .filter(User::hasEmailAddress)
-                .collect(Collectors.toMap(User::getEmailAddress, user -> user));
-
-        logger.info("Number of existing users ... {} by phone, {} by email", existingUserPhoneMap.size() + existingUserPhoneMap.size());
-        logger.info("Existing email addresses: {}", existingUserEmailMap);
-
-        Set<User> createdUsers = new HashSet<>();
-        Set<Membership> memberships = new HashSet<>();
+        Set<User> newlyCreatedUsers = new HashSet<>();
         Set<MembershipInfo> taskTeamMembers = new HashSet<>();
 
         Set<String> existingEmails = userRepository.fetchUsedEmailAddresses();
         Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
 
-        for (MembershipInfo membershipInfo : validNumberMembers) {
-            // note: splitting this instead of getOrDefault, since that method calls default method even if it finds something, hence spurious user creation
-            String msidn = StringUtils.isEmpty(membershipInfo.getPhoneNumberWithCCode()) ? null : membershipInfo.getPhoneNumberWithCCode();
-            String emailAddress = StringUtils.isEmpty(membershipInfo.getMemberEmail())  ? null : membershipInfo.getMemberEmail();
+        for (MembershipInfo membershipInfo : membershipInfos) {
+            // note: splitting this instead of getOrDefault, since that method calls default method even if it
+            // finds something, hence spurious user creation
+            Optional<String> msisdn = membershipInfo.getConvertedNumber();
+            Optional<String> emailAddress = membershipInfo.getFormattedEmail();
 
-            User user = existingUserPhoneMap.containsKey(msidn) ? existingUserPhoneMap.get(msidn) :
-                    existingUserEmailMap.get(emailAddress);
-
-            if (user == null && emailAddress != null && existingEmails.contains(emailAddress.trim().toLowerCase())) {
-                logger.info("Look up of existing user by email addresses failed: {}", emailAddress);
-                break;
+            User memberUser;
+            if (msisdn.isPresent() && existingPhoneNumbers.contains(msisdn.get())) {
+                memberUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn.get());
+            } else if (emailAddress.isPresent() && existingEmails.contains(emailAddress.get())) {
+                memberUser = userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress.get());
+            } else {
+                logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msisdn, emailAddress);
+                memberUser = new User(msisdn.orElse(null), membershipInfo.getDisplayName(), emailAddress.orElse(null));
+                memberUser.setFirstName(membershipInfo.getFirstName());
+                memberUser.setLastName(membershipInfo.getSurname());
+                newlyCreatedUsers.add(memberUser);
             }
 
-            if (user == null) {
-                logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msidn, emailAddress);
-                user = new User(msidn, membershipInfo.getDisplayName(), emailAddress);
-                user.setFirstName(membershipInfo.getFirstName());
-                user.setLastName(membershipInfo.getSurname());
-                createdUsers.add(user);
-            } else if (!user.isHasInitiatedSession()) {
-                if (!user.hasEmailAddress() && !StringUtils.isEmpty(emailAddress) && !existingEmails.contains(emailAddress)) {
-                    user.setEmailAddress(emailAddress);
+            if (!memberUser.isHasInitiatedSession()) {
+                if (!memberUser.hasEmailAddress() && emailAddress.isPresent() && !existingEmails.contains(emailAddress.get())) {
+                    memberUser.setEmailAddress(emailAddress.get());
                 }
-                if (!user.hasPhoneNumber() && !StringUtils.isEmpty(msidn) && !existingPhoneNumbers.contains(msidn)) {
-                    user.setPhoneNumber(msidn);
+                if (!memberUser.hasPhoneNumber() && msisdn.isPresent() && !existingPhoneNumbers.contains(msisdn.get())) {
+                    memberUser.setPhoneNumber(msisdn.get());
                 }
             }
 
-            String roleName = membershipInfo.getRoleName();
+            String roleName = membershipInfo.getRoleName() == null ? BaseRoles.ROLE_ORDINARY_MEMBER : membershipInfo.getRoleName();
+            joinMethod = joinMethod == null ? GroupJoinMethod.ADDED_BY_OTHER_MEMBER : joinMethod;
 
-            if (roleName == null)
-                roleName = BaseRoles.ROLE_ORDINARY_MEMBER;
-            if (joinMethod == null)
-                joinMethod = GroupJoinMethod.ADDED_BY_OTHER_MEMBER;
+            Membership membership = group.addMember(memberUser, roleName, joinMethod, joinMethodDescriptor);
+            membership = wireUpMembershipTags(memberUser, membership, membershipInfo);
 
-            Membership membership = group.addMember(user, roleName, joinMethod, joinMethodDescriptor);
+            if (membershipInfo.getTaskTeams() != null && !membershipInfo.getTaskTeams().isEmpty())
+                taskTeamMembers.add(membershipInfo);
 
-            if (user.getProvince() == null && membershipInfo.getProvince() != null) {
-                user.setProvince(membershipInfo.getProvince());
-            }
-
-
-            if (membership != null) {
-                if (membershipInfo.getTopics() != null) {
-                    membership.setTopics(new HashSet<>(membershipInfo.getTopics()));
-                }
-
-                if (membershipInfo.getAffiliations() != null) {
-                    membership.addAffiliations(new HashSet<>(membershipInfo.getAffiliations()));
-                }
-
-                if (membershipInfo.hasTaskTeams()) {
-                    membershipInfo.setUserUid(user.getUid());
-                    taskTeamMembers.add(membershipInfo);
-                }
-
-                memberships.add(membership);
-            }
+            if (membership != null)
+                addedMemberships.add(membership);
         }
 
-        logger.info("completed iteration, added {} users", validNumberMembers.size());
-        // make sure the newly created users are stored, but do it one by one, so one mistake on email does not torch this
-        userRepository.saveAll(createdUsers);
-        userRepository.flush();
-
-        // adding action logs and event notifications ...
+        logger.info("completed iteration, added {} users", membershipInfos.size());
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        for (User createdUser : createdUsers) {
-            bundle.addLog(new UserLog(createdUser.getUid(), UserLogType.CREATED_IN_DB, String.format("Created by being added to group with ID: %s", group.getUid()), UNKNOWN));
-        }
+        // make sure the newly created users are stored
+        storeCreatedUsers(group, newlyCreatedUsers, bundle);
 
+        // adding action logs and event notifications ...
         final GroupLogType logType = duringGroupCreation ? GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION : GroupLogType.GROUP_MEMBER_ADDED;
 
         Set<String> addedUserUids = new HashSet<>();
-        for (Membership membership : memberships) {
+        for (Membership membership : addedMemberships) {
             User member = membership.getUser();
             GroupLog groupLog = new GroupLog(group, initiator, logType, member, null, null, null);
             bundle.addLog(groupLog);
@@ -820,15 +798,75 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         if (createWelcomeNotifications)
             triggerWelcomeMessagesAfterCommit(initiator.getUid(), group.getUid(), addedUserUids);
 
-        if (group.getParent() != null) {
+        if (group.getParent() != null)
             triggerAddMembersToParentGroup(initiator, group.getParent(), membershipInfos, joinMethod);
-        }
 
-        if (!taskTeamMembers.isEmpty()) {
+        if (!taskTeamMembers.isEmpty())
             addMembersToSubgroupsAfterCommit(initiator.getUid(), group.getUid(), taskTeamMembers);
-        }
+
+        if (!duringGroupCreation && graphBroker != null)
+            graphBroker.addMembershipToGraph(addedUserUids, group.getUid());
 
         return bundle;
+    }
+
+    private Set<MembershipInfo> stripDuplicateEmailsAndPhones(Set<MembershipInfo> membershipInfos) {
+        Set<MembershipInfo> safeMembers = new HashSet<>();
+        Set<String> phones = new HashSet<>();
+        Set<String> emails = new HashSet<>();
+
+        for (MembershipInfo member: membershipInfos) {
+            if (member.hasValidEmail() && emails.contains(member.getMemberEmail())) {
+                member.setMemberEmail(null); // i.e., remove it
+            } else if (member.hasValidEmail()) {
+                emails.add(member.getMemberEmail());
+            }
+
+            if (member.hasValidPhoneNumber() && phones.contains(member.getPhoneNumberWithCCode())) {
+                member.setPhoneNumber(null);
+            } else if (member.hasValidPhoneNumber()) {
+                phones.add(member.getPhoneNumberWithCCode());
+            }
+
+            if (member.hasValidPhoneOrEmail()) {
+                safeMembers.add(member);
+            }
+        }
+
+        return safeMembers;
+    }
+
+    private Membership wireUpMembershipTags(User user, Membership membership, MembershipInfo membershipInfo) {
+        if (user.getProvince() == null && membershipInfo.getProvince() != null) {
+            user.setProvince(membershipInfo.getProvince());
+        }
+
+        if (membership != null) {
+            if (membershipInfo.getTopics() != null) {
+                membership.setTopics(new HashSet<>(membershipInfo.getTopics()));
+            }
+
+            if (membershipInfo.getAffiliations() != null) {
+                membership.addAffiliations(new HashSet<>(membershipInfo.getAffiliations()));
+            }
+
+            if (membershipInfo.hasTaskTeams()) {
+                membershipInfo.setUserUid(user.getUid());
+            }
+        }
+
+        return membership;
+    }
+
+    private void storeCreatedUsers(Group group, Set<User> createdUsers, LogsAndNotificationsBundle bundle) {
+        if (createdUsers != null && !createdUsers.isEmpty()) {
+            userRepository.saveAll(createdUsers);
+            userRepository.flush();
+
+            for (User createdUser : createdUsers) {
+                bundle.addLog(new UserLog(createdUser.getUid(), UserLogType.CREATED_IN_DB, String.format("Created by being added to group with ID: %s", group.getUid()), UNKNOWN));
+            }
+        }
     }
 
     private void triggerAddMembersToParentGroup(User initiator, Group group, Set<MembershipInfo> membershipInfos,

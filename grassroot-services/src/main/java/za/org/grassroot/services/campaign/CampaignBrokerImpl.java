@@ -564,6 +564,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
         return campaign;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean doesGroupHaveActiveCampaign(String groupUid) {
+        return campaignRepository.countByMasterGroupUidAndEndDateTimeAfter(groupUid, Instant.now()) > 0;
+    }
+
     private void haltCampaignWelcome(final Campaign campaign, final User user) {
         Specification<Notification> logFind = (root, query, cb) -> {
             Join<Notification, CampaignLog> logJoin = root.join(Notification_.campaignLog);

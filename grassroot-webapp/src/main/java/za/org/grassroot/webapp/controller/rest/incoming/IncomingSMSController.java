@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.rest.incoming;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
@@ -165,25 +167,73 @@ public class IncomingSMSController {
         return reply;
     }
 
-    @RequestMapping(value = "initiated/pcm/campaign/{campaignUid}", method = RequestMethod.POST)
+    // use a tag - note that this will therefore require a no space tag
+    @RequestMapping(value = "initiated/pcm/campaign/tag/{campaignUid}/{tag}", method = RequestMethod.POST)
+    @ApiOperation(value = "Receive an incoming please call me, and use it to tag a member of the group")
+    public ResponseEntity receiveTaggingPcm(@PathVariable String campaignUid,
+                                            @PathVariable String tag,
+                                            @RequestParam String secret,
+                                            @RequestParam(value = "from_number") String phoneNumber,
+                                            @RequestParam(value = "content") String message,
+                                            @RequestParam(value = "to_number") String toNumber) {
+        ResponseEntity hygieneCheck = checkPcmForSecretAndFormat(secret, message);
+        if (hygieneCheck != null)
+            return hygieneCheck;
+
+        User user = userManager.loadOrCreateUser(phoneNumber);
+
+        if (!campaignBroker.isUserInCampaignMasterGroup(campaignUid, user.getUid())) {
+            campaignBroker.addUserToCampaignMasterGroup(campaignUid, user.getUid(), UserInterfaceType.PLEASE_CALL_ME);
+        }
+
+        Campaign campaign = campaignBroker.load(campaignUid);
+        log.info("Adding tag to user with number {}, tag is {}, campaign {}", phoneNumber, tag, campaign);
+
+        groupBroker.assignMembershipTopics(user.getUid(), campaign.getMasterGroup().getUid(), user.getUid(),
+                Collections.singleton(tag), true);
+
+        log.info("Successfully tagged user");
+
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "initiated/pcm/campaign/join/{campaignUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Receive an incoming please call me, and send a welcome message, or add to group")
     public ResponseEntity receivePleaseCallMe(@PathVariable String campaignUid,
                                               @RequestParam String secret,
                                               @RequestParam(value = "from_number") String phoneNumber,
-                                              @RequestParam(value = "content") String message) {
+                                              @RequestParam(value = "content") String message,
+                                              @RequestParam(value = "to_number") String toNumber) {
+        ResponseEntity hygieneCheck = checkPcmForSecretAndFormat(secret, message);
+        if (hygieneCheck != null)
+            return hygieneCheck;
+
+        User user = userManager.loadOrCreateUser(phoneNumber);
+        final String callback = PhoneNumberUtil.formattedNumber(toNumber);
+        log.info("PCM received, responding with callback number: {}, incoming to number: {}, from: {}, msg: {}", callback, toNumber, phoneNumber, message);
+
+        if (!campaignBroker.hasUserEngaged(campaignUid, user.getUid())) {
+            campaignBroker.recordEngagement(campaignUid, user.getUid(), UserInterfaceType.PLEASE_CALL_ME, message);
+            campaignTextBroker.checkForAndTriggerCampaignText(campaignUid, user.getUid(), callback, UserInterfaceType.PLEASE_CALL_ME);
+        } else {
+            campaignTextBroker.handleCampaignTextResponse(campaignUid, user.getUid(), message, UserInterfaceType.PLEASE_CALL_ME);
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    private ResponseEntity checkPcmForSecretAndFormat(String secret, String message) {
         if (!secret.equals(INBOUND_PCM_TOKEN)) {
             log.error("Invalid inbound token received: {}", secret);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        User user = userManager.loadOrCreateUser(phoneNumber);
-        if (!campaignBroker.hasUserEngaged(campaignUid, user.getUid())) {
-            campaignBroker.recordEngagement(campaignUid, user.getUid(), UserInterfaceType.PLEASE_CALL_ME, message);
-            campaignTextBroker.checkForAndTriggerCampaignText(campaignUid, user.getUid(), null, UserInterfaceType.PLEASE_CALL_ME);
-        } else {
-            campaignTextBroker.handleCampaignTextResponse(campaignUid, user.getUid(), message, UserInterfaceType.PLEASE_CALL_ME);
+        boolean likelyPlsCallMe = StringUtils.containsIgnoreCase(message, "please call") || StringUtils.containsIgnoreCase(message, "call me");
+        if (!likelyPlsCallMe) {
+            log.info("not a please call me, must be different message: ", message);
+            return ResponseEntity.ok().build();
         }
-        return ResponseEntity.ok().build();
+
+        return null;
     }
 
     @RequestMapping(value = "reply", method = RequestMethod.GET)

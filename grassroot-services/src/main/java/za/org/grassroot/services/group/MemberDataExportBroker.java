@@ -12,6 +12,8 @@ public interface MemberDataExportBroker {
 
     XSSFWorkbook exportGroupErrorReport(String groupUid, String userUid);
 
+    XSSFWorkbook exportGroupMembersFiltered(String groupUid, String userUid, List<String> memberUids);
+
     XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupUidsToExport);
 
     XSSFWorkbook exportTodoData(String userUid, String todoUid);

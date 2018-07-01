@@ -62,7 +62,7 @@ public interface GroupBroker {
 
     void asyncMemberToSubgroupAdd(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 
-    void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
+    void copyMembersIntoGroup(String userUid, String fromGroupUid, String toGroupUid, Set<String> memberUids, boolean keepTopics, String addTopic);
 
     Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
 

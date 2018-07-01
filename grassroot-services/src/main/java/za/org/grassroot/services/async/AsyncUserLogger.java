@@ -19,8 +19,9 @@ public interface AsyncUserLogger {
      * @param userUid The uid of the User entity to save
      * @param userLogType The type of user log to be recorded
      * @param description An optional description field (can be null)
+     * @param channel The channel used, if known
      */
-    void recordUserLog(String userUid, UserLogType userLogType, String description);
+    void recordUserLog(String userUid, UserLogType userLogType, String description, UserInterfaceType channel);
 
     void storeUserLogs(Set<UserLog> userLogSet);
 

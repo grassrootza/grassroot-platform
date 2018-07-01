@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
     private final UserRepository userRepository;
+    private final MembershipRepository membershipRepository;
 
     private final GroupBroker groupBroker;
     private final TodoBroker todoBroker;
@@ -39,9 +41,10 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
     private final MessagingServiceBroker messageBroker;
 
-    public MemberDataExportBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, TodoBroker todoBroker,
+    public MemberDataExportBrokerImpl(UserRepository userRepository, MembershipRepository membershipRepository, GroupBroker groupBroker, TodoBroker todoBroker,
                                       PermissionBroker permissionBroker, MessagingServiceBroker messageBroker) {
         this.userRepository = userRepository;
+        this.membershipRepository = membershipRepository;
         this.groupBroker = groupBroker;
         this.todoBroker = todoBroker;
         this.permissionBroker = permissionBroker;
@@ -57,35 +60,39 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
         permissionBroker.validateGroupPermission(exporter, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
-        XSSFWorkbook workbook = new XSSFWorkbook();
-        XSSFSheet sheet = workbook.createSheet("Group members");
-
-        generateHeader(workbook, sheet, new String[]{"Name", "Phone number", "Email", "Topics", "Affiliations"},
-                new int[]{7000, 5000, 7000, 7000, 7000});
-
-        //table content stuff
-        XSSFCellStyle contentStyle = workbook.createCellStyle();
-        XSSFFont contentFont = workbook.createFont();
-        contentStyle.setFont(contentFont);
-
-        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
-        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
-
-        //we are starting from 1 because row number 0 is header
-        int rowIndex = 1;
-
-        addRowFromMember(group.getMemberships(), sheet, rowIndex);
-
-        return workbook;
+        List<Membership> memberships = group.getMemberships().stream()
+                .sorted(Comparator.comparing(Membership::getDisplayName)).collect(Collectors.toList());
+        return exportGroupMembers(memberships);
     }
-
 
     @Override
     @Transactional(readOnly = true)
     public XSSFWorkbook exportGroupErrorReport(String groupUid, String userUid) {
         Group group = groupBroker.load(groupUid);
         User exporter = userRepository.findOneByUid(userUid);
+
         permissionBroker.validateGroupPermission(exporter, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+
+        List<Membership> membersWithErrorFlag = group.getMemberships().stream()
+                .filter(m -> m.getUser().isContactError())
+                .sorted(Comparator.comparing(Membership::getDisplayName))
+                .collect(Collectors.toList());
+
+        return exportGroupMembers(membersWithErrorFlag);
+    }
+
+    @Override
+    public XSSFWorkbook exportGroupMembersFiltered(String groupUid, String userUid, List<String> memberUids) {
+        Group group = groupBroker.load(groupUid);
+        User exporter = userRepository.findOneByUid(userUid);
+
+        permissionBroker.validateGroupPermission(exporter, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+
+        List<Membership> memberships = membershipRepository.findByGroupAndUserUidIn(group, memberUids);
+        return exportGroupMembers(memberships);
+    }
+
+    private XSSFWorkbook exportGroupMembers(List<Membership> memberships) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Group members");
 
@@ -103,13 +110,10 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         //we are starting from 1 because row number 0 is header
         int rowIndex = 1;
 
-        Set<Membership> membersWithErrorFlag = group.getMemberships().stream().filter(m -> m.getUser().isContactError()).collect(Collectors.toSet());
-        addRowFromMember(membersWithErrorFlag, sheet, rowIndex);
+        addRowFromMember(memberships, sheet, rowIndex);
 
         return workbook;
     }
-
-
 
     @Override
     public XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupsToExportUids) {
@@ -354,7 +358,7 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         }
     }
 
-    private void addRowFromMember(Set<Membership> memberships, XSSFSheet sheet, int rowIndex) {
+    private void addRowFromMember(List<Membership> memberships, XSSFSheet sheet, int rowIndex) {
         for (Membership member : memberships) {
             addRow(sheet, rowIndex, new String[]{
                     member.getDisplayName(),

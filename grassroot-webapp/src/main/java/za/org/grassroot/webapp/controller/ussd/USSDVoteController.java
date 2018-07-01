@@ -390,7 +390,7 @@ public class USSDVoteController extends USSDBaseController {
     }
 
     private void setCustomTime(String requestUid, String userInput, User user) {
-        LocalDateTime parsedTime = eventUtil.parseDateTime(userInput);
+        LocalDateTime parsedTime = eventUtil.parseDateTime(userInput, null);
         userLogger.recordUserInputtedDateTime(user.getUid(), userInput, "vote-custom", UserInterfaceType.USSD);
         eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, parsedTime);
     }

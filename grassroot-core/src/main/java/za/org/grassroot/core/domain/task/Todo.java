@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.task;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
@@ -23,7 +24,7 @@ import java.util.stream.Stream;
 /**
  * Created by aakilomar on 12/3/15.
  */
-@Entity @Getter @Slf4j
+@Entity @Getter @Slf4j @Transactional
 @Table(name = "action_todo",
         indexes = {
                 @Index(name = "idx_action_todo_group_id", columnList = "parent_group_id"),

@@ -25,6 +25,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
@@ -46,6 +47,7 @@ import za.org.grassroot.webapp.util.USSDGroupUtil;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -421,12 +423,20 @@ public class USSDMeetingController extends USSDBaseController {
                            @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(timeMenu, mtgRequestUid, false));
+
+        MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
+
         if (!interrupted) eventUtil.updateEventRequest(sessionUser.getUid(), mtgRequestUid, priorMenu, userInput);
 
-        String promptMessage = getMessage(thisSection, timeMenu, promptKey, sessionUser);
+        final LocalTime mostFreqTime = eventRequest != null && eventRequest.getParent() != null?
+                eventBroker.getMostFrequentEventTime(eventRequest.getParent().getUid()) : null;
+
+        String promptMessage = mostFreqTime == null ?
+                getMessage(thisSection, timeMenu, promptKey, sessionUser) :
+                getMessage(thisSection, timeMenu, promptKey + ".freq", mostFreqTime.toString(), sessionUser);
+
         String nextUrl = meetingMenus + nextMenu(timeMenu) + entityUidUrlSuffix + mtgRequestUid + "&" + previousMenu + "=" + timeMenu;
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
-
     }
 
     @RequestMapping(value = path + timeOnly)
@@ -469,7 +479,6 @@ public class USSDMeetingController extends USSDBaseController {
                                   @RequestParam(value = previousMenu, required = false) String priorMenu,
                                   @RequestParam(value = userInputParam, required = false) String userInput,
                                   @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
-
 
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(confirmMenu, mtgRequestUid, false));
 

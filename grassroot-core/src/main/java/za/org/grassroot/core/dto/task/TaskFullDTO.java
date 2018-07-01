@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
@@ -63,12 +64,15 @@ public class TaskFullDTO {
 
     @Setter private boolean errorReport;
 
+    private MeetingImportance meetingImportance;
+
 
     public TaskFullDTO(Task task, User user, Instant lastChangedTime, String userResponse) {
         this.taskUid = task.getUid();
         this.title = task.getName();
         this.description = task.getDescription();
         this.location = task.getTaskType().equals(TaskType.MEETING) ? ((Meeting) task).getEventLocation() : null;
+        this.meetingImportance = task.getTaskType().equals(TaskType.MEETING) ? ((Meeting)task).getImportance() : null;
 
         Group ancestorGroup = task.getAncestorGroup();
         // just in case membership is gone (and useful for test) by time user pulls task

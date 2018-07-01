@@ -41,7 +41,7 @@ COMMAND OPTIONS
 **-d**
 * -d docker  # It will instantiate 3 containers, one for a local postgres db running at port 5432 with a blank db, application running on port 8080 accessible via http://localhost:8080 and a postgres admin app accessible via http://localhost:8081
 
-* -d localhost # FOR LINUX ONLY, it will instantiate 1 container only for the app accessible via http://localhost:8080 and enable the container to connect to a db located at localhost:5432. Remember to modify your environment-variables files to reflect that as in the template file we have http://db:5432 for the "-d docker" option.
+* -d localhost # FOR LINUX ONLY, it will instantiate 1 container only for the app accessible via http://localhost:8080 and enable the container to connect to a db located at localhost:5432. Remember to modify your environment-variables files to reflect that as in the template file we have http://db:5`432 for the "-d docker" option.
 
 * -d external # It will instantiate 1 container only for the app accessible via http://localhost:8080 and enable the container to connect to an external DB (outside your localnetwork). Remember to modify your environment-variables files to reflect that as in the template file we have http://db:5432 for the "-d docker" option.
 

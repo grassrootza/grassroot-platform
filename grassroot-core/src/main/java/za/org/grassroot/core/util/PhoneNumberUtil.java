@@ -2,6 +2,7 @@ package za.org.grassroot.core.util;
 
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.Phonenumber;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,10 +13,8 @@ import java.util.regex.Pattern;
 /**
  * @author Lesetse Kimwaga
  */
-
+@Slf4j
 public class PhoneNumberUtil {
-
-    private static final Logger log = LoggerFactory.getLogger(PhoneNumberUtil.class);
 
     public static String convertPhoneNumber(String inputString) throws InvalidPhoneNumberException {
         try {

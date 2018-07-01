@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.Province;
@@ -148,6 +149,9 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @LazyCollection(LazyCollectionOption.EXTRA)
     private Set<CampaignLog> campaignLogs;
+
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "assignedMembers")
+    private Set<Event> events = new HashSet<>();
 
     private User() {
         // for JPA

@@ -33,7 +33,7 @@ public abstract class AbstractEventEntity {
 	@Column(name = "created_date_time", insertable = true, updatable = false)
 	protected Instant createdDateTime;
 
-	@Column(name = "name", length = 40)
+	@Column(name = "name", length = 255)
 	protected String name;
 
 	@Column(name = "description", length = 512)

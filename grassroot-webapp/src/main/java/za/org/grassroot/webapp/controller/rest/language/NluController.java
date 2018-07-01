@@ -22,7 +22,7 @@ import java.time.ZoneOffset;
 @RestController @Grassroot2RestController
 @Api("/v2/api/language/parse")
 @RequestMapping(value = "/v2/api/language/parse")
-@PreAuthorize("hasRole('ROLE_FULL_USER')")
+//@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class NluController {
 
     private final LearningService learningService;
@@ -47,7 +47,6 @@ public class NluController {
                                                         @RequestParam(required = false) String conversationUid) {
         return ResponseEntity.ok(nluBroker.parseText(text, conversationUid));
     }
-
 
     @RequestMapping(value = "/speech", method = RequestMethod.POST)
     @ApiOperation(value = "Convert speech to text, optionally parsing for entities")

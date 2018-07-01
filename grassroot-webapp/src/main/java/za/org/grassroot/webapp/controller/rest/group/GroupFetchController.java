@@ -193,6 +193,17 @@ public class GroupFetchController extends BaseRestController {
                 joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages).stream().map(MembershipFullDTO::new).collect(Collectors.toList());
     }
 
+    @RequestMapping(value = "/members/filter/download/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> downloadFilteredGroupMembers(@PathVariable String groupUid,
+                                                               @RequestParam List<String> filteredMemberUids,
+                                                               HttpServletRequest request) {
+        log.info("filtering & downloading, member UIDs = {}", filteredMemberUids);
+        String fileName = "filtered_members.xls";
+        XSSFWorkbook xls = memberDataExportBroker.exportGroupMembersFiltered(groupUid, getUserIdFromRequest(request),
+                filteredMemberUids);
+        return convertWorkbookToDownload(fileName, xls);
+    }
+
     @RequestMapping(value = "/members/new", method = RequestMethod.GET)
     @ApiOperation(value = "Returns members joined recently to groups where logged in user has permission to see member details")
     public ResponseEntity<Page<MembershipFullDTO>> getRecentlyJoinedUsers(@RequestParam(required = false) Integer howRecentInDays, HttpServletRequest request, Pageable pageable) {
@@ -227,16 +238,19 @@ public class GroupFetchController extends BaseRestController {
     @ApiOperation(value = "Download an Excel sheet of group members")
     public ResponseEntity<byte[]> exportGroup(@PathVariable String groupUid, HttpServletRequest request) {
         String userUid = getUserIdFromRequest(request);
+        String fileName = "group_members.xlsx";
+        XSSFWorkbook xls = memberDataExportBroker.exportGroup(groupUid, userUid);
+        return convertWorkbookToDownload(fileName, xls);
+    }
+
+    private ResponseEntity<byte[]> convertWorkbookToDownload(String fileName, XSSFWorkbook xls) {
         try {
-            String fileName = "group_members.xlsx";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
             headers.add("Cache-Control", "no-cache");
             headers.add("Pragma", "no-cache");
             headers.add("Expires", "0");
-
-            XSSFWorkbook xls = memberDataExportBroker.exportGroup(groupUid, userUid);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             xls.write(baos);
             return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);

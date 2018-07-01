@@ -92,4 +92,6 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     @Query("select u.phoneNumber from User u where u.enabled = true")
     Set<String> fetchUserPhoneNumbers();
 
+    Set<User> findByEvents(Event event);
+
 }

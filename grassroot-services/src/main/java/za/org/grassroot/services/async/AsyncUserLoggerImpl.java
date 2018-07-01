@@ -69,10 +69,11 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Async
     @Override
     @Transactional
-    public void recordUserLog(String userUid, UserLogType userLogType, String description) {
+    public void recordUserLog(String userUid, UserLogType userLogType, String description, UserInterfaceType channel) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(userLogType);
-        UserLog userLog = new UserLog(userUid, userLogType, description, UNKNOWN);
+        UserLog userLog = new UserLog(userUid, userLogType, description,
+                channel == null ? UNKNOWN : channel);
         userLogRepository.saveAndFlush(userLog);
     }
 

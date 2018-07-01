@@ -86,7 +86,7 @@ public interface UserManagementService {
 
     void setMessagingPreference(String userUid, DeliveryRoute preference);
 
-    void setHasInitiatedUssdSession(String userUid);
+    void setHasInitiatedUssdSession(String userUid, boolean sendWelcomeMessage);
 
     void resetUserPassword(String username, String newPassword, String token);
 

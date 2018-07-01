@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,9 +18,11 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.UserSpecifications;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.task.TaskBroker;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +39,7 @@ public class AdminManager implements AdminService {
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
+    private final MembershipRepository membershipRepository;
     private final RoleRepository roleRepository;
     private final GroupBroker groupBroker;
     private final GroupLogRepository groupLogRepository;
@@ -43,11 +47,13 @@ public class AdminManager implements AdminService {
     private final PasswordEncoder passwordEncoder;
 
     private GraphBroker graphBroker;
+    private TaskBroker taskBroker;
 
     @Autowired
-    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
+    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.membershipRepository = membershipRepository;
         this.roleRepository = roleRepository;
         this.groupBroker = groupBroker;
         this.groupLogRepository = groupLogRepository;
@@ -58,6 +64,11 @@ public class AdminManager implements AdminService {
     @Autowired(required = false)
     public void setGraphBroker(GraphBroker graphBroker) {
         this.graphBroker = graphBroker;
+    }
+
+    @Autowired(required = false)
+    public void setTaskBroker(TaskBroker taskBroker) {
+        this.taskBroker = taskBroker;
     }
 
     /**
@@ -177,19 +188,32 @@ public class AdminManager implements AdminService {
 
     @Override
     @Transactional(readOnly = true)
-    public void populateGrassrootGraphUsers() {
+    public void populateGrassrootGraphGroups() {
         if (graphBroker != null) {
-            Specifications<User> users = Specifications.where((root, query, cb) -> cb.isTrue(root.get(User_.enabled)));
-            userRepository.findAll(users).forEach(user -> graphBroker.addUserToGraph(user.getUid()));
+            Specifications<Group> groups = Specifications.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
+            groupRepository.findAll(groups).forEach(group -> graphBroker.addGroupToGraph(group.getUid(), group.getCreatedByUser().getUid(), null));
         }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public void populateGrassrootGraphGroups() {
+    public void populateGrassrootGraphMemberships() {
         if (graphBroker != null) {
-            Specifications<Group> groups = Specifications.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
-            groupRepository.findAll(groups).forEach(group -> graphBroker.addGroupToGraph(group.getUid(), group.getCreatedByUser().getUid()));
+            // could also get all groups then get all memberships within them, but actually Hibernate caching makes this likely better approach
+            membershipRepository.findByGroupActiveTrue()
+                    .forEach(membership -> graphBroker.addMembershipToGraph(Collections.singleton(membership.getUser().getUid()), membership.getGroup().getUid()));
+        }
+    }
+
+    @Async
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGrassrootGraphTasks(String userUid) {
+        DebugUtil.transactionRequired("");
+        if (graphBroker != null) {
+            DebugUtil.transactionRequired("");
+            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task,
+                    taskBroker.fetchUserUidsForTask(userUid, task.getUid(), task.getTaskType())));
         }
     }
 
