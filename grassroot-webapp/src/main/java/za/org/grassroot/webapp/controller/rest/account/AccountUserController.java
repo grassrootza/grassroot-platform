@@ -1,36 +1,42 @@
 package za.org.grassroot.webapp.controller.rest.account;
 
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.integration.billing.BillingServiceBroker;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.model.rest.wrappers.AccountWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-@RestController @Grassroot2RestController
-@RequestMapping("/v2/api/account") @Slf4j
+@RestController @Grassroot2RestController @Slf4j
+@RequestMapping("/v2/api/account") @Api("/v2/api/account")
 @PreAuthorize("hasRole('ROLE_FULL_USER')")
-public class AccountSignUpController extends BaseRestController {
+public class AccountUserController extends BaseRestController {
 
     private final AccountBroker accountBroker;
     private final BillingServiceBroker billingServiceBroker;
     private final UserManagementService userService;
 
-    public AccountSignUpController(JwtService jwtService, UserManagementService userManagementService, AccountBroker accountBroker, BillingServiceBroker billingServiceBroker) {
+    public AccountUserController(JwtService jwtService, UserManagementService userManagementService, AccountBroker accountBroker, BillingServiceBroker billingServiceBroker) {
         super(jwtService, userManagementService);
         this.accountBroker = accountBroker;
         this.billingServiceBroker = billingServiceBroker;
@@ -98,8 +104,8 @@ public class AccountSignUpController extends BaseRestController {
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/add/group/{accountId}", method = RequestMethod.POST)
     public ResponseEntity addGroupsToAccount(@PathVariable String accountId, HttpServletRequest request,
-                                             List<String> groupUids) {
-        accountBroker.addGroupsToAccount(accountId, new HashSet<>(groupUids), getUserIdFromRequest(request));
+                                             @RequestParam Set<String> groupUids) {
+        accountBroker.addGroupsToAccount(accountId, groupUids, getUserIdFromRequest(request));
         return ResponseEntity.ok().build();
     }
 
@@ -112,8 +118,10 @@ public class AccountSignUpController extends BaseRestController {
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/remove/group/{accountId}", method = RequestMethod.POST)
-    public ResponseEntity removeGroupFromAccount(@PathVariable String accountId, HttpServletRequest request) {
-//        accountBroker.removeAdministrator();
+    public ResponseEntity removeGroupFromAccount(@PathVariable String accountId,
+                                                 @RequestParam Set<String> groupIds,
+                                                 HttpServletRequest request) {
+        accountBroker.removeGroupsFromAccount(accountId, groupIds, getUserIdFromRequest(request));
         return ResponseEntity.ok().build();
     }
 
@@ -123,6 +131,51 @@ public class AccountSignUpController extends BaseRestController {
                                                  HttpServletRequest request) {
         accountBroker.setAccountPaymentRef(getUserIdFromRequest(request), paymentRef, accountId);
         return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/close", method = RequestMethod.POST)
+    public String closeAccount(@RequestParam String accountUid,
+                               HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        try {
+            accountBroker.closeAccount(user.getUid(), accountUid, null);
+            return "closed";
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
+        }
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/settings/fetch", method = RequestMethod.GET)
+    public ResponseEntity<AccountWrapper> getAccountSettings(@RequestParam(required = false) String accountUid,
+                                                             HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        Account account = StringUtils.isEmpty(accountUid) ? user.getPrimaryAccount() : accountBroker.loadAccount(accountUid);
+
+        if (account == null) {
+            return ResponseEntity.ok().build();
+        } else {
+            final int limitsLeft = account.isEnabled() ? 1 : 0;
+            return ResponseEntity.ok(new AccountWrapper(account, user, limitsLeft, limitsLeft));
+        }
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/settings/update", method = RequestMethod.POST)
+    public ResponseEntity<AccountWrapper> updateAccountSettings(@RequestParam String accountUid,
+                                                                @RequestParam String accountName,
+                                                                @RequestParam String billingEmail,
+                                                                HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        try {
+            accountBroker.modifyAccount(user.getUid(), accountUid, accountName, billingEmail);
+            Account account = accountBroker.loadAccount(accountUid);
+            final int limitsLeft = account.isEnabled() ? 1 : 0;
+            return ResponseEntity.ok(new AccountWrapper(account, user, limitsLeft, limitsLeft));
+        }catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
+        }
     }
 
 }

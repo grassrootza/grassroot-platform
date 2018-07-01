@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,13 +24,11 @@ import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
-import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.*;
-import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -74,7 +71,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     private static final long WELCOME_MSG_INTERVAL = 60 * 1000; // 1 minute
 
     private static final String addedDescription = "Group added to Grassroot Extra";
-    private static final String removedDescription = "Group removed from Grassroot Extra";
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
@@ -166,38 +162,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Group> searchGroupsForAddingToAccount(String userUid, String accountUid, String filterTerm) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Account account = accountRepository.findOneByUid(accountUid);
-
-        if (!account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
-
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(filterTerm == null ? "" : filterTerm, true, true);
-        List<Group> userGroups = groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
-
-        logger.info("number of user groups: {}", userGroups.size());
-
-        return userGroups.stream()
-                .filter(g -> !g.isPaidFor())
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<Group> fetchUserCreatedGroupsUnpaidFor(String userUid, Sort sort) {
-        User user = userRepository.findOneByUid(userUid);
-        return groupRepository.findAll(
-                Specification.where(GroupSpecifications.createdByUser(user))
-                .and(GroupSpecifications.isActive())
-                .and(GroupSpecifications.paidForStatus(false)));
-    }
-
-    @Override
     public boolean isGroupOnAccount(String groupUid) {
         return findAccountForGroup(groupUid) != null;
     }
@@ -211,44 +175,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         } else {
             return group.getAccount();
         }
-    }
-
-    @Override
-    @Transactional
-    public void removeGroupsFromAccount(String accountUid, Set<String> groupUids, String removingUserUid) {
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(groupUids);
-        Objects.requireNonNull(removingUserUid);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-        for (String groupUid : groupUids) {
-            Group group = groupRepository.findOneByUid(groupUid);
-            User user = userRepository.findOneByUid(removingUserUid);
-
-            if (!account.getAdministrators().contains(user)) {
-                permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-            }
-
-            account.removePaidGroup(group);
-            group.setPaidFor(false);
-
-            bundle.addLog(new AccountLog.Builder(account)
-                    .user(user)
-                    .accountLogType(AccountLogType.GROUP_REMOVED)
-                    .group(group)
-                    .paidGroupUid(group.getUid())
-                    .description(group.getName()).build());
-
-            bundle.addLog(new GroupLog(group,
-                    user,
-                    GroupLogType.REMOVED_FROM_ACCOUNT,
-                    null, null, account, removedDescription));
-        }
-
-        logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
     @Override
@@ -577,7 +503,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 user,
                 isAdded ? GroupLogType.ADDED_TO_ACCOUNT : GroupLogType.REMOVED_FROM_ACCOUNT,
                 null, null, account,
-                isAdded ? addedDescription : removedDescription));
+                isAdded ? addedDescription : "Group removed from Grassroot Extra"));
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 

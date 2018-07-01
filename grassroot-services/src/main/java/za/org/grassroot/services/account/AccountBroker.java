@@ -2,9 +2,7 @@ package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.account.Account;
-import za.org.grassroot.core.enums.AccountType;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -40,10 +38,9 @@ public interface AccountBroker {
 
     void addAllUserCreatedGroupsToAccount(String accountUid, String userUid);
 
-    Map<AccountType, Integer> getAccountTypeFees();
+    void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
 
-    void modifyAccount(String adminUid, String accountUid, AccountType accountType,
-                       String accountName, String billingEmail);
+    void modifyAccount(String adminUid, String accountUid, String accountName, String billingEmail);
 
     void closeAccount(String userUid, String accountUid, String closingReason);
 

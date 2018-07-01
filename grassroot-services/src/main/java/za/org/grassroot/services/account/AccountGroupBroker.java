@@ -24,13 +24,6 @@ public interface AccountGroupBroker {
 
     void addGroupToAccount(String accountUid, String groupUid, String addingUserUid);
 
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    List<Group> searchGroupsForAddingToAccount(String userUid, String accountUid, String filterTerm);
-
-    List<Group> fetchUserCreatedGroupsUnpaidFor(String userUid, Sort sort);
-
-    void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
-
     int numberTodosLeftForGroup(String groupUid);
 
     int numberEventsLeftForGroup(String groupUid);

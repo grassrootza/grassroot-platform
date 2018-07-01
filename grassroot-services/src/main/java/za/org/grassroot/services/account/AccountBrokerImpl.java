@@ -376,28 +376,55 @@ public class AccountBrokerImpl implements AccountBroker {
         addGroupsToAccount(accountUid, groups, userUid);
     }
 
-
     @Override
-    public Map<AccountType, Integer> getAccountTypeFees() {
-        return accountFees;
-    }
+    @Transactional
+    public void removeGroupsFromAccount(String accountUid, Set<String> groupUids, String removingUserUid) {
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(groupUids);
+        Objects.requireNonNull(removingUserUid);
 
-    private void createAndStoreSingleAccountLog(AccountLog accountLog) {
+        Account account = accountRepository.findOneByUid(accountUid);
+
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        bundle.addLog(accountLog);
+
+        for (String groupUid : groupUids) {
+            Group group = groupRepository.findOneByUid(groupUid);
+            User user = userRepository.findOneByUid(removingUserUid);
+
+            if (!account.getAdministrators().contains(user)) {
+                permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+            }
+
+            account.removePaidGroup(group);
+            group.setPaidFor(false);
+
+            bundle.addLog(new AccountLog.Builder(account)
+                    .user(user)
+                    .accountLogType(AccountLogType.GROUP_REMOVED)
+                    .group(group)
+                    .paidGroupUid(group.getUid())
+                    .description(group.getName()).build());
+
+            bundle.addLog(new GroupLog(group,
+                    user,
+                    GroupLogType.REMOVED_FROM_ACCOUNT,
+                    null, null, account, "Group removed from Grassroot Extra"));
+        }
+
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
     @Override
     @Transactional
-    public void modifyAccount(String adminUid, String accountUid, AccountType accountType, String accountName, String billingEmail) {
+    public void modifyAccount(String adminUid, String accountUid, String accountName, String billingEmail) {
         Objects.requireNonNull(adminUid);
         Objects.requireNonNull(accountUid);
 
         User user = userRepository.findOneByUid(adminUid);
-//        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-
         Account account = accountRepository.findOneByUid(accountUid);
+
+        validateAdmin(user, account);
+
         StringBuilder sb = new StringBuilder("Changes: ");
 
         if(!account.getAccountName().equals(accountName)) {
@@ -423,7 +450,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         log.info("removing {} paid groups", account.getPaidGroups().size());
         Set<String> paidGroupUids = account.getPaidGroups().stream().map(Group::getUid).collect(Collectors.toSet());
-        accountGroupBroker.removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
+        removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .user(user)
@@ -435,5 +462,11 @@ public class AccountBrokerImpl implements AccountBroker {
                 .forEach(a -> removeAdministrator(userUid, accountUid, a.getUid(), false));
 
         removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
+    }
+
+    private void createAndStoreSingleAccountLog(AccountLog accountLog) {
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(accountLog);
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 }
