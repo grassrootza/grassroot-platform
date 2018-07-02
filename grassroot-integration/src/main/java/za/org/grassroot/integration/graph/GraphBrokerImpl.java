@@ -26,6 +26,7 @@ import za.org.grassroot.graph.dto.ActionType;
 import za.org.grassroot.graph.dto.IncomingDataObject;
 import za.org.grassroot.graph.dto.IncomingGraphAction;
 import za.org.grassroot.graph.dto.IncomingRelationship;
+import za.org.grassroot.graph.dto.IncomingAnnotation;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -45,7 +46,6 @@ public class GraphBrokerImpl implements GraphBroker {
     private String grassrootQueue;
     private String sqsQueueUrl;
     private boolean isQueueFifo;
-
 
     public GraphBrokerImpl() {
         log.info("Graph broker enabled, constructing object mapper ...");
@@ -75,13 +75,14 @@ public class GraphBrokerImpl implements GraphBroker {
         Actor group = new Actor(ActorType.GROUP, groupUid);
 
         IncomingGraphAction action = wrapActorCreation(group);
-        IncomingRelationship genRel = generatorRelationship(creatingUserUid, groupUid);
+        IncomingRelationship genRel = generatorRelationship(creatingUserUid, GraphEntityType.ACTOR,
+                groupUid, GraphEntityType.ACTOR);
         action.addRelationship(genRel);
 
         if (memberUids != null) {
             memberUids.forEach(memberUid -> {
                 action.addDataObject(new IncomingDataObject(GraphEntityType.ACTOR, new Actor(ActorType.INDIVIDUAL, memberUid)));
-                action.addRelationship(participatingRelationship(memberUid, groupUid, GraphEntityType.ACTOR));
+                action.addRelationship(participatingRelationship(memberUid, GraphEntityType.ACTOR, groupUid, GraphEntityType.ACTOR));
             });
         }
 
@@ -94,7 +95,8 @@ public class GraphBrokerImpl implements GraphBroker {
         Actor account = new Actor(ActorType.ACCOUNT, accountUid);
         IncomingGraphAction action = wrapActorCreation(account);
         List<IncomingRelationship> relationships = adminUids.stream()
-                .map(adminUid -> generatorRelationship(adminUid, accountUid)).collect(Collectors.toList());
+                .map(adminUid -> generatorRelationship(adminUid, GraphEntityType.ACTOR,
+                        accountUid, GraphEntityType.ACTOR)).collect(Collectors.toList());
         action.setRelationships(relationships);
         dispatchAction(action, "account");
     }
@@ -109,11 +111,11 @@ public class GraphBrokerImpl implements GraphBroker {
 
         memberUids.forEach(memberUid -> {
             objects.add(new IncomingDataObject(GraphEntityType.ACTOR, new Actor(ActorType.INDIVIDUAL, memberUid)));
-            relationships.add(participatingRelationship(memberUid, groupUid, GraphEntityType.ACTOR));
+            relationships.add(participatingRelationship(memberUid, GraphEntityType.ACTOR, groupUid, GraphEntityType.ACTOR));
         });
 
         IncomingGraphAction graphAction = new IncomingGraphAction(groupUid, ActionType.CREATE_RELATIONSHIP,
-                objects, relationships);
+                objects, relationships, null);
 
         log.info("about to dispatch adding membership: userIds = {}, graphId = {}", memberUids.size(), groupUid);
         dispatchAction(graphAction, "membership");
@@ -121,10 +123,10 @@ public class GraphBrokerImpl implements GraphBroker {
 
     @Override
     public void removeMembershipFromGraph(String userUid, String groupUid) {
-        IncomingRelationship relationship = new IncomingRelationship(userUid, GraphEntityType.ACTOR,
-                groupUid, GraphEntityType.ACTOR, GrassrootRelationship.Type.PARTICIPATES);
+        IncomingRelationship relationship = participatingRelationship(userUid, GraphEntityType.ACTOR,
+                groupUid, GraphEntityType.ACTOR);
         IncomingGraphAction graphAction = new IncomingGraphAction(userUid, ActionType.REMOVE_RELATIONSHIP,
-                null, Collections.singletonList(relationship));
+                null, Collections.singletonList(relationship), null);
 
         log.info("about to dispatch removing membership: userId= {}, graphId = {}", userUid, groupUid);
         dispatchAction(graphAction, "remove membership");
@@ -163,10 +165,11 @@ public class GraphBrokerImpl implements GraphBroker {
             graphDataObjects.add(new IncomingDataObject(GraphEntityType.EVENT, graphEvent));
 
             List<IncomingRelationship> relationships = participatingActors.stream().map(participant ->
-                participatingRelationship(participant.getPlatformUid(), task.getUid(), GraphEntityType.EVENT)).collect(Collectors.toList());
+                participatingRelationship(participant.getPlatformUid(), GraphEntityType.ACTOR,
+                        task.getUid(), GraphEntityType.EVENT)).collect(Collectors.toList());
 
             IncomingGraphAction graphAction = new IncomingGraphAction(task.getUid(), ActionType.CREATE_ENTITY,
-                    graphDataObjects, relationships);
+                    graphDataObjects, relationships, null);
 
             dispatchAction(graphAction, "task");
         } catch (LazyInitializationException e) {
@@ -174,22 +177,38 @@ public class GraphBrokerImpl implements GraphBroker {
         }
     }
 
+    public void addActorAnnotation(String Uid, String description, String[] tags, String language, String location) {
+        addEntityAnnotation(Uid, GraphEntityType.ACTOR, description, tags, language, location);
+    }
+
+    public void addEventAnnotation(String Uid, String description, String[] tags, String location) {
+        addEntityAnnotation(Uid, GraphEntityType.EVENT, description, tags, null, location);
+    }
+
     private IncomingGraphAction wrapActorCreation(Actor actor) {
         IncomingDataObject dataObject = new IncomingDataObject(GraphEntityType.ACTOR, actor);
-        return new IncomingGraphAction(actor.getPlatformUid(),
-                ActionType.CREATE_ENTITY,
-                new ArrayList<>(Collections.singletonList(dataObject)), // to avoid nulls on later adds
-                new ArrayList<>());
+        return new IncomingGraphAction(actor.getPlatformUid(), ActionType.CREATE_ENTITY,
+                new ArrayList<>(Collections.singletonList(dataObject)), new ArrayList<>(), new ArrayList<>());
     }
 
-    private IncomingRelationship generatorRelationship(String generatorUid, String generatedUid) {
-        return new IncomingRelationship(generatorUid, GraphEntityType.ACTOR,
-                generatedUid, GraphEntityType.ACTOR, GrassrootRelationship.Type.GENERATOR);
+    private IncomingRelationship generatorRelationship(String generatorUid, GraphEntityType generatorType,
+                                                       String generatedUid, GraphEntityType generatedType) {
+        return new IncomingRelationship(generatorUid, generatorType, null,
+                generatedUid, generatedType, null, GrassrootRelationship.Type.GENERATOR);
     }
 
-    private IncomingRelationship participatingRelationship(String participantUid, String targetUid, GraphEntityType targetType) {
-        return new IncomingRelationship(participantUid, GraphEntityType.ACTOR, targetUid, targetType,
-                GrassrootRelationship.Type.PARTICIPATES);
+    private IncomingRelationship participatingRelationship(String participantUid, GraphEntityType participantType,
+                                                           String targetUid, GraphEntityType targetType) {
+        return new IncomingRelationship(participantUid, participantType, null,
+                targetUid, targetType, null, GrassrootRelationship.Type.PARTICIPATES);
+    }
+
+    private void addEntityAnnotation(String Uid, GraphEntityType type, String description,
+                                     String[] tags, String language, String location) {
+        IncomingAnnotation annotation = new IncomingAnnotation(Uid, type, description, tags, language, location);
+        IncomingGraphAction graphAction = new IncomingGraphAction(Uid, ActionType.ANNOTATE_ENTITY,
+                null, null, new ArrayList<>(Collections.singletonList(annotation)));
+        dispatchAction(graphAction, "entity annotation");
     }
 
     private void dispatchAction(IncomingGraphAction action, String actionDescription) {

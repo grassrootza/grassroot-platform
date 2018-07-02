@@ -21,4 +21,8 @@ public interface GraphBroker {
 
     void addTaskToGraph(Task task, List<String> assignedUserUids);
 
+    void addActorAnnotation(String Uid, String description, String[] tags, String language, String location);
+
+    void addEventAnnotation(String Uid, String description, String[] tags, String location);
+
 }
