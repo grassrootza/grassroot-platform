@@ -5,6 +5,11 @@ import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.group.Group;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2017/01/11.
@@ -13,6 +18,7 @@ import za.org.grassroot.core.domain.account.Account;
 public class AccountWrapper {
 
     private final String uid;
+
     private final String createdByUserName;
     private final boolean createdByCallingUser;
 
@@ -20,10 +26,10 @@ public class AccountWrapper {
 
     private final String name;
 
-    private final int groupsLeft;
-    private final int messagesLeft;
+    private final Set<String> groupNames;
+    private final Set<String> adminNames;
 
-    public AccountWrapper(Account account, User callingUser, int groupsLeft, int messagesLeft) {
+    public AccountWrapper(Account account, User callingUser) {
         this.uid = account.getUid();
         this.createdByUserName = account.getCreatedByUser().nameToDisplay();
         this.createdByCallingUser = account.getCreatedByUser().equals(callingUser);
@@ -31,8 +37,9 @@ public class AccountWrapper {
         this.enabled = account.isEnabled();
         this.name = account.getAccountName();
 
-        this.groupsLeft = groupsLeft;
-        this.messagesLeft = messagesLeft;
+        // these are pretty inefficient but this should be occassional - turn into a query at some point
+        this.groupNames = account.getPaidGroups().stream().map(Group::getName).collect(Collectors.toSet());
+        this.adminNames = account.getAdministrators().stream().map(User::getName).collect(Collectors.toSet());
 
     }
 

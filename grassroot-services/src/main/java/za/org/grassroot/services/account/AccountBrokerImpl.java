@@ -168,7 +168,10 @@ public class AccountBrokerImpl implements AccountBroker {
 
         validateAdmin(user, account);
 
-        account.setSubscriptionRef(paymentRef);
+        account.setPaymentRef(paymentRef);
+
+        if (!account.isEnabled())
+            account.setEnabled(true);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
                 .accountLogType(AccountLogType.PAYMENT_CHANGED)

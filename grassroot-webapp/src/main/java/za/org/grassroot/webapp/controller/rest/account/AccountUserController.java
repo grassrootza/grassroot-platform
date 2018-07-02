@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.integration.billing.BillingServiceBroker;
+import za.org.grassroot.integration.billing.SubscriptionRecordDTO;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -44,29 +45,38 @@ public class AccountUserController extends BaseRestController {
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public CompletableFuture<List<String>> signUpForAccount(HttpServletRequest request,
+    public CompletableFuture<AccountCreationResponse> signUpForAccount(HttpServletRequest request,
                                                                      @RequestParam String accountName,
                                                                      @RequestParam String billingEmail,
-                                                                     @RequestParam boolean addAllGroupsToAccount,
-                                                                     @RequestParam String otherAdmins,
-                                                                     @RequestParam(required = false) String paymentRef) {
+                                                                     @RequestParam(required = false) String otherAdmins) {
         final String userId = getUserIdFromRequest(request);
-        String accountUid = accountBroker.createAccount(userId, accountName, userId, paymentRef);
-
-        if (!StringUtils.isEmpty(paymentRef) && addAllGroupsToAccount) {
-            accountBroker.addAllUserCreatedGroupsToAccount(accountUid, userId);
-        }
-
-        final List<String> errorAdmins = StringUtils.isEmpty(otherAdmins) ? new ArrayList<>()
-                : handleAddingAccountAdmins(userId, accountUid, otherAdmins);
-
-        return billingServiceBroker.createSubscription(accountName, billingEmail, getJwtTokenFromRequest(request))
+        return billingServiceBroker.createSubscription(accountName, billingEmail, getJwtTokenFromRequest(request), false)
                 .map(record -> {
-                    log.info("Got a record: {}", record.getAccountName());
+                    log.info("Got a record back, as created: {}", record.getAccountName());
+                    final String accountUid = accountBroker.createAccount(userId, accountName, userId, null);
+                    final List<String> errorAdmins = StringUtils.isEmpty(otherAdmins) ? new ArrayList<>()
+                            : handleAddingAccountAdmins(userId, accountUid, otherAdmins);
                     accountBroker.setAccountSubscriptionRef(userId, accountUid, record.getId());
                     log.info("Account enabled, done, returning with error admins: {}", errorAdmins);
-                    return errorAdmins;
+                    return new AccountCreationResponse(accountUid, errorAdmins);
                 }).toFuture();
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/change/payment/{accountId}", method = RequestMethod.POST)
+    public CompletableFuture<SubscriptionRecordDTO> alterAccountPaymentRef(@PathVariable String accountId,
+                                                                           @RequestParam String paymentRef,
+                                                                           @RequestParam boolean addAllGroups,
+                                                                           HttpServletRequest request) {
+
+        accountBroker.setAccountPaymentRef(getUserIdFromRequest(request), paymentRef, accountId);
+
+        if (addAllGroups) {
+            accountBroker.addAllUserCreatedGroupsToAccount(accountId, getUserIdFromRequest(request));
+        }
+
+        Account account = accountBroker.loadAccount(accountId);
+        return billingServiceBroker.enableSubscription(account.getSubscriptionRef(), getJwtTokenFromRequest(request)).toFuture();
     }
 
     // this is quite heavy, but also error prone, hence doing it one by one to avoid failed sign up
@@ -75,7 +85,7 @@ public class AccountUserController extends BaseRestController {
         List<String> errorAdmins = new ArrayList<>();
         adminsPhoneOrEmail.forEach(admin -> {
             try {
-                User user = userService.loadOrCreateUser(admin); // todo : make user service work with this & email
+                User user = userService.loadOrCreateUser(admin);
                 accountBroker.addAdministrator(addingUserUid, accountUid, user.getUid());
             } catch (IllegalArgumentException e) {
                 log.error("Could not add admin: {}");
@@ -126,14 +136,6 @@ public class AccountUserController extends BaseRestController {
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/change/payment/{accountId}", method = RequestMethod.POST)
-    public ResponseEntity alterAccountPaymentRef(@PathVariable String accountId, @RequestParam String paymentRef,
-                                                 HttpServletRequest request) {
-        accountBroker.setAccountPaymentRef(getUserIdFromRequest(request), paymentRef, accountId);
-        return ResponseEntity.ok().build();
-    }
-
-    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/close", method = RequestMethod.POST)
     public String closeAccount(@RequestParam String accountUid,
                                HttpServletRequest request) {
@@ -156,8 +158,7 @@ public class AccountUserController extends BaseRestController {
         if (account == null) {
             return ResponseEntity.ok().build();
         } else {
-            final int limitsLeft = account.isEnabled() ? 1 : 0;
-            return ResponseEntity.ok(new AccountWrapper(account, user, limitsLeft, limitsLeft));
+            return ResponseEntity.ok(new AccountWrapper(account, user));
         }
     }
 
@@ -171,8 +172,7 @@ public class AccountUserController extends BaseRestController {
         try {
             accountBroker.modifyAccount(user.getUid(), accountUid, accountName, billingEmail);
             Account account = accountBroker.loadAccount(accountUid);
-            final int limitsLeft = account.isEnabled() ? 1 : 0;
-            return ResponseEntity.ok(new AccountWrapper(account, user, limitsLeft, limitsLeft));
+            return ResponseEntity.ok(new AccountWrapper(account, user));
         }catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
         }

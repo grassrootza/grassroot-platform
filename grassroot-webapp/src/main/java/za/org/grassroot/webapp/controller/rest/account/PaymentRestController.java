@@ -37,7 +37,7 @@ public class PaymentRestController {
         PaymentCopyPayResponse response = paymentBroker.getPaymentResult(resourcePath, false, null);
         if (SUCCESS_MATCHER.matcher(response.getInternalCode()).find()) {
             log.info("successful payment! internal code: {}", response.getInternalCode());
-            return ResponseEntity.ok(RestMessage.PAYMENT_SUCCESS);
+            return ResponseEntity.ok(response.getRegistrationId());
         } else {
             log.info("payment failed! internal code: {}", response.getInternalCode());
             return ResponseEntity.ok(RestMessage.PAYMENT_ERROR);

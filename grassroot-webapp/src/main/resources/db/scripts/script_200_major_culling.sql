@@ -13,4 +13,11 @@ drop table account_billing_record;
 drop table paid_group;
 drop table acc_sponsor_request;
 
+alter table paid_account add column subscription_reference varchar(255);
+alter table paid_account alter column billing_user drop not null;
+alter table paid_account alter column billing_cycle drop not null;
+alter table paid_account alter column outstanding_balance drop not null;
+alter table paid_account alter column todos_per_month drop not null;
+alter table paid_account alter column free_form drop not null;
+
 -- todo : cull account limit columns

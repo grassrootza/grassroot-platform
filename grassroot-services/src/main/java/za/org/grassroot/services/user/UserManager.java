@@ -5,6 +5,7 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -393,6 +394,35 @@ public class UserManager implements UserManagementService, UserDetailsService {
             return newUser;
         } else {
             return userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+        }
+    }
+
+    @Override
+    @Transactional
+    public User loadOrCreate(String phoneOrEmail) {
+        User user = findByUsernameLoose(phoneOrEmail);
+        if (user != null)
+            return user;
+
+        try {
+            if (EmailValidator.getInstance().isValid(phoneOrEmail))
+                user = new User(null, null, phoneOrEmail);
+            else if (PhoneNumberUtil.testInputNumber(phoneOrEmail))
+                user = new User(PhoneNumberUtil.convertPhoneNumber(phoneOrEmail), null, null);
+
+            if (user == null)
+                throw new IllegalArgumentException("Error! Phone or email is valid for neither format");
+
+            user = userRepository.save(user);
+            asyncRecordNewUser(user.getUid(), "Created via loadOrCreate");
+
+            return user;
+        } catch (IllegalArgumentException e) {
+            log.error("Error! :", e.getMessage());
+            return null;
+        } catch (DataIntegrityViolationException e) {
+            log.error("Error creating or loading user: ", e);
+            return null;
         }
     }
 

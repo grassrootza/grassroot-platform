@@ -31,9 +31,9 @@ public class BillingServiceBrokerImpl implements BillingServiceBroker {
     }
 
     @Override
-    public Mono<SubscriptionRecordDTO> createSubscription(String accountName, String billingAddress, String authToken) {
+    public Mono<SubscriptionRecordDTO> createSubscription(String accountName, String billingAddress, String authToken, boolean active) {
         return webClient.post()
-                .uri("/account/create?accountName={name}&emailAddress={email}", accountName, billingAddress)
+                .uri("/accounts/create?accountName={name}&emailAddress={email}&active={active}", accountName, billingAddress, active)
                 .header("Authorization", "Bearer ")
                 .retrieve()
                 .bodyToMono(SubscriptionRecordDTO.class);

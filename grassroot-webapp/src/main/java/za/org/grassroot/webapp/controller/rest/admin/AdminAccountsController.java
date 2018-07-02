@@ -37,7 +37,7 @@ public class AdminAccountsController extends BaseRestController {
     public CompletableFuture<SubscriptionRecordDTO> createAccount(HttpServletRequest request,
                                                                   @RequestParam String accountName,
                                                                   @RequestParam String billingEmail) {
-        return billingServiceBroker.createSubscription(accountName, billingEmail, getJwtTokenFromRequest(request)).toFuture();
+        return billingServiceBroker.createSubscription(accountName, billingEmail, getJwtTokenFromRequest(request), false).toFuture();
     }
 
     @RequestMapping(value = "/enable/{subscriptionId}", method = RequestMethod.POST)

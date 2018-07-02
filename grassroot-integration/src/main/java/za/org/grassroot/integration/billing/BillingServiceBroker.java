@@ -7,7 +7,7 @@ public interface BillingServiceBroker {
 
     Flux<SubscriptionRecordDTO> fetchListOfSubscriptions(boolean activeOnly, String authToken);
 
-    Mono<SubscriptionRecordDTO> createSubscription(String accountName, String billingAddress, String authToken);
+    Mono<SubscriptionRecordDTO> createSubscription(String accountName, String billingAddress, String authToken, boolean active);
 
     Mono<SubscriptionRecordDTO> enableSubscription(String subscriptionId, String authToken);
 

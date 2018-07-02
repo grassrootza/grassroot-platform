@@ -46,6 +46,10 @@ public class Account implements GrassrootEntity, Serializable {
     @Column(name="created_date_time", nullable = false, insertable = true, updatable = false)
     private Instant createdDateTime;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_type", length = 50, nullable = false)
+    protected AccountType type;
+
     @Basic
     @Column(name="enabled", nullable = false)
     private boolean enabled;
@@ -115,7 +119,9 @@ public class Account implements GrassrootEntity, Serializable {
         this.createdByUser = createdByUser;
         this.enabledByUser = createdByUser;
         this.administrators.add(createdByUser);
-        
+
+        this.type = accountType;
+
         // until the account payment has gone through, do not set it as enabled, but do leave it visible
         this.enabled = false;
         this.enabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
