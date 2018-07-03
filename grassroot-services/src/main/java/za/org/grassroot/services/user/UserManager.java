@@ -405,6 +405,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             return user;
 
         try {
+            log.info("Neither phone nor email matched existing, creating with: {}", phoneOrEmail);
             if (EmailValidator.getInstance().isValid(phoneOrEmail))
                 user = new User(null, null, phoneOrEmail);
             else if (PhoneNumberUtil.testInputNumber(phoneOrEmail))
@@ -418,7 +419,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             return user;
         } catch (IllegalArgumentException e) {
-            log.error("Error! :", e.getMessage());
+            log.error("Error! : {}", e.getMessage());
             return null;
         } catch (DataIntegrityViolationException e) {
             log.error("Error creating or loading user: ", e);

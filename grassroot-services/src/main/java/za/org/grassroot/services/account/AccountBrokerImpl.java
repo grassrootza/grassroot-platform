@@ -80,7 +80,10 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     private void validateAdmin(User user, Account account) {
-        if (!account.getAdministrators().contains(user)) {
+        Objects.requireNonNull(user);
+        Objects.requireNonNull(account);
+
+        if (account.getAdministrators() == null || !account.getAdministrators().contains(user)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
     }

@@ -9,6 +9,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.client.AsyncRestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse;
@@ -112,6 +113,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     @Override
     public PaymentCopyPayResponse initiateCopyPayCheckout(int amountZAR, boolean recurring) {
+        logger.info("Initiating a payment for {}, recurring? : {}", amountZAR, recurring);
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(paymentUrl + "/v1/checkouts")
                 .queryParam("authentication.userId", userId)
@@ -144,14 +146,20 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
         URI requestUri = UriComponentsBuilder.fromUriString(paymentUrl + resourcePath).build().toUri();
         logger.info("requesting payment result via URI: {}", requestUri.toString());
-        ResponseEntity<PaymentCopyPayResponse> response = restTemplate.getForEntity(requestUri, PaymentCopyPayResponse.class);
+        try {
+            ResponseEntity<PaymentCopyPayResponse> response = restTemplate.getForEntity(requestUri, PaymentCopyPayResponse.class);
 
-        boolean successful = SUCCESS_MATCHER.matcher(response.getBody().getInternalCode()).find();
-        if (successful && storeRecurringResult) {
-            storeAccountPaymentReference(accountUid, response.getBody().getRegistrationId());
+            boolean successful = SUCCESS_MATCHER.matcher(response.getBody().getInternalCode()).find();
+            if (successful && storeRecurringResult) {
+                logger.info("successful, and we have an account ID, so store it");
+                storeAccountPaymentReference(accountUid, response.getBody().getRegistrationId());
+            }
+
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            logger.error("Error retrieving payment result: {}", e.getMessage());
+            return null;
         }
-
-        return response.getBody();
     }
 
     private void storeAccountPaymentReference(String accountUid, String registrationId) {

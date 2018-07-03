@@ -26,20 +26,22 @@ public class PaymentRestController {
     }
 
     @RequestMapping(value = "/initiate", method = RequestMethod.GET)
-    public ResponseEntity initiateDonation(@RequestParam int amountZAR) {
-        PaymentCopyPayResponse response = paymentBroker.initiateCopyPayCheckout(amountZAR, false);
-        log.info("initiating a donation, for amount : {}, response: {}", amountZAR, response);
+    public ResponseEntity initiateDonation(@RequestParam int amountZAR,
+                                           @RequestParam(required = false) Boolean recurring) {
+        PaymentCopyPayResponse response = paymentBroker.initiateCopyPayCheckout(amountZAR, recurring != null && recurring);
+        log.info("initiating a donation, for amount : {}, recurring: {}, response: {}", amountZAR, recurring, response);
         return ResponseEntity.ok(response.getId());
     }
 
     @RequestMapping(value = "/result", method = RequestMethod.GET)
-    public ResponseEntity paymentComplete(@RequestParam String resourcePath) {
-        PaymentCopyPayResponse response = paymentBroker.getPaymentResult(resourcePath, false, null);
-        if (SUCCESS_MATCHER.matcher(response.getInternalCode()).find()) {
-            log.info("successful payment! internal code: {}", response.getInternalCode());
+    public ResponseEntity paymentComplete(@RequestParam String resourcePath,
+                                          @RequestParam(required = false) String accountId) {
+        PaymentCopyPayResponse response = paymentBroker.getPaymentResult(resourcePath, accountId != null, accountId);
+        if (response != null && SUCCESS_MATCHER.matcher(response.getInternalCode()).find()) {
+            log.info("successful payment! response: {}", response);
             return ResponseEntity.ok(response.getRegistrationId());
         } else {
-            log.info("payment failed! internal code: {}", response.getInternalCode());
+            log.info("payment failed! internal code: {}", response != null ? response.getInternalCode() : "null");
             return ResponseEntity.ok(RestMessage.PAYMENT_ERROR);
         }
     }

@@ -62,19 +62,15 @@ public class AccountUserController extends BaseRestController {
                 }).toFuture();
     }
 
-    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/change/payment/{accountId}", method = RequestMethod.POST)
     public CompletableFuture<SubscriptionRecordDTO> alterAccountPaymentRef(@PathVariable String accountId,
                                                                            @RequestParam String paymentRef,
-                                                                           @RequestParam boolean addAllGroups,
+                                                                           @RequestParam(required = false) Boolean addAllGroups,
                                                                            HttpServletRequest request) {
-
-        accountBroker.setAccountPaymentRef(getUserIdFromRequest(request), paymentRef, accountId);
-
-        if (addAllGroups) {
+        accountBroker.setAccountPaymentRef(getUserIdFromRequest(request), accountId, paymentRef);
+        if (addAllGroups != null && addAllGroups) {
             accountBroker.addAllUserCreatedGroupsToAccount(accountId, getUserIdFromRequest(request));
         }
-
         Account account = accountBroker.loadAccount(accountId);
         return billingServiceBroker.enableSubscription(account.getSubscriptionRef(), getJwtTokenFromRequest(request)).toFuture();
     }
@@ -85,10 +81,10 @@ public class AccountUserController extends BaseRestController {
         List<String> errorAdmins = new ArrayList<>();
         adminsPhoneOrEmail.forEach(admin -> {
             try {
-                User user = userService.loadOrCreateUser(admin);
+                User user = userService.loadOrCreate(admin);
                 accountBroker.addAdministrator(addingUserUid, accountUid, user.getUid());
-            } catch (IllegalArgumentException e) {
-                log.error("Could not add admin: {}");
+            } catch (IllegalArgumentException|NullPointerException e) {
+                log.error("Could not add admin: {}", admin);
                 errorAdmins.add(admin);
             }
         });
