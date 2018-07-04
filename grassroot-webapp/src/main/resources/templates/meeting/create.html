@@ -131,7 +131,7 @@
               <div class="form-group" th:if="${thisGroupPaidFor}">
                 <label class="control-label">Importance:</label>
                 <select th:field="*{importance}" class="form-control input-lg" id="importance">
-                  <option th:each="option : ${T(za.org.grassroot.core.enums.MeetingImportance).values()}"
+                  <option th:each="option : ${T(za.org.grassroot.core.enums.EventSpecialForm).values()}"
                       th:value="${option}"
                       th:text="#{web.meeting.importance.__${option}__}"
                       th:selected="${option == 'ORDINARY'}">

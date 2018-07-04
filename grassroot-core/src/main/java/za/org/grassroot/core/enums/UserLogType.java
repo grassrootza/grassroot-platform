@@ -21,6 +21,7 @@ public enum UserLogType {
     DETAILS_CHANGED_BY_GROUP("Group organizer changed user details"),
 
     CHANGED_LANGUAGE("user changed their language"),
+    NOTIFIED_LANGUAGES("user was notified of multiple language availability"),
     ADDED_ADDRESS("user added address"),
     CHANGED_ADDRESS("user changed address"),
     REMOVED_ADDRESS("user removed addres"),

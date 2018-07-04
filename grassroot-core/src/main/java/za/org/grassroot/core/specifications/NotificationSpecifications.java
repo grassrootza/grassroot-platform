@@ -12,10 +12,7 @@ import za.org.grassroot.core.domain.campaign.CampaignLog_;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.domain.notification.BroadcastNotification_;
 import za.org.grassroot.core.domain.task.*;
-import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.enums.CampaignLogType;
-import za.org.grassroot.core.enums.DeliveryRoute;
-import za.org.grassroot.core.enums.MessagingProvider;
+import za.org.grassroot.core.enums.*;
 
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
@@ -65,6 +62,13 @@ public final class NotificationSpecifications {
         return (root, query, cb) -> {
             Join<Notification, AccountLog> accountLogJoin = root.join(Notification_.accountLog);
             return cb.equal(accountLogJoin.get(AccountLog_.accountLogType), accountLogType);
+        };
+    }
+
+    public static Specification<Notification> userLogTypeIs(final UserLogType userLogType) {
+        return (root, query, cb) -> {
+            Join<Notification, UserLog> userLogJoin = root.join(Notification_.userLog);
+            return cb.equal(userLogJoin.get(UserLog_.userLogType), userLogType);
         };
     }
 

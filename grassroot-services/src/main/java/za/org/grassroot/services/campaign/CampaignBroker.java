@@ -84,4 +84,6 @@ public interface CampaignBroker {
 
     void endCampaign(String userUid, String campaignUid);
 
+    void updateCampaignDefaultLanguage(String userUid, String campaignUid, Locale defaultLanguage);
+
 }

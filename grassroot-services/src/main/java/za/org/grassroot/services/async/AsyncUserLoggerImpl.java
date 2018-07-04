@@ -2,6 +2,7 @@ package za.org.grassroot.services.async;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -147,10 +148,13 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Override
     @Transactional(readOnly = true)
     public int numberSessions(String userUid, UserInterfaceType interfaceType, Instant start, Instant end) {
-        return (int) userLogRepository.count(where(forUser(userUid))
-                .and(ofType(UserLogType.USER_SESSION))
-                .and(usingInterface(interfaceType))
-                .and(creationTimeBetween(start, end)));
+        Specifications<UserLog> specs = where(forUser(userUid)).and(ofType(UserLogType.USER_SESSION));
+        if (interfaceType != null)
+            specs = specs.and(usingInterface(interfaceType));
+        if (start != null && end != null)
+            specs = specs.and(creationTimeBetween(start, end));
+
+        return (int) userLogRepository.count(specs);
     }
 
     @Override
@@ -159,6 +163,12 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         return (int) userLogRepository.count(where(forUser(userUid))
                 .and(ofType(UserLogType.USER_SKIPPED_NAME))
                 .and(hasDescription(""))) > 0;
+    }
+
+    @Override
+    public boolean hasChangedLanguage(String userUid) {
+        return userLogRepository.count(where(forUser(userUid))
+                .and(ofType(UserLogType.CHANGED_LANGUAGE))) > 0;
     }
 
     @Override

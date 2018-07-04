@@ -43,6 +43,7 @@ import javax.validation.Valid;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -153,6 +154,7 @@ public class CampaignManagerController extends BaseRestController {
         }
 
         Instant campaignStartDate = Instant.ofEpochMilli(createCampaignRequest.getStartDateEpochMillis());
+        log.info("about to convert campaign end ate, from millis: ", createCampaignRequest.getEndDateEpochMillis());
         Instant campaignEndDate = Instant.ofEpochMilli(createCampaignRequest.getEndDateEpochMillis());
 
         String masterGroupUid = createCampaignRequest.getGroupUid();
@@ -222,6 +224,7 @@ public class CampaignManagerController extends BaseRestController {
 
         log.info("campaign messages received: {}", campaignMessages);
         Campaign updatedCampaign = campaignBroker.setCampaignMessages(getUserIdFromRequest(request), campaignUid, campaignMessages);
+        clearCaches(campaignUid, getUserIdFromRequest(request), null);
         return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign));
     }
 
@@ -320,6 +323,16 @@ public class CampaignManagerController extends BaseRestController {
     public ResponseEntity checkForExistingCampaignWelcome(HttpServletRequest request, @PathVariable String campaignUid) {
         final String message = campaignTextBroker.getCampaignMessageText(getUserIdFromRequest(request), campaignUid);
         return StringUtils.isEmpty(message) ? ResponseEntity.ok().build() : ResponseEntity.ok(message);
+    }
+
+    // and this is for setting a default language
+    @RequestMapping(value = "/update/language/{campaignUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Change the default language on the campaign")
+    public ResponseEntity updateCampaignDefaultLanguage(HttpServletRequest request, @PathVariable String campaignUid,
+                                                        @RequestParam Locale defaultLanguage) {
+        log.info("Updating campaign to language: {}", defaultLanguage);
+        campaignBroker.updateCampaignDefaultLanguage(getUserIdFromRequest(request), campaignUid, defaultLanguage);
+        return ResponseEntity.ok(fetchAndCacheUpdatedCampaign(campaignUid, getUserIdFromRequest(request)));
     }
 
     private CampaignViewDTO fetchAndCacheUpdatedCampaign(String campaignUid, String userUid) {
