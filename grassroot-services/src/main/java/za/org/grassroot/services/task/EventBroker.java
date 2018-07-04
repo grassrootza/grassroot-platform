@@ -63,7 +63,7 @@ public interface EventBroker {
 
 	void cancel(String userUid, String eventUid, boolean notifyMembers);
 
-	void sendScheduledReminder(String uid);
+	void sendScheduledReminder(String eventUid);
 
 	void sendManualReminder(String userUid, String eventUid);
 

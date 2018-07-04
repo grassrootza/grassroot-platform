@@ -16,15 +16,13 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.TodoCancelledNotification;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
+import za.org.grassroot.core.domain.notification.UserLanguageNotification;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
-import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.enums.TodoCompletionConfirmType;
-import za.org.grassroot.core.enums.TodoLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.TodoAssignmentRepository;
 import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.graph.GraphBroker;
@@ -35,6 +33,7 @@ import za.org.grassroot.services.exception.ResponseNotAllowedException;
 import za.org.grassroot.services.exception.TodoDeadlineNotInFutureException;
 import za.org.grassroot.services.exception.TodoTypeMismatchException;
 import za.org.grassroot.services.user.PasswordTokenService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -51,7 +50,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
     private final TodoRepository todoRepository;
     private final TodoAssignmentRepository todoAssignmentRepository;
-    private final UserRepository userRepository;
+    private final UserManagementService userService;
     private final UidIdentifiableRepository uidIdentifiableRepository;
 
     private final PermissionBroker permissionBroker;
@@ -65,10 +64,10 @@ public class TodoBrokerImpl implements TodoBroker {
     private GraphBroker graphBroker;
 
     @Autowired
-    public TodoBrokerImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
+    public TodoBrokerImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserManagementService userService, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
         this.todoRepository = todoRepository;
         this.todoAssignmentRepository = todoAssignmentRepository;
-        this.userRepository = userRepository;
+        this.userService = userService;
         this.uidIdentifiableRepository = uidIdentifiableRepository;
         this.permissionBroker = permissionBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
@@ -111,7 +110,7 @@ public class TodoBrokerImpl implements TodoBroker {
         todoHelper.validateMinimumFields();
         validateTodoInFuture(todoHelper);
 
-        User user = userRepository.findOneByUid(todoHelper.getUserUid());
+        User user = userService.load(todoHelper.getUserUid());
         TodoContainer parent = uidIdentifiableRepository.findOneByUid(TodoContainer.class, todoHelper.getParentType(), todoHelper.getParentUid());
 
         if (parent instanceof Group) {
@@ -211,7 +210,7 @@ public class TodoBrokerImpl implements TodoBroker {
     }
 
     private void setAssignedMembers(Todo todo, Set<String> assignedMemberUids, boolean shouldRespond) {
-        List<User> users = userRepository.findByUidIn(assignedMemberUids);
+        List<User> users = userService.load(assignedMemberUids);
         todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, true, false, shouldRespond && !u.equals(todo.getCreatedByUser())))
                 .collect(Collectors.toSet()));
     }
@@ -227,7 +226,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
         Set<String> newAssignments = new HashSet<>(confirmingMemberUids);
         newAssignments.removeAll(duplicateAssignments.stream().map(a -> a.getUser().getUid()).collect(Collectors.toSet()));
-        List<User> users = userRepository.findByUidIn(newAssignments);
+        List<User> users = userService.load(newAssignments);
         todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, false, true, true)).collect(Collectors.toSet()));
         todoRepository.save(todo);
     }
@@ -246,7 +245,7 @@ public class TodoBrokerImpl implements TodoBroker {
     @Transactional
     public void cancel(String userUid, String todoUid, boolean sendNotices, String reason) {
         Todo todo = todoRepository.findOneByUid(todoUid);
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         validateUserCanModify(user, todo);
         todo.setCancelled(true);
         log.info("todo is cancelled, notification params: send : {}, reason: {}", sendNotices, reason);
@@ -265,7 +264,7 @@ public class TodoBrokerImpl implements TodoBroker {
     @Transactional
     public void extend(String userUid, String todoUid, Instant newDueDateTime) {
         Todo todo = todoRepository.findOneByUid(todoUid);
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         if (newDueDateTime.isBefore(Instant.now())) {
             throw new TodoDeadlineNotInFutureException();
         }
@@ -278,7 +277,7 @@ public class TodoBrokerImpl implements TodoBroker {
     @Transactional
     public void updateSubject(String userUid, String todoUid, String newSubject) {
         Todo todo = todoRepository.findOneByUid(todoUid);
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         validateUserCanModify(user, todo);
         todo.setMessage(newSubject);
         createAndStoreTodoLog(user, todo, TodoLogType.CHANGED, "Changed description: " + newSubject);
@@ -295,7 +294,7 @@ public class TodoBrokerImpl implements TodoBroker {
             throw new TodoTypeMismatchException();
         }
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         validateUserCanConfirm(user, todo);
 
         if(todo.getAncestorGroup().getMembership(user) == null){
@@ -311,7 +310,7 @@ public class TodoBrokerImpl implements TodoBroker {
     public Todo checkForTodoNeedingResponse(String userUid) {
         Objects.requireNonNull(userUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         // last in first out (at present - makes most sense if user is responding to something)
         Pageable limit = new PageRequest(0, 1, new Sort(Sort.Direction.DESC, "createdDateTime"));
         Page<Todo> result = todoRepository.findAll(TodoSpecifications.todosForUserResponse(user), limit);
@@ -324,7 +323,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(todoUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
 
         return todoAssignmentRepository.count(TodoSpecifications.userAssignmentCanRespond(user, todo)) > 0;
@@ -336,7 +335,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(todoUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
 
         return todo.getCreatedByUser().equals(user) || todoAssignmentRepository.count(TodoSpecifications.userAssignment(user, todo)) != 0;
@@ -346,7 +345,7 @@ public class TodoBrokerImpl implements TodoBroker {
     @Transactional(readOnly = true)
     public boolean canUserModify(String userUid, String todoUid) {
         // for the moment, trivial, but we are likely to alter in future
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
         return todo.getCreatedByUser().equals(user);
     }
@@ -360,7 +359,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
         Todo todo = todoRepository.findOneByUid(todoUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         if(todo.getAncestorGroup().getMembership(user) == null){
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ALTER_TODO);
         }
@@ -395,7 +394,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(todoUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
 
         validateUserCanModify(user, todo);
@@ -414,14 +413,14 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(todoUid);
         Objects.requireNonNull(addedMemberUids);
 
-        User user = userRepository.findOneByUid(addingUserUid);
+        User user = userService.load(addingUserUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
         validateUserCanModify(user, todo);
 
         Set<String> priorMembers = todo.getAssignments().stream().map(a -> a.getUser().getUid()).collect(Collectors.toSet());
 
         addedMemberUids.removeAll(priorMembers);
-        List<User> newUsers = userRepository.findByUidIn(addedMemberUids);
+        List<User> newUsers = userService.load(addedMemberUids);
         todo.addAssignments(newUsers.stream().map(u -> new TodoAssignment(todo, u, true, false,
                 shouldAssignedUsersRespond(todo.getType()))).collect(Collectors.toSet()));
 
@@ -441,7 +440,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(todoUid);
         Objects.requireNonNull(validatingMemberUids);
 
-        User user = userRepository.findOneByUid(addingUserUid);
+        User user = userService.load(addingUserUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
 
         validateUserCanModify(user, todo);
@@ -457,7 +456,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Set<String> newAssignmentUids = new HashSet<>(validatingMemberUids);
         newAssignmentUids.removeAll(existingAssignments);
 
-        List<User> newValidators = userRepository.findByUidIn(newAssignmentUids);
+        List<User> newValidators = userService.load(newAssignmentUids);
         todo.addAssignments(newValidators.stream().map(u -> new TodoAssignment(todo, u, false, true, true)).collect(Collectors.toSet()));
 
         if (!validatingMemberUids.isEmpty()) {
@@ -476,11 +475,11 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(todoUid);
         Objects.requireNonNull(memberUidsToRemove);
 
-        User user = userRepository.findOneByUid(removingUserUid);
+        User user = userService.load(removingUserUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
         validateUserCanModify(user, todo);
 
-        List<User> users = userRepository.findByUidIn(memberUidsToRemove);
+        List<User> users = userService.load(memberUidsToRemove);
         // to preserve records, we set them to non-assigned, rather than delete
         todoAssignmentRepository.findAll(TodoSpecifications.userInAndForTodo(new HashSet<>(users), todo))
                 .forEach(ta -> {
@@ -498,7 +497,7 @@ public class TodoBrokerImpl implements TodoBroker {
     @Transactional(readOnly = true)
     public List<Todo> fetchTodosForUser(String userUid, boolean forceIncludeCreated, boolean limitToNeedingResponse, Instant intervalStart, Instant intervalEnd, Sort sort) {
         Objects.requireNonNull(userUid);
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Specifications<Todo> specs = limitToNeedingResponse ?
                 TodoSpecifications.todosForUserResponse(user) :
                 Specifications.where(TodoSpecifications.userPartOfParent(user));
@@ -522,7 +521,7 @@ public class TodoBrokerImpl implements TodoBroker {
     @Transactional(readOnly = true)
     public Page<Todo> fetchPageOfTodosForUser(String userUid, boolean createdOnly, Pageable pageRequest) {
         Objects.requireNonNull(userUid);
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         log.info("page request in here: {}", pageRequest.toString());
         Specifications<Todo> specs = Specifications.where(TodoSpecifications.todosUserCreated(user));
         if (!createdOnly) {
@@ -538,7 +537,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Group group = uidIdentifiableRepository.findOneByUid(Group.class, JpaEntityType.GROUP, groupUid);
         // this is causing more trouble than it's worth, so removing it for now
 //        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
@@ -571,7 +570,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(searchString);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchString, true, false);
         return todoRepository.findByParentGroupMembershipsUserAndMessageSearchTerm(user.getId(), tsQuery);
     }
@@ -590,7 +589,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(todoUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
         return todoAssignmentRepository.findOne(TodoSpecifications.userAssignment(user, todo));
     }
@@ -599,7 +598,7 @@ public class TodoBrokerImpl implements TodoBroker {
     @Transactional(readOnly = true)
     public List<TaskTimeChangedDTO> fetchUserTodosWithTimeChanged(String userUid) {
         Objects.requireNonNull(userUid);
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         return todoRepository.fetchTodosWithTimeChangedForUser(user);
     }
 
@@ -609,7 +608,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(todoUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
 
         if (!todo.getCreatedByUser().equals(user) || todoAssignmentRepository.count(TodoSpecifications.userAssignment(user, todo)) == 0) {
@@ -646,11 +645,19 @@ public class TodoBrokerImpl implements TodoBroker {
         Set<User> members = todo.isAllGroupMembersAssigned() ?
                 todo.getAncestorGroup().getMembers() : todo.getAssignedMembers();
 
-        members.stream().filter(m -> !todo.isCompletionConfirmedByMember(m))
-                .forEach(member -> {
+        members.stream()
+                .filter(m -> !todo.isCompletionConfirmedByMember(m))
+                .peek(member -> {
                     String message = messageService.createTodoReminderMessage(member, todo);
                     Notification notification = new TodoReminderNotification(member, message, todoLog);
                     bundle.addNotification(notification);
+                })
+                .filter(userService::shouldSendLanguageText)
+                .forEach(user -> {
+                    log.info("Along with todo reminder, notifying a user about multiple languages ...");
+                    UserLog userLog = new UserLog(user.getUid(), UserLogType.NOTIFIED_LANGUAGES, null, UserInterfaceType.SYSTEM);
+                    bundle.addLog(userLog);
+                    bundle.addNotification(new UserLanguageNotification(user, messageService.createMultiLanguageMessage(), userLog));
                 });
 
         // we only want to include log if there are some notifications

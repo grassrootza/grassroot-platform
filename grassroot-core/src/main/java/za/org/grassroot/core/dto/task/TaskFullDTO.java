@@ -9,12 +9,9 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.task.Meeting;
-import za.org.grassroot.core.domain.task.Task;
-import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.domain.task.TodoType;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
@@ -64,7 +61,7 @@ public class TaskFullDTO {
 
     @Setter private boolean errorReport;
 
-    private MeetingImportance meetingImportance;
+    private EventSpecialForm specialForm;
 
 
     public TaskFullDTO(Task task, User user, Instant lastChangedTime, String userResponse) {
@@ -72,7 +69,7 @@ public class TaskFullDTO {
         this.title = task.getName();
         this.description = task.getDescription();
         this.location = task.getTaskType().equals(TaskType.MEETING) ? ((Meeting) task).getEventLocation() : null;
-        this.meetingImportance = task.getTaskType().equals(TaskType.MEETING) ? ((Meeting)task).getImportance() : null;
+        this.specialForm = task.getTaskType().equals(TaskType.TODO) ? null : ((Event) task).getSpecialForm();
 
         Group ancestorGroup = task.getAncestorGroup();
         // just in case membership is gone (and useful for test) by time user pulls task

@@ -24,7 +24,6 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
@@ -206,7 +205,9 @@ public class USSDMeetingController extends USSDBaseController {
         }
 
         recordExperimentResult(user.getUid(), attending);
-        return menuBuilder(new USSDMenu(getMessage(welcomeKey, user), optionsHomeExit(user, false)));
+        // now, check if user has had a few sessions and no language. if so, prompt for language.
+        return userManager.needToPromptForLanguage(user, preLanguageSessions) ? menuBuilder(promptLanguageMenu(user)) :
+                menuBuilder(new USSDMenu(getMessage(welcomeKey, user), optionsHomeExit(user, false)));
     }
 
     /*

@@ -93,7 +93,7 @@ public class USSDGeoApiController extends USSDBaseController {
         User user = userManager.findByInputNumber(inputNumber, saveUrl("/infoset", dataSet));
         log.info("locale: {}, interrupted: {}", language, interrupted);
         if (interrupted == null || !interrupted) {
-            userManager.updateUserLanguage(user.getUid(), language);
+            userManager.updateUserLanguage(user.getUid(), language, UserInterfaceType.USSD);
             user.setLanguageCode(language.getLanguage()); // to avoid a reload (even if H caches)
             log.info("set user language to: ", user.getLanguageCode());
         }

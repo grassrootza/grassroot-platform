@@ -261,6 +261,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return "Todo{" +
                 "id=" + id +
                 ", uid=" + uid +
+                ", type=" + type +
                 ", completed=" + completed +
                 ", message='" + message + '\'' +
                 ", actionByDate=" + actionByDate +

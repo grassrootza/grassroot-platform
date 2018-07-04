@@ -5,12 +5,14 @@ package za.org.grassroot.core.domain.task;
  */
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
@@ -89,6 +91,10 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	// we use these just to simplify some internal methods, hence transient - actual logic is to persist via eventlogs
     @Transient
     private String imageUrl;
+
+	@Column(name="special_form")
+	@Enumerated(EnumType.STRING)
+	@Getter @Setter protected EventSpecialForm specialForm;
 
 	public abstract EventType getEventType();
 

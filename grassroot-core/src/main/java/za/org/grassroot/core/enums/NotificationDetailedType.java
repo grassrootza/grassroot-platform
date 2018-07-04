@@ -6,6 +6,7 @@ package za.org.grassroot.core.enums;
 public enum NotificationDetailedType {
 
 	WELCOME,
+	LANGUAGES,
 
 	EVENT_INFO,
 	EVENT_CANCELLED,

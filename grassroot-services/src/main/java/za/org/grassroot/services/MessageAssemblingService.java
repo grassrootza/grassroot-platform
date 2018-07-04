@@ -85,4 +85,6 @@ public interface MessageAssemblingService {
 
     String createGroupJoinCodeMessage(Group group);
 
+    String createMultiLanguageMessage();
+
 }

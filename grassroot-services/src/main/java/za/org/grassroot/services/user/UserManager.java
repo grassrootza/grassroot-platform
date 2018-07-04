@@ -5,6 +5,7 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -16,7 +17,9 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -24,6 +27,7 @@ import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
@@ -54,6 +58,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class UserManager implements UserManagementService, UserDetailsService {
 
+    @Value("${grassroot.languages.notify.mincount:3}")
+    protected int MIN_NOTIFICATIONS_FOR_LANG_PING;
+
     private static final String EXPIRED_USER_NAME = "del_user_";
 
     @Autowired private PasswordEncoder passwordEncoder;
@@ -80,6 +87,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User load(String userUid) {
         return userRepository.findOneByUid(userUid);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> load(Set<String> userUids) {
+        return userRepository.findByUidIn(userUids);
     }
 
     @Override
@@ -447,13 +460,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
-        return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
-                groupRepository.findOneByUid(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public boolean doesUserHaveStandardRole(String userName, String roleName) {
         User user = findByNumberOrEmail(userName, userName);
         try {
@@ -512,6 +518,31 @@ public class UserManager implements UserManagementService, UserDetailsService {
                 && user.getCreatedDateTime().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean needToPromptForLanguage(User user, int minSessions) {
+        return !(isUserNonEnglish(user) || asyncUserService.hasChangedLanguage(user.getUid())) &&
+                asyncUserService.numberSessions(user.getUid(), null, null, null) > minSessions;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean shouldSendLanguageText(User user) {
+        if (isUserNonEnglish(user) || asyncUserService.hasChangedLanguage(user.getUid()))
+            return false;
+
+        Specifications<Notification> totalCountSpecs = Specifications.where(NotificationSpecifications.toUser(user));
+        Specifications<Notification> languageNotifySpecs = totalCountSpecs.and(
+                NotificationSpecifications.userLogTypeIs(UserLogType.NOTIFIED_LANGUAGES));
+        return logsAndNotificationsBroker.countNotifications(totalCountSpecs) > MIN_NOTIFICATIONS_FOR_LANG_PING
+                && logsAndNotificationsBroker.countNotifications(languageNotifySpecs) == 0;
+    }
+
+    private boolean isUserNonEnglish(User user) {
+        return !StringUtils.isEmpty(user.getLanguageCode())
+                && !Locale.ENGLISH.getLanguage().equals(user.getLanguageCode());
+    }
+
     /*
     Method for user to reset password themselves, relies on them being able to access a token
      */
@@ -544,8 +575,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
             throw new IllegalArgumentException("Cannot set email to empty if no phone number");
         }
 
-        // todo : store some logs
         user.setEmailAddress(emailAddress);
+        asyncUserService.recordUserLog(userUid, UserLogType.USER_EMAIL_CHANGED, emailAddress, null);
     }
 
     @Override
@@ -732,7 +763,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void updateUserLanguage(String userUid, Locale locale) {
+    public void updateUserLanguage(String userUid, Locale locale, UserInterfaceType channel) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(locale);
 
@@ -741,6 +772,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         log.info("set the user language to : {} ", user.getLanguageCode());
 
+        asyncUserService.recordUserLog(userUid, UserLogType.CHANGED_LANGUAGE, locale.getLanguage(), channel);
         cacheUtilService.putUserLanguage(user.getPhoneNumber(), locale.getLanguage());
     }
 
@@ -779,6 +811,19 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }catch (NoSuchUserException e){
             return UserRegPossibility.USER_CAN_REGISTER;
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> findUsersThatRsvpForEvent(Event event, EventRSVPResponse response) {
+        return EventRSVPResponse.YES.equals(response) ? userRepository.findUsersThatRSVPYesForEvent(event) :
+                EventRSVPResponse.NO.equals(response) ? userRepository.findUsersThatRSVPNoForEvent(event) :
+                        userRepository.findUsersThatRSVPForEvent(event);
+    }
+
+    @Override
+    public List<User> findUsersNotifiedAboutEvent(Event event, Class<? extends EventNotification> notificationClass) {
+        return userRepository.findNotificationTargetsForEvent(event, notificationClass);
     }
 
     private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
