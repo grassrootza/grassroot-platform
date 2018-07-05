@@ -32,6 +32,7 @@ import za.org.grassroot.services.exception.TaskNameTooLongException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.user.PasswordTokenService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -63,12 +64,12 @@ public class EventBrokerImpl implements EventBroker {
 	@Value("${grassroot.events.limit.enabled:false}")
 	private boolean eventMonthlyLimitActive;
 
+	private final UserManagementService userService;
 	private final EventLogBroker eventLogBroker;
 	private final EventRepository eventRepository;
 	private final VoteRepository voteRepository;
 	private final MeetingRepository meetingRepository;
 	private final UidIdentifiableRepository uidIdentifiableRepository;
-	private final UserRepository userRepository;
 	private final GroupRepository groupRepository;
 	private final PermissionBroker permissionBroker;
 	private final LogsAndNotificationsBroker logsAndNotificationsBroker;
@@ -84,13 +85,13 @@ public class EventBrokerImpl implements EventBroker {
 	private GraphBroker graphBroker;
 
 	@Autowired
-	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker,EntityManager entityManager) {
+	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserManagementService userService, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker,EntityManager entityManager) {
 		this.meetingRepository = meetingRepository;
 		this.eventLogBroker = eventLogBroker;
 		this.eventRepository = eventRepository;
 		this.voteRepository = voteRepository;
 		this.uidIdentifiableRepository = uidIdentifiableRepository;
-		this.userRepository = userRepository;
+		this.userService = userService;
 		this.accountGroupBroker = accountGroupBroker;
 		this.groupRepository = groupRepository;
 		this.permissionBroker = permissionBroker;
@@ -129,7 +130,7 @@ public class EventBrokerImpl implements EventBroker {
 	public Meeting createMeeting(MeetingBuilderHelper helper) {
 		helper.validateMeetingFields();
 
-		User user = userRepository.findOneByUid(helper.getUserUid());
+		User user = userService.load(helper.getUserUid());
 		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class,
 				helper.getParentType(), helper.getParentUid());
 
@@ -146,7 +147,7 @@ public class EventBrokerImpl implements EventBroker {
 		Meeting meeting = helper.convertToBuilder(user, parent).createMeeting();
 		meeting = setReminder(meeting, helper);
 
-		log.info("Created meeting, with importance={}, reminder type={} and time={}", meeting.getImportance(), meeting.getReminderType(), meeting.getScheduledReminderTime());
+		log.info("Created meeting, with importance={}, reminder type={} and time={}", meeting.getSpecialForm(), meeting.getReminderType(), meeting.getScheduledReminderTime());
 
 		meetingRepository.save(meeting);
 
@@ -168,7 +169,9 @@ public class EventBrokerImpl implements EventBroker {
 
 	private Meeting setReminder(Meeting meeting, MeetingBuilderHelper helper) {
 		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to 1 hours
-		if (!helper.getReminderType().equals(DISABLED) && meeting.getScheduledReminderTime().isBefore(Instant.now())) {
+		if (!helper.getReminderType().equals(DISABLED) &&
+				meeting.getScheduledReminderTime() != null &&
+				meeting.getScheduledReminderTime().isBefore(Instant.now())) {
 			meeting.setCustomReminderMinutes(60);
 			meeting.setReminderType(CUSTOM);
 			meeting.updateScheduledReminderTime();
@@ -229,7 +232,7 @@ public class EventBrokerImpl implements EventBroker {
 		Instant intervalStart = startDateTime.minus(180, ChronoUnit.SECONDS);
 		Instant intervalEnd = startDateTime.plus(180, ChronoUnit.SECONDS);
 
-		User user = userRepository.findOneByUid(userUid);
+		User user = userService.load(userUid);
 		Group parentGroup = groupRepository.findOneByUid(parentGroupUid);
 
 		Event possibleEvent = eventRepository.findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(user, parentGroup, name, intervalStart, intervalEnd);
@@ -282,7 +285,7 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(userUid);
         Objects.requireNonNull(meetingUid);
 
-		User user = userRepository.findOneByUid(userUid);
+		User user = userService.load(userUid);
         Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
 
         boolean meetingChanged = false;
@@ -355,7 +358,7 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(eventStartDateTime);
 		Objects.requireNonNull(eventLocation);
 
-		User user = userRepository.findOneByUid(userUid);
+		User user = userService.load(userUid);
 		Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
 
 		if (meeting.isCanceled()) {
@@ -416,7 +419,7 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	private Set<Notification> constructEventChangedNotifications(Event event, EventLog eventLog, boolean startTimeChanged) {
-		Set<User> rsvpWithNoMembers = new HashSet<>(userRepository.findUsersThatRSVPNoForEvent(event));
+		Set<User> rsvpWithNoMembers = new HashSet<>(userService.findUsersThatRsvpForEvent(event, EventRSVPResponse.NO));
 		return getAllEventMembers(event).stream()
 				.filter(member -> startTimeChanged || !rsvpWithNoMembers.contains(member))
 				.map(member -> {
@@ -437,7 +440,7 @@ public class EventBrokerImpl implements EventBroker {
 		Instant convertedClosingDateTime = convertToSystemTime(eventStartDateTime, getSAST());
         validateEventStartTime(convertedClosingDateTime);
 
-		User user = userRepository.findOneByUid(userUid);
+		User user = userService.load(userUid);
 		VoteContainer parent = uidIdentifiableRepository.findOneByUid(VoteContainer.class, parentType, parentUid);
 
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
@@ -503,7 +506,7 @@ public class EventBrokerImpl implements EventBroker {
         Objects.requireNonNull(reminderType);
 
         Event event = eventRepository.findOneByUid(eventUid);
-		User user = userRepository.findOneByUid(userUid);
+		User user = userService.load(userUid);
 
 		if (!event.getCreatedByUser().equals(user)) {
 			throw new AccessDeniedException("Error! Only the event creator can adjust settings");
@@ -528,7 +531,7 @@ public class EventBrokerImpl implements EventBroker {
         Objects.requireNonNull(eventUid);
 
         Event event = eventRepository.findOneByUid(eventUid);
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
 
         if (!event.getCreatedByUser().equals(user)) {
         	throw new AccessDeniedException("Error! Only the user who created the meeting can change its description");
@@ -551,7 +554,7 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
 
-		User user = userRepository.findOneByUid(userUid);
+		User user = userService.load(userUid);
 		Event event = eventRepository.findOneByUid(eventUid);
 
 		if (event.isCanceled()) {
@@ -572,7 +575,7 @@ public class EventBrokerImpl implements EventBroker {
 		bundle.addLog(eventLog);
 
 		if (notifyMembers) {
-			List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
+			List<User> rsvpWithNoMembers = userService.findUsersThatRsvpForEvent(event, EventRSVPResponse.NO);
 			getAllEventMembers(event).stream().filter(member -> !rsvpWithNoMembers.contains(member)).forEach(member -> {
 				String message = messageAssemblingService.createEventCancelledMessage(member, event);
 				Notification notification = new EventCancelledNotification(member, message, eventLog);
@@ -585,14 +588,13 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void sendScheduledReminder(String uid) {
-		Objects.requireNonNull(uid);
-
-		Event event = eventRepository.findOneByUid(uid);
+	public void sendScheduledReminder(String eventUid) {
+		Event event = eventRepository.findOneByUid(Objects.requireNonNull(eventUid));
 
 		if (event.isCanceled()) {
 			throw new IllegalStateException("Event is canceled: " + event);
 		}
+
 		if (!event.isScheduledReminderActive()) {
 			throw new IllegalStateException("Event is not scheduled for reminder: " + event);
 		}
@@ -607,11 +609,11 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(null, event, REMINDER);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
-		List<User> eventReminderNotificationSentMembers = userRepository.findNotificationTargetsForEvent(
-				event, EventReminderNotification.class);
+		List<User> eventReminderNotificationSentMembers = userService.findUsersNotifiedAboutEvent(event, EventReminderNotification.class);
 		excludedMembers.addAll(eventReminderNotificationSentMembers);
 
-		for (User member : getAllEventMembers(event)) {
+		final Set<User> members = getAllEventMembers(event);
+		for (User member : members) {
 			if (!excludedMembers.contains(member)) {
 				String notificationMessage = messageAssemblingService.createScheduledEventReminderMessage(member, event);
 				Notification notification = new EventReminderNotification(member, notificationMessage, eventLog);
@@ -627,22 +629,34 @@ public class EventBrokerImpl implements EventBroker {
 		// for meeting calls, send out RSVPs to date to meeting's creator
 		if (event.getEventType().equals(EventType.MEETING) && event.isRsvpRequired()) {
 			Meeting meeting = (Meeting) event;
-
 			LogsAndNotificationsBundle meetingRsvpTotalsBundle = constructMeetingRsvpTotalsBundle(meeting);
 			bundle.addBundle(meetingRsvpTotalsBundle);
 		}
 
+		addLanguageNotifications(members, bundle);
+
 		logsAndNotificationsBroker.storeBundle(bundle);
+	}
+
+	private void addLanguageNotifications(Collection<User> users, LogsAndNotificationsBundle bundle) {
+		final String languageMessage = messageAssemblingService.createMultiLanguageMessage();
+		users.stream().filter(userService::shouldSendLanguageText)
+				.forEach(user -> {
+					log.info("Notifying a user about multiple languages ...");
+					UserLog userLog = new UserLog(user.getUid(), UserLogType.NOTIFIED_LANGUAGES, null, UserInterfaceType.SYSTEM);
+					bundle.addLog(userLog);
+					bundle.addNotification(new UserLanguageNotification(user, languageMessage, userLog));
+				});
 	}
 
 	private Set<User> findEventReminderExcludedMembers(Event event) {
 		Set<User> excludedMembers = new HashSet<>();
 		if (event.getEventType().equals(EventType.VOTE)) {
-			List<User> votedMembers = userRepository.findUsersThatRSVPForEvent(event);
+			List<User> votedMembers = userService.findUsersThatRsvpForEvent(event, null);
 			excludedMembers.addAll(votedMembers);
 		}
 		if (event.getEventType().equals(EventType.MEETING)) {
-			List<User> meetingDeclinedMembers = userRepository.findUsersThatRSVPNoForEvent(event);
+			List<User> meetingDeclinedMembers = userService.findUsersThatRsvpForEvent(event, EventRSVPResponse.NO);
 			excludedMembers.addAll(meetingDeclinedMembers);
 		}
 		return excludedMembers;
@@ -669,7 +683,7 @@ public class EventBrokerImpl implements EventBroker {
 	public void sendManualReminder(String userUid, String eventUid) {
 		Objects.requireNonNull(eventUid);
 
-		User user = userRepository.findOneByUid(userUid);
+		User user = userService.load(userUid);
 
 		Event event = eventRepository.findOneByUid(eventUid);
 		if (event.isCanceled()) {
@@ -732,9 +746,9 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(null, meeting, THANK_YOU_MESSAGE);
 
 		Set<User> tankYouNotificationSentMembers = new HashSet<>(
-				userRepository.findNotificationTargetsForEvent(meeting, MeetingThankYouNotification.class));
+				userService.findUsersNotifiedAboutEvent(meeting, MeetingThankYouNotification.class));
 
-		List<User> rsvpWithYesMembers = userRepository.findUsersThatRSVPYesForEvent(meeting);
+		List<User> rsvpWithYesMembers = userService.findUsersThatRsvpForEvent(meeting, EventRSVPResponse.YES);
 		for (User members : rsvpWithYesMembers) {
 			if (!tankYouNotificationSentMembers.contains(members)) {
 				String message = messageAssemblingService.createMeetingThankYourMessage(members, meeting);
@@ -748,6 +762,8 @@ public class EventBrokerImpl implements EventBroker {
 			bundle.addLog(eventLog);
 		}
 
+		addLanguageNotifications(rsvpWithYesMembers, bundle);
+		;
 		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
@@ -759,7 +775,7 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(eventUid);
 		Objects.requireNonNull(assignMemberUids);
 
-		User user = userRepository.findOneByUid(userUid);
+		User user = userService.load(userUid);
 		Event event = eventRepository.findOneByUid(eventUid);
 
 		Set<User> priorMembers = (Set<User>) event.getMembers();
@@ -788,7 +804,7 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
 
-		User user = userRepository.findOneByUid(userUid);
+		User user = userService.load(userUid);
 		Event event = eventRepository.findOneByUid(eventUid);
 
 		Set<User> membersRemoved = (Set<User>) event.getMembers();
@@ -812,7 +828,7 @@ public class EventBrokerImpl implements EventBroker {
     public void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location, UserInterfaceType interfaceType) {
         Objects.requireNonNull(meetingUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Meeting meeting = meetingRepository.findOneByUid(meetingUid);
 
         if (!meeting.getCreatedByUser().equals(user)) {
@@ -875,8 +891,8 @@ public class EventBrokerImpl implements EventBroker {
 	public Map<User, EventRSVPResponse> getRSVPResponses(Event event) {
 		Map<User, EventRSVPResponse> rsvpResponses = new LinkedHashMap<>();
 
-		List<User> usersAnsweredYes = userRepository.findUsersThatRSVPYesForEvent(event);
-		List<User> usersAnsweredNo = userRepository.findUsersThatRSVPNoForEvent(event);
+		List<User> usersAnsweredYes = userService.findUsersThatRsvpForEvent(event, EventRSVPResponse.YES);
+		List<User> usersAnsweredNo = userService.findUsersThatRsvpForEvent(event, EventRSVPResponse.NO);
 
 		@SuppressWarnings("unchecked") // someting strange with getAllMembers and <user> creates an unchecked warning here (hence suppressing)
 				Set<User> users = new HashSet<>(event.getAllMembers());

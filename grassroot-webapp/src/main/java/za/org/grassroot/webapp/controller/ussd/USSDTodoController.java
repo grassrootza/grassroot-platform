@@ -67,7 +67,6 @@ public class USSDTodoController extends USSDBaseController {
         this.learningService = learningService;
     }
 
-
     @Autowired
     public void setMessageAssembler(USSDMessageAssembler messageAssembler) {
         log.info("message assembler? : {}", messageAssembler.toString());
@@ -76,8 +75,8 @@ public class USSDTodoController extends USSDBaseController {
     }
 
     public USSDMenu respondToTodo(User user, EntityForUserResponse entity) {
-
         Todo todo = (Todo) entity;
+        log.info("Generating response menu for entity: {}", entity);
         switch (todo.getType()) {
             case INFORMATION_REQUIRED:
                 final String infoPrompt = messageAssembler.getMessage("todo.info.prompt",
@@ -86,6 +85,7 @@ public class USSDTodoController extends USSDBaseController {
             case VOLUNTEERS_NEEDED:
                 final String volunteerPrompt = messageAssembler.getMessage("todo.volunteer.prompt",
                         new String[] { todo.getCreatorAlias(), todo.getMessage() }, user);
+                log.info("volunteer todo assembled, prompt: {}", volunteerPrompt);
                 return new USSDMenu(volunteerPrompt, optionsYesNo(user, "todo/respond/volunteer?todoUid=" + todo.getUid()));
             case VALIDATION_REQUIRED:
                 final String confirmationPrompt = messageAssembler.getMessage("todo.validate.prompt",
@@ -111,7 +111,8 @@ public class USSDTodoController extends USSDBaseController {
                 messageAssembler.getMessage("todo.volunteer.yes.prompt", user) :
                 messageAssembler.getMessage("todo.volunteer.no.prompt", user);
         log.info("User={},Prompt={},todo uid={},response={}",user,promptMessage,todoUid,userResponse);
-        return menuBuilder(welcomeMenu(promptMessage, user));
+        return  userManager.needToPromptForLanguage(user, preLanguageSessions) ? menuBuilder(promptLanguageMenu(user)) :
+                menuBuilder(welcomeMenu(promptMessage, user));
     }
 
     @RequestMapping(value = FULL_PATH + "/respond/info", method = RequestMethod.GET)
@@ -141,7 +142,8 @@ public class USSDTodoController extends USSDBaseController {
                                       @RequestParam String response) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, null);
         todoBroker.recordResponse(user.getUid(), todoUid, response, false);
-        return menuBuilder(welcomeMenu(messageAssembler.getMessage("todo.info.prompt.done", user), user));
+        return userManager.needToPromptForLanguage(user, preLanguageSessions) ? menuBuilder(promptLanguageMenu(user)) :
+                menuBuilder(welcomeMenu(messageAssembler.getMessage("todo.info.prompt.done", user), user));
     }
 
     @RequestMapping(value = FULL_PATH + "/respond/info/revise", method = RequestMethod.GET)

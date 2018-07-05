@@ -12,20 +12,23 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.notification.UserLanguageNotification;
 import za.org.grassroot.core.domain.notification.VoteResultsNotification;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VoteRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.MessageAssemblingService;
-import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskFinishedException;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -57,15 +60,15 @@ public class VoteBrokerImpl implements VoteBroker {
     private static final String ABSTAIN = "ABSTAIN";
     private static final List<String> optionsForYesNoVote = Arrays.asList(YES, NO, ABSTAIN);
 
-    private final UserRepository userRepository;
+    private final UserManagementService userService;
     private final VoteRepository voteRepository;
     private final EventLogRepository eventLogRepository;
     private final MessageAssemblingService messageService;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    public VoteBrokerImpl(UserRepository userRepository, VoteRepository voteRepository, EventLogRepository eventLogRepository, PermissionBroker permissionBroker, MessageAssemblingService messageService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
-        this.userRepository = userRepository;
+    public VoteBrokerImpl(UserManagementService userService, VoteRepository voteRepository, EventLogRepository eventLogRepository, MessageAssemblingService messageService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+        this.userService = userService;
         this.voteRepository = voteRepository;
         this.eventLogRepository = eventLogRepository;
         this.messageService = messageService;
@@ -83,7 +86,7 @@ public class VoteBrokerImpl implements VoteBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(voteUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Vote vote = voteRepository.findOneByUid(voteUid);
 
         if (vote.isCanceled()) {
@@ -127,7 +130,7 @@ public class VoteBrokerImpl implements VoteBroker {
         Objects.requireNonNull(closingDateTime);
 
         Vote vote = voteRepository.findOneByUid(eventUid);
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
 
         validateUserPermissionToModify(user, vote);
 
@@ -144,7 +147,7 @@ public class VoteBrokerImpl implements VoteBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(voteUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Vote vote = voteRepository.findOneByUid(voteUid);
 
         validateUserPermissionToModify(user, vote);
@@ -168,7 +171,7 @@ public class VoteBrokerImpl implements VoteBroker {
         Objects.requireNonNull(voteUid);
         Objects.requireNonNull(options);
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
         Vote vote = voteRepository.findOneByUid(voteUid);
 
         validateUserPermissionToModify(user, vote);
@@ -193,7 +196,7 @@ public class VoteBrokerImpl implements VoteBroker {
             throw new TaskFinishedException();
         }
 
-        User user = userRepository.findOneByUid(userUid);
+        User user = userService.load(userUid);
 
         validateUserPartOfVote(user, vote, true);
 
@@ -229,13 +232,23 @@ public class VoteBrokerImpl implements VoteBroker {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
             EventLog eventLog = new EventLog(null, vote, EventLogType.RESULT);
             Set<User> voteResultsNotificationSentMembers = new HashSet<>(
-                    userRepository.findNotificationTargetsForEvent(vote, VoteResultsNotification.class));
+                    userService.findUsersNotifiedAboutEvent(vote, VoteResultsNotification.class));
+
+            // in case we need it
+            final String languageMessage = messageService.createMultiLanguageMessage();
 
             vote.getAllMembers().stream()
                     .filter(u -> !voteResultsNotificationSentMembers.contains(u))
-                    .forEach(u -> {
+                    .peek(u -> {
                         String msg = messageService.createMultiOptionVoteResultsMessage(u, vote, voteResults);
                         bundle.addNotification(new VoteResultsNotification(u, msg, eventLog));
+                    })
+                    .filter(userService::shouldSendLanguageText)
+                    .forEach(u -> {
+                        logger.info("Along with vote results, notifying a user about multiple languages ...");
+                        UserLog userLog = new UserLog(u.getUid(), UserLogType.NOTIFIED_LANGUAGES, null, UserInterfaceType.SYSTEM);
+                        bundle.addLog(userLog);
+                        bundle.addNotification(new UserLanguageNotification(u, languageMessage, userLog));
                     });
 
             if (!bundle.getNotifications().isEmpty()) {
@@ -253,7 +266,7 @@ public class VoteBrokerImpl implements VoteBroker {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Long> fetchVoteResults(String userUid, String voteUid, boolean swallowMemberException) {
-        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        User user = userService.load(Objects.requireNonNull(userUid));
         Vote vote = voteRepository.findOneByUid(Objects.requireNonNull(voteUid));
 
         try {

@@ -17,7 +17,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
-import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -72,7 +72,7 @@ public class EventCreateController extends BaseRestController{
                                                      @RequestParam(required = false)
                                                      @ApiParam(value = "Server UID of an optional image to include " +
                                                              "in the meeting call") String mediaFileUid,
-                                                     @RequestParam(required = false) MeetingImportance meetingImportance) {
+                                                     @RequestParam(required = false) EventSpecialForm meetingImportance) {
         String userUid = getUserIdFromRequest(request);
         log.info("creating a meeting, subject ={}, location = {}, parentUid = {}", subject, location,parentUid);
 
@@ -126,9 +126,9 @@ public class EventCreateController extends BaseRestController{
                                                   @RequestParam(required = false) List<String> voteOptions,
                                                   @RequestParam(required = false) String description,
                                                   @RequestParam long time,
+                                                  @RequestParam(required = false) EventSpecialForm specialForm,
                                                   @RequestParam(required = false) String mediaFileUid,
-                                                  @RequestParam(required = false)
-                                                      @ApiParam(value = "UIDs of assigned members, if left blank all " +
+                                                  @RequestParam(required = false) @ApiParam(value = "UIDs of assigned members, if left blank all " +
                                                               "members of the parent are assigned") Set<String> assignedMemberUids){
 
         String userUid = getUserIdFromRequest(request);

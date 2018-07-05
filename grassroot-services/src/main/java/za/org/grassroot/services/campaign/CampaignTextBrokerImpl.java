@@ -174,7 +174,8 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
 
         CampaignType campaignType = campaign.getCampaignType();
         if (userCanJoin(campaignType)) {
-            final String respondText = getNextStepMessage(campaignType, channel, user.getLocale(), callBackNumber);
+            Locale locale = StringUtils.isEmpty(user.getLanguageCode()) ? user.getLocale() : campaign.getDefaultLanguage();
+            final String respondText = getNextStepMessage(campaignType, channel, locale, callBackNumber);
             CampaignResponseNotification sendMoreInfo = new CampaignResponseNotification(user, respondText, campaignLog);
             sendMoreInfo.setSendOnlyAfter(sendTime.plus(15, ChronoUnit.SECONDS)); // to make sure it comes in second
             bundle.addNotification(sendMoreInfo);

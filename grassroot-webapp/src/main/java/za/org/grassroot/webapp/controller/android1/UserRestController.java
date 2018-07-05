@@ -246,7 +246,7 @@ public class UserRestController {
         try {
             Locale passedLocale = new Locale(language);
             log.info("received a passed locale ... here it is  :" + passedLocale.toString());
-            userManagementService.updateUserLanguage(user.getUid(), passedLocale);
+            userManagementService.updateUserLanguage(user.getUid(), passedLocale, UserInterfaceType.ANDROID);
             return RestUtil.messageOkayResponse(RestMessage.PROFILE_SETTINGS_UPDATED);
         } catch (IllegalArgumentException e) {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_LANG_CODE);

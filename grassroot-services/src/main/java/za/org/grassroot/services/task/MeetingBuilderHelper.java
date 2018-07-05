@@ -10,7 +10,7 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.MeetingContainer;
-import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskNameTooLongException;
 
@@ -39,7 +39,7 @@ public class MeetingBuilderHelper {
     private EventReminderType reminderType;
     private Integer customReminderMinutes = 0;
     private String description;
-    private MeetingImportance importance;
+    private EventSpecialForm importance;
 
     @Getter private Set<String> assignedMemberUids;
     @Getter private String taskImageKey;
@@ -102,7 +102,7 @@ public class MeetingBuilderHelper {
         return this;
     }
 
-    public MeetingBuilderHelper importance(MeetingImportance importance) {
+    public MeetingBuilderHelper importance(EventSpecialForm importance) {
         this.importance = importance;
         return this;
     }

@@ -15,10 +15,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Entity @Getter @Setter @Slf4j
@@ -43,7 +40,7 @@ public class Campaign implements TagHolder {
     @Column(name = "name", nullable = false, length = 50)
     private String name;
 
-    @Column(name = "description", length = 512)
+    @Column(name = "description") // allow arbitrary length
     private String description;
 
     @Column(name = "code", length = 5)
@@ -66,7 +63,7 @@ public class Campaign implements TagHolder {
     @JoinColumn(name = "ancestor_group_id", nullable = true)
     private Group masterGroup;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
@@ -106,6 +103,9 @@ public class Campaign implements TagHolder {
     @JoinColumn(name = "image_record_uid", referencedColumnName = "uid")
     private MediaFileRecord campaignImage;
 
+    @Column(name = "default_language")
+    private Locale defaultLanguage;
+
     public Campaign() {
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
@@ -127,7 +127,7 @@ public class Campaign implements TagHolder {
         this.outboundTextEnabled = false;
         this.outboundBudget = 0L;
         this.outboundSpent = 0L;
-        log.info("is the account null? {}", this.account);
+        log.info("is the account null? {}", this.account == null);
     }
 
     public boolean isActive() {
@@ -202,6 +202,10 @@ public class Campaign implements TagHolder {
         this.campaignMessages.addAll(messages);
     }
 
+    public Locale getDefaultLanguage() {
+        return defaultLanguage == null ? Locale.ENGLISH : defaultLanguage;
+    }
+
 
     @Override
     public boolean equals(Object o) {
@@ -234,6 +238,7 @@ public class Campaign implements TagHolder {
         sb.append(", campaignEndDate=").append(endDateTime);
         sb.append(", campaignType=").append(campaignType);
         sb.append(", version=").append(version);
+        sb.append(", language=").append(defaultLanguage);
         sb.append('}');
         return sb.toString();
     }

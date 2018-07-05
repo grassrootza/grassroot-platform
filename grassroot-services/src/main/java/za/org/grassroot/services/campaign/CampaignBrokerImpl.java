@@ -310,7 +310,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             throw new NoPaidAccountException();
         }
 
-        Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate,campaignType, url, user.getPrimaryAccount());
+        Campaign newCampaign = new Campaign(campaignName, campaignCode, description, user, startDate, endDate,campaignType, url, user.getPrimaryAccount());
         newCampaign.setMasterGroup(masterGroup);
 
         if (smsShare) {
@@ -673,6 +673,21 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_DEACTIVATED, campaign, null,
                 "Prior end date: " + priorEndDate));
+    }
+
+    @Override
+    @Transactional
+    public void updateCampaignDefaultLanguage(String userUid, String campaignUid, Locale defaultLanguage) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+        validateUserCanModifyCampaign(user, campaign);
+
+        log.info("Setting campaign {} to language: {}", campaign.getName(), defaultLanguage);
+
+        campaign.setDefaultLanguage(defaultLanguage);
+
+        persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_LANG_CHANGED, campaign, null,
+                defaultLanguage.getLanguage()));
     }
 
     private Campaign getCampaignByCampaignCode(String campaignCode){

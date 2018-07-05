@@ -142,7 +142,7 @@ public class USSDGroupController extends USSDBaseController {
         if ("PROVINCE".equals(field)) {
             userManager.updateUserProvince(user.getUid(), province);
         } else if ("LANGUAGE".equals(field)) {
-            userManager.updateUserLanguage(user.getUid(), language);
+            userManager.updateUserLanguage(user.getUid(), language, UserInterfaceType.USSD);
         } else if ("NAME".equals(field) && !StringUtils.isEmpty(name) && name.length() > 1) {
             userManager.updateDisplayName(user.getUid(), user.getUid(), name);
         }

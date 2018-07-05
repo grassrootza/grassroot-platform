@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
@@ -65,10 +66,9 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         VariationAssignment assignment = !optimizelyActive ? null : experimentBroker.assignUser("test_experiment_meetings", user.getUid(), null);
         String messageKey;
         if (event instanceof Vote) {
-
-            messageKey = event.hasImage() ? "text.vote.send.image" : "sms.vote.send.new";
+            messageKey = event.hasImage() ? "text.vote.send.image" :
+                    EventSpecialForm.MASS_VOTE.equals(event.getSpecialForm()) ? "text.vote.send.mass" : "sms.vote.send.new";
         } else if (event.hasImage()) {
-
             messageKey = "sms.mtg.send.image";
         } else if (event.isHighImportance() || (assignment != null && assignment.equals(VariationAssignment.EXPERIMENT))) {
             messageKey = "sms.mtg.send.special";
@@ -445,6 +445,12 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String[] fields = new String[]{group.getGroupName(),group.getGroupTokenCode()};
         return messageSourceAccessor.getMessage("text.group.join.code",
                 fields, group.getCreatedByUser().getLocale());
+    }
+
+    @Override
+    public String createMultiLanguageMessage() {
+        // by definition, only makes sense in English (is multi-lingual in any case)
+        return messageSourceAccessor.getMessage("text.languages.alert", Locale.ENGLISH);
     }
 
 }

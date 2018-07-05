@@ -172,7 +172,8 @@ public class USSDVoteController extends USSDBaseController {
         voteBroker.recordUserVote(user.getUid(), voteUid, response);
         final String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
         cacheManager.clearRsvpCacheForUser(user.getUid());
-        return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, false)));
+        return userManager.needToPromptForLanguage(user, preLanguageSessions) ? menuBuilder(promptLanguageMenu(user)) :
+            menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, false)));
     }
 
     /*

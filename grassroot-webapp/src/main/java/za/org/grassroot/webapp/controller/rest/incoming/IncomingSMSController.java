@@ -227,7 +227,10 @@ public class IncomingSMSController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        boolean likelyPlsCallMe = StringUtils.containsIgnoreCase(message, "please call") || StringUtils.containsIgnoreCase(message, "call me");
+        List<String> keyStrings = Arrays.asList("please call", "call me", "to call", "PCM");
+        boolean likelyPlsCallMe = keyStrings.stream().anyMatch(string ->
+                StringUtils.containsIgnoreCase(message, string));
+
         if (!likelyPlsCallMe) {
             log.info("not a please call me, must be different message: ", message);
             return ResponseEntity.ok().build();

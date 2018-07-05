@@ -135,7 +135,7 @@ public class USSDUserController extends USSDBaseController {
 
         User user = userManager.findByInputNumber(inputNumber);
         user.setLanguageCode(language); // so next prompt shows up without needing repeat DB query
-        userManager.updateUserLanguage(user.getUid(), new Locale(language));
+        userManager.updateUserLanguage(user.getUid(), new Locale(language), UserInterfaceType.USSD);
 
         return menuBuilder(new USSDMenu(getMessage(thisSection, keyLanguage + doSuffix, promptKey, user), optionsHomeExit(user, false)));
     }
