@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupAdminDTO;
 import za.org.grassroot.core.enums.Province;
@@ -174,20 +174,6 @@ public class AdminRestController extends BaseRestController{
             restMessage = RestMessage.UPLOADED;
         }
         return ResponseEntity.ok(restMessage.name());
-    }
-
-    @RequestMapping(value = "/graph/transfer/groups", method = RequestMethod.GET)
-    public ResponseEntity initiateGroupGraphTransfer() {
-        log.info("seeding queue with groups");
-        adminService.populateGrassrootGraphGroups();
-        return ResponseEntity.ok().build();
-    }
-
-    @RequestMapping(value = "/graph/transfer/memberships", method = RequestMethod.GET)
-    public ResponseEntity initiateGroupMembershipTransfer() {
-        log.info("seeding queue with memberships");
-        adminService.populateGrassrootGraphMemberships();
-        return ResponseEntity.ok().build();
     }
 
     @RequestMapping(value = "/graph/transfer/tasks", method = RequestMethod.GET)

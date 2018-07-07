@@ -2,7 +2,6 @@ package za.org.grassroot.services.util;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.CacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -69,7 +68,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 	@Autowired
 	public LogsAndNotificationsBrokerImpl(NotificationRepository notificationRepository, BroadcastNotificationRepository broadcastNotificationRepository, GroupLogRepository groupLogRepository,
-										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository, CacheManager cacheManager, CacheUtilService cacheService, ApplicationEventPublisher applicationEventPublisher) {
+										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository, CacheUtilService cacheService, ApplicationEventPublisher applicationEventPublisher) {
 		this.notificationRepository = notificationRepository;
 		this.broadcastNotificationRepository = broadcastNotificationRepository;
 		this.groupLogRepository = groupLogRepository;
@@ -218,8 +217,8 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	@Override
 	@Transactional
 	@SuppressWarnings("unchecked")
-	public void abortNotificationSend(Specifications specifications) {
-		notificationRepository.findAll((Specifications<Notification>) specifications)
+	public void abortNotificationSend(Specification specifications) {
+		notificationRepository.findAll((Specification<Notification>) specifications)
 					.forEach(n -> n.setStatus(NotificationStatus.ABORTED));
 	}
 
@@ -286,7 +285,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
     }
 
     @Override
-    public long countNotifications(Specifications<Notification> specifications) {
+    public long countNotifications(Specification<Notification> specifications) {
         return notificationRepository.count(specifications);
     }
 
@@ -354,7 +353,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 	@Override
 	@Transactional(readOnly = true)
-	public long countCampaignLogs(Specifications<CampaignLog> specs) {
+	public long countCampaignLogs(Specification<CampaignLog> specs) {
 		return campaignLogRepository.count(specs);
 	}
 

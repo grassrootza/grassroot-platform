@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.billing.BillingServiceBroker;
 import za.org.grassroot.integration.billing.SubscriptionRecordDTO;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -21,10 +23,8 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.model.rest.wrappers.AccountWrapper;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -104,22 +104,23 @@ public class AccountUserController extends BaseRestController {
     public ResponseEntity removeAdminFromAccount(@PathVariable String accountId, HttpServletRequest request,
                                                  String adminUid) {
         accountBroker.removeAdministrator(getUserIdFromRequest(request), accountId, adminUid, true);
-        return ResponseEntity.ok().build();
+        return wrappedAccount(accountId, request);
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/add/group/{accountId}", method = RequestMethod.POST)
     public ResponseEntity addGroupsToAccount(@PathVariable String accountId, HttpServletRequest request,
                                              @RequestParam Set<String> groupUids) {
+        log.info("adding groups: {} to account: {}", groupUids, accountId);
         accountBroker.addGroupsToAccount(accountId, groupUids, getUserIdFromRequest(request));
-        return ResponseEntity.ok().build();
+        return wrappedAccount(accountId, request);
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/add/group/all/{accountId}", method = RequestMethod.POST)
+    @RequestMapping(value = "/add/group/{accountId}/all", method = RequestMethod.POST)
     public ResponseEntity addAllGroupsToAccount(@PathVariable String accountId, HttpServletRequest request) {
         accountBroker.addAllUserCreatedGroupsToAccount(accountId, getUserIdFromRequest(request));
-        return ResponseEntity.ok().build();
+        return wrappedAccount(accountId, request);
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
@@ -128,7 +129,7 @@ public class AccountUserController extends BaseRestController {
                                                  @RequestParam Set<String> groupIds,
                                                  HttpServletRequest request) {
         accountBroker.removeGroupsFromAccount(accountId, groupIds, getUserIdFromRequest(request));
-        return ResponseEntity.ok().build();
+        return wrappedAccount(accountId, request);
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
@@ -145,7 +146,7 @@ public class AccountUserController extends BaseRestController {
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/settings/fetch", method = RequestMethod.GET)
+    @RequestMapping(value = "/fetch", method = RequestMethod.GET)
     public ResponseEntity<AccountWrapper> getAccountSettings(@RequestParam(required = false) String accountUid,
                                                              HttpServletRequest request) {
         User user = getUserFromRequest(request);
@@ -154,8 +155,45 @@ public class AccountUserController extends BaseRestController {
         if (account == null) {
             return ResponseEntity.ok().build();
         } else {
-            return ResponseEntity.ok(new AccountWrapper(account, user));
+            long startTime = System.currentTimeMillis();
+            AccountWrapper accountWrapper = new AccountWrapper(account, user);
+            log.info("Assembled user account wrapper, time : {} msecs", System.currentTimeMillis() - startTime);
+            long accountNotifications = accountBroker.countAccountNotifications(account.getUid(),
+                    DateTimeUtil.getEarliestInstant(), Instant.now());
+            log.info("Counted {} notifications for account", accountNotifications);
+            return ResponseEntity.ok(accountWrapper);
         }
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/fetch/groups/candidates", method = RequestMethod.GET)
+    public ResponseEntity<Map<String, String>> getGroupsUserCanAdd(@RequestParam String accountUid,
+                                                                   HttpServletRequest request) {
+        List<Group> groups = accountBroker.fetchGroupsUserCanAddToAccount(accountUid, getUserIdFromRequest(request))
+                .stream().sorted(Comparator.comparing(Group::getName)).collect(Collectors.toList());
+        Map<String, String> groupUidsAndNames = new LinkedHashMap<>();
+        groups.forEach(group -> groupUidsAndNames.put(group.getUid(), group.getName()));
+        return ResponseEntity.ok(groupUidsAndNames);
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/fetch/group/notification_count", method = RequestMethod.GET)
+    public ResponseEntity<Long> getGroupNotificationCount(@RequestParam String accountUid,
+                                                          @RequestParam String groupUid,
+                                                          HttpServletRequest request) {
+
+        long startTime = System.currentTimeMillis();
+        long groupCount = accountBroker.countChargedNotificationsForGroup(accountUid, groupUid,
+                DateTimeUtil.getEarliestInstant(), Instant.now());
+        log.info("Counted {} messages, took {} msecs", groupCount, System.currentTimeMillis() - startTime);
+        return ResponseEntity.ok(groupCount);
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/primary/set/{accountUid}", method = RequestMethod.POST)
+    public ResponseEntity<AccountWrapper> setAccountPrimary(@PathVariable String accountUid, HttpServletRequest request) {
+        accountBroker.setAccountPrimary(getUserIdFromRequest(request), accountUid);
+        return wrappedAccount(accountUid, request);
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
@@ -172,6 +210,10 @@ public class AccountUserController extends BaseRestController {
         }catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
         }
+    }
+
+    private ResponseEntity<AccountWrapper> wrappedAccount(String accountUid, HttpServletRequest request) {
+        return ResponseEntity.ok(new AccountWrapper(accountBroker.loadAccount(accountUid), getUserFromRequest(request)));
     }
 
 }

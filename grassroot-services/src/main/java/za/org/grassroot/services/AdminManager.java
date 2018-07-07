@@ -3,7 +3,6 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -184,25 +183,6 @@ public class AdminManager implements AdminService {
 
         userLogRepository.save(new UserLog(user.getUid(), UserLogType.ADMIN_CHANGED_PASSWORD,
                 adminUserUid, UserInterfaceType.WEB));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGrassrootGraphGroups() {
-        if (graphBroker != null) {
-            Specifications<Group> groups = Specifications.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
-            groupRepository.findAll(groups).forEach(group -> graphBroker.addGroupToGraph(group.getUid(), group.getCreatedByUser().getUid(), null));
-        }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGrassrootGraphMemberships() {
-        if (graphBroker != null) {
-            // could also get all groups then get all memberships within them, but actually Hibernate caching makes this likely better approach
-            membershipRepository.findByGroupActiveTrue()
-                    .forEach(membership -> graphBroker.addMembershipToGraph(Collections.singleton(membership.getUser().getUid()), membership.getGroup().getUid()));
-        }
     }
 
     @Async

@@ -2,13 +2,14 @@ package za.org.grassroot.services.account;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -29,9 +30,13 @@ import za.org.grassroot.services.exception.AdminRemovalException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
-import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -40,8 +45,8 @@ import java.util.stream.Collectors;
 @Service @Slf4j
 public class AccountBrokerImpl implements AccountBroker {
 
+    @Value("${accounts.freeform.cost.standard:22}")
     private int additionalMessageCost;
-    private Map<AccountType, Integer> accountFees = new HashMap<>();
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
@@ -49,29 +54,24 @@ public class AccountBrokerImpl implements AccountBroker {
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final PermissionBroker permissionBroker;
-    private final Environment environment;
     private final ApplicationEventPublisher eventPublisher;
 
-    private final AccountGroupBroker accountGroupBroker;
+    private EntityManager entityManager;
 
     @Autowired
     public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, GroupRepository groupRepository, PermissionBroker permissionBroker,
-                             LogsAndNotificationsBroker logsAndNotificationsBroker, AccountGroupBroker accountGroupBroker,
-                             Environment environment, ApplicationEventPublisher eventPublisher) {
+                             LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.permissionBroker = permissionBroker;
-        this.accountGroupBroker = accountGroupBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.environment = environment;
         this.eventPublisher = eventPublisher;
     }
 
-    @PostConstruct
-    public void init() {
-        accountFees.put(AccountType.STANDARD, environment.getProperty("accounts.subscription.cost.standard", Integer.class));
-        additionalMessageCost = environment.getProperty("accounts.freeform.cost.standard", Integer.class, 25);
+    @Autowired
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -305,6 +305,8 @@ public class AccountBrokerImpl implements AccountBroker {
         Objects.requireNonNull(adminToRemoveUid);
         DebugUtil.transactionRequired("");
 
+        log.info("removing admin, user: {}, admin to remove uid: {}, account uid: {}", userUid, adminToRemoveUid, accountUid);
+
         if (preventRemovingSelfOrBilling && userUid.equals(adminToRemoveUid)) {
             throw new AdminRemovalException("account.admin.remove.error.same");
         }
@@ -322,7 +324,7 @@ public class AccountBrokerImpl implements AccountBroker {
             administrator.setPrimaryAccount(null);
         }
 
-        if (administrator.getAccountsAdministered().isEmpty()) {
+        if (administrator.getAccountsAdministered() == null || administrator.getAccountsAdministered().isEmpty()) {
             permissionBroker.removeSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
         }
 
@@ -343,14 +345,17 @@ public class AccountBrokerImpl implements AccountBroker {
         User user = userRepository.findOneByUid(userUid);
         validateAdmin(user, account);
 
-        List<Group> groups = groupRepository.findAll(Specification.where(GroupSpecifications.uidIn(groupUids)));
+        List<Group> groups = groupRepository
+                .findAll(Specification.where(GroupSpecifications.uidIn(groupUids)));
         log.info("number of groups matching list: {}", groups.size());
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         groups.stream().filter(group -> !group.isPaidFor()).forEach(group -> {
-            account.addPaidGroup(group);
+            group.setAccount(account);
             group.setPaidFor(true);
+
+            log.info("Added group {} to account {}", group.getName(), account.getName());
 
             bundle.addLog(new AccountLog.Builder(account)
                     .user(user)
@@ -367,6 +372,7 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     @Override
+    @Transactional
     public void addAllUserCreatedGroupsToAccount(String accountUid, String userUid) {
         Objects.requireNonNull(accountUid);
         Objects.requireNonNull(userUid);
@@ -380,6 +386,22 @@ public class AccountBrokerImpl implements AccountBroker {
                 .stream().map(Group::getUid).collect(Collectors.toSet());
 
         addGroupsToAccount(accountUid, groups, userUid);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Group> fetchGroupsUserCanAddToAccount(String accountUid, String userUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+        validateAdmin(user, account); // should never need to call this witohut admin
+
+        // for the moment, just doing it based on the most general organizer permission
+        Set<Group> userGroups = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        log.debug("User has {} groups with organizer permission", userGroups.size());
+        Set<Group> userGroupsUnpaidFor = userGroups.stream().filter(group -> !group.isPaidFor()).collect(Collectors.toSet());
+        log.debug("After removing paid groups, {} left", userGroupsUnpaidFor.size());
+
+        return userGroupsUnpaidFor;
     }
 
     @Override
@@ -468,6 +490,56 @@ public class AccountBrokerImpl implements AccountBroker {
                 .forEach(a -> removeAdministrator(userUid, accountUid, a.getUid(), false));
 
         removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countAccountNotifications(String accountUid, Instant startTime, Instant endTime) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        return countAllForGroups(account.getPaidGroups(), startTime, endTime);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countChargedNotificationsForGroup(String accountUid, String groupUid, Instant start, Instant end) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        return countAllForGroups(Collections.singleton(group), start, end);
+    }
+
+    private long countAllForGroups(Set<Group> groups, Instant start, Instant end) {
+        long startTime = System.currentTimeMillis();
+        long groupLogCount = executeCountQuery("(n.groupLog in (select gl from GroupLog gl where gl.group in :groups))",
+                start, end, groups);
+
+        long eventLogCount = executeCountQuery("(n.eventLog in (select el from EventLog el where el.event.ancestorGroup in :groups))",
+                start, end, groups);
+
+        long todoLogCount = executeCountQuery("(n.todoLog in (select tl from TodoLog tl where tl.todo.ancestorGroup in :groups))",
+                start, end, groups);
+
+        long campaignLogCount = executeCountQuery("(n.campaignLog in (select cl from CampaignLog cl where cl.campaign.masterGroup in :groups))",
+                start, end, groups);
+
+        log.info("In {} msecs, for {} groups, counted {} from group logs, {} from event logs, {} from todo logs, {} from campaign logs",
+                System.currentTimeMillis() - startTime, groups.size(), groupLogCount, eventLogCount, todoLogCount, campaignLogCount);
+
+        return groupLogCount + eventLogCount + todoLogCount + campaignLogCount;
+
+    }
+
+    private long executeCountQuery(String querySuffix, Instant start, Instant end, Set<Group> groups) {
+        TypedQuery<Long> countQuery = entityManager.createQuery(countQueryOpening() + querySuffix, Long.class)
+                .setParameter("start", start).setParameter("end", end)
+                .setParameter("groups", groups);
+
+        return countQuery.getSingleResult();
+    }
+
+    private String countQueryOpening() {
+        return "select count(n) from Notification n " +
+                "where n.createdDateTime between :start and :end and " +
+                "n.status in ('DELIVERED', 'READ') and ";
     }
 
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {

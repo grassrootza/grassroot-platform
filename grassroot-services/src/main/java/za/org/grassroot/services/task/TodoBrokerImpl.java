@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -501,9 +501,9 @@ public class TodoBrokerImpl implements TodoBroker {
     public List<Todo> fetchTodosForUser(String userUid, boolean forceIncludeCreated, boolean limitToNeedingResponse, Instant intervalStart, Instant intervalEnd, Sort sort) {
         Objects.requireNonNull(userUid);
         User user = userService.load(userUid);
-        Specifications<Todo> specs = limitToNeedingResponse ?
+        Specification<Todo> specs = limitToNeedingResponse ?
                 TodoSpecifications.todosForUserResponse(user) :
-                Specifications.where(TodoSpecifications.userPartOfParent(user));
+                Specification.where(TodoSpecifications.userPartOfParent(user));
 
         if (forceIncludeCreated) {
             specs = specs.or((root, query, cb) -> cb.equal(root.get(Todo_.createdByUser), user));
@@ -526,7 +526,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(userUid);
         User user = userService.load(userUid);
         log.info("page request in here: {}", pageRequest.toString());
-        Specifications<Todo> specs = Specifications.where(TodoSpecifications.todosUserCreated(user));
+        Specification<Todo> specs = Specification.where(TodoSpecifications.todosUserCreated(user));
         if (!createdOnly) {
             specs = specs.and(TodoSpecifications.todosUserAssigned(user));
         }
@@ -545,11 +545,11 @@ public class TodoBrokerImpl implements TodoBroker {
         // this is causing more trouble than it's worth, so removing it for now
 //        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
 
-        Specifications<Todo> specs;
+        Specification<Todo> specs;
         if (limitToNeedingResponse) {
             specs = TodoSpecifications.todosForUserResponse(user).and(TodoSpecifications.hasGroupAsParent(group));
         } else {
-            specs = Specifications.where(TodoSpecifications.hasGroupAsParent(group));
+            specs = Specification.where(TodoSpecifications.hasGroupAsParent(group));
         }
 
         specs = specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.cancelled)));
@@ -618,7 +618,7 @@ public class TodoBrokerImpl implements TodoBroker {
             throw new AccessDeniedException("Error, only creating or assigned user can see todo details");
         }
 
-        Specifications<TodoAssignment> specs = Specifications.where((root, query, cb) -> cb.equal(root.get(TodoAssignment_.todo), todo));
+        Specification<TodoAssignment> specs = Specification.where((root, query, cb) -> cb.equal(root.get(TodoAssignment_.todo), todo));
 
         if (respondedOnly) {
             specs = specs.and((root, query, cb) -> cb.isTrue(root.get(TodoAssignment_.hasResponded)));

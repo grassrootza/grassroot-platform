@@ -7,8 +7,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 
-import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -25,22 +24,36 @@ public class AccountWrapper {
     private final boolean enabled;
 
     private final String name;
+    private final String subscriptionId;
 
-    private final Set<String> groupNames;
-    private final Set<String> adminNames;
+    private final Map<String, String> paidForGroups;
+    private final Map<String, String> otherAdmins;
 
-    public AccountWrapper(Account account, User callingUser) {
+    private final boolean primary;
+    private Map<String, String> otherAccounts;
+
+    public AccountWrapper(Account account, User user) {
         this.uid = account.getUid();
         this.createdByUserName = account.getCreatedByUser().nameToDisplay();
-        this.createdByCallingUser = account.getCreatedByUser().equals(callingUser);
+        this.createdByCallingUser = account.getCreatedByUser().equals(user);
 
         this.enabled = account.isEnabled();
         this.name = account.getAccountName();
+        this.subscriptionId = account.getSubscriptionRef();
 
         // these are pretty inefficient but this should be occassional - turn into a query at some point
-        this.groupNames = account.getPaidGroups().stream().map(Group::getName).collect(Collectors.toSet());
-        this.adminNames = account.getAdministrators().stream().map(User::getName).collect(Collectors.toSet());
+        this.paidForGroups = account.getPaidGroups().stream().collect(Collectors.toMap(Group::getUid, Group::getName));
 
+        this.otherAdmins = account.getAdministrators().stream()
+                .filter(otherUser -> !user.equals(otherUser))
+                .collect(Collectors.toMap(User::getUid, User::getName));
+
+        this.primary = account.equals(user.getPrimaryAccount());
+        if (user.getAccountsAdministered() != null && !user.getAccountsAdministered().isEmpty()) {
+            this.otherAccounts = user.getAccountsAdministered().stream()
+                    .filter(otherAccount -> !account.equals(otherAccount))
+                    .filter(Account::isEnabled).collect(Collectors.toMap(Account::getUid, Account::getName));
+        }
     }
 
 }

@@ -36,10 +36,6 @@ public interface AdminService {
     //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateUserPassword(String adminUserUid, String userUid, String newPassword);
 
-    void populateGrassrootGraphGroups();
-
-    void populateGrassrootGraphMemberships();
-
     void populateGrassrootGraphTasks(String userUid);
 
 }

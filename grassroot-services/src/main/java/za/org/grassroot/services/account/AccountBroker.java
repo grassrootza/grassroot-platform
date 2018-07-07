@@ -2,7 +2,9 @@ package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.group.Group;
 
+import java.time.Instant;
 import java.util.Set;
 
 /**
@@ -37,10 +39,16 @@ public interface AccountBroker {
 
     void addAllUserCreatedGroupsToAccount(String accountUid, String userUid);
 
+    Set<Group> fetchGroupsUserCanAddToAccount(String accountUid, String userUid);
+
     void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
 
     void modifyAccount(String adminUid, String accountUid, String accountName, String billingEmail);
 
     void closeAccount(String userUid, String accountUid, String closingReason);
+
+    long countAccountNotifications(String accountUid, Instant startTime, Instant endTime);
+
+    long countChargedNotificationsForGroup(String accountUid, String groupUid, Instant startTime, Instant endTime);
 
 }

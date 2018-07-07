@@ -147,7 +147,6 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .stream().filter(Campaign::isActiveWithUrl).collect(Collectors.toMap(Campaign::getName, Campaign::getLandingUrl)));
         }
 
-
         builder.allMemberCount(membershipRepository.count((root, query, cb) -> cb.equal(root.get("group"), (group))));
 
         return builder.build();
