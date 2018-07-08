@@ -430,51 +430,59 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-						   boolean includeSubGroups, String description, String taskImageKey, Set<String> assignMemberUids, List<String> options) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(parentUid);
-		Objects.requireNonNull(parentType);
+	public Vote createVote(VoteHelper helper) {
+		Objects.requireNonNull(helper.getUserUid());
+		Objects.requireNonNull(helper.getParentUid());
+		Objects.requireNonNull(helper.getParentType());
+		Objects.requireNonNull(helper.getName());
 
-		Instant convertedClosingDateTime = convertToSystemTime(eventStartDateTime, getSAST());
+		Instant convertedClosingDateTime = convertToSystemTime(helper.getEventStartDateTime(), getSAST());
         validateEventStartTime(convertedClosingDateTime);
 
-		User user = userService.load(userUid);
-		VoteContainer parent = uidIdentifiableRepository.findOneByUid(VoteContainer.class, parentType, parentUid);
+		User user = userService.load(helper.getUserUid());
+		VoteContainer parent = uidIdentifiableRepository.findOneByUid(VoteContainer.class, helper.getParentType(), helper.getParentUid());
 
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
 
-		if (parentType.equals(JpaEntityType.GROUP)) {
-			Event possibleDuplicate = checkForDuplicate(userUid, parentUid, name, convertedClosingDateTime, assignMemberUids);
+		if (JpaEntityType.GROUP.equals(helper.getParentType())) {
+			Event possibleDuplicate = checkForDuplicate(helper.getUserUid(), helper.getParentUid(),
+					helper.getName(), convertedClosingDateTime, helper.getAssignMemberUids());
 			if (possibleDuplicate != null && possibleDuplicate.getEventType().equals(EventType.VOTE)) {
 				log.info("Detected duplicate vote creation, returning the already-created one ... ");
 				return (Vote) possibleDuplicate;
 			}
 
-			if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
+			if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(helper.getParentUid()) < 1) {
 				throw new AccountLimitExceededException();
 			}
 		}
 
-		if (name.length() > Event.MAX_NAME_LENGTH) {
+		if (helper.getName().length() > Event.MAX_NAME_LENGTH) {
 			throw new TaskNameTooLongException();
 		}
 
-		Vote vote = new Vote(name, convertedClosingDateTime, user, parent, includeSubGroups, description);
+		Vote vote = new Vote(helper.getName(), convertedClosingDateTime, user, parent, helper.isIncludeSubGroups(), helper.getDescription());
+		Set<String> assignMemberUids = helper.getAssignMemberUids();
 		if (assignMemberUids != null && !assignMemberUids.isEmpty()) {
-			assignMemberUids.add(userUid); // enforce creating user part of vote
+			assignMemberUids.add(helper.getUserUid()); // enforce creating user part of vote
 		}
 		vote.assignMembers(assignMemberUids);
+
+		List<String> options = helper.getOptions();
 		if (options != null && !options.isEmpty()) {
 			vote.setVoteOptions(options);
 		}
 
+		if (!EventSpecialForm.ORDINARY.equals(helper.getSpecialForm())) {
+			vote.setSpecialForm(helper.getSpecialForm());
+		}
+
 		voteRepository.save(vote);
 
-		if (!StringUtils.isEmpty(taskImageKey)) {
-
-			taskImageBroker.recordImageForTask(userUid, vote.getUid(), TaskType.VOTE, Collections.singleton(taskImageKey), EventLogType.IMAGE_AT_CREATION, null);
-			vote.setImageUrl(taskImageBroker.getShortUrl(taskImageKey));
+		if (!StringUtils.isEmpty(helper.getTaskImageKey())) {
+			taskImageBroker.recordImageForTask(helper.getUserUid(), vote.getUid(), TaskType.VOTE,
+					Collections.singleton(helper.getTaskImageKey()), EventLogType.IMAGE_AT_CREATION, null);
+			vote.setImageUrl(taskImageBroker.getShortUrl(helper.getTaskImageKey()));
 		}
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();

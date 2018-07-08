@@ -21,6 +21,7 @@ import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.VoteBroker;
+import za.org.grassroot.services.task.VoteHelper;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.VoteType;
 import za.org.grassroot.webapp.model.web.VoteWrapper;
@@ -30,7 +31,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -108,8 +108,12 @@ public class VoteController extends BaseController {
         try {
             // since user might have added options then switched back to yes/no, can't just pass getOptions
             List<String> voteOptions = VoteType.YES_NO.equals(vote.getType()) ? null : vote.getOptions();
-            eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
-                    vote.isIncludeSubGroups(), vote.getDescription(), null, Collections.emptySet(), voteOptions);
+            VoteHelper helper = VoteHelper.builder()
+                    .userUid(getUserProfile().getUid()).parentUid(groupUid).parentType(JpaEntityType.GROUP)
+                    .name(vote.getTitle()).eventStartDateTime(vote.getEventDateTime()).includeSubGroups(vote.isIncludeSubGroups())
+                    .description(vote.getDescription()).options(voteOptions)
+                    .build();
+            eventBroker.createVote(helper);
             addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
             redirectAttributes.addAttribute("groupUid", groupUid);
             return "redirect:/group/view";

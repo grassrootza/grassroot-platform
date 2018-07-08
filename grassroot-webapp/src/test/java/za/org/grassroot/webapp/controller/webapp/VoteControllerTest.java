@@ -1,15 +1,15 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.services.task.VoteBroker;
+import za.org.grassroot.services.task.VoteHelper;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.VoteWrapper;
 
@@ -28,9 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Created by paballo on 2016/01/22.
  */
+@Slf4j
 public class VoteControllerTest extends WebAppAbstractUnitTest {
-
-    private static final Logger logger = LoggerFactory.getLogger(MeetingControllerTest.class);
 
     @Mock
     private VoteBroker voteBrokerMock;
@@ -103,8 +102,12 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("redirect:/group/view"))
                 .andExpect(redirectedUrl("/group/view?groupUid=" + testGroup.getUid()));
 
-        verify(eventBrokerMock, times(1)).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, "test vote",
-                                                     testTime, false, "Abracadabra", null, Collections.emptySet(), null);
+        VoteHelper helper = VoteHelper.builder()
+                .userUid(sessionTestUser.getUid()).parentUid(testGroup.getUid())
+                .name("test vote").eventStartDateTime(testTime).description("Abracadabra")
+                .build();
+
+        verify(eventBrokerMock, times(1)).createVote(helper);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(eventBrokerMock);
     }

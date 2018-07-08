@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
@@ -24,6 +23,7 @@ import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.VoteBroker;
+import za.org.grassroot.services.task.VoteHelper;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.EventWrapper;
@@ -85,11 +85,15 @@ public class VoteRestController {
         }
 
         try {
-            // todo : atomicity in broker calls, also handle bad UIDs
             LocalDateTime eventStartDateTime = LocalDateTime.parse(time.trim(), getPreferredRestFormat());
             List<String> voteOptions = StringArrayUtil.isAllEmptyOrNull(options) ? null : options;
-            Vote vote = eventBroker.createVote(user.getUid(), groupUid, JpaEntityType.GROUP, title, eventStartDateTime,
-                    false, description, null, membersUid, voteOptions);
+            VoteHelper helper = VoteHelper.builder()
+                    .userUid(user.getUid()).parentUid(groupUid)
+                    .name(title).eventStartDateTime(eventStartDateTime).options(voteOptions)
+                    .description(description).assignMemberUids(membersUid).build();
+            log.info("HELPER: {}", helper);
+            Vote vote = eventBroker.createVote(helper);
+            log.info("response? : {}", vote);
             eventBroker.updateReminderSettings(user.getUid(), vote.getUid(), EventReminderType.CUSTOM,
                     RestUtil.getReminderMinutes(reminderMinutes));
             TaskDTO voteCreated = taskBroker.load(user.getUid(), vote.getUid(), TaskType.VOTE);

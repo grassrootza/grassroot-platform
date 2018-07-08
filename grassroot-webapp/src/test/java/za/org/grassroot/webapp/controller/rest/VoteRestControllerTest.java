@@ -9,16 +9,14 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.GroupJoinMethod;
-import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.task.VoteBroker;
+import za.org.grassroot.services.task.VoteHelper;
 import za.org.grassroot.webapp.controller.android1.VoteRestController;
-
-import java.util.Collections;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
@@ -49,29 +47,26 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void creatingAVoteShouldWork() throws Exception {
-
+        VoteHelper helper = VoteHelper.builder()
+                .userUid(sessionTestUser.getUid()).parentUid(testGroup.getUid())
+                .name(voteEvent.getName()).eventStartDateTime(testDateTime).description(testEventDescription)
+                .build();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
+        when(eventBrokerMock.createVote(helper)).thenReturn(voteEvent);
 
-        when(eventBrokerMock.createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
-                                        voteEvent.getName(), testDateTime, false, testEventDescription,
-                null, Collections.emptySet(), null)).thenReturn(voteEvent);
-
-        log.info("ZOG: Creating a vote, passing these parameters: userUid= {}, groupUid= {}, voteName= {}, time= {}",
-                 sessionTestUser.getUid(), testGroup.getUid(), testEventTitle, testDateTime.toString());
+        log.info("HELPER: {}", helper);
 
         mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", testGroup.getUid(), testUserPhone, testUserCode)
                                 .param("title", testEventTitle)
                                 .param("closingTime", testDateTime.format(getPreferredRestFormat()))
                                 .param("description", testEventDescription)
                                 .param("reminderMins", String.valueOf(10))
-                                .param("notifyGroup", String.valueOf(true))
-                                .param("includeSubgroups", String.valueOf(true)))
+                                .param("notifyGroup", String.valueOf(true)))
                 .andExpect(status().is2xxSuccessful());
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(eventBrokerMock).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, voteEvent.getName(),
-                                           testDateTime, false, testEventDescription, null, Collections.emptySet(), null);
+        verify(eventBrokerMock).createVote(helper);
     }
 
     @Test
