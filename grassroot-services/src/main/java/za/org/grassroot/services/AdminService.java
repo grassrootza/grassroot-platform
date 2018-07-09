@@ -11,13 +11,10 @@ import java.util.List;
  */
 public interface AdminService {
 
-    //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateGroupActive(String adminUserUid, String groupUid, boolean active);
 
-    //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo);
 
-    //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void removeUserFromAllGroups(String adminUserUid, String userUid);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

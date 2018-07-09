@@ -9,11 +9,14 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -43,8 +46,8 @@ public class USSDEmulatorController extends BaseController {
     private static final String inputStringParam = "request";
     private static final String linkParam = "link";
 
-    @Autowired
-    public USSDEmulatorController(Environment environment) {
+    public USSDEmulatorController(UserManagementService userManagementService, PermissionBroker permissionBroker, Environment environment) {
+        super(userManagementService, permissionBroker);
         this.environment = environment;
     }
 
@@ -56,10 +59,10 @@ public class USSDEmulatorController extends BaseController {
 		}
 	}
 
-    @RequestMapping(value = "view", method = RequestMethod.GET)
-    public String emulateUSSD(Model model, @RequestParam(value = linkParam, required = false) String link,
-                               @RequestParam(value = inputStringParam, required = false) String inputString) {
-
+    @RequestMapping(value = "view/{userPhone}", method = RequestMethod.GET)
+    public String emulateUSSD(Model model, @PathVariable String userPhone,
+                              @RequestParam(value = linkParam, required = false) String link,
+                              @RequestParam(value = inputStringParam, required = false) String inputString) {
 	    // note : this should not be accessible on production environment, hence ...
 	    if (environment.acceptsProfiles("production")) {
 		    throw new AccessDeniedException("Error! Emulator not accessible on production");
@@ -69,7 +72,7 @@ public class USSDEmulatorController extends BaseController {
             link = getBaseUrl().concat("ussd/start");
         }
 
-        URI targetUrl = getURI(link, inputString);
+        URI targetUrl = getURI(link, userPhone, inputString);
 
         try {
             model.addAttribute("url", targetUrl.toURL());
@@ -78,15 +81,11 @@ public class USSDEmulatorController extends BaseController {
         }
 
         try {
-            logger.info("About to get request object ...");
-	        Request request = getRequestObject(targetUrl);
+            Request request = getRequestObject(targetUrl);
 	        if (request != null) {
-		        boolean display;
-		        if (request.options != null & !request.options.isEmpty()) {
-			        display = (request.options.get(0).display == null) ? true : request.options.get(0).display;
-		        } else {
-			        display = true;
-		        }
+		        boolean hasOptions= request.options != null && !request.options.isEmpty();
+		        boolean display = !hasOptions || ((request.options.get(0).display == null) ? true : request.options.get(0).display);
+		        model.addAttribute("userPhone", userPhone);
 		        model.addAttribute("display", display);
 		        model.addAttribute("request", request);
 		        return "emulator/view";
@@ -118,14 +117,13 @@ public class USSDEmulatorController extends BaseController {
 	    return returnedObject;
     }
 
-    private URI getURI(String link, String inputString) {
+    private URI getURI(String link, String phoneNumber, String inputString) {
         URI uri = null;
         try {
             URIBuilder builder = new URIBuilder(link);
-            builder.addParameter(phoneNumberParam, getUserProfile().getPhoneNumber());
+            builder.addParameter(phoneNumberParam, phoneNumber);
             builder.addParameter(inputStringParam, inputString);
             uri = builder.build();
-
         } catch (Exception e) {
             e.printStackTrace();
         }

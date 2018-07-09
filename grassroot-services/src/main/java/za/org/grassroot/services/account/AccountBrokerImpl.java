@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,7 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.Account_;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
@@ -33,10 +35,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -89,14 +88,6 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Account loadPrimaryAccountForUser(String userUid, boolean loadEvenIfDisabled) {
-        User user = userRepository.findOneByUid(userUid);
-        Account account = user.getPrimaryAccount();
-        return (account != null && (loadEvenIfDisabled || account.isEnabled())) ? account : null;
-    }
-
-    @Override
     @Transactional
     public String createAccount(String userUid, String accountName, String billedUserUid, String ongoingPaymentRef) {
         Objects.requireNonNull(userUid);
@@ -131,7 +122,6 @@ public class AccountBrokerImpl implements AccountBroker {
 
         if (!StringUtils.isEmpty(ongoingPaymentRef)) {
             account.setEnabled(true);
-            account.setEnabledDateTime(Instant.now());
             account.setEnabledByUser(creatingUser);
             account.setPaymentRef(ongoingPaymentRef);
 
@@ -183,19 +173,32 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin, boolean setBillingUser) {
+    public void setLastBillingDate(String userUid, String accountUid, Instant newLastBillingDate) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+
+        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Instant priorDate = account.getLastBillingDate();
+        account.setLastBillingDate(newLastBillingDate);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
+                .description("from: " + priorDate + "; to: " + newLastBillingDate)
+                .accountLogType(AccountLogType.LAST_BILLING_DATE_CHANGED).build());
+    }
+
+    @Override
+    @Transactional
+    public void enableAccount(String userUid, String accountUid, String logMessage) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
 
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        if (!account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
+        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
 
         account.setEnabled(true);
-        account.setEnabledDateTime(Instant.now());
         account.setEnabledByUser(user);
         account.setDisabledDateTime(DateTimeUtil.getVeryLongAwayInstant());
 
@@ -203,21 +206,8 @@ public class AccountBrokerImpl implements AccountBroker {
         bundle.addLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.ACCOUNT_ENABLED)
                 .user(user)
-                .description("account enabled")
+                .description(logMessage)
                 .build());
-
-        // since the user that enables may be different to user that creates, and leaving out this role breaks a lot of UI, just make sure role is added (no regret)
-        if (ensureUserAddedToAdmin && !account.equals(user.getPrimaryAccount())) {
-            account.addAdministrator(user);
-            user.addAccountAdministered(account);
-            permissionBroker.addSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-
-            bundle.addLog(new AccountLog.Builder(account)
-                    .accountLogType(AccountLogType.ADMIN_ADDED)
-                    .user(user)
-                    .description("account admin added during enabling")
-                    .build());
-        }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
@@ -241,7 +231,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole, boolean generateClosingBill) {
+    public void disableAccount(String administratorUid, String accountUid, String reasonToRecord) {
         Objects.requireNonNull(administratorUid);
         Objects.requireNonNull(accountUid);
 
@@ -257,11 +247,13 @@ public class AccountBrokerImpl implements AccountBroker {
             paidGroup.setPaidFor(false);
         }
 
-        if (removeAdminRole) {
-            for (User admin : account.getAdministrators()) {
+        for (User admin : account.getAdministrators()) {
+            admin.removeAccountAdministered(account);
+            if (account.equals(admin.getPrimaryAccount()))
                 admin.setPrimaryAccount(null);
+
+            if (admin.getAccountsAdministered() == null || admin.getAccountsAdministered().isEmpty())
                 permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
-            }
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
@@ -444,7 +436,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void modifyAccount(String adminUid, String accountUid, String accountName, String billingEmail) {
+    public void renameAccount(String adminUid, String accountUid, String accountName) {
         Objects.requireNonNull(adminUid);
         Objects.requireNonNull(accountUid);
 
@@ -461,7 +453,7 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.SYSADMIN_MODIFIED_MULTIPLE)
+                .accountLogType(AccountLogType.NAME_CHANGED)
                 .user(user)
                 .description(sb.toString()).build());
     }
@@ -482,7 +474,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .user(user)
-                .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
+                .accountLogType(AccountLogType.ACCOUNT_DISABLED)
                 .description(closingReason).build());
 
         log.info("removing {} administrators", account.getAdministrators().size());
@@ -496,7 +488,18 @@ public class AccountBrokerImpl implements AccountBroker {
     @Transactional(readOnly = true)
     public long countAccountNotifications(String accountUid, Instant startTime, Instant endTime) {
         Account account = accountRepository.findOneByUid(accountUid);
-        return countAllForGroups(account.getPaidGroups(), startTime, endTime);
+        long groupNotifications = account.getPaidGroups().isEmpty() ? 0 :
+                countAllForGroups(account.getPaidGroups(), startTime, endTime);
+
+        final String accountLogOnlyQueryText = countQueryOpening() +
+                "n.groupLog is null and n.eventLog is null and n.todoLog is null and n.campaignLog is null and " +
+                "n.accountLog.account = :account";
+        TypedQuery<Long> countNonGroupsQuery = entityManager.createQuery(accountLogOnlyQueryText, Long.class)
+                .setParameter("start", startTime).setParameter("end", endTime).setParameter("account", account);
+        long accountNotifications = countNonGroupsQuery.getSingleResult();
+        log.info("Counted {} notifications for the account {}", accountNotifications, account.getName());
+
+        return groupNotifications + accountNotifications;
     }
 
     @Override
@@ -507,18 +510,37 @@ public class AccountBrokerImpl implements AccountBroker {
         return countAllForGroups(Collections.singleton(group), start, end);
     }
 
+    @Override
+    public List<Account> loadAllAccounts(boolean enabledOnly) {
+        Sort sort = new Sort(Sort.Direction.ASC, "accountName");
+        List<Account> accounts = !enabledOnly ? accountRepository.findAll(sort) :
+                accountRepository.findAll(((root, query, cb) -> cb.isTrue(root.get(Account_.enabled))), sort);
+        log.info("Retrieved {} accounts, for enabled = {}", accounts.size(), enabledOnly);
+        return accounts;
+    }
+
+    @Override
+    public Map<String, String> loadDisabledAccountMap() {
+        Sort sort = new Sort(Sort.Direction.ASC, "accountName");
+        List<Account> disabledAccounts = accountRepository.findAll((root, query, cb) -> cb.isFalse(root.get(Account_.enabled)), sort);
+        Map<String, String> accountMap = new LinkedHashMap<>();
+        // to ensure we preserve ordering, doing this, vs collector
+        disabledAccounts.forEach(account -> accountMap.put(account.getUid(), account.getAccountName()));
+        return accountMap;
+    }
+
     private long countAllForGroups(Set<Group> groups, Instant start, Instant end) {
         long startTime = System.currentTimeMillis();
-        long groupLogCount = executeCountQuery("(n.groupLog in (select gl from GroupLog gl where gl.group in :groups))",
+        long groupLogCount = executeGroupsCountQuery("(n.groupLog in (select gl from GroupLog gl where gl.group in :groups))",
                 start, end, groups);
 
-        long eventLogCount = executeCountQuery("(n.eventLog in (select el from EventLog el where el.event.ancestorGroup in :groups))",
+        long eventLogCount = executeGroupsCountQuery("(n.eventLog in (select el from EventLog el where el.event.ancestorGroup in :groups))",
                 start, end, groups);
 
-        long todoLogCount = executeCountQuery("(n.todoLog in (select tl from TodoLog tl where tl.todo.ancestorGroup in :groups))",
+        long todoLogCount = executeGroupsCountQuery("(n.todoLog in (select tl from TodoLog tl where tl.todo.ancestorGroup in :groups))",
                 start, end, groups);
 
-        long campaignLogCount = executeCountQuery("(n.campaignLog in (select cl from CampaignLog cl where cl.campaign.masterGroup in :groups))",
+        long campaignLogCount = executeGroupsCountQuery("(n.campaignLog in (select cl from CampaignLog cl where cl.campaign.masterGroup in :groups))",
                 start, end, groups);
 
         log.info("In {} msecs, for {} groups, counted {} from group logs, {} from event logs, {} from todo logs, {} from campaign logs",
@@ -528,7 +550,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     }
 
-    private long executeCountQuery(String querySuffix, Instant start, Instant end, Set<Group> groups) {
+    private long executeGroupsCountQuery(String querySuffix, Instant start, Instant end, Set<Group> groups) {
         TypedQuery<Long> countQuery = entityManager.createQuery(countQueryOpening() + querySuffix, Long.class)
                 .setParameter("start", start).setParameter("end", end)
                 .setParameter("groups", groups);

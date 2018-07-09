@@ -20,7 +20,7 @@
             <ol>
                 <th:block th:object="${request}">
                     <li th:each="option : *{options}"><a th:text="${option.value}"
-                                                         th:href="@{/emulator/ussd/view(link=${option.callback})} "></a></li>
+                                                         th:href="@{/emulator/ussd/view/{phone}(phone=${userPhone},link=${option.callback})} "></a></li>
                 </th:block>
             </ol>
         </div>

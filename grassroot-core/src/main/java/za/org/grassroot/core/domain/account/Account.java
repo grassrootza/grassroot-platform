@@ -58,10 +58,6 @@ public class Account implements GrassrootEntity, Serializable {
     @JoinColumn(name = "enabled_by_user", nullable = false, updatable = false)
     private User enabledByUser;
 
-    @Basic
-    @Column(name = "enabled_date_time", nullable = false)
-    private Instant enabledDateTime;
-
     @ManyToOne
     @JoinColumn(name = "disabled_by_user")
     private User disabledByUser;
@@ -91,8 +87,12 @@ public class Account implements GrassrootEntity, Serializable {
     private String paymentRef;
 
     @Basic
-    @Column(name="subscription_reference")
+    @Column(name="subscription_reference", unique = true)
     private String subscriptionRef;
+
+    @Basic
+    @Column(name="last_billing_date", nullable = false)
+    private Instant lastBillingDate;
 
     @Version
     private Integer version;
@@ -124,9 +124,9 @@ public class Account implements GrassrootEntity, Serializable {
 
         // until the account payment has gone through, do not set it as enabled, but do leave it visible
         this.enabled = false;
-        this.enabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
         this.disabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
 
+        this.lastBillingDate = this.createdDateTime;
     }
 
     /*
@@ -200,7 +200,7 @@ public class Account implements GrassrootEntity, Serializable {
                 "uid=" + uid +
                 ", createdDateTime=" + createdDateTime +
                 ", accountName=" + accountName +
-                ", enabledDateTime=" + enabledDateTime +
+                ", enabled=" + enabled +
                 '}';
     }
 

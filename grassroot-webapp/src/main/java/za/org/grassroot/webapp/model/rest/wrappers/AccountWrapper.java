@@ -25,12 +25,15 @@ public class AccountWrapper {
 
     private final String name;
     private final String subscriptionId;
+    private final long lastBillingDateMillis;
 
     private final Map<String, String> paidForGroups;
     private final Map<String, String> otherAdmins;
 
     private final boolean primary;
     private Map<String, String> otherAccounts;
+
+    private long notificationsSinceLastBill;
 
     public AccountWrapper(Account account, User user) {
         this.uid = account.getUid();
@@ -40,6 +43,7 @@ public class AccountWrapper {
         this.enabled = account.isEnabled();
         this.name = account.getAccountName();
         this.subscriptionId = account.getSubscriptionRef();
+        this.lastBillingDateMillis = account.getLastBillingDate().toEpochMilli();
 
         // these are pretty inefficient but this should be occassional - turn into a query at some point
         this.paidForGroups = account.getPaidGroups().stream().collect(Collectors.toMap(Group::getUid, Group::getName));

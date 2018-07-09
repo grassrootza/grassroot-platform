@@ -145,7 +145,7 @@ public class AccountBrokerTest {
         Account account = createTestAccount();
         assertNotEquals(null, account.getId());
         assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
         assertTrue(account.isEnabled());
         assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testAdmin.getPrimaryAccount().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
@@ -179,7 +179,7 @@ public class AccountBrokerTest {
         // todo: add tests to check it fails if not done by admin
         // todo: add lots more asserts, to make sure group added is the actual group
         Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         assertTrue(testGroup.isPaidFor());
         assertNotNull(accountGroupBroker.findAccountForGroup(testGroup.getUid()));
@@ -201,9 +201,9 @@ public class AccountBrokerTest {
     public void shouldNotAllowDuplicatePaidGroups() {
         // todo: change this to try/catch, to handle it better
         Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
         String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD, false);
-        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, null, true, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, null);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         accountGroupBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
     }

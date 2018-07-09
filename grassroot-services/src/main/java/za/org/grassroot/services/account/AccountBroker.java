@@ -5,6 +5,8 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -14,21 +16,21 @@ public interface AccountBroker {
 
     Account loadAccount(String accountUid);
 
-    Account loadPrimaryAccountForUser(String userUid, boolean loadEvenIfDisabled);
-
     String createAccount(String userUid, String accountName, String billedUserUid, String ongoingPaymentRef);
 
     void setAccountSubscriptionRef(String userUid, String accountUid, String subscriptionId);
 
     void setAccountPaymentRef(String userUid, String accountUid, String paymentRef);
 
-    void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin, boolean setBillingUser);
+    void setLastBillingDate(String userUid, String accountUid, Instant newLastBillingDate);
+
+    void enableAccount(String userUid, String accountUid, String logMessage);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void setAccountPrimary(String userUid, String accountUid);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
-    void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole, boolean generateClosingBill);
+    void disableAccount(String administratorUid, String accountUid, String reasonToRecord);
 
     void addAdministrator(String userUid, String accountUid, String administratorUid);
 
@@ -43,12 +45,18 @@ public interface AccountBroker {
 
     void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
 
-    void modifyAccount(String adminUid, String accountUid, String accountName, String billingEmail);
+    void renameAccount(String adminUid, String accountUid, String accountName);
 
     void closeAccount(String userUid, String accountUid, String closingReason);
 
     long countAccountNotifications(String accountUid, Instant startTime, Instant endTime);
 
     long countChargedNotificationsForGroup(String accountUid, String groupUid, Instant startTime, Instant endTime);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    List<Account> loadAllAccounts(boolean enabledOnly);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    Map<String, String> loadDisabledAccountMap();
 
 }

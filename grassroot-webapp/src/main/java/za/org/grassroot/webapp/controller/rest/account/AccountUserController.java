@@ -11,7 +11,6 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.billing.BillingServiceBroker;
 import za.org.grassroot.integration.billing.SubscriptionRecordDTO;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -159,8 +158,9 @@ public class AccountUserController extends BaseRestController {
             AccountWrapper accountWrapper = new AccountWrapper(account, user);
             log.info("Assembled user account wrapper, time : {} msecs", System.currentTimeMillis() - startTime);
             long accountNotifications = accountBroker.countAccountNotifications(account.getUid(),
-                    DateTimeUtil.getEarliestInstant(), Instant.now());
+                    account.getLastBillingDate(), Instant.now());
             log.info("Counted {} notifications for account", accountNotifications);
+            accountWrapper.setNotificationsSinceLastBill(accountNotifications);
             return ResponseEntity.ok(accountWrapper);
         }
     }
@@ -181,10 +181,10 @@ public class AccountUserController extends BaseRestController {
     public ResponseEntity<Long> getGroupNotificationCount(@RequestParam String accountUid,
                                                           @RequestParam String groupUid,
                                                           HttpServletRequest request) {
-
+        Account account = accountBroker.loadAccount(accountUid);
         long startTime = System.currentTimeMillis();
         long groupCount = accountBroker.countChargedNotificationsForGroup(accountUid, groupUid,
-                DateTimeUtil.getEarliestInstant(), Instant.now());
+                account.getLastBillingDate(), Instant.now());
         log.info("Counted {} messages, took {} msecs", groupCount, System.currentTimeMillis() - startTime);
         return ResponseEntity.ok(groupCount);
     }
@@ -198,13 +198,12 @@ public class AccountUserController extends BaseRestController {
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/settings/update", method = RequestMethod.POST)
-    public ResponseEntity<AccountWrapper> updateAccountSettings(@RequestParam String accountUid,
-                                                                @RequestParam String accountName,
-                                                                @RequestParam String billingEmail,
-                                                                HttpServletRequest request) {
+    public ResponseEntity<AccountWrapper> updateAccountName(@RequestParam String accountUid,
+                                                            @RequestParam String accountName,
+                                                            HttpServletRequest request) {
         User user = getUserFromRequest(request);
         try {
-            accountBroker.modifyAccount(user.getUid(), accountUid, accountName, billingEmail);
+            accountBroker.renameAccount(user.getUid(), accountUid, accountName);
             Account account = accountBroker.loadAccount(accountUid);
             return ResponseEntity.ok(new AccountWrapper(account, user));
         }catch (AccessDeniedException e) {
