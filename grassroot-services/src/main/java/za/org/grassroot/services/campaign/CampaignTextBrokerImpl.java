@@ -5,6 +5,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,10 +15,7 @@ import za.org.grassroot.core.domain.BroadcastSchedule;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
-import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.core.domain.campaign.CampaignActionType;
-import za.org.grassroot.core.domain.campaign.CampaignLog;
-import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
 import za.org.grassroot.core.domain.notification.CampaignResponseNotification;
 import za.org.grassroot.core.enums.AccountLogType;
@@ -155,13 +154,19 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
         User user = userManager.load(Objects.requireNonNull(userUid));
         Broadcast template = broadcastRepository.findTopByCampaignAndBroadcastScheduleAndActiveTrue(campaign, BroadcastSchedule.ENGAGED_CAMPAIGN);
         log.info("checked for welcome message, found? : {}", template);
-        if (template != null && !StringUtils.isEmpty(template.getSmsTemplate1())
-                && campaign.outboundBudgetLeft() > 0) {
+        if (template != null && !StringUtils.isEmpty(template.getSmsTemplate1()) && campaign.outboundBudgetLeft() > 0) {
             triggerCampaignText(campaign, user, template, template.getSmsTemplate1(), channel, callBackNumber);
         }
     }
 
     private void triggerCampaignText(Campaign campaign, User user, Broadcast template, String message, UserInterfaceType channel, String callBackNumber) {
+        // only send once, so if user has got in the past, don't send again
+        if (countLogs(campaign, user, CampaignLogType.CAMPAIGN_WELCOME_MESSAGE) > 0) {
+            log.info("Found a user with prior campaign welcome message, not sending");
+            return;
+        }
+
+
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_WELCOME_MESSAGE, campaign, channel, "Outbound engagement SMS");
@@ -194,6 +199,15 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
         }
     }
 
+    private long countLogs(Campaign campaign, User user, CampaignLogType logType) {
+        Specification<CampaignLog> logSpecifications = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType), logType);
+        Specification<CampaignLog> userSpecifications = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
+        Specification<CampaignLog> campaignSpecs = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaign), campaign);
+
+        return logsAndNotificationsBroker.countCampaignLogs(Specifications.where(logSpecifications).and(userSpecifications)
+                .and(campaignSpecs));
+    }
+
     @Override
     @Transactional
     public String handleCampaignTextResponse(String campaignUid, String userUid, String reply, UserInterfaceType channel) {
@@ -222,7 +236,8 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
             final String suffix = userCanJoin(campaign.getCampaignType()) ? messageSource.getMessage("text.campaign.moreinfo.respond") : "";
             return !StringUtils.isEmpty(mainMsg) ? mainMsg.trim() + " " + suffix.trim() : suffix.trim();
         } else if (MISTAKEN_JOIN_STRING.equals(reply)) {
-            // no message, just remove them from group
+            // no message, just remove them from group, as long as they aren't an organizer
+
             groupBroker.unsubscribeMember(user.getUid(), campaign.getMasterGroup().getUid());
             logsAndNotificationsBroker.removeCampaignLog(user, campaign, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
             return messageSource.getMessage("text.campaign.response.reversed", new String[] { campaign.getCampaignCode() });
