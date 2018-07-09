@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventRequest;
 import za.org.grassroot.core.domain.task.Vote;
+import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
@@ -100,8 +101,8 @@ public class USSDVoteController extends USSDBaseController {
                 vote.getAncestorGroup().getMembership(vote.getCreatedByUser()).getDisplayName(),
                 vote.getName()};
 
-
-        USSDMenu openingMenu = new USSDMenu(getMessage(USSDSection.HOME, startMenu, promptKey + "-vote", promptFields, user));
+        final String prompt = EventSpecialForm.MASS_VOTE.equals(vote.getSpecialForm()) ? promptKey + "-vote-mass" : promptKey + "-vote";
+        USSDMenu openingMenu = new USSDMenu(getMessage(USSDSection.HOME, startMenu, prompt, promptFields, user));
 
         if (vote.getVoteOptions().isEmpty()) {
             addYesNoOptions(vote, user, openingMenu);
