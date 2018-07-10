@@ -5,36 +5,42 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.EventSpecialForm;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
-import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.task.VoteHelper;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Slf4j
 @RestController @Grassroot2RestController
@@ -47,8 +53,7 @@ public class EventCreateController extends BaseRestController{
     private final UserManagementService userService;
 
     @Autowired
-    public EventCreateController(JwtService jwtService, UserManagementService userManagementService,
-                                 EventBroker eventBroker, TaskImageBroker taskImageBroker) {
+    public EventCreateController(JwtService jwtService, UserManagementService userManagementService, EventBroker eventBroker) {
         super(jwtService, userManagementService);
         this.userService = userManagementService;
         this.eventBroker = eventBroker;
@@ -158,4 +163,5 @@ public class EventCreateController extends BaseRestController{
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         }
     }
+
 }

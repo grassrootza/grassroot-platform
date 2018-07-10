@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,19 +21,21 @@ import java.util.Map;
 /**
  * Created by luke on 2015/12/04.
  */
-@Component
+@Component @Slf4j
 public class USSDMenuUtil {
 
-    @Autowired
-    private Environment environment;
-
-    private static final Logger log = LoggerFactory.getLogger(USSDMenuUtil.class);
+    private final Environment environment;
 
     private String baseURI;
     private int maxOpeningMenuLength;
     private int maxMenuLength;
 
     private static final int enumLength = ("1. ").length();
+
+    @Autowired
+    public USSDMenuUtil(Environment environment) {
+        this.environment = environment;
+    }
 
     @PostConstruct
     private void init() {
