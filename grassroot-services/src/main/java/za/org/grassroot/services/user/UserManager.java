@@ -160,8 +160,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     private void asyncRecordNewUser(final String userUid, final String logDescription) {
         asyncUserService.recordUserLog(userUid, UserLogType.CREATED_IN_DB, logDescription, null);
-        if (graphBroker != null)
+        if (graphBroker != null) {
             graphBroker.addUserToGraph(userUid);
+            graphBroker.addUserAnnotation(userRepository.findOneByUid(userUid));
+        }
     }
 
     @Override

@@ -187,6 +187,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (graphBroker != null) {
             graphBroker.addGroupToGraph(group.getUid(), userUid, null);
+            graphBroker.addGroupAnnotation(group, null, null);
         }
 
         return group;
@@ -805,6 +806,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (!duringGroupCreation && graphBroker != null)
             graphBroker.addMembershipToGraph(addedUserUids, group.getUid());
+
+        if (!duringGroupCreation && graphBroker != null)
+            for (Membership membership : addedMemberships)
+                graphBroker.addMembershipAnnotation(membership);
 
         return bundle;
     }

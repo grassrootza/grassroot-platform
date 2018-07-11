@@ -160,6 +160,7 @@ public class EventBrokerImpl implements EventBroker {
 		if (graphBroker != null) {
 			List<String> assignedUids = meeting.getMembers().stream().map(User::getUid).collect(Collectors.toList());
 			graphBroker.addTaskToGraph(meeting, assignedUids);
+			graphBroker.addTaskAnnotation(meeting, meeting.getTags(), meeting.getDescription());
 		}
 
 		return meeting;
@@ -491,6 +492,7 @@ public class EventBrokerImpl implements EventBroker {
 		if (graphBroker != null) {
 			List<String> assignedUids = vote.getMembers().stream().map(User::getUid).collect(Collectors.toList());
 			graphBroker.addTaskToGraph(vote, assignedUids);
+			graphBroker.addTaskAnnotation(vote, vote.getTags(), vote.getDescription());
 		}
 
 		return vote;
