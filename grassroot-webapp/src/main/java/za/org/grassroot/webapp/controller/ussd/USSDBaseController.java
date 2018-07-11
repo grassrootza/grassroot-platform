@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
@@ -31,6 +32,9 @@ import static za.org.grassroot.webapp.enums.USSDSection.*;
  */
 @Controller @Slf4j
 public class USSDBaseController {
+
+    @Value("${grassroot.languages.ussd.minsessions:2}")
+    protected int preLanguageSessions;
 
     @Autowired
     private ExperimentBroker experimentBroker;
@@ -151,6 +155,11 @@ public class USSDBaseController {
         return homeMenu;
     }
 
+    protected USSDMenu promptLanguageMenu(User user) {
+        return new USSDMenu(messageAssembler.getMessage("language.prompt", user),
+                languageOptions(userMenus + "language-do?language="));
+    }
+
     /*
     Method for experiment tracking
      */
@@ -226,6 +235,10 @@ public class USSDBaseController {
 
     protected String getMessage(String messageKey, String language) {
         return messageAssembler.getMessage(messageKey, language);
+    }
+
+    protected String getMessage(String messageKey, String[] params, User user) {
+        return messageAssembler.getMessage(messageKey, params, user);
     }
 
 }

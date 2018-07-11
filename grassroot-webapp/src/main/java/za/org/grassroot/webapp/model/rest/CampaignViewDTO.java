@@ -55,6 +55,8 @@ public class CampaignViewDTO {
 
     private String campaignImageKey;
 
+    private Locale defaultLanguage;
+
     private CampaignViewDTO(String campaignUid, String campaignName, String campaignDescription, CampaignType campaignType,
                            String createUserUid, String createUserName, Instant createdDateTime,
                            Instant campaignStartDate, Instant campaignEndDate, String campaignUrl, String campaignCode, List<String> campaignTags){
@@ -117,6 +119,8 @@ public class CampaignViewDTO {
         if (!StringUtils.isEmpty(campaign.getPublicJoinWord())) {
             this.textJoinWord = campaign.getPublicJoinWord();
         }
+
+        this.defaultLanguage = campaign.getDefaultLanguage();
     }
 
     private List<CampaignMessageDTO> groupCampaignMessages(Campaign campaign) {

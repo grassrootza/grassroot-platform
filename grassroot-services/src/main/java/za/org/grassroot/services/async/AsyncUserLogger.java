@@ -76,6 +76,8 @@ public interface AsyncUserLogger {
      */
     boolean hasSkippedName(String userUid);
 
+    boolean hasChangedLanguage(String userUid);
+
     /**
      * Check if the user has skipped over naming a group in the past, to avoid repeated asked
      * @param userUid

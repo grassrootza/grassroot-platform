@@ -2,7 +2,7 @@ package za.org.grassroot.webapp.model.web;
 
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.task.EventReminderType;
-import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.webapp.enums.EntityPublicOption;
 
 /**
@@ -11,7 +11,7 @@ import za.org.grassroot.webapp.enums.EntityPublicOption;
 public class MeetingWrapper extends EventWrapper {
 
     private String location;
-    private MeetingImportance importance;
+    private EventSpecialForm importance;
     private EntityPublicOption publicOption;
     private Double latitude;
     private Double longitude;
@@ -25,7 +25,7 @@ public class MeetingWrapper extends EventWrapper {
         MeetingWrapper meetingWrapper = new MeetingWrapper();
         meetingWrapper.reminderType = reminderType;
         meetingWrapper.customReminderMinutes = customReminderMinutes;
-        meetingWrapper.importance = MeetingImportance.ORDINARY;
+        meetingWrapper.importance = EventSpecialForm.ORDINARY;
         meetingWrapper.publicOption = EntityPublicOption.PRIVATE;
         return meetingWrapper;
     }
@@ -38,11 +38,11 @@ public class MeetingWrapper extends EventWrapper {
         this.location = location;
     }
 
-    public MeetingImportance getImportance() {
+    public EventSpecialForm getImportance() {
         return importance;
     }
 
-    public void setImportance(MeetingImportance importance) {
+    public void setImportance(EventSpecialForm importance) {
         this.importance = importance;
     }
 

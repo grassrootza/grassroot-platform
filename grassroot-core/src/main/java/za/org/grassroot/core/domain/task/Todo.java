@@ -78,8 +78,8 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         // for JPA
     }
 
-    public Todo(User createdByUser, TodoContainer parent, TodoType todoType, String description, Instant dueByDate) {
-        super(createdByUser, parent, todoType, description, dueByDate, parent.getTodoReminderMinutes(), false);
+    public Todo(User createdByUser, TodoContainer parent, TodoType todoType, String subject, Instant dueByDate) {
+        super(createdByUser, parent, todoType, subject, dueByDate, parent.getTodoReminderMinutes(), false);
 
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.ancestorGroup.addDescendantTodo(this);
@@ -261,6 +261,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return "Todo{" +
                 "id=" + id +
                 ", uid=" + uid +
+                ", type=" + type +
                 ", completed=" + completed +
                 ", message='" + message + '\'' +
                 ", actionByDate=" + actionByDate +

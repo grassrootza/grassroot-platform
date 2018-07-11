@@ -1,26 +1,22 @@
 package za.org.grassroot.services.user;
 
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.notification.EventNotification;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.UserDTO;
-import za.org.grassroot.core.enums.AlertPreference;
-import za.org.grassroot.core.enums.DeliveryRoute;
-import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
-/**
- * @author Lesetse Kimwaga
- */
 public interface UserManagementService {
 
-    /*
-    Methods to load a specific user
-     */
-
     User load(String userUid);
+
+    List<User> load(Set<String> userUids);
 
     User loadOrCreateUser(String inputNumber); // used only in USSD where there is no registration process
 
@@ -40,15 +36,12 @@ public interface UserManagementService {
 
     boolean emailTaken(String userUid, String email);
 
-    List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
-
     // username can be msisdn or pwd
     boolean doesUserHaveStandardRole(String userName, String roleName);
 
     /*
     Methods to create a user, for various interfaces
      */
-
     String create(String phoneNumber, String displayName, String emailAddress);
 
     User createUserProfile(User userProfile);
@@ -78,7 +71,7 @@ public interface UserManagementService {
 
     void setDisplayNameByOther(String updatingUserUid, String targetUserUid, String displayName);
 
-    void updateUserLanguage(String userUid, Locale locale);
+    void updateUserLanguage(String userUid, Locale locale, UserInterfaceType channel);
 
     void updateUserProvince(String userUid, Province province);
 
@@ -106,6 +99,10 @@ public interface UserManagementService {
 
     boolean needsToRenameSelf(User sessionUser);
 
+    boolean needToPromptForLanguage(User sessionUser, int minSessions);
+
+    boolean shouldSendLanguageText(User sessionUser);
+
     void sendAndroidLinkSms(String userUid);
 
     List<String[]> findOthersInGraph(User user, String nameFragment);
@@ -113,5 +110,9 @@ public interface UserManagementService {
     List<User> findRelatedUsers(User user, String nameFragment);
 
     UserRegPossibility checkUserCanRegister(String phone, String email);
+
+    List<User> findUsersThatRsvpForEvent(Event event, EventRSVPResponse response);
+
+    List<User> findUsersNotifiedAboutEvent(Event event, Class<? extends EventNotification> notificationClass);
 
 }

@@ -71,7 +71,7 @@ public class USSDCampaignController extends USSDBaseController {
 
         User user = userManager.findByInputNumber(inputNumber);
         if(!user.hasLanguage()) {
-            userManager.updateUserLanguage(user.getUid(), new Locale(languageCode));
+            userManager.updateUserLanguage(user.getUid(), new Locale(languageCode), UserInterfaceType.USSD);
         }
         CampaignMessage campaignMessage = campaignBroker.getOpeningMessage(campaignUid, new Locale(languageCode), UserInterfaceType.USSD, null);
         return  menuBuilder(buildCampaignUSSDMenu(campaignMessage));

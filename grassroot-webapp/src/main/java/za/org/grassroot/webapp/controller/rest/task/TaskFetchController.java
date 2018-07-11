@@ -176,34 +176,24 @@ public class TaskFetchController extends BaseRestController {
         return ResponseEntity.ok(tasks);
     }
 
-    @RequestMapping(value = "/group/{userUid}/{groupUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/group/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "All tasks for a group", notes = "Fetch tasks for a group", response = ChangedSinceData.class)
-    public ResponseEntity<ChangedSinceData<TaskDTO>> fetchUserGroupTasks(@PathVariable String userUid,
-                                                                         @PathVariable String groupUid,
-                                                                         @RequestParam(required = false) Long changedSinceMillis,
-                                                                         HttpServletRequest request) {
-        String loggedInUserUid = getUserIdFromRequest(request);
-        if (userUid.equals(loggedInUserUid)) {
-            ChangedSinceData<TaskDTO> tasks = taskBroker.fetchGroupTasks(userUid, groupUid,
-                    changedSinceMillis == null || changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis));
+    public ResponseEntity<ChangedSinceData<TaskDTO>> fetchUserGroupTasks(@PathVariable String groupUid,
+                                                       @RequestParam(required = false) Long changedSinceMillis,
+                                                       HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
 
-			for (TaskDTO taskDTO : tasks.getAddedAndUpdated()) {
+        ChangedSinceData<TaskDTO> tasks = taskBroker.fetchGroupTasks(userUid, groupUid,
+                changedSinceMillis == null || changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis));
+        for (TaskDTO taskDTO : tasks.getAddedAndUpdated()) {
+            long failedNotificationForEvent = TaskType.TODO.toString().endsWith(taskDTO.getType()) ?
+                    notificationService.countFailedNotificationForTodo(userUid, taskDTO.getTaskUid()) :
+                    notificationService.countFailedNotificationForEvent(userUid, taskDTO.getTaskUid());
 
-				long failedNotificationForEvent = 0;
-
-				if(taskDTO.getType().equals(TaskType.TODO.toString())) {
-					failedNotificationForEvent = notificationService.countFailedNotificationForTodo(userUid, taskDTO.getTaskUid());
-				} else {
-					failedNotificationForEvent = notificationService.countFailedNotificationForEvent(userUid, taskDTO.getTaskUid());
-				}
-				if(failedNotificationForEvent > 0) {
-					taskDTO.setErrorReport(true);
-				}
-			}
-            log.info("returning tasks: {}", tasks);
-            return ResponseEntity.ok(tasks);
-        } else
-            return new ResponseEntity<>((ChangedSinceData<TaskDTO>) null, HttpStatus.FORBIDDEN);
+            taskDTO.setErrorReport(failedNotificationForEvent > 0);
+        }
+        log.info("returning {} tasks for group uid {}", tasks.getAddedAndUpdated().size(), groupUid);
+        return ResponseEntity.ok(tasks);
     }
 
     @RequestMapping(value = "/posts/{taskType}/{taskUid}", method = RequestMethod.GET)

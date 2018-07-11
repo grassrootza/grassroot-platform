@@ -9,7 +9,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.task.Event;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -82,9 +81,6 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
             "inner join n.target t inner join n.event e " +
             "where e = ?1 and type(n) = ?2")
     List<User> findNotificationTargetsForEvent(Event event, Class<? extends EventNotification> notificationClass);
-
-    List<User> findByPhoneNumberIn(Collection<String> phoneNumbers);
-    List<User> findByEmailAddressIn(Collection<String> emailAddresses);
 
     @Query("select lower(u.emailAddress) from User u where u.enabled = true")
     Set<String> fetchUsedEmailAddresses();

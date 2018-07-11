@@ -13,7 +13,7 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
@@ -115,7 +115,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .reminderType(EventReminderType.GROUP_CONFIGURED)
                 .customReminderMinutes(60)
                 .description("This is a description")
-                .importance(MeetingImportance.ORDINARY)
+                .importance(EventSpecialForm.ORDINARY)
                 .assignedMemberUids(new HashSet<>());
 
         verify(eventBrokerMock, times(1)).createMeeting(helper);
