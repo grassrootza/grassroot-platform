@@ -35,6 +35,7 @@ public class Broadcast implements GrassrootEntity, TagHolder, GrassrootTemplate 
     // filters
     private static final String NAME_FILTER_PREFIX = "NAME_FILTER:";
     private static final String PROVINCE_PREFIX = "PROVINCE:";
+    private static final String NO_PROVINCE_PREFIX = "NO_PROVINCE:"; // true or false, on whether to include (or restrict to) those without a province
     private static final String TASK_TEAM_PREFIX = "TASK_TEAM:";
     private static final String AFFIL_PREFIX = "AFFILIATION:";
     private static final String JOIN_METHOD_PREFIX = "JOIN_METHOD:";
@@ -225,14 +226,18 @@ public class Broadcast implements GrassrootEntity, TagHolder, GrassrootTemplate 
     }
 
     public boolean hasFilter() {
-        return !StringUtils.isEmpty(getNamePhoneEmailFilter()) || !getTaskTeams().isEmpty() || !getProvinces().isEmpty() || !getTaskTeams().isEmpty()
-                || !getTopics().isEmpty() || !getAffiliations().isEmpty() || !getJoinMethods().isEmpty() || getJoinDateCondition().isPresent();
+        return !StringUtils.isEmpty(getNamePhoneEmailFilter()) || !getTaskTeams().isEmpty() || !getProvinces().isEmpty() || getNoProvinceRestriction().isPresent()
+                || !getTaskTeams().isEmpty() || !getTopics().isEmpty() || !getAffiliations().isEmpty() || !getJoinMethods().isEmpty() || getJoinDateCondition().isPresent();
     }
 
     public List<Province> getProvinces() {
         return getAssociatedEntities(PROVINCE_PREFIX)
                 .map(Province::valueOf)
                 .collect(Collectors.toList());
+    }
+
+    public Optional<Boolean> getNoProvinceRestriction() {
+        return getAssociatedEntities(NO_PROVINCE_PREFIX).findFirst().map(Boolean::valueOf);
     }
 
     public List<String> getTaskTeams() {
@@ -278,6 +283,11 @@ public class Broadcast implements GrassrootEntity, TagHolder, GrassrootTemplate 
 
     public void setProvinces(Collection<Province> provinces) {
         setAssociatedEntities(PROVINCE_PREFIX, provinces.stream().map(Enum::name));
+    }
+
+    public void setNoProvince(Boolean noProvince) {
+        if (noProvince != null)
+            setAssociatedEntities(NO_PROVINCE_PREFIX, Stream.of(noProvince.toString()));
     }
 
     public void setTaskTeams(Collection<String> taskTeamUids) {

@@ -302,6 +302,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Override
     public List<Membership> filterGroupMembers(User user, String groupUid,
                                                Collection<Province> provinces,
+                                               Boolean noProvince,
                                                Collection<String> taskTeamsUids,
                                                Collection<String> topics,
                                                Collection<String> affiliations,
@@ -323,7 +324,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         log.info("filtering on, user name: {}, provinces: {}, taskTeams: {}", namePhoneOrEmail, provinces, taskTeamsUids);
         List<Membership> members = membershipRepository.findAll(
-                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail, languages)
+                MembershipSpecifications.filterGroupMembership(group, provinces, noProvince, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail, languages)
         );
 
         log.info("post-filtering, have {} members", members.size());

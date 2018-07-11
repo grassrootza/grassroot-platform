@@ -45,6 +45,7 @@ public class BroadcastCreateRequest {
     private Long sendDateTimeMillis;
 
     private List<Province> provinces;
+    private Boolean noProvince;
     private List<String> topics;
     private List<String> affiliations;
     private List<String> taskTeams;

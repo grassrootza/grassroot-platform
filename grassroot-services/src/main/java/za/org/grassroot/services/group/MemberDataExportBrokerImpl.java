@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
@@ -93,8 +94,8 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Group members");
 
-        generateHeader(workbook, sheet, new String[]{"Name", "Phone number", "Email", "Topics", "Affiliations"},
-                new int[]{7000, 5000, 7000, 7000, 7000});
+        generateHeader(workbook, sheet, new String[]{"Name", "Phone number", "Email", "Province", "Topics", "Affiliations"},
+                new int[]{7000, 5000, 7000, 7000, 7000, 7000});
 
         //table content stuff
         XSSFCellStyle contentStyle = workbook.createCellStyle();
@@ -361,6 +362,7 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
                     member.getDisplayName(),
                     member.getUser().getPhoneNumber(),
                     member.getUser().getEmailAddress(),
+                    Province.CANONICAL_NAMES_ZA.getOrDefault(member.getUser().getProvince(), "Unknown"),
                     String.join(", ", member.getTopics()),
                     String.join(", ", member.getAffiliations())});
             rowIndex++;

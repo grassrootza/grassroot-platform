@@ -43,6 +43,7 @@ public class BroadcastComponents {
 
     private List<String> topics;
     private List<Province> provinces;
+    private Boolean noProvince;
     private List<String> taskTeams;
     private List<String> affiliations;
     private List<GroupJoinMethod> joinMethods;
