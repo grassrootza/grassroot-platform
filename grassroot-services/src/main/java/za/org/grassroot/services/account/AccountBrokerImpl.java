@@ -13,8 +13,8 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
-import za.org.grassroot.core.domain.account.Account_;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.account.Account_;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.enums.AccountLogType;
@@ -202,6 +202,10 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setEnabledByUser(user);
         account.setDisabledDateTime(DateTimeUtil.getVeryLongAwayInstant());
 
+        for (Group paidGroup : account.getPaidGroups()) {
+            paidGroup.setPaidFor(true);
+        }
+
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.ACCOUNT_ENABLED)
@@ -243,17 +247,9 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setDisabledDateTime(Instant.now());
         account.setDisabledByUser(user);
 
+        // note: don't remove admins & groups because they should be preserved if the account is enabled again
         for (Group paidGroup : account.getPaidGroups()) {
             paidGroup.setPaidFor(false);
-        }
-
-        for (User admin : account.getAdministrators()) {
-            admin.removeAccountAdministered(account);
-            if (account.equals(admin.getPrimaryAccount()))
-                admin.setPrimaryAccount(null);
-
-            if (admin.getAccountsAdministered() == null || admin.getAccountsAdministered().isEmpty())
-                permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
@@ -478,10 +474,19 @@ public class AccountBrokerImpl implements AccountBroker {
                 .description(closingReason).build());
 
         log.info("removing {} administrators", account.getAdministrators().size());
-        account.getAdministrators().stream().filter(u -> !u.getUid().equals(userUid))
-                .forEach(a -> removeAdministrator(userUid, accountUid, a.getUid(), false));
+
+        for (User admin : account.getAdministrators()) {
+            admin.removeAccountAdministered(account);
+            if (account.equals(admin.getPrimaryAccount()))
+                admin.setPrimaryAccount(null);
+
+            if (admin.getAccountsAdministered() == null || admin.getAccountsAdministered().isEmpty())
+                permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
+        }
 
         removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
+
+        account.setClosed(true);
     }
 
     @Override
@@ -514,7 +519,7 @@ public class AccountBrokerImpl implements AccountBroker {
     public List<Account> loadAllAccounts(boolean enabledOnly) {
         Sort sort = new Sort(Sort.Direction.ASC, "accountName");
         List<Account> accounts = !enabledOnly ? accountRepository.findAll(sort) :
-                accountRepository.findAll(((root, query, cb) -> cb.isTrue(root.get(Account_.enabled))), sort);
+                accountRepository.findAll(isEnabled(), sort);
         log.info("Retrieved {} accounts, for enabled = {}", accounts.size(), enabledOnly);
         return accounts;
     }
@@ -522,11 +527,19 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     public Map<String, String> loadDisabledAccountMap() {
         Sort sort = new Sort(Sort.Direction.ASC, "accountName");
-        List<Account> disabledAccounts = accountRepository.findAll((root, query, cb) -> cb.isFalse(root.get(Account_.enabled)), sort);
+        List<Account> disabledAccounts = accountRepository.findAll(isDisabled(), sort);
         Map<String, String> accountMap = new LinkedHashMap<>();
         // to ensure we preserve ordering, doing this, vs collector
         disabledAccounts.forEach(account -> accountMap.put(account.getUid(), account.getAccountName()));
         return accountMap;
+    }
+
+    private Specification<Account> isEnabled() {
+        return (root, query, cb) -> cb.and(cb.isTrue(root.get(Account_.enabled)), cb.isFalse(root.get(Account_.closed)));
+    }
+
+    private Specification<Account> isDisabled() {
+        return (root, query, cb) -> cb.and(cb.isFalse(root.get(Account_.enabled)), cb.isFalse(root.get(Account_.closed)));
     }
 
     private long countAllForGroups(Set<Group> groups, Instant start, Instant end) {

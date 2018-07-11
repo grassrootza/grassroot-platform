@@ -56,7 +56,8 @@ public class AccountWrapper {
         if (user.getAccountsAdministered() != null && !user.getAccountsAdministered().isEmpty()) {
             this.otherAccounts = user.getAccountsAdministered().stream()
                     .filter(otherAccount -> !account.equals(otherAccount))
-                    .filter(Account::isEnabled).collect(Collectors.toMap(Account::getUid, Account::getName));
+                    .filter(otherAccount -> !account.isClosed())
+                    .collect(Collectors.toMap(Account::getUid, Account::getName));
         }
     }
 

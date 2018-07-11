@@ -81,6 +81,13 @@ public class AdminAccountsController extends BaseRestController {
         return ResponseEntity.ok(wrapAccount(request, accountUid));
     }
 
+    @RequestMapping(value = "/close/account", method = RequestMethod.POST)
+    public ResponseEntity closeAccount(HttpServletRequest request, @RequestParam String accountUid,
+                                       @RequestParam String logMessage) {
+        accountBroker.closeAccount(getUserIdFromRequest(request), accountUid, logMessage);
+        return ResponseEntity.ok().build();
+    }
+
     /// these are for interacting with the Chargebee subscriptions - necessary in time, not right now, yet
     @RequestMapping(value = "/list/billing", method = RequestMethod.GET)
     public CompletableFuture<List<SubscriptionRecordDTO>> listSubscriptions(HttpServletRequest request) {

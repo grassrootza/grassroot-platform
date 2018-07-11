@@ -14,6 +14,11 @@ drop table paid_group;
 drop table acc_sponsor_request;
 
 alter table paid_account add column subscription_reference varchar(255) unique;
+alter table paid_account add column closed boolean default false;
+update paid_account set closed = false where visible = true;
+update paid_account set closed = true where visible = false;
+alter table paid_account alter column closed set not null;
+
 alter table paid_account alter column billing_user drop not null;
 alter table paid_account alter column billing_cycle drop not null;
 alter table paid_account alter column outstanding_balance drop not null;

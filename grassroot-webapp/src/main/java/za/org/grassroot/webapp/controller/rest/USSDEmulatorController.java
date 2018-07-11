@@ -1,12 +1,10 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.utils.URIBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,19 +26,13 @@ import java.net.URI;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
-
 /**
  * Created by paballo on 2016/01/27.
- * note : as is appropriate, only works if ussd gateway is set to localhost IP (else security rejects calls)
  */
-
-@Controller
+@Slf4j @Controller
 @RequestMapping("/emulator/ussd/")
+@Profile("localpg")
 public class USSDEmulatorController extends BaseController {
-
-	private static final Logger logger = LoggerFactory.getLogger(USSDEmulatorController.class);
-
-	private final Environment environment;
 
     private static final String phoneNumberParam = "msisdn";
     private static final String inputStringParam = "request";
@@ -48,27 +40,17 @@ public class USSDEmulatorController extends BaseController {
 
     public USSDEmulatorController(UserManagementService userManagementService, PermissionBroker permissionBroker, Environment environment) {
         super(userManagementService, permissionBroker);
-        this.environment = environment;
     }
 
     private String getBaseUrl() {
-		if (environment.acceptsProfiles("staging")) {
-			return "https://staging.grassroot.org.za:443/";
-		} else {
-			return "http://localhost:8080/";
-		}
+		return "http://localhost:8080/";
 	}
 
     @RequestMapping(value = "view/{userPhone}", method = RequestMethod.GET)
     public String emulateUSSD(Model model, @PathVariable String userPhone,
                               @RequestParam(value = linkParam, required = false) String link,
                               @RequestParam(value = inputStringParam, required = false) String inputString) {
-	    // note : this should not be accessible on production environment, hence ...
-	    if (environment.acceptsProfiles("production")) {
-		    throw new AccessDeniedException("Error! Emulator not accessible on production");
-	    }
-
-        if (link == null) {
+	    if (link == null) {
             link = getBaseUrl().concat("ussd/start");
         }
 
@@ -77,7 +59,7 @@ public class USSDEmulatorController extends BaseController {
         try {
             model.addAttribute("url", targetUrl.toURL());
         } catch (MalformedURLException e) {
-            logger.error("Error with URL: ", e);
+            log.error("Error with URL: ", e);
         }
 
         try {
@@ -93,7 +75,7 @@ public class USSDEmulatorController extends BaseController {
 		        return "emulator/error";
 	        }
         } catch (Exception e) {
-            logger.error("Error in emulator!", e);
+            log.error("Error in emulator!", e);
 	        return "emulator/error";
         }
     }
@@ -105,14 +87,14 @@ public class USSDEmulatorController extends BaseController {
             MySimpleClientHttpRequestFactory requestFactory = new MySimpleClientHttpRequestFactory(verifier);
             RestTemplate template = new RestTemplate();
             template.setRequestFactory(requestFactory);
-            logger.info("url: {}", url);
+            log.info("url: {}", url);
 		    returnedObject = template.getForObject(url, Request.class);
 	    } catch (RestClientException e) {
 		    returnedObject = null;
-		    logger.error("Error with rest client", e);
+		    log.error("Error with rest client", e);
 	    } catch (Exception e) {
 	        returnedObject = null;
-	        logger.error("Generic error in emulator", e);
+	        log.error("Generic error in emulator", e);
         }
 	    return returnedObject;
     }

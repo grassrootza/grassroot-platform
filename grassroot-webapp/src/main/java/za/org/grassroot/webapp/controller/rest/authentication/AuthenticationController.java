@@ -66,12 +66,6 @@ public class AuthenticationController {
         this.environment = environment;
     }
 
-    private void checkRegistrationOpen(UserInterfaceType interfaceType) {
-        if (!environment.acceptsProfiles("localpg") && alphaInterfaces.contains(interfaceType)) {
-            throw new InterfaceNotOpenException();
-        }
-    }
-
     private void checkUserHasAccess(String phoneOrEmail, UserInterfaceType interfaceType) {
         if (!environment.acceptsProfiles("localpg") && alphaInterfaces.contains(interfaceType) &&
                 !userService.doesUserHaveStandardRole(phoneOrEmail, BaseRoles.ROLE_ALPHA_TESTER)) {
@@ -103,7 +97,6 @@ public class AuthenticationController {
                                                     @RequestParam("displayName") String displayName,
                                                     @RequestParam("password") String password,
                                                     @RequestParam(required = false) UserInterfaceType type) {
-        checkRegistrationOpen(type == null ? UserInterfaceType.ANDROID_2 : type);
         try {
             if (!ifExists(phoneNumber)) {
                 phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
@@ -128,7 +121,6 @@ public class AuthenticationController {
                                                               @PathVariable("code") String otpEntered,
                                                               @RequestParam(required = false) UserInterfaceType type) {
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-        checkRegistrationOpen(type == null ? UserInterfaceType.ANDROID_2 : type);
         if (passwordTokenService.isShortLivedOtpValid(msisdn, otpEntered)) {
             logger.info("user dto and code verified, now creating user with phoneNumber={}", phoneNumber);
 
@@ -158,7 +150,6 @@ public class AuthenticationController {
                                                     @RequestParam(required = false) String email,
                                                     @RequestParam(required = false) String otpEntered,
                                                     @RequestParam String password) {
-        checkRegistrationOpen(UserInterfaceType.WEB_2);
         logger.info("registering, phone = {}, email = {}", phone, email);
         try {
             // first check basic parameters are valid

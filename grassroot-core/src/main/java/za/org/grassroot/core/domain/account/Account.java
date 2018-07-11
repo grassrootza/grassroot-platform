@@ -54,6 +54,10 @@ public class Account implements GrassrootEntity, Serializable {
     @Column(name="enabled", nullable = false)
     private boolean enabled;
 
+    @Basic
+    @Column(name="closed", nullable = false)
+    private boolean closed;
+
     @ManyToOne
     @JoinColumn(name = "enabled_by_user", nullable = false, updatable = false)
     private User enabledByUser;
@@ -124,6 +128,9 @@ public class Account implements GrassrootEntity, Serializable {
 
         // until the account payment has gone through, do not set it as enabled, but do leave it visible
         this.enabled = false;
+        // but equally, this shouldn't be basically gone from anything
+        this.closed = false;
+
         this.disabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
 
         this.lastBillingDate = this.createdDateTime;

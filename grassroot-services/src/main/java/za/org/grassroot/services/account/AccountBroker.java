@@ -47,6 +47,7 @@ public interface AccountBroker {
 
     void renameAccount(String adminUid, String accountUid, String accountName);
 
+    @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void closeAccount(String userUid, String accountUid, String closingReason);
 
     long countAccountNotifications(String accountUid, Instant startTime, Instant endTime);
