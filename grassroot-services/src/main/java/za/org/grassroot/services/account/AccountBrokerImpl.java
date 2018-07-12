@@ -20,6 +20,7 @@ import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -27,6 +28,7 @@ import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
+import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.AdminRemovalException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -56,6 +58,7 @@ public class AccountBrokerImpl implements AccountBroker {
     private final ApplicationEventPublisher eventPublisher;
 
     private EntityManager entityManager;
+    private LocationInfoBroker locationInfoBroker;
 
     @Autowired
     public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, GroupRepository groupRepository, PermissionBroker permissionBroker,
@@ -71,6 +74,11 @@ public class AccountBrokerImpl implements AccountBroker {
     @Autowired
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    @Autowired(required = false)
+    public void setLocationInfoBroker(LocationInfoBroker locationInfoBroker) {
+        this.locationInfoBroker = locationInfoBroker;
     }
 
     @Override
@@ -513,6 +521,46 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         Group group = groupRepository.findOneByUid(groupUid);
         return countAllForGroups(Collections.singleton(group), start, end);
+    }
+
+    @Override
+    public long countChargedUssdSessionsForAccount(String accountUid, Instant startTime, Instant endTime) {
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        final String countQuery = "select count(distinct ul) from UserLog ul " +
+                "where ul.creationTime between :start and :end and " +
+                "ul.userLogType = :logType and ul.description in " +
+                "(select c.uid from Campaign c where c.account = :account)";
+
+        TypedQuery<Long> campaignSessionCount = entityManager.createQuery(countQuery, Long.class)
+            .setParameter("start", startTime).setParameter("end", endTime).setParameter("account", account)
+            .setParameter("logType", UserLogType.CAMPAIGN_ENGAGED);
+
+        long countSessions = campaignSessionCount.getSingleResult();
+        log.info("Counted {} campaign sessions for account", countSessions);
+
+        if (locationInfoBroker != null) {
+            countSessions += countDataSetSessions(accountUid, startTime, endTime);
+        }
+
+        return countSessions;
+    }
+
+    private long countDataSetSessions(String accountUid, Instant start, Instant end) {
+        List<String> dataSetLabels = locationInfoBroker.getDatasetLabelsForAccount(accountUid);
+        if (dataSetLabels == null || dataSetLabels.isEmpty())
+            return 0;
+
+        log.info("Counting sessions for data sets: {}", dataSetLabels);
+        final String countGeoSessionsQuery = "select count(distinct ul) from UserLog ul " +
+                "where ul.creationTime between :start and :end and " +
+                "ul.userLogType = :logType and ul.description in :dataSets";
+        TypedQuery<Long> geoApiSessionCount = entityManager.createQuery(countGeoSessionsQuery, Long.class)
+                .setParameter("start", start).setParameter("end", end)
+                .setParameter("logType", UserLogType.GEO_APIS_CALLED).setParameter("dataSets", dataSetLabels);
+        long countGeoCalls = geoApiSessionCount.getSingleResult();
+        log.info("And counted {} sessions for those APIs", countGeoCalls);
+        return countGeoCalls;
     }
 
     @Override

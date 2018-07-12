@@ -159,8 +159,10 @@ public class AccountUserController extends BaseRestController {
             log.info("Assembled user account wrapper, time : {} msecs", System.currentTimeMillis() - startTime);
             long accountNotifications = accountBroker.countAccountNotifications(account.getUid(),
                     account.getLastBillingDate(), Instant.now());
-            log.info("Counted {} notifications for account", accountNotifications);
+            log.debug("Counted {} notifications for account", accountNotifications);
             accountWrapper.setNotificationsSinceLastBill(accountNotifications);
+            accountWrapper.setChargedUssdSinceLastBill(accountBroker.countChargedUssdSessionsForAccount(account.getUid(),
+                    account.getLastBillingDate(), Instant.now()));
             return ResponseEntity.ok(accountWrapper);
         }
     }

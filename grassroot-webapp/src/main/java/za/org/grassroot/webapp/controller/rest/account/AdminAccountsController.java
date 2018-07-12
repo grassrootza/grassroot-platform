@@ -38,6 +38,7 @@ public class AdminAccountsController extends BaseRestController {
         Account account = accountBroker.loadAccount(accountUid);
         AccountWrapper wrapper = new AccountWrapper(account, getUserFromRequest(request));
         wrapper.setNotificationsSinceLastBill(accountBroker.countAccountNotifications(accountUid, account.getLastBillingDate(), Instant.now()));
+        wrapper.setChargedUssdSinceLastBill(accountBroker.countChargedUssdSessionsForAccount(accountUid, account.getLastBillingDate(), Instant.now()));
         return wrapper;
     }
 

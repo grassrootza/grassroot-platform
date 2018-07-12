@@ -54,6 +54,8 @@ public interface AccountBroker {
 
     long countChargedNotificationsForGroup(String accountUid, String groupUid, Instant startTime, Instant endTime);
 
+    long countChargedUssdSessionsForAccount(String accountUid, Instant startTime, Instant endTime);
+
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<Account> loadAllAccounts(boolean enabledOnly);
 

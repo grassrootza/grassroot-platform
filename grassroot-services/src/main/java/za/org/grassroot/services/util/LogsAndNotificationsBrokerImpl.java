@@ -292,11 +292,11 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
     @Override
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly = true)
-	public <T extends Notification> long countNotifications(Specifications<T> specs, Class<T> notificationType) {
+	public <T extends Notification> long countNotifications(Specification<T> specs, Class<T> notificationType) {
 		if (notificationType.equals(BroadcastNotification.class)) {
-			return broadcastNotificationRepository.count((Specifications<BroadcastNotification>) specs);
+			return broadcastNotificationRepository.count((Specification<BroadcastNotification>) specs);
 		} else {
-			return countNotifications((Specifications<Notification>) specs);
+			return countNotifications((Specification<Notification>) specs);
 		}
 	}
 

@@ -8,10 +8,7 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Role_;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.User_;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.GroupJoinMethod;
-import za.org.grassroot.core.domain.group.JoinDateCondition;
-import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.enums.Province;
 
 import javax.persistence.criteria.*;
@@ -187,8 +184,8 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Membership_.user), user);
     }
 
-    public static Specifications<Membership> memberTaskTeams(Group group, User user) {
-        return Specifications.where(inSubgroupOf(group)).and(hasUser(user));
+    public static Specification<Membership> memberTaskTeams(Group group, User user) {
+        return Specification.where(inSubgroupOf(group)).and(hasUser(user));
     }
 
 }

@@ -34,6 +34,7 @@ public class AccountWrapper {
     private Map<String, String> otherAccounts;
 
     private long notificationsSinceLastBill;
+    private long chargedUssdSinceLastBill;
 
     public AccountWrapper(Account account, User user) {
         this.uid = account.getUid();
