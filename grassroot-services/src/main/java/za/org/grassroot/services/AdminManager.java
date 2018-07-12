@@ -211,7 +211,7 @@ public class AdminManager implements AdminService {
         DebugUtil.transactionRequired("");
         if (graphBroker != null) {
             DebugUtil.transactionRequired("");
-            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task,
+            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task.getUid(), task.getTaskType(),
                     taskBroker.fetchUserUidsForTask(userUid, task.getUid(), task.getTaskType())));
         }
     }
@@ -221,7 +221,7 @@ public class AdminManager implements AdminService {
     public void populateGraphGroupAnnotations() {
         if (graphBroker != null) {
             Specifications<Group> groups = Specifications.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
-            groupRepository.findAll(groups).forEach(group -> graphBroker.addGroupAnnotation(group, null, null));
+            groupRepository.findAll(groups).forEach(group -> graphBroker.annotateGroup(group.getUid(), null, null, true));
         }
     }
 
@@ -229,8 +229,8 @@ public class AdminManager implements AdminService {
     @Transactional(readOnly = true)
     public void populateGraphMembershipAnnotations() {
         if (graphBroker != null) {
-            membershipRepository.findByGroupActiveTrue()
-                    .forEach(membership -> graphBroker.addMembershipAnnotation(membership));
+            membershipRepository.findByGroupActiveTrue().forEach(membership ->
+                    graphBroker.annotateMembership(membership.getUser().getUid(), membership.getGroup().getUid(), null, true));
         }
     }
 
@@ -241,7 +241,7 @@ public class AdminManager implements AdminService {
         DebugUtil.transactionRequired("");
         if (graphBroker != null) {
             DebugUtil.transactionRequired("");
-            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskAnnotation(task, getTaskTags(task), getTaskDescription(task)));
+            taskBroker.loadAllTasks().forEach(task -> graphBroker.annotateTask(task.getUid(), task.getTaskType(), null, null, true));
         }
     }
 
@@ -250,28 +250,6 @@ public class AdminManager implements AdminService {
         Role adminRole = roleRepository.findByName(BaseRoles.ROLE_SYSTEM_ADMIN).get(0);
         if (!admin.getStandardRoles().contains(adminRole)) {
             throw new AccessDeniedException("Error! User does not have admin role");
-        }
-    }
-
-    private String[] getTaskTags(Task task) {
-        TaskType taskType = task.getTaskType();
-        EventType graphEventType = TaskType.TODO.equals(taskType) ? EventType.TODO :
-                TaskType.VOTE.equals(taskType) ? EventType.VOTE : EventType.MEETING;
-        switch (graphEventType) {
-            case TODO:      return null;
-            case VOTE:      return ((Vote) task).getTags();
-            case MEETING:   return ((Meeting) task).getTags();
-        }
-    }
-
-    private String getTaskDescription(Task task) {
-        TaskType taskType = task.getTaskType();
-        EventType graphEventType = TaskType.TODO.equals(taskType) ? EventType.TODO :
-                TaskType.VOTE.equals(taskType) ? EventType.VOTE : EventType.MEETING;
-        switch (graphEventType) {
-            case TODO:      return ((Todo) task).getDescription();
-            case VOTE:      return ((Vote) task).getDescription();
-            case MEETING:   return ((Meeting) task).getDescription();
         }
     }
 

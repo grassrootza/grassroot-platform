@@ -175,7 +175,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         asyncUserService.recordUserLog(userUid, UserLogType.CREATED_IN_DB, logDescription, null);
         if (graphBroker != null) {
             graphBroker.addUserToGraph(userUid);
-            graphBroker.addUserAnnotation(userRepository.findOneByUid(userUid));
+            graphBroker.annotateUser(userUid, null, null, true);
         }
     }
 

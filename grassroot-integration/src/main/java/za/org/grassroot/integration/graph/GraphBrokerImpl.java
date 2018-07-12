@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.LazyInitializationException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,13 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.task.Task;
+import za.org.grassroot.core.domain.task.AbstractEventEntity;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.MembershipRepository;
+import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.graph.domain.Actor;
@@ -33,13 +41,7 @@ import za.org.grassroot.graph.dto.IncomingRelationship;
 import za.org.grassroot.graph.dto.IncomingAnnotation;
 
 import javax.annotation.PostConstruct;
-import java.util.Collections;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
@@ -54,10 +56,24 @@ public class GraphBrokerImpl implements GraphBroker {
     private String sqsQueueUrl;
     private boolean isQueueFifo;
 
-    public GraphBrokerImpl() {
+    private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
+    private final MembershipRepository membershipRepository;
+    private final EventRepository eventRepository;
+    private final TodoRepository todoRepository;
+
+    @Autowired
+    public GraphBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository,
+                           EventRepository eventRepository, TodoRepository todoRepository) {
         log.info("Graph broker enabled, constructing object mapper ...");
         this.objectMapper = new ObjectMapper().findAndRegisterModules()
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
+
+        this.userRepository = userRepository;
+        this.groupRepository = groupRepository;
+        this.membershipRepository = membershipRepository;
+        this.eventRepository = eventRepository;
+        this.todoRepository = todoRepository;
     }
 
     @PostConstruct
@@ -77,30 +93,6 @@ public class GraphBrokerImpl implements GraphBroker {
     }
 
     @Override
-    public void addUserAnnotation(User user) {
-        log.info("adding user annotation to graph ... {}", user.getUid());
-
-        Map<String, String> properties = new HashMap<>();
-        properties.put(IncomingAnnotation.language, user.getLanguageCode());
-        String province = Province.CANONICAL_NAMES_ZA.get(user.getProvince());
-        properties.put(IncomingAnnotation.province, province);
-
-        addEntityAnnotation(new Actor(ActorType.INDIVIDUAL, user.getUid()), properties, null);
-    }
-
-    @Override
-    public void removeUserFromGraph(String userUid) {
-        log.info("removing user from Grassroot graph ... {}", userUid);
-        removeEntity(new Actor(ActorType.INDIVIDUAL, userUid));
-    }
-
-    @Override
-    public void removeUserAnnotation(String userUid, Set<String> keysToRemove) {
-        log.info("removing user annotation from graph ... {}", user.getUid());
-        removeEntityAnnotation(new Actor(ActorType.INDIVIDUAL, userUid), keysToRemove, null);
-    }
-
-    @Override
     public void addGroupToGraph(String groupUid, String creatingUserUid, Set<String> memberUids) {
         log.info("adding group to Grassroot graph ... {}", groupUid);
 
@@ -113,50 +105,15 @@ public class GraphBrokerImpl implements GraphBroker {
         dispatchAction(action, "group");
     }
 
-    // Groups don't store single latitude/longitude, but center location is calculated for each group
-    // nightly, so parameters for this location are set by calls from geo-location broker each night.
-    @Override
-    public void addGroupAnnotation(Group group, double latitude, double longitude) {
-        log.info("adding group annotation to graph ... {}", group.getUid());
-
-        Map<String, String> properties = new HashMap<>();
-        properties.put(IncomingAnnotation.language, group.getDefaultLanguage());
-        properties.put(IncomingAnnotation.latitude, latitude);
-        properties.put(IncomingAnnotation.longitude, longitude);
-        List<String> tags = (group.getTags() == null || group.getTags().length == 0) ?
-                new ArrayList<>() : new ArrayList<>(Arrays.asList(group.getTags()));
-        if (group.getDescription() != null) tags.add(group.getDescription()); // description to be processed
-
-        addEntityAnnotation(new Actor(ActorType.GROUP, group.getUid()), properties, tags);
-    }
-
-    @Override
-    public void removeGroupFromGraph(String groupUid) {
-        log.info("removing group from Grassroot graph ... {}", groupUid);
-        removeEntity(new Actor(ActorType.GROUP, groupUid));
-    }
-
-    @Override
-    public void removeGroupAnnotation(String groupUid, Set<String> keysToRemove, List<String> tagsToRemove) {
-        log.info("removing group annotation from graph ... {}", Uid);
-        removeEntityAnnotation(new Actor(ActorType.GROUP, groupUid), keysToRemove, tagsToRemove);
-    }
-
     @Override
     public void addAccountToGraph(String accountUid, List<String> adminUids) {
         log.info("adding account to Grassroot graph ... {}", accountUid);
 
         IncomingGraphAction action = wrapEntityCreation(new Actor(ActorType.ACCOUNT, accountUid));
-        addGenerators(action, new HashSet<String>(adminUids), GraphEntityType.ACTOR, ActorType.INDIVIDUAL.name(),
+        addGenerators(action, new HashSet<>(adminUids), GraphEntityType.ACTOR, ActorType.INDIVIDUAL.name(),
                 accountUid, GraphEntityType.ACTOR, ActorType.ACCOUNT.name());
 
         dispatchAction(action, "account");
-    }
-
-    @Override
-    public void removeAccountFromGraph(String accountUid) {
-        log.info("removing account from Grassroot graph ... {}", accountUid);
-        removeEntity(new Actor(ActorType.ACCOUNT, accountUid));
     }
 
     @Override
@@ -172,46 +129,21 @@ public class GraphBrokerImpl implements GraphBroker {
     }
 
     @Override
-    public void addMembershipAnnotation(Membership membership) {
-        log.info("adding membership annotation to graph ...");
-
-        IncomingRelationship relationship = participatingRelationship(membership.getUser().getUid(), GraphEntityType.ACTOR,
-                ActorType.INDIVIDUAL, membership.getGroup().getUid(), GraphEntityType.ACTOR, ActorType.GROUP);
-        List<String> tags = (membership.getTags() == null || membership.getTags().length == 0) ?
-                new ArrayList<>() : new ArrayList<>(Arrays.asList(membership.getTags()));
-
-        addRelationshipAnnotation(relationship, tags);
-    }
-
-    @Override
-    public void removeMembershipFromGraph(String userUid, String groupUid) {
-        log.info("removing membership from Grassroot graph ...");
-        removeParticipationRelationship(userUid, GraphEntityType.ACTOR, ActorType.INDIVIDUAL.name(),
-                groupUid, GraphEntityType.ACTOR, ActorType.GROUP.name());
-    }
-
-    @Override
-    public void removeMembershipAnnotation(Membership membership, List<String> tagsToRemove) {
-        log.info("removing membership annotation from graph ...");
-        removeRelationshipAnnotation(participatingRelationship(membership.getUser().getUid(), GraphEntityType.ACTOR,
-                ActorType.INDIVIDUAL, membership.getGroup().getUid(), GraphEntityType.ACTOR, ActorType.GROUP), tagsToRemove);
-    }
-
-    @Override
     @Transactional
     @SuppressWarnings("unchecked")
-    public void addTaskToGraph(Task task, List<String> assignedUserUids) {
+    public void addTaskToGraph(String taskUid, TaskType taskType, List<String> assignedUserUids) {
         try {
             DebugUtil.transactionRequired("");
-            log.info("adding a task to Grassroot Graph ... {}", task.getUid());
+            log.info("adding task to Grassroot Graph ... {}", taskUid);
 
+            Task task = getTask(taskUid, taskType);
             Event taskEvent = createTaskEvent(task);
             IncomingGraphAction action = wrapEntityCreation(taskEvent);
             addParticipants(action, new HashSet<String>(assignedUserUids), GraphEntityType.ACTOR,
                     ActorType.INDIVIDUAL.name(), task.getUid(), GraphEntityType.EVENT, taskEvent.getEventType().name());
             action.addRelationship(participatingRelationship(task.getUid(), GraphEntityType.EVENT, taskEvent.getEventType().name(),
-                    task.getAncestorGroup().getPlatformUid(), GraphEntityType.ACTOR, ActorType.GROUP.name()));
-            action.addRelationship(generatorRelationship(task.getCreatedByUser().getPlatformUid(), GraphEntityType.ACTOR,
+                    task.getAncestorGroup().getUid(), GraphEntityType.ACTOR, ActorType.GROUP.name()));
+            action.addRelationship(generatorRelationship(task.getCreatedByUser().getUid(), GraphEntityType.ACTOR,
                     ActorType.INDIVIDUAL.name(), task.getUid(), GraphEntityType.EVENT, taskEvent.getEventType().name()));
 
             dispatchAction(action, "task");
@@ -221,46 +153,192 @@ public class GraphBrokerImpl implements GraphBroker {
     }
 
     @Override
-    public void addTaskAnnotation(Task task, String[] tags, String description) {
-        log.info("adding task annotation to graph ... {}", task.getUid());
+    public void annotateUser(String userUid, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations) {
+        log.info("annotating Grassroot graph user ... {}", userUid);
 
-        List<String> tagsList = (tags == null || tags.length == 0) ?
-                new ArrayList<>() : new ArrayList<>(Arrays.asList(tags));
-        if (description != null) tagsList.add(description); // description to be processed
+        if (setAllAnnotations) {
+            User user = userRepository.findOneByUid(userUid);
+            properties = new HashMap<>();
+            properties.put(IncomingAnnotation.language, user.getLanguageCode());
+            String province = Province.CANONICAL_NAMES_ZA.get(user.getProvince());
+            properties.put(IncomingAnnotation.province, province);
+        }
 
-        addEntityAnnotation(createTaskEvent(task), null, tagsList);
+        Actor actor = new Actor(ActorType.INDIVIDUAL, userUid);
+        annotateEntity(actor, properties, tags);
     }
 
     @Override
-    public void removeTaskFromGraph(Task task) {
-        log.info("removing task from Grassroot graph ... {}", task.getUid());
-        removeEntity(createTaskEvent(task));
+    public void annotateGroup(String groupUid, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations) {
+        log.info("annotating Grassroot graph group ... {}", groupUid);
+
+        if (setAllAnnotations) {
+            Group group = groupRepository.findOneByUid(groupUid);
+            properties = new HashMap<>();
+            properties.put(IncomingAnnotation.language, group.getDefaultLanguage());
+            properties.put(IncomingAnnotation.description, group.getDescription());
+            tags = (group.getTags() == null || group.getTags().length == 0) ?
+                    null : new HashSet<>(Arrays.asList(group.getTags()));
+        }
+
+        Actor actor = new Actor(ActorType.GROUP, groupUid);
+        annotateEntity(actor, properties, tags);
     }
 
     @Override
-    public void removeTaskAnnotation(Task task, List<String> tagsToRemove) {
-        log.info("removing task annotation from graph ... {}", task.getUid());
-        removeEntityAnnotation(createTaskEvent(task), null, tagsToRemove);
+    public void annotateMembership(String userUid, String groupUid, Set<String> tags, boolean setAllAnnotations) {
+        log.info("annotating Grassroot graph membership, user {}, group {} ...", userUid, groupUid);
+
+        if (setAllAnnotations) {
+            Membership membership = membershipRepository.findByGroupUidAndUserUid(groupUid, userUid);
+            tags = (membership.getTags() == null || membership.getTags().length == 0) ?
+                    null : new HashSet<>(Arrays.asList(membership.getTags()));
+        }
+
+        annotateRelationship(participatingRelationship(userUid, GraphEntityType.ACTOR, ActorType.INDIVIDUAL.name(),
+                groupUid, GraphEntityType.ACTOR, ActorType.GROUP.name()), tags);
     }
 
-    private Event createTaskEvent(Task task) {
-        TaskType taskType = task.getTaskType();
-        EventType graphEventType = TaskType.TODO.equals(taskType) ? EventType.TODO :
-                TaskType.VOTE.equals(taskType) ? EventType.VOTE : EventType.MEETING;
-        return new Event(graphEventType, task.getUid(), task.getDeadlineTime().toEpochMilli());
+    @Override
+    public void annotateTask(String taskUid, TaskType taskType, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations) {
+        log.info("annotating Grassroot graph task ... {}", taskUid);
+
+        Task task = getTask(taskUid, taskType);
+        if (setAllAnnotations) {
+            properties = new HashMap<>();
+            if (TaskType.MEETING.equals(taskType) || TaskType.VOTE.equals(taskType)) {
+                AbstractEventEntity taskEvent = (AbstractEventEntity) task;
+                properties.put(IncomingAnnotation.description, taskEvent.getDescription());
+                tags = (taskEvent.getTags() == null || taskEvent.getTags().length == 0) ?
+                        null : new HashSet<>(Arrays.asList(taskEvent.getTags()));
+            } else {
+                properties.put(IncomingAnnotation.description, ((Todo) task).getDescription());
+            }
+        }
+
+        Event event = createTaskEvent(task);
+        annotateEntity(event, properties, tags);
+    }
+
+    @Override
+    public void removeUserFromGraph(String userUid) {
+        log.info("removing user from Grassroot graph ... {}", userUid);
+        removeEntityFromGraph(new Actor(ActorType.INDIVIDUAL, userUid));
+    }
+
+    @Override
+    public void removeGroupFromGraph(String groupUid) {
+        log.info("removing group from Grassroot graph ... {}", groupUid);
+        removeEntityFromGraph(new Actor(ActorType.GROUP, groupUid));
+    }
+
+    @Override
+    public void removeAccountFromGraph(String accountUid) {
+        log.info("removing account from Grassroot graph ... {}", accountUid);
+        removeEntityFromGraph(new Actor(ActorType.ACCOUNT, accountUid));
+    }
+
+    @Override
+    public void removeMembershipFromGraph(String userUid, String groupUid) {
+        log.info("removing membership from Grassroot graph, user {}, group {} ...", userUid, groupUid);
+        removeParticipationRelationship(userUid, GraphEntityType.ACTOR, ActorType.INDIVIDUAL.name(),
+                groupUid, GraphEntityType.ACTOR, ActorType.GROUP.name());
+    }
+
+    @Override
+    public void removeTaskFromGraph(String taskUid, TaskType taskType) {
+        log.info("removing task from Grassroot graph ... {}", taskUid);
+        removeEntityFromGraph(createTaskEvent(getTask(taskUid, taskType)));
+    }
+
+    @Override
+    public void removeAnnotationsFromUser(String userUid, Set<String> keysToRemove, Set<String> tagsToRemove) {
+        log.info("removing annotations from Grassroot graph user ... {}", userUid);
+        removeAnnotationsFromEntity(new Actor(ActorType.INDIVIDUAL, userUid), keysToRemove, tagsToRemove);
+    }
+
+    @Override
+    public void removeAnnotationsFromGroup(String groupUid, Set<String> keysToRemove, Set<String> tagsToRemove) {
+        log.info("removing annotations from Grassroot graph group ... {}", groupUid);
+        removeAnnotationsFromEntity(new Actor(ActorType.GROUP, groupUid), keysToRemove, tagsToRemove);
+    }
+
+    @Override
+    public void removeAnnotationsFromMembership(String userUid, String groupUid, Set<String> tagsToRemove) {
+        log.info("removing annotations from Grassroot graph membership, user {}, group {} ...", userUid, groupUid);
+        removeAnnotationsFromRelationship(participatingRelationship(userUid, GraphEntityType.ACTOR, ActorType.INDIVIDUAL.name(),
+                groupUid, GraphEntityType.ACTOR, ActorType.GROUP.name()), tagsToRemove);
+    }
+
+    @Override
+    public void removeAnnotationsFromTask(String taskUid, TaskType taskType, Set<String> keysToRemove, Set<String> tagsToRemove) {
+        log.info("removing annotations from Grassroot graph task ... {}", taskUid);
+        removeAnnotationsFromEntity(createTaskEvent(getTask(taskUid, taskType)), keysToRemove, tagsToRemove);
+    }
+
+    private void removeEntityFromGraph(GrassrootGraphEntity entity) {
+        IncomingDataObject dataObject = new IncomingDataObject(entity.getEntityType(), entity);
+        IncomingGraphAction action = new IncomingGraphAction(entity.getPlatformUid(), ActionType.REMOVE_ENTITY,
+                new ArrayList<>(Collections.singletonList(dataObject)), null, null);
+        dispatchAction(action, "remove entity");
+    }
+
+    private void removeParticipationRelationship(String tailUid, GraphEntityType tailType, String tailSubtype,
+                                                 String headUid, GraphEntityType headType, String headSubtype) {
+        IncomingRelationship relationship = participatingRelationship(tailUid, tailType, tailSubtype, headUid, headType, headSubtype);
+        IncomingGraphAction action = new IncomingGraphAction(tailUid, ActionType.REMOVE_RELATIONSHIP,
+                null, new ArrayList<>(Collections.singletonList(relationship)), null);
+        dispatchAction(action, "remove participation relationship");
+    }
+
+    private void annotateEntity(GrassrootGraphEntity entity, Map<String, String> properties, Set<String> tags) {
+        IncomingDataObject dataObject = new IncomingDataObject(entity.getEntityType(), entity);
+        IncomingAnnotation annotation = new IncomingAnnotation(dataObject, null, normalize(properties), normalize(tags), null);
+        IncomingGraphAction action = new IncomingGraphAction(dataObject.getGraphEntity().getPlatformUid(),
+                ActionType.ANNOTATE_ENTITY, null, null, new ArrayList<>(Collections.singletonList(annotation)));
+        dispatchAction(action, "annotate entity");
+    }
+
+    private void removeAnnotationsFromEntity(GrassrootGraphEntity entity, Set<String> keysToRemove, Set<String> tagsToRemove) {
+        IncomingDataObject dataObject = new IncomingDataObject(entity.getEntityType(), entity);
+        IncomingAnnotation annotation = new IncomingAnnotation(dataObject, null, null, normalize(tagsToRemove), normalize(keysToRemove));
+        IncomingGraphAction action = new IncomingGraphAction(dataObject.getGraphEntity().getPlatformUid(),
+                ActionType.REMOVE_ANNOTATION, null, null, new ArrayList<>(Collections.singletonList(annotation)));
+        dispatchAction(action, "remove annotations from entity");
+    }
+
+    private void annotateRelationship(IncomingRelationship relationship, Set<String> tags) {
+        IncomingAnnotation annotation = new IncomingAnnotation(null, relationship, null, normalize(tags), null);
+        IncomingGraphAction action = new IncomingGraphAction(relationship.getTailEntityPlatformId(),
+                ActionType.ANNOTATE_RELATIONSHIP, null, null, new ArrayList<>(Collections.singletonList(annotation)));
+        dispatchAction(action, "annotate relationship");
+    }
+
+    private void removeAnnotationsFromRelationship(IncomingRelationship relationship, Set<String> tagsToRemove) {
+        IncomingAnnotation annotation = new IncomingAnnotation(null, relationship, null, normalize(tagsToRemove), null);
+        IncomingGraphAction action = new IncomingGraphAction(relationship.getTailEntityPlatformId(),
+                ActionType.REMOVE_ANNOTATION, null, null, new ArrayList<>(Collections.singletonList(annotation)));
+        dispatchAction(action, "remove annotations from relationship");
+    }
+
+    private void dispatchAction(IncomingGraphAction action, String actionDescription) {
+        try {
+            log.info("dispatching message to URL: {}", sqsQueueUrl);
+            SendMessageRequest request = new SendMessageRequest(sqsQueueUrl, objectMapper.writeValueAsString(action));
+            if (isQueueFifo) {
+                request.setMessageGroupId("graphCrudActions");
+            }
+            sqs.sendMessage(request);
+            log.info("successfully dispatched {} to graph entity queue ...", actionDescription);
+        } catch (JsonProcessingException e) {
+            log.error("error adding graph action to queue ... ", e);
+        }
     }
 
     private IncomingGraphAction wrapEntityCreation(GrassrootGraphEntity entity) {
         IncomingDataObject dataObject = new IncomingDataObject(entity.getEntityType(), entity);
         return new IncomingGraphAction(entity.getPlatformUid(), ActionType.CREATE_ENTITY,
                 new ArrayList<>(Collections.singletonList(dataObject)), new ArrayList<>(), new ArrayList<>());
-    }
-
-    private void removeEntity(GrassrootGraphEntity entity) {
-        IncomingDataObject dataObject = new IncomingDataObject(entity.getEntityType(), entity);
-        IncomingGraphAction action = new IncomingGraphAction(entity.getPlatformUid(), ActionType.REMOVE_ENTITY,
-                new ArrayList<>(Collections.singletonList(dataObject)), null, null);
-        dispatchAction(action, "remove entity");
     }
 
     private void addParticipants(IncomingGraphAction action, Set<String> participantIds, GraphEntityType participantType,
@@ -289,57 +367,30 @@ public class GraphBrokerImpl implements GraphBroker {
                 targetUid, targetType, targetSubtype, GrassrootRelationship.Type.GENERATOR);
     }
 
-    private void removeParticipationRelationship(String tailUid, GraphEntityType tailType, String tailSubtype,
-                                                 String headUid, GraphEntityType headType, String headSubtype) {
-        IncomingRelationship relationship = participatingRelationship(tailUid, tailType, tailSubtype,
-                headUid, headType, headSubtype);
-        IncomingGraphAction action = new IncomingGraphAction(tailUid, ActionType.REMOVE_RELATIONSHIP,
-                null, new ArrayList<>(Collections.singletonList(relationship)), null);
-        dispatchAction(action, "remove participation relationship");
+    private Event createTaskEvent(Task task) {
+        TaskType taskType = task.getTaskType();
+        EventType graphEventType = TaskType.TODO.equals(taskType) ? EventType.TODO :
+                TaskType.VOTE.equals(taskType) ? EventType.VOTE : EventType.MEETING;
+        return new Event(graphEventType, task.getUid(), task.getDeadlineTime().toEpochMilli());
     }
 
-    private void addEntityAnnotation(GrassrootGraphEntity entity, Map<String, String> properties, List<String> tags) {
-        IncomingDataObject dataObject = new IncomingDataObject(entity.getEntityType(), entity);
-        IncomingAnnotation annotation = new IncomingAnnotation(dataObject, null, properties, tags, null);
-        IncomingGraphAction graphAction = new IncomingGraphAction(dataObject.getGraphEntity().getPlatformUid(),
-                ActionType.ANNOTATE_ENTITY, null, null, new ArrayList<>(Collections.singletonList(annotation)));
-        dispatchAction(graphAction, "entity annotation");
-    }
-
-    private void removeEntityAnnotation(GrassrootGraphEntity entity, Set<String> keysToRemove, List<String> tags) {
-        IncomingDataObject dataObject = new IncomingDataObject(entity.getEntityType(), entity);
-        IncomingAnnotation annotation = new IncomingAnnotation(dataObject, null, null, tags, keysToRemove);
-        IncomingGraphAction graphAction = new IncomingGraphAction(dataObject.getGraphEntity().getPlatformUid(),
-                ActionType.REMOVE_ANNOTATION, null, null, new ArrayList<>(Collections.singletonList(annotation)));
-        dispatchAction(graphAction, "remove entity annotation");
-    }
-
-    private void addRelationshipAnnotation(IncomingRelationship relationship, List<String> tags) {
-        IncomingAnnotation annotation = new IncomingAnnotation(null, relationship, null, tags, null);
-        IncomingGraphAction graphAction = new IncomingGraphAction(relationship.getTailEntityPlatformId(),
-                ActionType.ANNOTATE_RELATIONSHIP, null, null, new ArrayList<>(Collections.singletonList(annotation)));
-        dispatchAction(graphAction, "relationship annotation");
-    }
-
-    private void removeRelationshipAnnotation(IncomingRelationship relationship, List<String> tags) {
-        IncomingAnnotation annotation = new IncomingAnnotation(null, relationship, null, tags, null);
-        IncomingGraphAction graphAction = new IncomingGraphAction(relationship.getTailEntityPlatformId(),
-                ActionType.REMOVE_ANNOTATION, null, null, new ArrayList<>(Collections.singletonList(annotation)));
-        dispatchAction(graphAction, "remove relationship annotation");
-    }
-
-    private void dispatchAction(IncomingGraphAction action, String actionDescription) {
-        try {
-            log.info("dispatching message to URL: {}", sqsQueueUrl);
-            SendMessageRequest request = new SendMessageRequest(sqsQueueUrl, objectMapper.writeValueAsString(action));
-            if (isQueueFifo) {
-                request.setMessageGroupId("graphCrudActions");
-            }
-            sqs.sendMessage(request);
-            log.info("successfully dispatched {} to graph entity queue ...", actionDescription);
-        } catch (JsonProcessingException e) {
-            log.error("error adding graph action to queue ... ", e);
+    private Task getTask(String taskUid, TaskType taskType) {
+        switch (taskType) {
+            case MEETING:
+            case VOTE:      return eventRepository.findOneByUid(taskUid);
+            case TODO:      return todoRepository.findOneByUid(taskUid);
         }
+        return null;
+    }
+
+    private Set<String> normalize(Set<String> set) {
+        return set.stream().filter(s -> s != null && !s.isEmpty())
+                .map(String::toLowerCase).map(String::trim).collect(Collectors.toSet());
+    }
+
+    private Map<String, String> normalize(Map<String, String> map) {
+        return map.entrySet().stream().collect(Collectors.toMap(entry -> entry.getKey().toLowerCase().trim(),
+                entry -> entry.getValue().toLowerCase().trim()));
     }
 
 }

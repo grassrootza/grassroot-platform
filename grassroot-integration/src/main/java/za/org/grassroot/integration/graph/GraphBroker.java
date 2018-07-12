@@ -1,51 +1,49 @@
 package za.org.grassroot.integration.graph;
 
 import org.springframework.scheduling.annotation.Async;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.task.Task;
+import za.org.grassroot.core.enums.TaskType;
 
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
 
 @Async
 public interface GraphBroker {
 
     void addUserToGraph(String userUid);
 
-    void addUserAnnotation(User user);
-
-    void removeUserFromGraph(String userUid);
-
-    void removeUserAnnotation(String userUid, Set<String> keysToRemove);
-
     void addGroupToGraph(String groupUid, String creatingUserUid, Set<String> memberUids);
-
-    void addGroupAnnotation(Group group, double latitude, double longitude);
-
-    void removeGroupFromGraph(String groupUid);
-
-    void removeGroupAnnotation(String groupUid, Set<String> keysToRemove, List<String> tagsToRemove);
 
     void addAccountToGraph(String accountUid, List<String> adminUids);
 
-    void removeAccountFromGraph(String accountUid);
-
     void addMembershipToGraph(Set<String> memberUids, String groupUid);
 
-    void addMembershipAnnotation(Membership membership);
+    void addTaskToGraph(String taskUid, TaskType taskType, List<String> assignedUserUids);
+
+    void annotateUser(String userUid, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations);
+
+    void annotateGroup(String groupUid, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations);
+
+    void annotateMembership(String userUid, String groupUid, Set<String> tags, boolean setAllAnnotations);
+
+    void annotateTask(String taskUid, TaskType taskType, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations);
+
+    void removeUserFromGraph(String userUid);
+
+    void removeGroupFromGraph(String groupUid);
+
+    void removeAccountFromGraph(String accountUid);
 
     void removeMembershipFromGraph(String userUid, String groupUid);
 
-    void removeMembershipAnnotation(Membership membership, List<String> tagsToRemove);
+    void removeTaskFromGraph(String taskUid, TaskType taskType);
 
-    void addTaskToGraph(Task task, List<String> assignedUserUids);
+    void removeAnnotationsFromUser(String userUid, Set<String> keysToRemove, Set<String> tagsToRemove);
 
-    void addTaskAnnotation(Task task, String[] tags, String description);
+    void removeAnnotationsFromGroup(String groupUid, Set<String> keysToRemove, Set<String> tagsToRemove);
 
-    void removeTaskFromGraph(Task task);
+    void removeAnnotationsFromMembership(String userUid, String groupUid, Set<String> tagsToRemove);
 
-    void removeTaskAnnotation(Task task, List<String> tagsToRemove);
+    void removeAnnotationsFromTask(String taskUid, TaskType taskType, Set<String> keysToRemove, Set<String> tagsToRemove);
 
 }
