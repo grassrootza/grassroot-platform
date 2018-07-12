@@ -23,7 +23,7 @@ import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
-import za.org.grassroot.services.task.TaskImageBroker;
+import za.org.grassroot.services.task.VoteHelper;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -46,8 +46,7 @@ public class EventCreateController extends BaseRestController{
     private final UserManagementService userService;
 
     @Autowired
-    public EventCreateController(JwtService jwtService, UserManagementService userManagementService,
-                                 EventBroker eventBroker, TaskImageBroker taskImageBroker) {
+    public EventCreateController(JwtService jwtService, UserManagementService userManagementService, EventBroker eventBroker) {
         super(jwtService, userManagementService);
         this.userService = userManagementService;
         this.eventBroker = eventBroker;
@@ -139,10 +138,17 @@ public class EventCreateController extends BaseRestController{
             User user = userService.load(userUid);
 
             assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
-            log.info("title={}, description={}, time={}, members={}, options={}", title, description, eventStartDateTime, assignedMemberUids, voteOptions);
+            log.info("title={}, description={}, time={}, members={}, options={}, special form={}", title, description, eventStartDateTime, assignedMemberUids, voteOptions, specialForm);
 
-            Vote vote = eventBroker.createVote(user.getUid(), parentUid, parentType, title, eventStartDateTime,
-                    false, description, mediaFileUid, assignedMemberUids, voteOptions);
+            VoteHelper helper = VoteHelper.builder()
+                    .userUid(user.getUid()).parentUid(parentUid).parentType(parentType)
+                    .name(title).eventStartDateTime(eventStartDateTime).description(description).options(voteOptions)
+                    .taskImageKey(mediaFileUid).assignMemberUids(assignedMemberUids).specialForm(specialForm)
+                    .build();
+
+            log.info("corresponding helper: {}", helper);
+
+            Vote vote = eventBroker.createVote(helper);
 
             log.debug("Vote={},User={}",vote,user);
             return ResponseEntity.ok(new TaskFullDTO(vote, user,vote.getCreatedDateTime(), null));
@@ -150,4 +156,5 @@ public class EventCreateController extends BaseRestController{
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         }
     }
+
 }

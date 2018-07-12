@@ -126,7 +126,7 @@ public class BroadcastController extends BaseRestController {
     }
 
     @RequestMapping(value = "/create/group/{groupUid}", method = RequestMethod.POST)
-    @ApiOperation(value = "Create a broadcast on the group", notes = "NB : this will be a heavy operation, so do it async")
+    @ApiOperation(value = "Create a broadcast on the group", notes = "NB : this will be a heavy operation, so do it async if possible")
     public ResponseEntity<BroadcastDTO> createGroupBroadcast(HttpServletRequest request,
                                                              @PathVariable String groupUid,
                                                              @RequestBody BroadcastCreateRequest createRequest) {
@@ -143,6 +143,7 @@ public class BroadcastController extends BaseRestController {
                 .broadcastSchedule(createRequest.getSendType())
                 .scheduledSendTime(createRequest.getSendDateTime())
                 .provinces(createRequest.getProvinces())
+                .noProvince(createRequest.getNoProvince())
                 .topics(createRequest.getTopics())
                 .taskTeams(createRequest.getTaskTeams())
                 .affiliations(createRequest.getAffiliations())

@@ -63,6 +63,7 @@ public class MembershipSpecifications {
 
     public static Specification<Membership> filterGroupMembership(Group group,
                                                                   Collection<Province> provinces,
+                                                                  Boolean unknownProvince,
                                                                   Collection<String> taskTeamsUids,
                                                                   Collection<GroupJoinMethod> joinMethods,
                                                                   Integer joinDaysAgo,
@@ -77,6 +78,10 @@ public class MembershipSpecifications {
 
             if (provinces != null && provinces.size() > 0) {
                 restrictions.add(root.get(Membership_.user).get(User_.province).in(provinces));
+            }
+
+            if (unknownProvince != null && unknownProvince) {
+                restrictions.add(root.get(Membership_.user).get(User_.province).isNull());
             }
 
             if (taskTeamsUids != null && taskTeamsUids.size() > 0) {

@@ -178,6 +178,7 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/members/filter", method = RequestMethod.GET)
     public List<MembershipFullDTO> filterGroupMembers(@RequestParam String groupUid,
                                                       @RequestParam (required = false) Collection<Province> provinces,
+                                                      @RequestParam (required = false) Boolean noProvince,
                                                       @RequestParam (required = false) Collection<String> taskTeams,
                                                       @RequestParam (required = false) Collection<String> topics,
                                                       @RequestParam (required = false) Collection<String> affiliations,
@@ -191,7 +192,7 @@ public class GroupFetchController extends BaseRestController {
                                                       HttpServletRequest request) {
         log.info("filtering, name phone or email = {}", namePhoneOrEmail);
         return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
-                provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
+                provinces, noProvince, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
                 joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages).stream().map(MembershipFullDTO::new).collect(Collectors.toList());
     }
 

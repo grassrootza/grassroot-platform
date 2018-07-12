@@ -381,6 +381,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         if (bc.getProvinces() != null && !bc.getProvinces().isEmpty())
             broadcast.setProvinces(bc.getProvinces());
 
+        if (bc.getNoProvince() != null)
+            broadcast.setNoProvince(bc.getNoProvince());
+
         if (bc.getTopics() != null && !bc.getTopics().isEmpty())
             broadcast.setTopics(new HashSet<>(bc.getTopics()));
 
@@ -600,10 +603,13 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         List<Membership> membersToReceive;
 
+        log.info("province restriction? : ", bc.getNoProvinceRestriction());
         if (bc.hasFilter()) {
-            membersToReceive = groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(), provinceResrictions, taskTeamUids,
-                    topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition,
-                    bc.getNamePhoneEmailFilter(), bc.getFilterLanguages());
+            membersToReceive = groupFetchBroker.filterGroupMembers(
+                    bc.getCreatedByUser(), group.getUid(),
+                    provinceResrictions, bc.getNoProvinceRestriction().orElse(null),
+                    taskTeamUids, topicRestrictions, affiliations, bc.getJoinMethods(),
+                    null, null, joinDate, joinDateCondition, bc.getNamePhoneEmailFilter(), bc.getFilterLanguages());
         } else if (bc.hasTask()) {
             membersToReceive = taskBroker.fetchMembersAssignedToTask(bc.getCreatedByUser().getUid(),
                     bc.getTaskUid(), bc.getTaskType(), bc.taskOnlyPositive());

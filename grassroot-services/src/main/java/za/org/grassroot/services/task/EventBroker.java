@@ -54,8 +54,7 @@ public interface EventBroker {
 	                   EventReminderType reminderType, int customReminderMinutes, Set<String> assignedMemberUids);
 
 	// note: keeping these here instead of moving to VoteBroker for now, given the intertwining with various elements of rest of eventbroker
-	Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-					boolean includeSubGroups, String description, String taskImageKey, Set<String> assignMemberUids, List<String> options);
+	Vote createVote(VoteHelper voteHelper);
 
     void updateReminderSettings(String userUid, String eventUid, EventReminderType reminderType, int customReminderMinutes);
 

@@ -35,9 +35,11 @@ public class LogsAndNotificationsBundle {
 
 	public void addNotifications(Set<Notification> notifications) {
 		Objects.requireNonNull(notifications);
-		notifications.stream()
-				.filter(Notification::isPrioritySatisfiedByTarget)
-				.forEach(this.notifications::add);
+		this.notifications.addAll(notifications);
+		// haven't liked this for a while, and causing many issues, so removing, to consider again in future
+//		notifications.stream()
+//				.filter(Notification::isPrioritySatisfiedByTarget)
+//				.forEach(this.notifications::add);
 	}
 
 	public void addLog(ActionLog log) {

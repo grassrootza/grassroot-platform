@@ -91,7 +91,7 @@ public class AuthenticationController {
         return RestUtil.errorResponse(RestMessage.INVALID_MSISDN);
     }
 
-    @RequestMapping(value = "/register", method = RequestMethod.GET)
+    @RequestMapping(value = "/register", method = RequestMethod.POST)
     @ApiOperation(value = "Start new user registration using username, phone number and password", notes = "Short lived token is returned as a string in the 'data' property")
     public ResponseEntity<ResponseWrapper> register(@RequestParam("phoneNumber") String phoneNumber,
                                                     @RequestParam("displayName") String displayName,
@@ -144,7 +144,7 @@ public class AuthenticationController {
         }
     }
 
-    @RequestMapping(value = "/web/register", method = RequestMethod.GET)
+    @RequestMapping(value = "/web/register", method = RequestMethod.POST)
     public AuthorizationResponseDTO registerWebUser(@RequestParam String name,
                                                     @RequestParam(required = false) String phone,
                                                     @RequestParam(required = false) String email,
@@ -281,7 +281,7 @@ public class AuthenticationController {
 
 
     @ApiOperation(value = "Login using password and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
-    @RequestMapping(value = "/login-password", method = RequestMethod.GET)
+    @RequestMapping(value = "/login-password", method = RequestMethod.POST)
     public AuthorizationResponseDTO webLogin(@RequestParam("username") String username,
                                              @RequestParam("password") String password,
                                              @RequestParam(required = false) UserInterfaceType interfaceType) {

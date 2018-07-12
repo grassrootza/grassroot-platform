@@ -55,6 +55,7 @@ public interface GroupFetchBroker {
 
     List<Membership> filterGroupMembers(User user, String groupUid,
                                         Collection<Province> provinces,
+                                        Boolean noProvince, // i.e., unknown
                                         Collection<String> taskTeams,
                                         Collection<String> topics,
                                         Collection<String> affiliations,

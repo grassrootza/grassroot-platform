@@ -227,9 +227,13 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
 			VoteContainer parent = voteRequest.getParent();
-			createdEntityUid = eventBroker.createVote(userUid, parent.getUid(), parent.getJpaEntityType(), voteRequest.getName(),
-					voteRequest.getEventDateTimeAtSAST(), voteRequest.isIncludeSubGroups(),
-					voteRequest.getDescription(), null, assignedMemberUids, voteRequest.getVoteOptions()).getUid();
+			VoteHelper helper = VoteHelper.builder()
+					.userUid(userUid).parentType(parent.getJpaEntityType()).parentUid(parent.getUid())
+					.name(voteRequest.getName()).eventStartDateTime(voteRequest.getEventDateTimeAtSAST()).includeSubGroups(voteRequest.isIncludeSubGroups())
+					.description(voteRequest.getDescription()).assignMemberUids(assignedMemberUids).options(voteRequest.getVoteOptions())
+					.build();
+
+			createdEntityUid = eventBroker.createVote(helper).getUid();
 		}
 
 		eventRequestRepository.delete(request);

@@ -57,6 +57,7 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 	public ResourceBundleMessageSource messageSource() {
 		ResourceBundleMessageSource source = new ResourceBundleMessageSource();
 		source.setBasename("notification-messages/messages");
+		source.setFallbackToSystemLocale(true);
 		return source;
 	}
 
