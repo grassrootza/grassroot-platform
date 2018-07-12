@@ -27,7 +27,7 @@ import za.org.grassroot.core.domain.group.JoinDateCondition;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;

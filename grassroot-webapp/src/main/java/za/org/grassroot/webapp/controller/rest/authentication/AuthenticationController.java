@@ -19,9 +19,9 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
-import za.org.grassroot.integration.messaging.JwtService;
-import za.org.grassroot.integration.messaging.JwtType;
+import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
+import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.authentication.JwtType;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.NoSuchUserException;
@@ -129,7 +129,7 @@ public class AuthenticationController {
             passwordTokenService.generateLongLivedAuthCode(user.getUid());
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
 
-            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user);
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.WEB_ANDROID_CLIENT, user);
 
             String token = jwtService.createJwt(tokenRequest);
 
@@ -195,7 +195,7 @@ public class AuthenticationController {
             newUser.setPassword(password);
 
             User user = userService.createUserWebProfile(newUser);
-            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user));
+            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.WEB_ANDROID_CLIENT, user));
             AuthorizedUserDTO response = new AuthorizedUserDTO(user, token);
 
             return new AuthorizationResponseDTO(response);
@@ -258,7 +258,7 @@ public class AuthenticationController {
             User user = userService.findByInputNumber(msisdn);
 
             // Generate a token for the user (for the moment assuming it is Android client)
-            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user);
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.WEB_ANDROID_CLIENT, user);
             if (durationMillis != null && durationMillis != 0) {
                 tokenRequest.setShortExpiryMillis(durationMillis);
             }
@@ -293,7 +293,7 @@ public class AuthenticationController {
             checkUserHasAccess(username, interfaceType == null ? UserInterfaceType.WEB_2 : interfaceType);
 
             // Generate a token for the user (for the moment assuming it is Android client - Angular uses same params)
-            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user);
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.WEB_ANDROID_CLIENT, user);
 
             String token = jwtService.createJwt(tokenRequest);
             logger.info("generate a jwt token, on server is: {}", token);
@@ -330,7 +330,7 @@ public class AuthenticationController {
             "if the token is still old")
     public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken,
                                                         @RequestParam(value = "durationMillis", required = false) Long durationMillis) {
-        String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT, durationMillis);
+        String newToken = jwtService.refreshToken(oldToken, JwtType.WEB_ANDROID_CLIENT, durationMillis);
         if (newToken != null) {
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, newToken);
         } else {

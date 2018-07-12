@@ -11,7 +11,7 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.TodoHelper;
 import za.org.grassroot.services.user.UserManagementService;

@@ -18,7 +18,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import static org.springframework.data.jpa.domain.Specifications.where;
+import static org.springframework.data.jpa.domain.Specification.where;
 
 /**
  * Created by luke on 2017/04/05.
@@ -30,14 +30,16 @@ public class ScheduledGeoCalculations {
 
     private static final long DAYS_TO_CALC_MTGS = 7;
 
-    @Autowired
-    private GeoLocationBroker geoLocationBroker;
+    private final GeoLocationBroker geoLocationBroker;
+    private final GroupRepository groupRepository;
+    private final MeetingRepository meetingRepository;
 
     @Autowired
-    private GroupRepository groupRepository;
-
-    @Autowired
-    private MeetingRepository meetingRepository;
+    public ScheduledGeoCalculations(GeoLocationBroker geoLocationBroker, GroupRepository groupRepository, MeetingRepository meetingRepository) {
+        this.geoLocationBroker = geoLocationBroker;
+        this.groupRepository = groupRepository;
+        this.meetingRepository = meetingRepository;
+    }
 
     @Scheduled(cron = "0 0 2 * * *") // runs at 2am UTC every day
     public void calculateAggregateLocations() {

@@ -16,7 +16,7 @@ import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;

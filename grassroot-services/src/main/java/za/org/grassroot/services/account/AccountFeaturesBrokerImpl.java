@@ -3,6 +3,7 @@ package za.org.grassroot.services.account;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
+import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.MessageAssemblingService;
@@ -48,7 +50,7 @@ import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAs
  * Created by luke on 2016/10/25.
  */
 @Service @Slf4j
-public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements AccountFeaturesBroker {
+public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
 
     @Value("${grassroot.groups.size.limit:false}")
     private boolean GROUP_SIZE_LIMITED;
@@ -85,11 +87,12 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     private final MessageAssemblingService messageAssemblingService;
 
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
+    private ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
-                                  EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
-                                  BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
+                                     EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
+                                     BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -99,6 +102,11 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         this.templateRepository = templateRepository;
         this.messageAssemblingService = messageAssemblingService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+    }
+
+    @Autowired
+    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
     }
 
     @PostConstruct
@@ -117,6 +125,17 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         if (!account.getAdministrators().contains(user)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
+    }
+
+    protected void createAndStoreSingleAccountLog(AccountLog accountLog) {
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(accountLog);
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    protected void storeAccountLogPostCommit(AccountLog accountLog) {
+        AfterTxCommitTask task = () -> createAndStoreSingleAccountLog(accountLog);
+        eventPublisher.publishEvent(task);
     }
 
     @Override

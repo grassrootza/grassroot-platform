@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.exception.TaskFinishedException;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.TaskBroker;

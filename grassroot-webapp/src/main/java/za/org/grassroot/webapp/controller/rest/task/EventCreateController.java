@@ -19,7 +19,7 @@ import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.MeetingBuilderHelper;

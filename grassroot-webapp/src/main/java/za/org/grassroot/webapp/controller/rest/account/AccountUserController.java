@@ -2,23 +2,31 @@ package za.org.grassroot.webapp.controller.rest.account;
 
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.dto.GrassrootEmail;
+import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
+import za.org.grassroot.integration.authentication.JwtType;
 import za.org.grassroot.integration.billing.BillingServiceBroker;
 import za.org.grassroot.integration.billing.SubscriptionRecordDTO;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.AccountWrapper;
 
 import javax.servlet.http.HttpServletRequest;
@@ -32,33 +40,87 @@ import java.util.stream.Collectors;
 @PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class AccountUserController extends BaseRestController {
 
-    private final AccountBroker accountBroker;
-    private final BillingServiceBroker billingServiceBroker;
-    private final UserManagementService userService;
+    @Value("${grassroot.accounts.email:accounts@somewhere}")
+    private String grassrootAccountsEmail;
 
-    public AccountUserController(JwtService jwtService, UserManagementService userManagementService, AccountBroker accountBroker, BillingServiceBroker billingServiceBroker) {
+    private final AccountBroker accountBroker;
+    private final UserManagementService userService;
+    private final JwtService jwtService;
+
+    private BillingServiceBroker billingServiceBroker;
+    private MessagingServiceBroker messagingServiceBroker;
+
+    @Autowired
+    public AccountUserController(JwtService jwtService, UserManagementService userManagementService, AccountBroker accountBroker) {
         super(jwtService, userManagementService);
         this.accountBroker = accountBroker;
-        this.billingServiceBroker = billingServiceBroker;
         this.userService= userManagementService;
+        this.jwtService = jwtService;
+    }
+
+    @Autowired(required = false)
+    public void setBillingServiceBroker(BillingServiceBroker billingServiceBroker) {
+        this.billingServiceBroker = billingServiceBroker;
+    }
+
+    @Autowired(required = false)
+    public void setMessagingServiceBroker(MessagingServiceBroker messagingServiceBroker) {
+        this.messagingServiceBroker = messagingServiceBroker;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public CompletableFuture<AccountCreationResponse> signUpForAccount(HttpServletRequest request,
                                                                      @RequestParam String accountName,
                                                                      @RequestParam String billingEmail,
+                                                                     @RequestParam boolean addAllGroupsToAccount,
                                                                      @RequestParam(required = false) String otherAdmins) {
         final String userId = getUserIdFromRequest(request);
-        return billingServiceBroker.createSubscription(accountName, billingEmail, getJwtTokenFromRequest(request), false)
+        final String accountUid = accountBroker.createAccount(userId, accountName, userId, null);
+        if (addAllGroupsToAccount) {
+            log.info("Add all groups selected, proceeding");
+            accountBroker.addAllUserCreatedGroupsToAccount(accountUid, userId);
+        }
+        final List<String> errorAdmins = StringUtils.isEmpty(otherAdmins) ? new ArrayList<>()
+                : handleAddingAccountAdmins(userId, accountUid, otherAdmins);
+        final User refreshedUser = userService.load(userId);
+
+        // will just return right away if no billing broker
+        return addSubscriptionToAccount(accountUid, accountName, billingEmail, getJwtTokenFromRequest(request))
                 .map(record -> {
-                    log.info("Got a record back, as created: {}", record.getAccountName());
-                    final String accountUid = accountBroker.createAccount(userId, accountName, userId, null);
-                    final List<String> errorAdmins = StringUtils.isEmpty(otherAdmins) ? new ArrayList<>()
-                            : handleAddingAccountAdmins(userId, accountUid, otherAdmins);
-                    accountBroker.setAccountSubscriptionRef(userId, accountUid, record.getId());
                     log.info("Account enabled, done, returning with error admins: {}", errorAdmins);
-                    return new AccountCreationResponse(accountUid, errorAdmins);
+                    triggerEmailIfEnabled(accountName, billingEmail, refreshedUser);
+                    return assembleAccountCreated(accountUid, refreshedUser, errorAdmins);
                 }).toFuture();
+    }
+
+    private Mono<SubscriptionRecordDTO> addSubscriptionToAccount(String accountUid, String accountName,
+                                                                 String billingEmail, String jwtToken) {
+        return billingServiceBroker == null ? Mono.empty() :
+                billingServiceBroker.createSubscription(accountName, billingEmail, jwtToken, false).map(record -> {
+                    log.info("Got a record back, as created: {}", record.getAccountName());
+                    accountBroker.setAccountSubscriptionRef(getUserIdFromToken(jwtToken), accountUid, record.getId());
+                    return record;
+                });
+    }
+
+    private void triggerEmailIfEnabled(String accountName, String billingEmail, User user) {
+        if (messagingServiceBroker == null)
+            return;
+
+        log.info("Notifying accounts admin of the new account");
+        final String emailBody = "Greetings,\n\n A new account has been set up for Grassroot Extra. The account name is " +
+                accountName + ", billing email given as " + billingEmail + ". The account was set up by the user " +
+                user.getName() + ", with email " + user.getEmailAddress() + " and phone " + user.getPhoneNumber() + ".\n\n" +
+                "Have a good day, \n\n Grassroot";
+        GrassrootEmail email = new GrassrootEmail.EmailBuilder("New Grassroot Extra account")
+                .toAddress(grassrootAccountsEmail).content(emailBody).build();
+        messagingServiceBroker.sendEmail(email);
+    }
+
+    private AccountCreationResponse assembleAccountCreated(String accountUid, User refreshedUser, List<String> errorAdmins) {
+        CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.WEB_ANDROID_CLIENT, refreshedUser);
+        String token = jwtService.createJwt(tokenRequest);
+        return new AccountCreationResponse(accountUid, errorAdmins, new AuthorizedUserDTO(refreshedUser, token));
     }
 
     @RequestMapping(value = "/change/payment/{accountId}", method = RequestMethod.POST)

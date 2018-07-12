@@ -11,9 +11,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.MediaFileBroker;
-import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
-import za.org.grassroot.integration.messaging.JwtService;
-import za.org.grassroot.integration.messaging.JwtType;
+import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
+import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.authentication.JwtType;
 
 import java.net.URI;
 import java.util.ArrayList;

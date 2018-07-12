@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.keyprovider;
+package za.org.grassroot.integration.authentication;
 
 import java.security.KeyPair;
 

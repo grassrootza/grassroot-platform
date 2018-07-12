@@ -15,7 +15,7 @@ import za.org.grassroot.core.dto.group.PublicGroupDTO;
 import za.org.grassroot.core.dto.task.PublicMeetingDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.*;
 import za.org.grassroot.services.task.EventBroker;

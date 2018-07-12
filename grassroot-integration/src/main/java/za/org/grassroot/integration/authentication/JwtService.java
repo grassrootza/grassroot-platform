@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.messaging;
+package za.org.grassroot.integration.authentication;
 
 import za.org.grassroot.integration.PublicCredentials;
 

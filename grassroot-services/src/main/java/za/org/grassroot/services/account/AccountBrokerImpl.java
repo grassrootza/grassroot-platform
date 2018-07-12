@@ -347,21 +347,23 @@ public class AccountBrokerImpl implements AccountBroker {
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        groups.stream().filter(group -> !group.isPaidFor()).forEach(group -> {
-            group.setAccount(account);
-            group.setPaidFor(true);
+        groups.stream()
+                .filter(group -> !group.isPaidFor())
+                .forEach(group -> {
+                    group.setAccount(account);
+                    group.setPaidFor(true);
 
-            log.info("Added group {} to account {}", group.getName(), account.getName());
+                    log.info("Added group {} to account {}", group.getName(), account.getName());
 
-            bundle.addLog(new AccountLog.Builder(account)
-                    .user(user)
-                    .accountLogType(AccountLogType.GROUP_ADDED)
-                    .group(group)
-                    .paidGroupUid(group.getUid())
-                    .description(group.getName()).build());
+                    bundle.addLog(new AccountLog.Builder(account)
+                            .user(user)
+                            .accountLogType(AccountLogType.GROUP_ADDED)
+                            .group(group)
+                            .paidGroupUid(group.getUid())
+                            .description(group.getName()).build());
 
-            bundle.addLog(new GroupLog(group, user, GroupLogType.ADDED_TO_ACCOUNT,
-                    null, null, account, "Group added to Grassroot Extra accounts"));
+                    bundle.addLog(new GroupLog(group, user, GroupLogType.ADDED_TO_ACCOUNT,
+                            null, null, account, "Group added to Grassroot Extra accounts"));
         });
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);

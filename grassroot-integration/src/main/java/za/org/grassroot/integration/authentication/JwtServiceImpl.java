@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.messaging;
+package za.org.grassroot.integration.authentication;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.impl.TextCodec;
@@ -10,7 +10,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.integration.PublicCredentials;
-import za.org.grassroot.integration.keyprovider.KeyPairProvider;
 
 import javax.annotation.PostConstruct;
 import java.security.PublicKey;
@@ -78,7 +77,7 @@ public class JwtServiceImpl implements JwtService {
 
     private long convertTypeToExpiryMillis(JwtType jwtType) {
         switch (jwtType) {
-            case ANDROID_CLIENT:
+            case WEB_ANDROID_CLIENT:
                 return Duration.ofDays(7L).toMillis();
             case GRASSROOT_MICROSERVICE:
                 return Duration.ofSeconds(2).toMillis(); // occasional glitches mean 2 secs is a better trade off here at present

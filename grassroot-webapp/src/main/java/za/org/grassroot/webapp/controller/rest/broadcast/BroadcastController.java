@@ -27,7 +27,7 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.UrlShortener;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
 import za.org.grassroot.services.broadcasts.BroadcastBroker;

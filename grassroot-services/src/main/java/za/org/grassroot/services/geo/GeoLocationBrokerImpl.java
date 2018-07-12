@@ -3,6 +3,7 @@ package za.org.grassroot.services.geo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -226,12 +227,11 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 			throw new IllegalArgumentException("Cannot calculate a location for a vote");
 		}
 
-		List<EventLog> logsWithLocation = eventLogRepository.findAll(
-				Specifications.where(EventLogSpecifications.forEvent(event))
+		List<EventLog> logsWithLocation = eventLogRepository.findAll(Specification.where(EventLogSpecifications.forEvent(event))
 				.and(EventLogSpecifications.hasLocation()));
 
 		MeetingLocation meetingLocation;
-		if (logsWithLocation != null && !logsWithLocation.isEmpty()) {
+		if (!logsWithLocation.isEmpty()) {
 			CenterCalculationResult center = calculateCenter(logsWithLocation);
 			float score = (float) 1.0; // since a related log with a GPS is best possible, but may return to this
 			meetingLocation = new MeetingLocation((Meeting) event, center.getCenter(), score,

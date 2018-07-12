@@ -17,7 +17,7 @@ import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupAdminDTO;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.exception.NoSuchUserException;

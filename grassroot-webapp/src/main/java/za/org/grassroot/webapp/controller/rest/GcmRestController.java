@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.DeliveryRoute;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.user.GcmRegistrationBroker;
 import za.org.grassroot.services.user.UserManagementService;

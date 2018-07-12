@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import static za.org.grassroot.integration.payments.peachp.PaymentCopyPayRespons
  * Created by luke on 2016/10/26.
  */
 @Service
+@ConditionalOnProperty("grassroot.payments.enabled")
 @PropertySource(value = "${grassroot.payments.properties}", ignoreResourceNotFound = true)
 public class PaymentBrokerImpl implements PaymentBroker {
 

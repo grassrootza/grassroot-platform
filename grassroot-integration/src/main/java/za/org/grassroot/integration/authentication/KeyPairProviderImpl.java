@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.keyprovider;
+package za.org.grassroot.integration.authentication;
 
 import io.jsonwebtoken.impl.crypto.RsaProvider;
 import org.slf4j.Logger;

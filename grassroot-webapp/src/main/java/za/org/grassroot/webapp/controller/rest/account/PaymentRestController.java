@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest.account;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -16,6 +17,7 @@ import static za.org.grassroot.integration.payments.peachp.PaymentCopyPayRespons
 
 @RestController @Grassroot2RestController
 @RequestMapping("/v2/api/payment") @Slf4j
+@ConditionalOnProperty("grassroot.payments.enabled")
 public class PaymentRestController {
 
     private final PaymentBroker paymentBroker;
