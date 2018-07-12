@@ -6,7 +6,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.MembershipInfo;
@@ -95,10 +97,10 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void createGroupShouldWorkWithValidName() throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupBrokerMock.create(testUser.getUid(),testGroup.getName(),null,testMembers,template,null,null,false, false)).thenReturn(testGroup);
+        when(groupBrokerMock.create(testUser.getUid(),testGroup.getName(),null,testMembers,template,null,null,false, false, false)).thenReturn(testGroup);
         mockMvc.perform(get(path + "create").param(phoneParam, testUserPhone).param(userChoiceParam, "test group")).andExpect(status().isOk());
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
-        verify(groupBrokerMock,times(1)).create(testUser.getUid(),testGroup.getName(),null,testMembers,template,null,null,false, false);
+        verify(groupBrokerMock,times(1)).create(testUser.getUid(),testGroup.getName(),null,testMembers,template,null,null,false, false, false);
         verify(safetyEventBrokerMock,times(1)).setSafetyGroup(testUser.getUid(),testGroup.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupBrokerMock);

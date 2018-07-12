@@ -1,9 +1,9 @@
 package za.org.grassroot.services;
 
 import org.springframework.security.access.AccessDeniedException;
-import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 
 import java.util.List;

@@ -17,7 +17,6 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import javax.persistence.Entity;
 import java.util.Locale;
 
 @Slf4j

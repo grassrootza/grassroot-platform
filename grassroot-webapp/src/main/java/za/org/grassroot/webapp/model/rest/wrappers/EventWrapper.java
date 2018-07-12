@@ -1,7 +1,7 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
-import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.task.TaskDTO;

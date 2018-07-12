@@ -9,8 +9,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.Address;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

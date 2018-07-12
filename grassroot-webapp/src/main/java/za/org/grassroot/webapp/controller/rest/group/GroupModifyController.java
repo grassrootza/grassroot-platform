@@ -31,7 +31,8 @@ import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.messaging.JwtService;
-import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.JoinWordsExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -63,15 +64,17 @@ public class GroupModifyController extends GroupBaseController {
 
     private final GroupFetchBroker groupFetchBroker;
     private final GroupImageBroker groupImageBroker;
-    private final AccountGroupBroker accountGroupBroker;
+    private final AccountBroker accountBroker;
+    private final AccountFeaturesBroker accountFeaturesBroker;
     private final GroupStatsBroker groupStatsBroker;
 
     public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, GroupFetchBroker groupFetchBroker,
-                                 GroupImageBroker groupImageBroker, AccountGroupBroker accountGroupBroker, GroupStatsBroker groupStatsBroker) {
+                                 GroupImageBroker groupImageBroker, AccountBroker accountBroker, AccountFeaturesBroker accountFeaturesBroker, GroupStatsBroker groupStatsBroker) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.groupImageBroker = groupImageBroker;
-        this.accountGroupBroker = accountGroupBroker;
+        this.accountBroker = accountBroker;
+        this.accountFeaturesBroker = accountFeaturesBroker;
         this.groupStatsBroker = groupStatsBroker;
     }
 
@@ -90,10 +93,10 @@ public class GroupModifyController extends GroupBaseController {
         if (user != null) {
             HashSet<MembershipInfo> membershipInfos = new HashSet<>();
             membershipInfos.add(new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER, null));
-            Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true, discoverable);
+            Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true, discoverable, true);
 
             if (defaultAddToAccount && user.getPrimaryAccount() != null) {
-                accountGroupBroker.addGroupToUserAccount(group.getUid(), user.getUid());
+                accountBroker.addGroupsToAccount(user.getPrimaryAccount().getUid(), Collections.singleton(group.getUid()), user.getUid());
             }
 
             if (pinGroup) {
@@ -227,7 +230,7 @@ public class GroupModifyController extends GroupBaseController {
 
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupMemberships);
             groupBroker.create(getUserIdFromRequest(request), taskTeamName, parentUid, membershipInfos,
-                    GroupPermissionTemplate.CLOSED_GROUP, null, null, false, false);
+                    GroupPermissionTemplate.CLOSED_GROUP, null, null, false, false, false);
             return ResponseEntity.ok().build();
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
@@ -449,7 +452,7 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "/welcome/check/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Checks for current group welcome message")
     public ResponseEntity checkForGroupWelcomeMsg(@PathVariable String groupUid) {
-        Broadcast template = accountGroupBroker.loadWelcomeMessage(groupUid);
+        Broadcast template = accountFeaturesBroker.loadWelcomeMessage(groupUid);
         return template != null ? ResponseEntity.ok(template.getSmsTemplate1()) : ResponseEntity.ok().build();
     }
 
@@ -459,7 +462,7 @@ public class GroupModifyController extends GroupBaseController {
     public ResponseEntity setGroupWelcomeMessage(@PathVariable String groupUid,
                                                  @RequestParam String message,
                                                  HttpServletRequest request) {
-        accountGroupBroker.createGroupWelcomeMessages(getUserIdFromRequest(request), null, groupUid,
+        accountFeaturesBroker.createGroupWelcomeMessages(getUserIdFromRequest(request), null, groupUid,
                 Collections.singletonList(message), null, null, false);
         return ResponseEntity.ok().build();
     }
@@ -468,7 +471,7 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "/welcome/clear/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Remove a group welcome message")
     public ResponseEntity removeGroupWelcomeMessage(@PathVariable String groupUid, HttpServletRequest request) {
-        accountGroupBroker.deactivateGroupWelcomes(getUserIdFromRequest(request), groupUid);
+        accountFeaturesBroker.deactivateGroupWelcomes(getUserIdFromRequest(request), groupUid);
         return ResponseEntity.ok().build();
     }
 

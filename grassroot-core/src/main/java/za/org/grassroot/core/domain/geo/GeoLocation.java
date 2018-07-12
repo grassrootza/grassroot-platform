@@ -2,7 +2,6 @@ package za.org.grassroot.core.domain.geo;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
-import java.security.InvalidParameterException;
 
 @Embeddable
 public class GeoLocation {

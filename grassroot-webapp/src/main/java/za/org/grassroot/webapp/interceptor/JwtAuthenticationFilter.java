@@ -4,7 +4,6 @@ import com.google.api.client.http.HttpMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.integration.messaging.JwtService;

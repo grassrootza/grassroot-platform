@@ -416,6 +416,10 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return paidFor;
     }
 
+    public boolean robustIsPaidFor() {
+        return paidFor && account != null && account.isEnabled();
+    }
+
     public void setPaidFor(boolean paidFor) {
         this.paidFor = paidFor;
     }

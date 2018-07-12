@@ -1,10 +1,7 @@
 package za.org.grassroot.services.account;
 
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
-import za.org.grassroot.core.domain.group.Group;
 
 import java.time.Duration;
 import java.util.List;
@@ -14,15 +11,9 @@ import java.util.Set;
 /**
  * Created by luke on 2016/10/25.
  */
-public interface AccountGroupBroker {
+public interface AccountFeaturesBroker {
 
-    boolean isGroupOnAccount(String groupUid);
-
-    void addGroupToUserAccount(String groupUid, String userUid);
-
-    Account findAccountForGroup(String groupUid);
-
-    void addGroupToAccount(String accountUid, String groupUid, String addingUserUid);
+    int numberMembersLeftForGroup(String groupUid);
 
     int numberTodosLeftForGroup(String groupUid);
 

@@ -2,7 +2,6 @@ package za.org.grassroot.services.util;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
@@ -22,7 +21,7 @@ public interface LogsAndNotificationsBroker {
 
 	long countNotifications(Specification<Notification> specifications);
 
-	<T extends Notification> long countNotifications(Specifications<T> specs, Class<T> notificationType);
+	<T extends Notification> long countNotifications(Specification<T> specs, Class<T> notificationType);
 
 	List<ActionLog> fetchMembershipLogs(Membership membership);
 

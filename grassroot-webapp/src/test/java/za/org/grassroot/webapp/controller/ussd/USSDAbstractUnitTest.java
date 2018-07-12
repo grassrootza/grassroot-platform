@@ -21,9 +21,10 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.group.MemberDataExportBroker;
@@ -31,7 +32,6 @@ import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.livewire.LiveWireContactBroker;
 import za.org.grassroot.services.task.*;
-import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
@@ -108,7 +108,7 @@ public abstract class USSDAbstractUnitTest {
     protected MemberDataExportBroker memberDataExportBrokerMock;
 
     @Mock
-    protected AccountGroupBroker accountGroupBrokerMock;
+    protected AccountFeaturesBroker accountFeaturesBrokerMock;
 
     @Mock
     protected CampaignBroker campaignBroker;

@@ -310,7 +310,6 @@ public class AuthenticationController {
             logger.error("Failed to generate authentication token for:  " + username);
             return new AuthorizationResponseDTO(RestMessage.INVALID_PASSWORD);
         }
-
     }
 
     @RequestMapping(value = "/token/validate", method = RequestMethod.GET)

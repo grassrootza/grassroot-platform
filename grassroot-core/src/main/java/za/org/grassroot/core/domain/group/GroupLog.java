@@ -4,10 +4,10 @@ package za.org.grassroot.core.domain.group;
 import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.GrassrootEntity;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 

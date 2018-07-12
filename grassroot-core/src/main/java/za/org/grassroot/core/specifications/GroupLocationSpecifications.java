@@ -1,9 +1,9 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation_;
+import za.org.grassroot.core.domain.group.Group;
 
 import java.util.Collection;
 

@@ -13,7 +13,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.AccountType;
@@ -21,8 +23,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.account.AccountBroker;
-import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class AccountBrokerTest {
     private AccountBroker accountBroker;
 
     @Autowired
-    private AccountGroupBroker accountGroupBroker;
+    private AccountFeaturesBroker accountFeaturesBroker;
 
     @Autowired
     private GroupRepository groupRepository;
@@ -174,38 +175,5 @@ public class AccountBrokerTest {
         // accountBroker.removeAdministrator(account, testUser); // note: need to fix this
     }
 
-    @Test
-    public void shouldAddGroupToAccount() {
-        // todo: add tests to check it fails if not done by admin
-        // todo: add lots more asserts, to make sure group added is the actual group
-        Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
-        accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
-        assertTrue(testGroup.isPaidFor());
-        assertNotNull(accountGroupBroker.findAccountForGroup(testGroup.getUid()));
-        assertEquals(accountGroupBroker.findAccountForGroup(testGroup.getUid()).getId(), account.getId());
-    }
-
-    @Test
-    public void shouldRemoveGroupFromAccount() {
-        // todo: work out why the removeGroupsFromAccount method is causing optimistic locking fail
-        /*User testUser2 = userManagementService.loadOrCreateUser("0813074085");
-        Group testGroup2 = groupManagementService.createNewGroup(testUser2, "lesetse");
-        Account account2 = accountBroker.createAccount("some other name");
-        accountBroker.addGroupToAccount(account2, testGroup2, testUser2);
-        testGroup2 = accountBroker.removeGroupsFromAccount(account2, testGroup2, testUser2);
-        assertFalse(testGroup2.isPaidFor());*/
-    }
-
-    @Test(expected = GroupAlreadyPaidForException.class)
-    public void shouldNotAllowDuplicatePaidGroups() {
-        // todo: change this to try/catch, to handle it better
-        Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
-        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD, false);
-        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, null);
-        accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
-        accountGroupBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
-    }
 
 }

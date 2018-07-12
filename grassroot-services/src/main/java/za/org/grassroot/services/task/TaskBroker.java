@@ -1,6 +1,5 @@
 package za.org.grassroot.services.task;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Task;
@@ -12,7 +11,6 @@ import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.task.enums.TaskSortType;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 

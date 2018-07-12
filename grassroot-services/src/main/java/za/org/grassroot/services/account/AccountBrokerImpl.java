@@ -457,8 +457,8 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     @Transactional
     public void closeAccount(String userUid, String accountUid, String closingReason) {
-        Account account = accountRepository.findOneByUid(Objects.requireNonNull(userUid));
-        User user = userRepository.findOneByUid(Objects.requireNonNull(accountUid));
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
 
         validateAdmin(user, account); // note: this allows non-billing admin to close account, leaving for now but may revisit
 

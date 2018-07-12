@@ -30,10 +30,8 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.exception.MemberLacksPermissionException;
-import za.org.grassroot.services.exception.ResponseNotAllowedException;
-import za.org.grassroot.services.exception.TodoDeadlineNotInFutureException;
-import za.org.grassroot.services.exception.TodoTypeMismatchException;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
+import za.org.grassroot.services.exception.*;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.FullTextSearchUtils;
@@ -64,6 +62,7 @@ public class TodoBrokerImpl implements TodoBroker {
     private TaskImageBroker taskImageBroker;
     private PasswordTokenService tokenService;
     private GraphBroker graphBroker;
+    private AccountFeaturesBroker accountFeaturesBroker;
 
     @Autowired
     public TodoBrokerImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserManagementService userService, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
@@ -90,6 +89,10 @@ public class TodoBrokerImpl implements TodoBroker {
     @Autowired(required = false)
     public void setGraphBroker(GraphBroker graphBroker) {
         this.graphBroker = graphBroker;
+    }
+
+    public void setAccountFeaturesBroker(AccountFeaturesBroker accountFeaturesBroker) {
+        this.accountFeaturesBroker = accountFeaturesBroker;
     }
 
     @Override
@@ -119,6 +122,10 @@ public class TodoBrokerImpl implements TodoBroker {
             Todo possibleDuplicate = checkForDuplicate(user, (Group) parent, todoHelper);
             if (possibleDuplicate != null) {
                 return possibleDuplicate.getUid();
+            }
+
+            if (accountFeaturesBroker.numberTodosLeftForGroup(parent.getUid()) < 0) {
+                throw new AccountLimitExceededException();
             }
         }
 

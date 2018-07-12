@@ -1,8 +1,8 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.Address_;
 
 /**
