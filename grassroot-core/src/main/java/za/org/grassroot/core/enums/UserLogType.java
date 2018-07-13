@@ -32,22 +32,29 @@ public enum UserLogType {
     USSD_DATE_ENTERED("user entered a date time string in USSD"),
     USSD_DATE_WRONG("user corrected a date time string"),
     USER_SKIPPED_NAME("user preferred not to set name"),
+
+    RECEIVED_ANDROID_BROADCAST("user sent Android link"),
     DEREGISTERED_ANDROID("user android profile deleted"),
+
     JOIN_REQUEST("user required to approve a join request"),
     JOIN_REQUEST_REMINDER("user reminded to response to join request"),
     JOIN_REQUEST_APPROVED("user was approved to join a group"),
     JOIN_REQUEST_DENIED("user was denied joining a group"),
     JOINED_SAFETY_GROUP("user added to safety group"),
+
     USED_A_JOIN_CODE("user joined a group via a join code"),
     USED_A_CAMPAIGN("user joined a group via a campaign"),
     USED_PROMOTIONAL_CODE("user entered using a promotional code"),
+
     GAVE_LOCATION_PERMISSION("user gave permission to track location"),
     REVOKED_LOCATION_PERMISSION("user revoked permission to track location"),
     ONCE_OFF_LBS_REVERSAL("LBS permission removed automatically after once off request"),
     LOCATION_PERMISSION_ENABLED("msisdn added to ussd location tracking service"),
     LOCATION_PERMISSION_REMOVED("msisdn removed from location tracking service"),
+
     LIVEWIRE_CONTACT_GRANTED("granted permission to be a LiveWire contact"),
     LIVEWIRE_CONTACT_REVOKED("revoked livewire permission"),
+
     SENT_UNEXPECTED_SMS_MESSAGE("sent SMS message that could not be interpreted"),
     SENT_GROUP_JOIN_CODE("User sent group join code sms"),
     INBOUND_JOIN_WORD("User sent an inbound join word"),

@@ -37,28 +37,21 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Membership_.group).get(Group_.createdByUser), groupCreator);
     }
 
-    public static Specifications<Membership> membershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant membershipCreatedAfter) {
+    public static Specification<Membership> membershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant membershipCreatedAfter) {
         Specification<Membership> groupCreatedByUserSpec = MembershipSpecifications.membershipsOfGroupsCreatedBy(groupCreator);
         Specification<Membership> groupCreatedAfterSpec = MembershipSpecifications.membershipsOfGroupsCreatedAfter(groupCreatedAfter);
         Specification<Membership> membershipCreatedAfterSpec = MembershipSpecifications.membershipsCreatedAfter(membershipCreatedAfter);
-        return Specifications.where(groupCreatedByUserSpec).and(groupCreatedAfterSpec).and(membershipCreatedAfterSpec);
+        return Specification.where(groupCreatedByUserSpec).and(groupCreatedAfterSpec).and(membershipCreatedAfterSpec);
     }
 
-    public static Specifications<Membership> recentMembershipsInGroups(List<Group> groups, Instant membershipCreatedAfter, User callingUser) {
+    public static Specification<Membership> recentMembershipsInGroups(List<Group> groups, Instant membershipCreatedAfter, User callingUser) {
         Specification<Membership> inGroups = MembershipSpecifications.forGroups(groups);
         Specification<Membership> membershipCreatedAfterSpec = MembershipSpecifications.membershipsCreatedAfter(membershipCreatedAfter);
         Specification<Membership> notSubGroup = (root, query, cb) -> cb.notEqual(root.get(Membership_.joinMethod),
                 GroupJoinMethod.ADDED_SUBGROUP);
         Specification<Membership> notUser = (root, query, cb) -> cb.notEqual(root.get(Membership_.user), callingUser);
-        return Specifications.where(inGroups).and(membershipCreatedAfterSpec).and(membershipCreatedAfterSpec)
+        return Specification.where(inGroups).and(membershipCreatedAfterSpec).and(membershipCreatedAfterSpec)
                 .and(notSubGroup).and(notUser);
-    }
-
-    public static Specifications<Membership> groupMembersInProvincesJoinedAfter(Group group,
-                                                                                Collection<Province> provinces,
-                                                                                Instant joinedDate) {
-        return Specifications.where(forGroup(group)).and(memberJoinedAfter(joinedDate))
-                .and(memberInProvinces(provinces));
     }
 
     public static Specification<Membership> filterGroupMembership(Group group,
@@ -159,19 +152,8 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Membership_.group).get(Group_.uid), groupUid);
     }
 
-    public static Specifications<Membership> groupOrganizers(Group group) {
-        return Specifications.where(hasRole(BaseRoles.ROLE_GROUP_ORGANIZER)).and(forGroup(group));
-    }
-
-    private static Specification<Membership> memberInProvinces(Collection<Province> provinces) {
-        return (root, query, cb) -> {
-            Join<Membership, User> userJoin = root.join(Membership_.user, JoinType.INNER);
-            return userJoin.get(User_.province).in(provinces);
-        };
-    }
-
-    private static Specification<Membership> memberJoinedAfter(Instant cutOffDateTime) {
-        return (root, query, cb) -> cb.greaterThan(root.get(Membership_.joinTime), cutOffDateTime);
+    public static Specification<Membership> groupOrganizers(Group group) {
+        return Specification.where(hasRole(BaseRoles.ROLE_GROUP_ORGANIZER)).and(forGroup(group));
     }
 
     public static Specification<Membership> membersJoinedBefore(Instant time) {

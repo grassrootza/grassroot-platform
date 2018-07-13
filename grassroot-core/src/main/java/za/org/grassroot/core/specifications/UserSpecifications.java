@@ -1,7 +1,6 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.Role_;
 import za.org.grassroot.core.domain.User;
@@ -56,8 +55,8 @@ public final class UserSpecifications {
         return (root, query, cb) -> cb.like(cb.lower(root.get(User_.displayName)), "%" + nameFragment.toLowerCase() + "%");
     }
 
-    public static Specifications<User> withNameInGroups(String nameFragment, List<Group> groups) {
-        return Specifications.where(inGroups(groups)).and(nameContains(nameFragment));
+    public static Specification<User> withNameInGroups(String nameFragment, List<Group> groups) {
+        return Specification.where(inGroups(groups)).and(nameContains(nameFragment));
     }
 
     public static Specification<User> uidIn(Collection<String> uids) {

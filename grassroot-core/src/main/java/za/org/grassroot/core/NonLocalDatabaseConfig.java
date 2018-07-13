@@ -1,23 +1,20 @@
 package za.org.grassroot.core;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
 
-/**
- * @author Luke Jordan
- */
 @Configuration
-@Profile(GrassrootApplicationProfiles.STAGING)
-public class StagingDatabaseConfig extends DatabaseConfig {
+@EnableTransactionManagement @Slf4j
+@Profile(value = {GrassrootApplicationProfiles.STAGING, GrassrootApplicationProfiles.PRODUCTION})
+public class NonLocalDatabaseConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(StagingDatabaseConfig.class);
-
-    @Override
+    @Bean
     public DataSource dataSource() {
         log.info("Running with STAGING profile");
         DataSourceBuilder dataSourceBuilder = DataSourceBuilder.create();

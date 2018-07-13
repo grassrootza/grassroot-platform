@@ -3,20 +3,21 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.notification.SystemInfoNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -28,11 +29,11 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.TaskBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2016/02/04.
@@ -44,7 +45,6 @@ public class AdminManager implements AdminService {
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
-    private final MembershipRepository membershipRepository;
     private final RoleRepository roleRepository;
     private final GroupBroker groupBroker;
     private final GroupLogRepository groupLogRepository;
@@ -53,12 +53,12 @@ public class AdminManager implements AdminService {
 
     private GraphBroker graphBroker;
     private TaskBroker taskBroker;
+    private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
     public AdminManager(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
-        this.membershipRepository = membershipRepository;
         this.roleRepository = roleRepository;
         this.groupBroker = groupBroker;
         this.groupLogRepository = groupLogRepository;
@@ -74,6 +74,11 @@ public class AdminManager implements AdminService {
     @Autowired(required = false)
     public void setTaskBroker(TaskBroker taskBroker) {
         this.taskBroker = taskBroker;
+    }
+
+    @Autowired
+    public void setLogsAndNotificationsBroker(LogsAndNotificationsBroker logsAndNotificationsBroker) {
+        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
     }
 
     /**
@@ -189,6 +194,40 @@ public class AdminManager implements AdminService {
 
         userLogRepository.save(new UserLog(user.getUid(), UserLogType.ADMIN_CHANGED_PASSWORD,
                 adminUserUid, UserInterfaceType.WEB));
+    }
+
+    @Override
+    @Transactional
+    public long sendBatchOfAndroidLinks(String adminUserUid, int batchSize) {
+        validateAdminRole(Objects.requireNonNull(adminUserUid));
+
+        Specification<UserLog> hasBeenSentLink = (root, query, cb) -> cb.equal(root.get(UserLog_.userLogType),
+                UserLogType.RECEIVED_ANDROID_BROADCAST);
+        Set<String> alreadySentUids = userLogRepository.findAll(hasBeenSentLink).stream()
+                .map(UserLog::getUserUid).collect(Collectors.toSet());
+
+        PageRequest pageRequest = PageRequest.of(0, batchSize);
+        Specification<User> hasInitiatedSession =  (root, query, cb) -> cb.isTrue(root.get(User_.hasInitiatedSession));
+        Specification<User> notOnAndroid = (root, query, cb) -> cb.isFalse(root.get(User_.hasAndroidProfile));
+        Specification<User> notWithUidIn = (root, query, cb) -> cb.not(root.get(User_.uid).in(alreadySentUids));
+        Specification<User> hasPhoneNumber = (root, query, cb) -> cb.isNotNull(root.get(User_.phoneNumber));
+
+        Page<User> usersToReceive = userRepository.findAll(hasInitiatedSession.and(notOnAndroid).and(hasPhoneNumber)
+                .and(notWithUidIn), pageRequest);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        usersToReceive.forEach(user -> {
+            UserLog log = new UserLog(user.getUid(), UserLogType.RECEIVED_ANDROID_BROADCAST, null, UserInterfaceType.SYSTEM);
+            SystemInfoNotification notification = new SystemInfoNotification(user, "We have Android! Link: ", log);
+            bundle.addLog(log);
+            bundle.addNotification(notification);
+        });
+
+        logger.info("Done processing, found {} users, storing {} notifications and logs", usersToReceive.getSize(), bundle.getNotifications().size());
+        logsAndNotificationsBroker.storeBundle(bundle);
+
+        return usersToReceive.getTotalElements();
     }
 
     @Async

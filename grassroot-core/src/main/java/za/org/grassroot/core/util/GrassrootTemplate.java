@@ -1,4 +1,4 @@
-package za.org.grassroot.core;
+package za.org.grassroot.core.util;
 
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;

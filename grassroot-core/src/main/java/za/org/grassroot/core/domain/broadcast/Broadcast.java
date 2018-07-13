@@ -6,7 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Tolerate;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.GrassrootTemplate;
+import za.org.grassroot.core.util.GrassrootTemplate;
 import za.org.grassroot.core.domain.GrassrootEntity;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;

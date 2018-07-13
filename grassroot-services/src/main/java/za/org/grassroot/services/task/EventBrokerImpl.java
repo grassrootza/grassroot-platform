@@ -532,23 +532,7 @@ public class EventBrokerImpl implements EventBroker {
         }
     }
 
-    @Override
-	@Transactional
-    public void updateDescription(String userUid, String eventUid, String eventDescription) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(eventUid);
-
-        Event event = eventRepository.findOneByUid(eventUid);
-        User user = userService.load(userUid);
-
-        if (!event.getCreatedByUser().equals(user)) {
-        	throw new AccessDeniedException("Error! Only the user who created the meeting can change its description");
-		}
-
-		event.setDescription(eventDescription);
-    }
-
-    private void validateEventStartTime(Instant eventStartDateTimeInstant) {
+	private void validateEventStartTime(Instant eventStartDateTimeInstant) {
 		Instant now = Instant.now();
 		if (!eventStartDateTimeInstant.isAfter(now)) {
 			throw new EventStartTimeNotInFutureException("Event start time " + eventStartDateTimeInstant.toString() +
@@ -777,62 +761,6 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	@SuppressWarnings("unchecked") // for weirdness on event.getmembers
-	public void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(eventUid);
-		Objects.requireNonNull(assignMemberUids);
-
-		User user = userService.load(userUid);
-		Event event = eventRepository.findOneByUid(eventUid);
-
-		Set<User> priorMembers = (Set<User>) event.getMembers();
-
-		// consider allowing organizers to also add/remove assignment
-		if (!event.getCreatedByUser().equals(user)) {
-			throw new AccessDeniedException("Error! Only user who created meeting can add members");
-		}
-
-		event.assignMembers(assignMemberUids);
-
-		Set<User> addedMembers = (Set<User>) event.getMembers();
-		addedMembers.removeAll(priorMembers);
-
-		if (!addedMembers.isEmpty()) {
-			EventLog newLog = new EventLog(user, event, ASSIGNED_ADDED);
-			Set<Notification> notifications = constructEventInfoNotifications(event, newLog, addedMembers);
-			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), notifications));
-		}
-	}
-
-	@Override
-	@Transactional
-	@SuppressWarnings("unchecked")
-	public void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(eventUid);
-
-		User user = userService.load(userUid);
-		Event event = eventRepository.findOneByUid(eventUid);
-
-		Set<User> membersRemoved = (Set<User>) event.getMembers();
-
-		if (!event.getCreatedByUser().equals(user)) {
-			throw new AccessDeniedException("Error! Only user who created meeting can remove members");
-		}
-
-		event.removeAssignedMembers(memberUids);
-
-		Set<User> finishedMembers = (Set<User>) event.getMembers();
-		membersRemoved.removeAll(finishedMembers);
-		if (!membersRemoved.isEmpty()) {
-			EventLog newLog = new EventLog(user, event, ASSIGNED_REMOVED);
-			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));
-		}
-	}
-
-    @Override
-	@Transactional
     public void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location, UserInterfaceType interfaceType) {
         Objects.requireNonNull(meetingUid);
 
@@ -871,7 +799,7 @@ public class EventBrokerImpl implements EventBroker {
 			return cachedRsvps;
 		}
 
-		Specifications<Event> specs = EventSpecifications.upcomingEventsForUser(user);
+		Specification<Event> specs = EventSpecifications.upcomingEventsForUser(user);
 		Specification<Event> stripMeetingCreated = (root, query, cb) -> cb.or(cb.notEqual(root.get("type"), EventType.MEETING),
 				cb.notEqual(root.get("createdByUser"), user));
 		List<Event> events = eventRepository

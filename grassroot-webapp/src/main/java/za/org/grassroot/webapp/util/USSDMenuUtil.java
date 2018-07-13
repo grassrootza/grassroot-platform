@@ -39,9 +39,9 @@ public class USSDMenuUtil {
 
     @PostConstruct
     private void init() {
-        baseURI = environment.getRequiredProperty("grassroot.ussd.return.url", String.class);
-        maxOpeningMenuLength = environment.getRequiredProperty("grassroot.ussd.menu.length.opening", Integer.class);
-        maxMenuLength = environment.getRequiredProperty("grassroot.ussd.menu.length.standard", Integer.class);
+        baseURI = environment.getProperty("grassroot.ussd.return.url", "http://127.0.0.1:8080/ussd/");
+        maxOpeningMenuLength = environment.getProperty("grassroot.ussd.menu.length.opening", Integer.class, 140);
+        maxMenuLength = environment.getProperty("grassroot.ussd.menu.length.standard", Integer.class, 160);
         log.info("ussd menu util initialized, baseURI = {}, maxMenuOpen = {}, maxMenuLength = {}...", baseURI, maxOpeningMenuLength, maxMenuLength);
     }
 

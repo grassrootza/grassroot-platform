@@ -39,10 +39,6 @@ public final class GroupSpecifications {
         };
     }
 
-    public static Specification<Group> paidForStatus(boolean isPaidFor) {
-        return (root, query, cb) -> cb.equal(root.get(Group_.paidFor), isPaidFor);
-    }
-
     public static Specification<Group> isActive() {
         return (root, query, cb) -> cb.equal(root.get(Group_.active), true);
     }

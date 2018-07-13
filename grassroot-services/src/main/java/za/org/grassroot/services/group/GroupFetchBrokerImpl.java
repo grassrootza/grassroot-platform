@@ -3,6 +3,7 @@ package za.org.grassroot.services.group;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -123,23 +124,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .getResultList();
 
         return new HashSet<>(dtoList);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<GroupMinimalDTO> fetchAllUserGroupsSortByLatestTime(String userUid) {
-        User user = userRepository.findOneByUid(userUid);
-        // there is almost certainly a way to do order by the max of the two timestamps in query but it is late and HQL
-        List<GroupMinimalDTO> dtos = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, m) " +
-                "from Group g inner join g.memberships m " +
-                "where g.active = true and m.user = :user", GroupMinimalDTO.class)
-                .setParameter("user", user)
-                .getResultList();
-
-        return dtos.stream()
-                .sorted(Comparator.comparing(GroupMinimalDTO::getLastTaskOrChangeTime, Comparator.reverseOrder()))
-                .collect(Collectors.toList());
     }
 
     @Override
@@ -376,7 +360,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     public Page<Membership> fetchUserGroupsNewMembers(User user, Instant from, Pageable pageable) {
         List<Group> groupsWhereUserCanSeeMemberDetails = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
         if (groupsWhereUserCanSeeMemberDetails != null && !groupsWhereUserCanSeeMemberDetails.isEmpty()) {
-            Specifications<Membership> spec = MembershipSpecifications
+            Specification<Membership> spec = MembershipSpecifications
                     .recentMembershipsInGroups(groupsWhereUserCanSeeMemberDetails, from, user);
             return membershipRepository.findAll(spec, pageable);
         } else {

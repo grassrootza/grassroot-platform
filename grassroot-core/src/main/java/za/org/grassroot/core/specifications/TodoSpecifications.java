@@ -70,7 +70,7 @@ public final class TodoSpecifications {
         };
     }
 
-    public static Specifications<Todo> todosForUserResponse(User user) {
+    public static Specification<Todo> todosForUserResponse(User user) {
         Specification<Todo> isOfType = (root, query, cb) -> root.get(Todo_.type).in(TodoType.typesRequiringResponse());
         Specification<Todo> isAssigned = (root, query, cb) -> {
             Join<Todo, TodoAssignment> join = root.join(Todo_.assignments);
@@ -80,7 +80,7 @@ public final class TodoSpecifications {
                     cb.isFalse(join.get(TodoAssignment_.hasResponded)),
                     cb.isTrue(join.get(TodoAssignment_.shouldRespond)));
         };
-        return Specifications.where(isOfType).and(isAssigned);
+        return Specification.where(isOfType).and(isAssigned);
     }
 
     public static Specification<Todo> todosUserAssigned(User user) {
@@ -95,9 +95,9 @@ public final class TodoSpecifications {
     }
 
 
-    public static Specifications<Todo> checkForDuplicates(Instant intervalStart, Instant intervalEnd, User creator, Group group,
+    public static Specification<Todo> checkForDuplicates(Instant intervalStart, Instant intervalEnd, User creator, Group group,
                                                           String explanation) {
-        return Specifications
+        return Specification
                 .where(actionByDateBetween(intervalStart, intervalEnd))
                 .and((root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.message), explanation))
                 .and((root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.parentGroup), group))
@@ -115,8 +115,8 @@ public final class TodoSpecifications {
                 root.get(TodoAssignment_.user).in(userSet)));
     }
 
-    public static Specifications<TodoAssignment> userAssignmentCanRespond(User user, Todo todo) {
-        return Specifications.where(userAssignment(user, todo))
+    public static Specification<TodoAssignment> userAssignmentCanRespond(User user, Todo todo) {
+        return Specification.where(userAssignment(user, todo))
                 .and((root, query, cb) -> cb.or(
                         cb.isTrue(root.get(TodoAssignment_.assignedAction)), cb.isTrue(root.get(TodoAssignment_.validator))));
     }

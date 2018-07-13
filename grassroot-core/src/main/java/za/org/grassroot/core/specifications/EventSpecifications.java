@@ -21,7 +21,7 @@ import java.time.Instant;
  */
 public final class EventSpecifications {
 
-    public static Specifications<Event> upcomingEventsForUser(User user) {
+    public static Specification<Event> upcomingEventsForUser(User user) {
         Specification<Event> basicProperties = (root, query, cb) -> cb.and(cb.isFalse(root.get("canceled")), cb.isTrue(root.get("rsvpRequired")),
                 cb.greaterThan(root.get("eventStartDateTime"), Instant.now()));
         Specification<Event> userInAncestorGroup = (root, query, cb) -> {
@@ -37,7 +37,7 @@ public final class EventSpecifications {
                     cb.greaterThan(root.get("createdDateTime"), parentGroupMembership.get("joinTime")));
         };
 
-        return Specifications.where(basicProperties)
+        return Specification.where(basicProperties)
                 .and(EventSpecifications.hasAllUsersAssignedOrIsAssigned(user))
                 .and(userInAncestorGroup)
                 .and(userJoinedAfterVote);

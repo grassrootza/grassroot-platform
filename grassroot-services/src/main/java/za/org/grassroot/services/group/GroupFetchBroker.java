@@ -26,8 +26,6 @@ public interface GroupFetchBroker {
 
     Set<GroupMinimalDTO> fetchGroupMinimalInfo(String userUid, Set<String> groupUids);
 
-    List<GroupMinimalDTO> fetchAllUserGroupsSortByLatestTime(String userUid);
-
     GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid,
                                     boolean includeAllMembers,
                                     boolean includeAllSubgroups,

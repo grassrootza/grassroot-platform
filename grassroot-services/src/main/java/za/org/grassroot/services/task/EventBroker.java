@@ -58,8 +58,6 @@ public interface EventBroker {
 
     void updateReminderSettings(String userUid, String eventUid, EventReminderType reminderType, int customReminderMinutes);
 
-	void updateDescription(String userUid, String eventUid, String eventDescription);
-
 	void cancel(String userUid, String eventUid, boolean notifyMembers);
 
 	void sendScheduledReminder(String eventUid);
@@ -69,10 +67,6 @@ public interface EventBroker {
 	void sendMeetingRSVPsToDate(String meetingUid);
 
 	void sendMeetingAcknowledgements(String meetingUid);
-
-	void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids);
-
-	void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids);
 
 	void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location, UserInterfaceType interfaceType);
 

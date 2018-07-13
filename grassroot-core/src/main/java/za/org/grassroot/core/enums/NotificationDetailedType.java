@@ -7,6 +7,7 @@ public enum NotificationDetailedType {
 
 	WELCOME,
 	LANGUAGES,
+	SYSTEM_INFO,
 
 	EVENT_INFO,
 	EVENT_CANCELLED,

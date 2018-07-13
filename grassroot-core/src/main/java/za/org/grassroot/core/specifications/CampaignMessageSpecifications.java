@@ -13,15 +13,15 @@ import java.util.Locale;
 
 public final class CampaignMessageSpecifications {
 
-    public static Specifications<CampaignMessage> ofTypeForCampaign(Campaign campaign, CampaignActionType actionType,
+    public static Specification<CampaignMessage> ofTypeForCampaign(Campaign campaign, CampaignActionType actionType,
                                                              Locale locale, UserInterfaceType channel, MessageVariationAssignment variation) {
-        return Specifications.where(activeForCampaign(campaign))
+        return Specification.where(activeForCampaign(campaign))
                 .and(ofActionType(actionType))
                 .and(withUserInterfaceParams(locale, channel, variation));
     }
 
-    public static Specifications<CampaignMessage> ofTypeForCampaign(Campaign campaign, CampaignActionType actionType, Locale locale) {
-        return Specifications.where(activeForCampaign(campaign)).and(ofActionType(actionType))
+    public static Specification<CampaignMessage> ofTypeForCampaign(Campaign campaign, CampaignActionType actionType, Locale locale) {
+        return Specification.where(activeForCampaign(campaign)).and(ofActionType(actionType))
                 .and(forLanguage(locale));
     }
 

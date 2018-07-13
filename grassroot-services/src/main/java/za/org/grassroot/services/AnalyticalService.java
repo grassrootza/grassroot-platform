@@ -1,10 +1,8 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.enums.EventType;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Created by luke on 2016/12/12.
@@ -49,10 +47,5 @@ public interface AnalyticalService {
     // Count safety events, put in nulls for no start/end point
 
     int countSafetyEventsInInterval(LocalDateTime start, LocalDateTime end);
-
-    /*
-    Methods for closer analysis of user sessions etc
-     */
-    List<KeywordDTO> getKeywordStats(LocalDateTime from);
 
 }
