@@ -182,6 +182,7 @@ public class Account implements GrassrootEntity, Serializable {
 
     public void addPaidGroup(Group group) {
         paidGroups.add(group);
+        group.setAccount(this);
     }
 
     public void removePaidGroup(Group group) {

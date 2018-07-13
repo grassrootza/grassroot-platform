@@ -6,34 +6,23 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.ServicesTestConfig;
 import za.org.grassroot.services.account.AccountBroker;
-import za.org.grassroot.services.account.AccountFeaturesBroker;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestContextConfig.class)
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
-@Transactional
+@RunWith(SpringRunner.class) @DataJpaTest
+@ContextConfiguration(classes = ServicesTestConfig.class)
 @WithMockUser(username = "0605550000", roles={"SYSTEM_ADMIN"})
 public class AccountBrokerTest {
 
@@ -41,12 +30,6 @@ public class AccountBrokerTest {
 
     @Autowired
     private AccountBroker accountBroker;
-
-    @Autowired
-    private AccountFeaturesBroker accountFeaturesBroker;
-
-    @Autowired
-    private GroupRepository groupRepository;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -59,11 +42,9 @@ public class AccountBrokerTest {
 
     private User testUser;
     private User testAdmin;
-    private Group testGroup;
 
     @Before
     public void setUp() {
-        setAccountFields();
 
         String userNumber = "0605550000";
         testUser = new User(userNumber, "test user", null);
@@ -73,9 +54,6 @@ public class AccountBrokerTest {
         testAdmin = new User(accountAdminNumber, null, null);
         testAdmin.setEmailAddress(billingEmail);
         userRepository.save(testAdmin);
-
-        String groupName = "testGroup";
-        testGroup = groupRepository.save(new Group(groupName, testUser));
 
         Role systemAdmin = new Role(BaseRoles.ROLE_SYSTEM_ADMIN, null);
         log.info("systemAdmin role: " + systemAdmin.describe());
@@ -87,46 +65,17 @@ public class AccountBrokerTest {
         roleRepository.save(accountAdmin);
     }
 
-    // this is cumbersome, but test isn't picking up the rest of the properties, or running init, so ...
-    private void setAccountFields() {
-        Map<AccountType, Integer> accountFees = new HashMap<>();
-        accountFees.put(AccountType.STANDARD, 10000);
-        Map<AccountType, Integer> freeFormPerMonth = new HashMap<>();
-        freeFormPerMonth.put(AccountType.STANDARD, 100);
-        Map<AccountType, Integer> messagesCost = new HashMap<>();
-        messagesCost.put(AccountType.STANDARD, 30);
-        Map<AccountType, Integer> maxGroupSize = new HashMap<>();
-        maxGroupSize.put(AccountType.STANDARD, 300);
-        Map<AccountType, Integer> maxGroupNumber = new HashMap<>();
-        maxGroupNumber.put(AccountType.STANDARD, 20);
-        Map<AccountType, Integer> maxSubGroupDepth = new HashMap<>();
-        maxSubGroupDepth.put(AccountType.STANDARD, 3);
-        Map<AccountType, Integer> todosPerMonth = new HashMap<>();
-        todosPerMonth.put(AccountType.STANDARD, 16);
-        Map<AccountType, Integer> eventsPerMonth = new HashMap<>();
-        eventsPerMonth.put(AccountType.STANDARD, 16);
-
-        ReflectionTestUtils.setField(accountBroker, "accountFees", accountFees);
-        ReflectionTestUtils.setField(accountBroker, "freeFormPerMonth", freeFormPerMonth);
-        ReflectionTestUtils.setField(accountBroker, "messagesCost", messagesCost);
-        ReflectionTestUtils.setField(accountBroker, "maxGroupSize", maxGroupSize);
-        ReflectionTestUtils.setField(accountBroker, "maxGroupNumber", maxGroupNumber);
-        ReflectionTestUtils.setField(accountBroker, "maxSubGroupDepth", maxSubGroupDepth);
-        ReflectionTestUtils.setField(accountBroker, "todosPerMonth", todosPerMonth);
-        ReflectionTestUtils.setField(accountBroker, "eventsPerMonth", eventsPerMonth);
-    }
-
     private Account createTestAccount() {
-        String accountUid = accountBroker.createAccount(testAdmin.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, false);
+        String accountUid = accountBroker.createAccount(testAdmin.getUid(), accountName, testAdmin.getUid(), billingEmail, null);
         return accountBroker.loadAccount(accountUid);
     }
 
     @Test
     public void shouldSaveBilling() {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, false);
+        String accountUid = accountBroker.createAccount(testAdmin.getUid(), accountName, testAdmin.getUid(), billingEmail, null);
         Account account = accountBroker.loadAccount(accountUid);
         assertNotEquals(null,account.getId());
-        assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
+        assertEquals(billingEmail, account.getPrimaryBillingEmail());
     }
 
     @Test
@@ -145,7 +94,7 @@ public class AccountBrokerTest {
     public void shouldCreateDetailedAccount() {
         Account account = createTestAccount();
         assertNotEquals(null, account.getId());
-        assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
+        assertEquals(billingEmail, account.getPrimaryBillingEmail());
         accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
         assertTrue(account.isEnabled());
         assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons

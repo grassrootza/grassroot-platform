@@ -3,7 +3,7 @@ package za.org.grassroot.services.task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
@@ -116,7 +116,7 @@ public class EventLogBrokerImpl implements EventLogBroker {
 
     @Override
     public boolean hasUserRespondedToEvent(Event event, User user) {
-        long count = eventLogRepository.count(Specifications
+        long count = eventLogRepository.count(Specification
                 .where(EventLogSpecifications.forEvent(event))
                 .and(EventLogSpecifications.forUser(user))
                 .and(EventLogSpecifications.isResponseToAnEvent()));

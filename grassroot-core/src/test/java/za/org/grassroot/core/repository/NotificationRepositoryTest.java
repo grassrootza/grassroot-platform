@@ -1,15 +1,15 @@
 package za.org.grassroot.core.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
@@ -18,7 +18,6 @@ import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.specifications.NotificationSpecifications;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -30,10 +29,8 @@ import static org.junit.Assert.*;
 /**
  * Created by paballo on 2016/04/11.
  */
-@RunWith(SpringRunner.class)
+@Slf4j @RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class NotificationRepositoryTest {
 
     @Autowired

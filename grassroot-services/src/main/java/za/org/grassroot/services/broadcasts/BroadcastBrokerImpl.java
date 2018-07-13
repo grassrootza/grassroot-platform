@@ -8,7 +8,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -145,7 +144,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.isTwitterConnected(twitterAccount != null)
                 .twitterAccount(twitterAccount);
 
-        List<Campaign> associatedCampaigns = campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"));
+        List<Campaign> associatedCampaigns = campaignRepository.findByMasterGroupUid(groupUid, Sort.by("createdDateTime"));
         if (associatedCampaigns != null) {
             builder.campaignNamesUrls(associatedCampaigns
                 .stream().filter(Campaign::isActiveWithUrl).collect(Collectors.toMap(Campaign::getName, Campaign::getLandingUrl)));
@@ -192,12 +191,12 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         return builder.build();
     }
 
-    private Specifications<CampaignLog> engagementLogsForCampaign(Campaign campaign) {
+    private Specification<CampaignLog> engagementLogsForCampaign(Campaign campaign) {
         Specification<CampaignLog> forCampaign = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaign), campaign);
         List<CampaignLogType> types = Arrays.asList(CAMPAIGN_PETITION_SIGNED, CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,
                 CAMPAIGN_SHARED, CAMPAIGN_USER_TAGGED);
         Specification<CampaignLog> engaged = (root, query, cb) -> root.get(CampaignLog_.campaignLogType).in(types);
-        return Specifications.where(forCampaign).and(engaged);
+        return Specification.where(forCampaign).and(engaged);
     }
 
     private List<User> getCampaignJoinedUsers(Campaign campaign) {

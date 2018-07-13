@@ -1,14 +1,14 @@
 package za.org.grassroot.core.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -22,7 +22,6 @@ import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.specifications.TodoSpecifications;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -30,10 +29,8 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 // major todo: fix / adapt these for new todo design
-@RunWith(SpringRunner.class)
+@Slf4j @RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class TodoRepositoryTest {
 
     @Autowired

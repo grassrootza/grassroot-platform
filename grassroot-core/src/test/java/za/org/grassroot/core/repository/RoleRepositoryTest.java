@@ -1,21 +1,20 @@
 package za.org.grassroot.core.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.annotation.Rollback;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 
-import javax.transaction.Transactional;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -27,10 +26,8 @@ import static org.junit.Assert.assertThat;
  * @author Lesetse Kimwaga
  */
 
-@RunWith(SpringRunner.class)
+@Slf4j @RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class RoleRepositoryTest {
 
     @Autowired

@@ -5,12 +5,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
@@ -22,6 +20,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.ServicesTestConfig;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignMessageDTO;
 import za.org.grassroot.services.campaign.MessageLanguagePair;
@@ -30,10 +29,8 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Locale;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestContextConfig.class)
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
-@Transactional
+@RunWith(SpringRunner.class) @DataJpaTest
+@ContextConfiguration(classes = ServicesTestConfig.class)
 @WithMockUser(username = "0605550000", roles={"SYSTEM_ADMIN"})
 public class CampaignBrokerTest {
 

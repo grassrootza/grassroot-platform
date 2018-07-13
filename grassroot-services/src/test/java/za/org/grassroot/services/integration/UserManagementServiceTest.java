@@ -4,12 +4,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.ServicesTestConfig;
 import za.org.grassroot.services.user.UserManagementService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -18,11 +17,8 @@ import static org.hamcrest.Matchers.equalTo;
 /**
  * @author Lesetse Kimwaga
  */
-
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestContextConfig.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
+@RunWith(SpringRunner.class) @DataJpaTest
+@ContextConfiguration(classes = ServicesTestConfig.class)
 public class UserManagementServiceTest {
 
     @Autowired

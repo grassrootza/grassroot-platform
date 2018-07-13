@@ -1,18 +1,17 @@
 package za.org.grassroot.core.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 
-import javax.transaction.Transactional;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -21,10 +20,8 @@ import static org.junit.Assert.*;
  * Created by paballo on 2016/07/21.
  */
 
-@RunWith(SpringRunner.class)
+@Slf4j @RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class SafetyEventRepositoryTest {
 
     @Autowired
@@ -37,7 +34,7 @@ public class SafetyEventRepositoryTest {
     private GroupRepository groupRepository;
 
     @Test
-    public void shouldSaveAndReturnSafetyEvent() throws Exception{
+    public void shouldSaveAndReturnSafetyEvent() {
 
        User user = userRepository.save(new User("0848870765", null, null));
         Group group = groupRepository.save(new Group("group", user));

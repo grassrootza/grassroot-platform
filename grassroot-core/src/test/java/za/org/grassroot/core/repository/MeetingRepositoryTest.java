@@ -1,17 +1,15 @@
 package za.org.grassroot.core.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -19,7 +17,6 @@ import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.EventLogType;
 
-import javax.transaction.Transactional;
 import java.time.*;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,13 +29,9 @@ import static org.junit.Assert.*;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
-@RunWith(SpringRunner.class)
+@Slf4j @RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class MeetingRepositoryTest {
-
-    private static final Logger log = LoggerFactory.getLogger(MeetingRepositoryTest.class);
 
     @Autowired
     private MeetingRepository meetingRepository;
@@ -155,7 +148,7 @@ public class MeetingRepositoryTest {
         Meeting mtgNow = new MeetingBuilder().setName("check today").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("happening now").createMeeting();
         mtgNow.setRsvpRequired(true);
 
-        meetingRepository.save(Arrays.asList(mtgYesterday, mtgTwoDaysAgo, mtgNow));
+        meetingRepository.saveAll(Arrays.asList(mtgYesterday, mtgTwoDaysAgo, mtgNow));
         List<Meeting> mtgs = meetingRepository.findByEventStartDateTimeBetweenAndCanceledFalseAndRsvpRequiredTrue(start, end);
 
         assertThat(meetingRepository.count(), is(3L));

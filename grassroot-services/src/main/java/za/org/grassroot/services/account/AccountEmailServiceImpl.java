@@ -2,7 +2,7 @@ package za.org.grassroot.services.account;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -14,12 +14,13 @@ import java.util.Locale;
  * Created by luke on 2017/03/01.
  */
 @Service @Slf4j
+@ConditionalOnProperty("spring.thymeleaf.enabled")
 public class AccountEmailServiceImpl implements AccountEmailService {
 
     private final TemplateEngine templateEngine;
 
     @Autowired
-    public AccountEmailServiceImpl(@Qualifier("emailTemplateEngine") TemplateEngine templateEngine) {
+    public AccountEmailServiceImpl(TemplateEngine templateEngine) {
         this.templateEngine = templateEngine;
     }
 

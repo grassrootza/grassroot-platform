@@ -1,21 +1,20 @@
 package za.org.grassroot.core.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Siyanda Mzam on 2016/04/07 13:24
  */
-@RunWith(SpringRunner.class)
+@Slf4j @RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class TestDateUtil {
 
     @Test

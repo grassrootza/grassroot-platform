@@ -1,16 +1,16 @@
 package za.org.grassroot.core.repository;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -21,7 +21,6 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -38,10 +37,8 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 
-@RunWith(SpringRunner.class)
+@Slf4j @RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class EventRepositoryTest {
 
     @Autowired
@@ -56,11 +53,8 @@ public class EventRepositoryTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private TodoRepository todoRepository;
-
     @Test
-    public void shouldSaveAndRetrieveEventData() throws Exception {
+    public void shouldSaveAndRetrieveEventData() {
 
         assertThat(eventRepository.count(), is(0L));
 
@@ -76,7 +70,7 @@ public class EventRepositoryTest {
         assertNotNull(eventToCreate.getUid());
         eventRepository.save(eventToCreate);
 
-        assertThat(userRepository.count(), is(1l));
+        assertThat(userRepository.count(), is(1L));
         Event eventFromDb = eventRepository.findAll().iterator().next();
         assertNotNull(eventFromDb.getId());
         assertNotNull(eventFromDb.getCreatedDateTime());

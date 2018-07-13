@@ -4,18 +4,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.annotation.Rollback;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.AccountType;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -28,10 +26,8 @@ import static org.junit.Assert.*;
 /**
  * Created by luke on 2015/11/14.
  */
-@RunWith(SpringRunner.class)
+@RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class AccountRepositoryTest {
 
     private static final String accountName = "Paying institution";
@@ -134,15 +130,14 @@ public class AccountRepositoryTest {
 
         Account accountFromDb = accountRepository.findAll().iterator().next();
 
-        // todo : test with a different user
         testUser.setEmailAddress(billingEmail);
-        account.setBillingUser(testUser);
+        account.setPrimaryBillingEmail(billingEmail);
         accountFromDb = accountRepository.save(accountFromDb);
 
         assertNotNull(accountFromDb.getId());
         assertNotNull(accountFromDb.getCreatedDateTime());
         assertThat(accountFromDb.getAccountName(), is(accountName));
-        assertThat(accountFromDb.getBillingUser().getEmailAddress(), is(billingEmail));
+        assertThat(accountFromDb.getPrimaryBillingEmail(), is(billingEmail));
 
     }
 
@@ -167,13 +162,14 @@ public class AccountRepositoryTest {
         User billingUser = userRepository.save(new User("0601110000", "Paying the bill", null));
         billingUser.setEmailAddress(billingEmail);
         Account account = new Account(testUser, accountName, AccountType.STANDARD, billingUser);
+        account.setPrimaryBillingEmail(billingEmail);
         accountRepository.save(account);
         List<Account> accountList = accountRepository.findByAccountName(accountName);
         assertEquals(accountList.size(), 1);
         Account accountFromDb = accountList.get(0);
         assertNotNull(accountFromDb);
         assertEquals(accountName, accountFromDb.getAccountName());
-        assertEquals(billingEmail, accountFromDb.getBillingUser().getEmailAddress());
+        assertEquals(billingEmail, accountFromDb.getPrimaryBillingEmail());
 
     }
 
@@ -272,33 +268,5 @@ public class AccountRepositoryTest {
         assertThat(paidGroupFromAccount.getAccount(), is(accountFromDbByName));
 
     }
-
-    @Test
-    @Rollback
-    public void shouldSaveGroupLimits() {
-
-        assertThat(accountRepository.count(), is(0L));
-
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
-        account.setMaxSizePerGroup(500);
-        account.setMaxSubGroupDepth(3);
-        account.setFreeFormMessages(100);
-        account.setMaxNumberGroups(10);
-
-        accountRepository.save(account);
-
-        Account accountFromDb = accountRepository.findByAccountName(accountName).get(0);
-
-        assertEquals(accountFromDb.getFreeFormMessages(), 100);
-        assertEquals(accountFromDb.getMaxSizePerGroup(), 500);
-        assertEquals(accountFromDb.getMaxSubGroupDepth(), 3);
-        assertEquals(accountFromDb.getMaxNumberGroups(), 10);
-        assertEquals(accountFromDb.getMaxSubGroupDepth(), 3);
-
-        accountFromDb.setFreeFormMessages(0);
-        accountFromDb = accountRepository.save(accountFromDb);
-        assertEquals(accountFromDb.getFreeFormMessages(), 0);
-
-    }
-
+    
 }

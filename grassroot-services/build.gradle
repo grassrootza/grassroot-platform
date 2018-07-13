@@ -9,34 +9,13 @@ dependencies {
   compile group: 'org.springframework.security', name: 'spring-security-core', version:libs.springSecurityVersion
   compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version:libs.springBootVersion
   compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version:libs.springBootVersion
+  compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version:libs.springBootVersion
 
   compile group: 'net.sf.ehcache', name: 'ehcache-core', version:'2.6.11'
-
-  compile group: 'org.thymeleaf', name: 'thymeleaf', version: libs.thymeleafVersion
-  compile group: 'org.thymeleaf', name: 'thymeleaf-spring4', version: libs.thymeleafVersion
 
   testCompile group: 'org.springframework', name: 'spring-orm', version:libs.springVersion // else tests can fail on dependency issues
   testCompile group: 'org.springframework.security', name: 'spring-security-test', version:libs.springSecurityVersion
   testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:libs.springBootVersion) {
     exclude(module: 'commons-logging')
   }
-}
-
-test {
-  systemProperty "grassroot.email.enabled", "true"
-
-  systemProperty "spring.mail.host", "gmail.com"
-  systemProperty "spring.mail.port", "587"
-  systemProperty "spring.mail.username", "test@grassroot.org.za"
-  systemProperty "spring.mail.password", "test@grassroot.org.za"
-
-  systemProperty "grassroot.mail.from.address", "test@grassroot.org"
-  systemProperty "grassroot.mail.from.name", "Test"
-  systemProperty "grassroot.system.mail", "test@grassroot.org"
-
-  systemProperty "grassroot.billing.cron.trigger", "0 0 9 * * ?"
-  systemProperty "grassroot.payments.cron.trigger", "0 0 9 * * ?"
-
-  systemProperty "grassroot.ussd.location.service", "test_local"
-
 }

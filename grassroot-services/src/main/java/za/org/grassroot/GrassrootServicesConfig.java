@@ -13,14 +13,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.spring4.SpringTemplateEngine;
-import org.thymeleaf.templatemode.TemplateMode;
-import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
-import org.thymeleaf.templateresolver.ITemplateResolver;
-import org.thymeleaf.templateresolver.StringTemplateResolver;
 
-import java.util.Collections;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -31,10 +24,7 @@ import java.util.concurrent.Executors;
 @Configuration
 @ComponentScan("za.org.grassroot")
 @EntityScan(basePackageClasses = {GrassrootServicesConfig.class, Jsr310JpaConverters.class})
-@EnableAutoConfiguration
-@EnableJpaRepositories
-@EnableAsync
-@EnableScheduling
+@EnableAutoConfiguration @EnableJpaRepositories @EnableAsync @EnableScheduling
 public class GrassrootServicesConfig implements SchedulingConfigurer {
 
 	/*
@@ -63,54 +53,5 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 
 	@Bean(name = "servicesMessageSourceAccessor")
 	public MessageSourceAccessor getMessageSourceAccessor() { return new MessageSourceAccessor(messageSource()); }
-
-	@Bean
-	public ResourceBundleMessageSource htmlEmailSource() {
-		final ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
-		messageSource.setBasename("mail/messages");
-		return messageSource;
-	}
-
-	@Bean(name = "emailTemplateEngine")
-	public TemplateEngine emailTemplateEngine() {
-		final SpringTemplateEngine templateEngine = new SpringTemplateEngine();
-		templateEngine.addTemplateResolver(textTemplateResolver());
-		templateEngine.addTemplateResolver(htmlTemplateResolver());
-		templateEngine.addTemplateResolver(stringTemplateResolver());
-		templateEngine.setTemplateEngineMessageSource(htmlEmailSource());
-		return templateEngine;
-	}
-
-	private ITemplateResolver textTemplateResolver() {
-		final ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
-		templateResolver.setOrder(1);
-		templateResolver.setResolvablePatterns(Collections.singleton("text/*"));
-		templateResolver.setPrefix("/mail/");
-		templateResolver.setSuffix(".txt");
-		templateResolver.setTemplateMode(TemplateMode.TEXT);
-		templateResolver.setCharacterEncoding("UTF-8");
-		templateResolver.setCacheable(false);
-		return templateResolver;
-	}
-
-	private ITemplateResolver htmlTemplateResolver() {
-		final ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
-		templateResolver.setOrder(2);
-		templateResolver.setResolvablePatterns(Collections.singleton("html/*"));
-		templateResolver.setPrefix("/mail/");
-		templateResolver.setSuffix(".html");
-		templateResolver.setTemplateMode(TemplateMode.HTML);
-		templateResolver.setCharacterEncoding("UTF-8");
-		templateResolver.setCacheable(false);
-		return templateResolver;
-	}
-
-	private ITemplateResolver stringTemplateResolver() {
-		final StringTemplateResolver templateResolver = new StringTemplateResolver();
-		templateResolver.setOrder(3);
-		templateResolver.setTemplateMode(TemplateMode.HTML);
-		templateResolver.setCacheable(false);
-		return templateResolver;
-	}
 
 }
