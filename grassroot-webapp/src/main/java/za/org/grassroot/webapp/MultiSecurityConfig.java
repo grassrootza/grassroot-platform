@@ -27,6 +27,7 @@ public class MultiSecurityConfig {
             "/v2/api/news/**",
             "/v2/api/activity/**",
             "/v2/api/donate/**",
+            "/v2/api/image/**",
             "/v2/api/group/search",
             "/v2/api/group/fetch/flyer",
             "/v2/api/group/outside/join/**",
@@ -34,7 +35,7 @@ public class MultiSecurityConfig {
             "/v2/api/jwt/public/credentials",
             "/v2/api/user/profile/image/view/**",
             "/v2/api/inbound/respond/**", // both of these use a complex token-matching to auth, without needing full user, for various UX reasons
-            "/v2/api/inbound/unsubscribe/**",
+            "/v2/api/inbound/unsubscribe/**"
     };
 
     private static final String[] AUTH_ENDPOINTS = {

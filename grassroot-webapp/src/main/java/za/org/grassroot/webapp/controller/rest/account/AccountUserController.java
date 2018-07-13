@@ -16,10 +16,10 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
 import za.org.grassroot.integration.billing.BillingServiceBroker;
 import za.org.grassroot.integration.billing.SubscriptionRecordDTO;
-import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -75,7 +75,7 @@ public class AccountUserController extends BaseRestController {
                                                                      @RequestParam boolean addAllGroupsToAccount,
                                                                      @RequestParam(required = false) String otherAdmins) {
         final String userId = getUserIdFromRequest(request);
-        final String accountUid = accountBroker.createAccount(userId, accountName, userId, null);
+        final String accountUid = accountBroker.createAccount(userId, accountName, userId, billingEmail, null);
         if (addAllGroupsToAccount) {
             log.info("Add all groups selected, proceeding");
             accountBroker.addAllUserCreatedGroupsToAccount(accountUid, userId);
@@ -169,12 +169,13 @@ public class AccountUserController extends BaseRestController {
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/add/group/{accountId}", method = RequestMethod.POST)
-    public ResponseEntity addGroupsToAccount(@PathVariable String accountId, HttpServletRequest request,
+    @RequestMapping(value = { "/add/group/{accountId}", "/add/group" }, method = RequestMethod.POST)
+    public ResponseEntity addGroupsToAccount(HttpServletRequest request, @PathVariable(required = false) String accountId,
                                              @RequestParam Set<String> groupUids) {
         log.info("adding groups: {} to account: {}", groupUids, accountId);
-        accountBroker.addGroupsToAccount(accountId, groupUids, getUserIdFromRequest(request));
-        return wrappedAccount(accountId, request);
+        final String accountUid = accountId == null ? getUserFromRequest(request).getPrimaryAccount().getUid() : accountId;
+        accountBroker.addGroupsToAccount(accountUid, groupUids, getUserIdFromRequest(request));
+        return wrappedAccount(accountUid, request);
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
@@ -199,7 +200,7 @@ public class AccountUserController extends BaseRestController {
                                HttpServletRequest request) {
         User user = getUserFromRequest(request);
         try {
-            accountBroker.closeAccount(user.getUid(), accountUid, null);
+            accountBroker.closeAccount(user.getUid(), accountUid, "Closed by user");
             return "closed";
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
@@ -211,7 +212,8 @@ public class AccountUserController extends BaseRestController {
     public ResponseEntity<AccountWrapper> getAccountSettings(@RequestParam(required = false) String accountUid,
                                                              HttpServletRequest request) {
         User user = getUserFromRequest(request);
-        Account account = StringUtils.isEmpty(accountUid) ? user.getPrimaryAccount() : accountBroker.loadAccount(accountUid);
+        Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadDefaultAccountForUser(user.getUid())
+                : accountBroker.loadAccount(accountUid);
 
         if (account == null) {
             return ResponseEntity.ok().build();

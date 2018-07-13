@@ -1,5 +1,6 @@
 package za.org.grassroot.core.repository;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import za.org.grassroot.core.domain.User;
@@ -20,5 +21,7 @@ public interface AccountRepository extends JpaRepository<Account, Long>, JpaSpec
     List<Account> findByDisabledDateTimeAfter(Instant time);
 
     Account findByAdministrators(User administrator);
+
+    Account findTopByAdministratorsAndClosedFalse(User administrator, Sort sort);
 
 }

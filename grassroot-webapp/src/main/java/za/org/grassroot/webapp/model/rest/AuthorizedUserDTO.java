@@ -40,7 +40,9 @@ public class AuthorizedUserDTO {
         this.systemRoleName = highestSystemRole.isPresent() ? highestSystemRole.get().getName() : "";
         this.token = token;
 
-        this.hasAccount = user.getPrimaryAccount() != null;
+        this.hasAccount = user.getPrimaryAccount() != null
+                && !user.getPrimaryAccount().isClosed()
+                && user.getPrimaryAccount().isEnabled();
     }
 
 }

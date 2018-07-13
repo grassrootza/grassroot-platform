@@ -9,7 +9,7 @@
 <div th:if="${request.options != null}">
     <div th:switch="${display}">
         <div th:case="false">
-            <form th:action="@{/emulator/ussd/view}" method="get">
+            <form th:action="@{/emulator/ussd/view/{phone}(phone=${userPhone})}" method="get">
                 <input type="hidden" name="link" th:value="${request.options[0].callback}"/>
                 <input type="text" name="request"/>
                 <input type="submit" value="Submit"/>

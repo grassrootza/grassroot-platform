@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.account;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import za.org.grassroot.core.domain.GrassrootEntity;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -12,9 +13,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by luke on 2015/10/18. (and significantly overhauled / modified during 2016/10)
@@ -79,6 +78,10 @@ public class Account implements GrassrootEntity, Serializable {
     private Set<Group> paidGroups = new HashSet<>();
 
     @Basic
+    @Column(name="geo_data_sets") // comma separated
+    private String geoDataSets; // mirrored on dynamo db, used here to avoid expensive repeat scans, keep track
+
+    @Basic
     @Column(name="free_form_cost")
     private int freeFormCost; // stored as cents
 
@@ -97,6 +100,10 @@ public class Account implements GrassrootEntity, Serializable {
     @Basic
     @Column(name="last_billing_date", nullable = false)
     private Instant lastBillingDate;
+
+    @Basic
+    @Column(name="primary_email")
+    private String primaryBillingEmail;
 
     @Version
     private Integer version;
@@ -166,7 +173,6 @@ public class Account implements GrassrootEntity, Serializable {
      */
 
     public void addAdministrator(User administrator) {
-        // todo: figure out why Hibernate is unreliable in setting both sides of this
         this.administrators.add(administrator);
     }
 
@@ -180,6 +186,24 @@ public class Account implements GrassrootEntity, Serializable {
 
     public void removePaidGroup(Group group) {
         paidGroups.remove(group);
+    }
+
+    public boolean sponsorsDataSet() {
+        return !StringUtils.isEmpty(geoDataSets);
+    }
+
+    public List<String> sponsoredDataSets() {
+        return sponsorsDataSet() ? Arrays.asList(StringUtils.split(geoDataSets, ",")) : new ArrayList<>();
+    }
+
+    public void addSponsoredDataSet(String dataSet) {
+        if (dataSet.contains(","))
+            throw new IllegalArgumentException("Data set labels cannot contain commas");
+
+        if (StringUtils.isEmpty(geoDataSets))
+            dataSet = geoDataSets;
+        else
+            dataSet = geoDataSets + "," + dataSet;
     }
 
     @Override

@@ -14,6 +14,8 @@ drop table paid_group;
 drop table acc_sponsor_request;
 
 alter table paid_account add column subscription_reference varchar(255) unique;
+alter table paid_account add column geo_data_sets text;
+
 alter table paid_account add column closed boolean default false;
 update paid_account set closed = false where visible = true;
 update paid_account set closed = true where visible = false;
@@ -29,4 +31,18 @@ alter table paid_account add column last_billing_date timestamp;
 update paid_account set last_billing_date = greatest(last_payment_date, created_date_time);
 alter table paid_account alter column last_billing_date set not null;
 
--- todo : cull account limit columns, also remove last_billing_date, enabled_date_time, etc
+-- todo : cull account limit columns, also remove last_billing_date, enabled_date_time, enabled_by_usr, etc
+alter table paid_account drop column last_billing_date;
+alter table paid_account drop column enabled_date_time;
+alter table paid_account drop column enabled_by_user;
+alter table paid_account drop column max_group_number;
+alter table paid_account drop column max_group_size;
+alter table paid_account drop column max_sub_group_depth;
+alter table paid_account drop column additional_reminders;
+alter table paid_account drop column last_payment_date;
+alter table paid_account drop column next_billing_date;
+alter table paid_account drop column billing_user;
+alter table paid_account drop column todos_per_month;
+alter table paid_account drop column events_per_month;
+
+alter table group_profile rename column avatar_format to profile_image_key;

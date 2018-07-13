@@ -16,7 +16,9 @@ public interface AccountBroker {
 
     Account loadAccount(String accountUid);
 
-    String createAccount(String userUid, String accountName, String billedUserUid, String ongoingPaymentRef);
+    Account loadDefaultAccountForUser(String userUid);
+
+    String createAccount(String userUid, String accountName, String billedUserUid, String billingEmail, String ongoingPaymentRef);
 
     void setAccountSubscriptionRef(String userUid, String accountUid, String subscriptionId);
 

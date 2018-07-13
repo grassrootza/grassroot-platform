@@ -50,6 +50,10 @@ public class Movement implements GrassrootEntity {
             inverseJoinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)} )
     private Set<User> organizers = new HashSet<>();
 
+    private Movement() {
+        // for JPA
+    }
+
     public Movement(String name, User createdByUser) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();

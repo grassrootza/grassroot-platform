@@ -20,6 +20,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Created by luke on 2016/09/26.
@@ -61,8 +62,9 @@ public class GroupImageBrokerImpl implements GroupImageBroker {
     }
 
     @Override
-    public Group getGroupByImageUrl(String imageUrl) {
-        return groupRepository.findOne(Specification.where(GroupSpecifications.hasImageUrl(imageUrl))).orElse(null);
+    public Optional<Group> getGroupByUidOrImageUrl(String uidOrImageUrl) {
+        Group group = groupRepository.findOneByUid(uidOrImageUrl);
+        return group != null ? Optional.of(group) : groupRepository.findOne(Specification.where(GroupSpecifications.hasImageUrl(uidOrImageUrl)));
     }
 
     @Override

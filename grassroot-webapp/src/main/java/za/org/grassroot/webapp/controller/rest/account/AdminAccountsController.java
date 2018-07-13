@@ -2,13 +2,14 @@ package za.org.grassroot.webapp.controller.rest.account;
 
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.billing.BillingServiceBroker;
 import za.org.grassroot.integration.billing.SubscriptionRecordDTO;
-import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
@@ -26,11 +27,16 @@ import java.util.concurrent.CompletableFuture;
 public class AdminAccountsController extends BaseRestController {
 
     private final AccountBroker accountBroker;
-    private final BillingServiceBroker billingServiceBroker;
+    private BillingServiceBroker billingServiceBroker;
 
-    public AdminAccountsController(JwtService jwtService, UserManagementService userManagementService, AccountBroker accountBroker, BillingServiceBroker billingServiceBroker) {
+    @Autowired
+    public AdminAccountsController(JwtService jwtService, UserManagementService userManagementService, AccountBroker accountBroker) {
         super(jwtService, userManagementService);
         this.accountBroker = accountBroker;
+    }
+
+    @Autowired(required = false)
+    public void setBillingServiceBroker(BillingServiceBroker billingServiceBroker) {
         this.billingServiceBroker = billingServiceBroker;
     }
 

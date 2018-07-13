@@ -86,6 +86,18 @@ public class AccountBrokerImpl implements AccountBroker {
         return accountRepository.findOneByUid(accountUid);
     }
 
+    @Override
+    public Account loadDefaultAccountForUser(String userUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        if (user.getPrimaryAccount() != null)
+            return user.getPrimaryAccount();
+
+        // might have a situation where user has had primary account closed, but still admin on others, in which case,
+        // make a random guess, using most recent non-closed account
+
+        return accountRepository.findTopByAdministratorsAndClosedFalse(user, new Sort(Sort.Direction.DESC, "createdDateTime"));
+    }
+
     private void validateAdmin(User user, Account account) {
         Objects.requireNonNull(user);
         Objects.requireNonNull(account);
@@ -97,7 +109,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public String createAccount(String userUid, String accountName, String billedUserUid, String ongoingPaymentRef) {
+    public String createAccount(String userUid, String accountName, String billedUserUid, String billingEmail, String ongoingPaymentRef) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(billedUserUid);
         Objects.requireNonNull(accountName);
@@ -111,6 +123,12 @@ public class AccountBrokerImpl implements AccountBroker {
 
         account.addAdministrator(billedUser);
         billedUser.setPrimaryAccount(account);
+
+        if (!StringUtils.isEmpty(billingEmail))
+            account.setPrimaryBillingEmail(billingEmail);
+        else
+            account.setPrimaryBillingEmail(billedUser.getEmailAddress());
+
         permissionBroker.addSystemRole(billedUser, BaseRoles.ROLE_ACCOUNT_ADMIN);
 
         log.info("Created account, now looks like: " + account);
@@ -485,14 +503,14 @@ public class AccountBrokerImpl implements AccountBroker {
 
         log.info("removing {} administrators", account.getAdministrators().size());
 
-        for (User admin : account.getAdministrators()) {
+        account.getAdministrators().stream().filter(admin -> !admin.equals(user)).forEach(admin -> {
             admin.removeAccountAdministered(account);
             if (account.equals(admin.getPrimaryAccount()))
                 admin.setPrimaryAccount(null);
 
             if (admin.getAccountsAdministered() == null || admin.getAccountsAdministered().isEmpty())
                 permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
-        }
+        });
 
         removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
 
@@ -541,7 +559,7 @@ public class AccountBrokerImpl implements AccountBroker {
         long countSessions = campaignSessionCount.getSingleResult();
         log.info("Counted {} campaign sessions for account", countSessions);
 
-        if (locationInfoBroker != null) {
+        if (locationInfoBroker != null && account.sponsorsDataSet()) {
             countSessions += countDataSetSessions(accountUid, startTime, endTime);
         }
 
@@ -549,6 +567,8 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     private long countDataSetSessions(String accountUid, Instant start, Instant end) {
+        // once have firm faith that both sides of this will match up, just use account list, but for now, this is
+        // not so expensive and is more reliable
         List<String> dataSetLabels = locationInfoBroker.getDatasetLabelsForAccount(accountUid);
         if (dataSetLabels == null || dataSetLabels.isEmpty())
             return 0;
