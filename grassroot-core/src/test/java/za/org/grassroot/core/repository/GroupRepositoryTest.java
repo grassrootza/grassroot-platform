@@ -675,11 +675,13 @@ public class GroupRepositoryTest {
             group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         testGroups = groupRepository.saveAll(testGroups);
         assertThat(groupRepository.count(), is(4L));
-        Page<Group> pageTest1 = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(0, 3));
+        Page<Group> pageTest1 = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user,
+                PageRequest.of(0, 3));
         assertThat(pageTest1.hasNext(), is(true));
         testGroups.get(0).setActive(false);
         groupRepository.save(testGroups.get(0));
-        Page<Group> activeGroups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(0,3));
+        Page<Group> activeGroups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user,
+                PageRequest.of(0,3));
         assertFalse(activeGroups.hasNext());
     }
 

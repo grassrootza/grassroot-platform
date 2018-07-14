@@ -5,7 +5,6 @@ import lombok.Setter;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
-import org.hibernate.validator.constraints.Email;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
@@ -21,6 +20,7 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
+import javax.validation.constraints.Email;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;

@@ -322,7 +322,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
         User user = userService.load(userUid);
         // last in first out (at present - makes most sense if user is responding to something)
-        Pageable limit = new PageRequest(0, 1, new Sort(Sort.Direction.DESC, "createdDateTime"));
+        Pageable limit = PageRequest.of(0, 1, new Sort(Sort.Direction.DESC, "createdDateTime"));
         Page<Todo> result = todoRepository.findAll(TodoSpecifications.todosForUserResponse(user), limit);
         return result.getNumberOfElements() == 0 ? null : result.getContent().get(0);
     }
@@ -639,8 +639,8 @@ public class TodoBrokerImpl implements TodoBroker {
             specs = specs.and((root, query, cb) -> cb.isTrue(root.get(TodoAssignment_.validator)));
         }
 
-        List<Sort.Order> orders = Arrays.asList(new Sort.Order("hasResponded"), new Sort.Order(Sort.Direction.DESC, "responseTime"));
-        return todoAssignmentRepository.findAll(specs, new Sort(orders));
+        List<Sort.Order> orders = Arrays.asList(Sort.Order.by("hasResponded"), new Sort.Order(Sort.Direction.DESC, "responseTime"));
+        return todoAssignmentRepository.findAll(specs, Sort.by(orders));
     }
 
     @Override

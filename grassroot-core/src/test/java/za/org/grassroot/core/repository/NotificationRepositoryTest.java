@@ -107,7 +107,7 @@ public class NotificationRepositoryTest {
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
         Page<Notification> notifications = notificationRepository
-                .findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(user, DeliveryRoute.ANDROID_APP, new PageRequest(0, 1));
+                .findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(user, DeliveryRoute.ANDROID_APP, PageRequest.of(0, 1));
         assertThat(notifications.getTotalElements(), is(1L));
     }
 

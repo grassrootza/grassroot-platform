@@ -2,7 +2,6 @@ package za.org.grassroot.core.specifications;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
@@ -44,7 +43,7 @@ public class GroupLogSpecifications {
     }
 
     public static Specification<GroupLog> memberChangeRecords(Group group, Instant startDate) {
-        return Specifications.where(forGroup(group))
+        return Specification.where(forGroup(group))
                 .and(ofTypes(GroupLogType.targetUserChangeTypes))
                 .and(afterDate(startDate));
     }

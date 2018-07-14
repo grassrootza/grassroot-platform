@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.SafetyEvent;
@@ -142,7 +142,7 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-        List<Todo> todos = todoRepository.findAll(Specifications.where(TodoSpecifications.notCancelled())
+        List<Todo> todos = todoRepository.findAll(Specification.where(TodoSpecifications.notCancelled())
                 .and(TodoSpecifications.remindersLeftToSend())
                 .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
                 .and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)))

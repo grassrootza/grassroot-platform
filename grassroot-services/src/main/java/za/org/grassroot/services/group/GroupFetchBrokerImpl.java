@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,13 +75,13 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Transactional(readOnly = true)
     public Set<GroupTimeChangedDTO> findNewlyChangedGroups(String userUid, Map<String, Long> excludedGroupsByTimeChanged) {
         User user = userRepository.findOneByUid(userUid);
-        Specifications<Group> specifications = Specifications
+        Specification<Group> specifications = Specification
                 .where(GroupSpecifications.isActive())
                 .and(GroupSpecifications.userIsMember(user));
 
         if (excludedGroupsByTimeChanged != null && !excludedGroupsByTimeChanged.isEmpty()) {
             specifications = specifications.and(
-                    Specifications.not(GroupSpecifications.uidIn(excludedGroupsByTimeChanged.keySet())));
+                    Specification.not(GroupSpecifications.uidIn(excludedGroupsByTimeChanged.keySet())));
         }
 
         Set<String> newGroupUids = groupRepository.findAll(specifications)
@@ -152,7 +151,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         boolean hasMemberDetailsPerm = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
         if (includeAllMembers && hasMemberDetailsPerm) {
-            Pageable page = new PageRequest(0, MAX_DTO_MEMBERS, Sort.Direction.DESC, "joinTime");
+            Pageable page = PageRequest.of(0, MAX_DTO_MEMBERS, Sort.Direction.DESC, "joinTime");
             List<Membership> members = membershipRepository.findByGroupUid(group.getUid(), page).getContent();
             groupFullDTO.setMembers(members.stream().map(MembershipDTO::new).collect(Collectors.toSet()));
         }
@@ -163,7 +162,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
 
         if (includeAllSubgroups) {
-            groupFullDTO.setSubGroups(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+            groupFullDTO.setSubGroups(groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()))
                     .stream().map(GroupMembersDTO::new).collect(Collectors.toList()));
         }
 
@@ -243,7 +242,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Transactional
     public Page<GroupLogDTO> getInboundMessageLogs(User user, Group group, Instant from, Instant to, String keyword, Pageable pageable) {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        Page<GroupLog> page = groupLogRepository.findAll(Specifications.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)), pageable);
+        Page<GroupLog> page = groupLogRepository.findAll(Specification.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)), pageable);
         return page.map(GroupLogDTO::new);
     }
 
@@ -251,7 +250,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Transactional
     public List<GroupLogDTO> getInboundMessagesForExport(User user, Group group, Instant from, Instant to, String keyword) {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        List<GroupLog> list = groupLogRepository.findAll(Specifications.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)));
+        List<GroupLog> list = groupLogRepository.findAll(Specification.where(GroupLogSpecifications.forInboundMessages(group, from, to, keyword)));
         return list.stream().map(GroupLogDTO::new).collect(Collectors.toList());
     }
 
@@ -387,7 +386,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     }
 
     private List<GroupRefDTO> getSubgroups(Group group) {
-        return groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+        return groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()))
                 .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName(), gr.getMemberships().size()))
                 .collect(Collectors.toList());
     }

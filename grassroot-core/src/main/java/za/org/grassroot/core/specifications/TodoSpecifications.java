@@ -1,7 +1,6 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Group_;
@@ -110,7 +109,7 @@ public final class TodoSpecifications {
     }
 
     public static Specification<TodoAssignment> userInAndForTodo(Set<User> userSet, Todo todo) {
-        return Specifications.where((root, query, cb) -> cb.and(
+        return Specification.where((root, query, cb) -> cb.and(
                 cb.equal(root.get(TodoAssignment_.todo), todo),
                 root.get(TodoAssignment_.user).in(userSet)));
     }

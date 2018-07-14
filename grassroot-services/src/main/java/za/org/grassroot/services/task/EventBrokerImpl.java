@@ -7,7 +7,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -846,9 +845,9 @@ public class EventBrokerImpl implements EventBroker {
 		Instant endTime = !timeType.equals(EventListTimeType.PAST) ? DateTimeUtil.getVeryLongAwayInstant() : Instant.now();
 		return (eventType.equals(EventType.MEETING)) ?
 				(Page) meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime,
-						new PageRequest(pageNumber, pageSize)) :
+						PageRequest.of(pageNumber, pageSize)) :
 				(Page) voteRepository.findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime,
-						new PageRequest(pageNumber, pageSize));
+						PageRequest.of(pageNumber, pageSize));
 	}
 
 	@Override
@@ -882,7 +881,7 @@ public class EventBrokerImpl implements EventBroker {
 		Instant beginning = (periodStart == null) ? group.getCreatedDateTime() : periodStart;
 		Instant end = (periodEnd == null) ? DateTimeUtil.getVeryLongAwayInstant() : periodEnd;
 
-		Specifications<Event> specifications = Specifications.where(EventSpecifications.notCancelled())
+		Specification<Event> specifications = Specification.where(EventSpecifications.notCancelled())
 				.and(EventSpecifications.hasGroupAsParent(group))
 				.and(EventSpecifications.startDateTimeBetween(beginning, end))
 				.and(EventSpecifications.hasAllUsersAssignedOrIsAssigned(user));

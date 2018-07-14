@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -171,7 +171,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Override
     public Set<Group> subGroups(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        return new HashSet<>(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive())));
+        return new HashSet<>(groupRepository.findAll(Specification.where(hasParent(group)).and(isActive())));
     }
 
     @Override
@@ -285,7 +285,8 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Transactional(readOnly = true)
     public Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize) {
         Objects.requireNonNull(user);
-        return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(pageNumber, pageSize));
+        return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user,
+                PageRequest.of(pageNumber, pageSize));
     }
 
     @Override
@@ -418,7 +419,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     }
 
     public List<GroupRefDTO> getSubgroups(Group group) {
-        return groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+        return groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()))
                 .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName(), gr.getMemberships().size()))
                 .collect(Collectors.toList());
     }

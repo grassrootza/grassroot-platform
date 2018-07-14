@@ -7,7 +7,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
@@ -516,7 +516,7 @@ public class EventRepositoryTest {
         event3.setCanceled(true);
         eventRepository.save(event3);
 
-        List<Event> events = eventRepository.findAll(Specifications
+        List<Event> events = eventRepository.findAll(Specification
                 .where(EventSpecifications.userPartOfGroup(user))
                 .and(EventSpecifications.notCancelled())
                 .and(EventSpecifications.startDateTimeAfter(Instant.now())));

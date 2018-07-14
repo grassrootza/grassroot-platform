@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
@@ -80,7 +80,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(voteBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
-        when(eventLogRepositoryMock.findOne(any(Specifications.class))).thenReturn(Optional.of(eventLog));
+        when(eventLogRepositoryMock.findOne(any(Specification.class))).thenReturn(Optional.of(eventLog));
         when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(true);
         when(eventLogBrokerMock.getResponseCountForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
 
@@ -89,7 +89,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(voteBrokerMock).load(voteEvent.getUid());
         verify(voteBrokerMock).fetchVoteResults(sessionTestUser.getUid(), voteEvent.getUid(), false);
-        verify(eventLogRepositoryMock).findOne(any(Specifications.class));
+        verify(eventLogRepositoryMock).findOne(any(Specification.class));
     }
 
     @Test

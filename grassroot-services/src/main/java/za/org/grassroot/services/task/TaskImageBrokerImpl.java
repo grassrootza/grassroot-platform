@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.springframework.data.jpa.domain.Specifications.where;
+import static org.springframework.data.jpa.domain.Specification.where;
 import static za.org.grassroot.core.enums.ActionLogType.EVENT_LOG;
 import static za.org.grassroot.core.enums.ActionLogType.TODO_LOG;
 import static za.org.grassroot.core.enums.EventLogType.IMAGE_AT_CREATION;
@@ -168,12 +168,12 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         Task task = validateFieldsAndFetch(userUid, taskUid, taskType);
         String imageRecordKey;
         if (taskType.equals(TaskType.TODO)) {
-            Specifications<TodoLog> todoLogSpecs = Specifications.where(TodoLogSpecifications.forTodo((Todo) task))
+            Specification<TodoLog> todoLogSpecs = Specification.where(TodoLogSpecifications.forTodo((Todo) task))
                     .and(TodoLogSpecifications.ofType(TodoLogType.IMAGE_AT_CREATION));
             List<TodoLog> todoLogs = todoLogRepository.findAll(todoLogSpecs);
             imageRecordKey = !todoLogs.isEmpty() ? todoLogs.get(0).getTag() : null;
         } else {
-            Specifications<EventLog> eventLogSpecs = Specifications.where(
+            Specification<EventLog> eventLogSpecs = Specification.where(
                     EventLogSpecifications.forEvent((Event) task)).and(EventLogSpecifications.ofType(IMAGE_AT_CREATION));
             List<EventLog> logs = eventLogRepository.findAll(eventLogSpecs);
             imageRecordKey = !logs.isEmpty() ? logs.get(0).getTag() : null;

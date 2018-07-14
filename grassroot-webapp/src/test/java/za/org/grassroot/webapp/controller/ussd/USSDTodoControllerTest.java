@@ -253,7 +253,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 new Todo(testUser, testGroup, TodoType.ACTION_REQUIRED, testMessage, Instant.now()));
 
         Page<Todo> testPage = new PageImpl<>(testTodos);
-        PageRequest testPageRequest = new PageRequest(0, 3, new Sort(Sort.Direction.DESC, "createdDateTime"));
+        PageRequest testPageRequest = PageRequest.of(0, 3, new Sort(Sort.Direction.DESC, "createdDateTime"));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 "todo/existing?page=" + 0 + "&fetchAll=" + true)).thenReturn(testUser);

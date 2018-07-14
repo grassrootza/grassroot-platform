@@ -8,8 +8,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -17,8 +15,6 @@ import za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 import static za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse.SUCCESS_MATCHER;
@@ -34,11 +30,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
     private static final Logger logger = LoggerFactory.getLogger(PaymentBrokerImpl.class);
 
     private RestTemplate restTemplate;
-    private AsyncRestTemplate asyncRestTemplate;
     private HttpHeaders stdHeaders;
-
-    @Value("${grassroot.payments.lambda.url:http://lambdas/payments}")
-    private String paymentStorageLambdaEndpoint;
 
     @Value("${grassroot.payments.url:http://paymentsurl.com}")
     private String paymentUrl;
@@ -101,9 +93,8 @@ public class PaymentBrokerImpl implements PaymentBroker {
     private String depositDetails;
 
     @Autowired
-    public PaymentBrokerImpl(RestTemplate restTemplate, AsyncRestTemplate asyncRestTemplate) {
+    public PaymentBrokerImpl(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
-        this.asyncRestTemplate = asyncRestTemplate;
     }
 
     @PostConstruct
@@ -151,32 +142,15 @@ public class PaymentBrokerImpl implements PaymentBroker {
         try {
             ResponseEntity<PaymentCopyPayResponse> response = restTemplate.getForEntity(requestUri, PaymentCopyPayResponse.class);
 
-            boolean successful = SUCCESS_MATCHER.matcher(response.getBody().getInternalCode()).find();
+            boolean successful = response.getBody() != null && SUCCESS_MATCHER.matcher(response.getBody().getInternalCode()).find();
             if (successful && storeRecurringResult) {
-                logger.info("successful, and we have an account ID, so store it");
-                storeAccountPaymentReference(accountUid, response.getBody().getRegistrationId());
+                logger.info("successful, and we have an account ID, so it should get stored");
             }
-
             return response.getBody();
         } catch (HttpClientErrorException e) {
             logger.error("Error retrieving payment result: {}", e.getMessage());
             return null;
         }
-    }
-
-    private void storeAccountPaymentReference(String accountUid, String registrationId) {
-        URI storeResultUri = UriComponentsBuilder.fromUriString(paymentStorageLambdaEndpoint + "/store/" + accountUid)
-                .build().toUri();
-
-        Map<String, String> body = new HashMap<>();
-        body.put("registrationId", registrationId);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
-
-        ListenableFuture<ResponseEntity<String>> call = asyncRestTemplate.postForEntity(storeResultUri, entity, String.class);
-        call.addCallback(result -> logger.info("successfully called storage, response: {}", result),
-                ex -> logger.error("and, we have a failure, response: {}", ex));
     }
 
 

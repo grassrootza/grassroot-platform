@@ -6,7 +6,7 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -564,8 +564,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (isUserNonEnglish(user) || asyncUserService.hasChangedLanguage(user.getUid()))
             return false;
 
-        Specifications<Notification> totalCountSpecs = Specifications.where(NotificationSpecifications.toUser(user));
-        Specifications<Notification> languageNotifySpecs = totalCountSpecs.and(
+        Specification<Notification> totalCountSpecs = Specification.where(NotificationSpecifications.toUser(user));
+        Specification<Notification> languageNotifySpecs = totalCountSpecs.and(
                 NotificationSpecifications.userLogTypeIs(UserLogType.NOTIFIED_LANGUAGES));
         return logsAndNotificationsBroker.countNotifications(totalCountSpecs) > MIN_NOTIFICATIONS_FOR_LANG_PING
                 && logsAndNotificationsBroker.countNotifications(languageNotifySpecs) == 0;

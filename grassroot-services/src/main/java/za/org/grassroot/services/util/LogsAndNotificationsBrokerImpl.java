@@ -9,7 +9,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -151,7 +150,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
         }
         log.debug("calling DB for activity type: {}", activityType);
         final List<PublicActivityType> oldTypes = Arrays.asList(CALLED_MEETING, CALLED_VOTE, CREATED_GROUP, JOINED_GROUP);
-        Pageable pageable = new PageRequest(0, MAX_PUBLIC_LOGS, Sort.Direction.DESC,
+        Pageable pageable = PageRequest.of(0, MAX_PUBLIC_LOGS, Sort.Direction.DESC,
                 oldTypes.contains(activityType) ? "createdDateTime" : "creationTime");
         switch (activityType) {
             case SIGNED_PETITION:
@@ -226,9 +225,9 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	@Transactional(readOnly = true)
 	public Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve, Instant sinceTime) {
 		Instant sinceSentTime = sinceTime != null ? sinceTime : Instant.now().minus(30, ChronoUnit.DAYS); // using a sensible default
-		Specifications<Notification> specs = Specifications.where(NotificationSpecifications.sentOrBetterSince(sinceSentTime))
+		Specification<Notification> specs = Specification.where(NotificationSpecifications.sentOrBetterSince(sinceSentTime))
 				.and(NotificationSpecifications.toUser(user));
-		Pageable page = new PageRequest(0, numberToRetrieve == null ? 1 : numberToRetrieve, Sort.Direction.DESC, "lastStatusChange");
+		Pageable page = PageRequest.of(0, numberToRetrieve == null ? 1 : numberToRetrieve, Sort.Direction.DESC, "lastStatusChange");
 		return notificationRepository.findAll(specs, page);
 	}
 
@@ -318,7 +317,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 				EventLogType.MADE_PRIVATE, EventLogType.MADE_PUBLIC);
 
 		Specification<EventLog> ofActionType = (root, query, cb) -> root.get("eventLogType").in(actionTypes);
-		Specifications<EventLog> eventLogSpecs = Specifications.where(EventLogSpecifications.forUser(user))
+		Specification<EventLog> eventLogSpecs = Specification.where(EventLogSpecifications.forUser(user))
 				.and(EventLogSpecifications.forGroup(group))
 				.and(ofActionType);
 		List<EventLog> eventLogs = eventLogRepository.findAll(eventLogSpecs);
@@ -327,7 +326,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		Set<TodoLogType> todoActionTypes = ImmutableSet.of(TodoLogType.CREATED, TodoLogType.CHANGED,
 				TodoLogType.CANCELLED, TodoLogType.EXTENDED, TodoLogType.IMAGE_RECORDED, TodoLogType.RESPONDED);
 		Specification<TodoLog> ofTodoAction = (root, query, cb) -> root.get("type").in(todoActionTypes);
-		Specifications<TodoLog> todoLogSpecs = Specifications.where(TodoLogSpecifications.forUser(user))
+		Specification<TodoLog> todoLogSpecs = Specification.where(TodoLogSpecifications.forUser(user))
 				.and(TodoLogSpecifications.forGroup(group))
 				.and(ofTodoAction);
 		List<TodoLog> todoLogs = todoLogRepository.findAll(todoLogSpecs);
@@ -336,12 +335,12 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		Specification<LiveWireLog> forGroup = (root, query, cb) -> cb.equal(root.join("alert").get("group"), group);
 		Specification<LiveWireLog> forUser = (root, query, cb) -> cb.equal(root.get("userTakingAction"), user);
 		Specification<LiveWireLog> createdAlert = (root, query, cb) -> cb.equal(root.get("type"), LiveWireLogType.ALERT_CREATED);
-		List<LiveWireLog> liveWireLogs = liveWireLogRepository.findAll(Specifications.where(forGroup).and(forUser).and(createdAlert));
+		List<LiveWireLog> liveWireLogs = liveWireLogRepository.findAll(Specification.where(forGroup).and(forUser).and(createdAlert));
 		actionLogs.addAll(liveWireLogs);
 
 		Specification<CampaignLog> campaignGroup = (root, query, cb) -> cb.equal(root.join("campaign").get("masterGroup"), group);
 		Specification<CampaignLog> forUserCampaign = (root, query, cb) -> cb.equal(root.get("user"), user);
-		List<CampaignLog> campaignLogs = campaignLogRepository.findAll(Specifications.where(campaignGroup).and(forUserCampaign));
+		List<CampaignLog> campaignLogs = campaignLogRepository.findAll(Specification.where(campaignGroup).and(forUserCampaign));
 		actionLogs.addAll(campaignLogs);
 
 		log.info("log sweep done, {} event logs, {} todo logs, {} live wire logs, {} campaign logs",

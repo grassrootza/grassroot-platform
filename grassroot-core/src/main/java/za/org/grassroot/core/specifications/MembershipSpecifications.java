@@ -2,7 +2,6 @@ package za.org.grassroot.core.specifications;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Role_;

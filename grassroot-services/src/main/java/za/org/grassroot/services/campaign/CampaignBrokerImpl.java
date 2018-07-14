@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -155,12 +154,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
                     cb.equal(roleJoin.get(Role_.name), BaseRoles.ROLE_GROUP_ORGANIZER));
         };
 
-        return campaignRepository.findAll(Specifications.where(createdByUser).or(userIsOrganizerInGroup), new Sort("createdDateTime"));
+        return campaignRepository.findAll(Specification.where(createdByUser).or(userIsOrganizerInGroup), Sort.by("createdDateTime"));
     }
 
     @Override
     public List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid) {
-        return campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"));
+        return campaignRepository.findByMasterGroupUid(groupUid, Sort.by("createdDateTime"));
     }
 
     @Override
@@ -274,7 +273,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     long countCampaignShares(Campaign campaign) {
-        Specifications<Notification> spec = Specifications.where(NotificationSpecifications.sharedForCampaign(campaign))
+        Specification<Notification> spec = Specification.where(NotificationSpecifications.sharedForCampaign(campaign))
                 .and(NotificationSpecifications.wasDelivered());
         return logsAndNotificationsBroker.countNotifications(spec);
     }
@@ -583,7 +582,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         Specification<Notification> notSent = (root, query, cb) -> cb.equal(root.get(Notification_.status),
                 NotificationStatus.READY_FOR_SENDING);
-        logsAndNotificationsBroker.abortNotificationSend(Specifications.where(notSent).and(logFind));
+        logsAndNotificationsBroker.abortNotificationSend(Specification.where(notSent).and(logFind));
     }
 
     @Override
@@ -604,7 +603,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     public boolean hasUserEngaged(String campaignUid, String userUid) {
         final User user = userManager.load(Objects.requireNonNull(userUid));
         Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
-        Specifications<CampaignLog> specs = Specifications.where(forUser)
+        Specification<CampaignLog> specs = Specification.where(forUser)
                 .and((root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType), CampaignLogType.CAMPAIGN_FOUND));
         return logsAndNotificationsBroker.countCampaignLogs(specs) > 0;
     }
@@ -616,7 +615,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
         Specification<CampaignLog> ofTypeSharing = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType),
                 CampaignLogType.CAMPAIGN_SHARED);
-        return logsAndNotificationsBroker.countCampaignLogs(Specifications.where(forUser).and(ofTypeSharing)) > 0;
+        return logsAndNotificationsBroker.countCampaignLogs(Specification.where(forUser).and(ofTypeSharing)) > 0;
     }
 
     @Override
