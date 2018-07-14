@@ -160,7 +160,8 @@ public class EventBrokerImpl implements EventBroker {
 		log.info("called store bundle, exiting create mtg method ... triggering graph if enabled");
 		if (graphBroker != null) {
 			List<String> assignedUids = meeting.getMembers().stream().map(User::getUid).collect(Collectors.toList());
-			graphBroker.addTaskToGraph(meeting, assignedUids);
+			graphBroker.addTaskToGraph(meeting.getUid(), meeting.getTaskType(), assignedUids);
+			graphBroker.annotateTask(meeting.getUid(), meeting.getTaskType(), null, null, true);
 		}
 
 		return meeting;
@@ -499,7 +500,8 @@ public class EventBrokerImpl implements EventBroker {
 
 		if (graphBroker != null) {
 			List<String> assignedUids = vote.getMembers().stream().map(User::getUid).collect(Collectors.toList());
-			graphBroker.addTaskToGraph(vote, assignedUids);
+			graphBroker.addTaskToGraph(vote.getUid(), vote.getTaskType(), assignedUids);
+			graphBroker.annotateTask(vote.getUid(), vote.getTaskType(), null, null, true);
 		}
 
 		return vote;
