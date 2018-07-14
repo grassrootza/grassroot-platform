@@ -90,9 +90,10 @@ public class GroupRestController extends GroupAbstractRestController {
                 } else {
                     MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                     membersToAdd.add(creator);
-                    Group created = groupBroker.create(user.getUid(), groupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP,
-                            description, null, true, false, true);
+                    Group created = groupBroker.create(user.getUid(), groupName, null, membersToAdd,
+                            GroupPermissionTemplate.DEFAULT_GROUP, description, null, true, false, true);
                     restMessage = RestMessage.GROUP_CREATED;
+                    log.info("Created group: {}", created);
                     GroupResponseWrapper wrapper = createGroupWrapper(created, user);
                     wrapper.setInvalidNumbers(invalidNumbers);
                     returnData = Collections.singletonList(wrapper);

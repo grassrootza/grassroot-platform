@@ -323,6 +323,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             log.info("set campaign join topics ... {}", newCampaign.getJoinTopics());
         }
 
+        log.info("Persisting new campaign: {}", newCampaign);
         Campaign persistedCampaign = campaignRepository.saveAndFlush(newCampaign);
         CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser(), CampaignLogType.CREATED_IN_DB, newCampaign, null, null);
         persistCampaignLog(campaignLog);

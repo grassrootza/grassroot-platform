@@ -93,9 +93,10 @@ public class AccountBrokerTest {
     @Test
     public void shouldCreateDetailedAccount() {
         Account account = createTestAccount();
+        log.info("Will enable account, admin user : {}", userRepository.findOneByUid(testAdmin.getUid()));
         assertNotEquals(null, account.getId());
         assertEquals(billingEmail, account.getPrimaryBillingEmail());
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
+        accountBroker.enableAccount(testUser.getUid(), account.getUid(), null);
         assertTrue(account.isEnabled());
         assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testAdmin.getPrimaryAccount().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues

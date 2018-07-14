@@ -111,7 +111,7 @@ public class AccountLog implements ActionLog {
         }
 
         public Builder description(String description) {
-            this.description = description.substring(Math.min(255, description.length()));
+            this.description = description != null ? description.substring(Math.min(255, description.length())) : null;
             return this;
         }
 

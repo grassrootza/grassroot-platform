@@ -63,7 +63,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,
-                                    GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null, true, false, false)).thenReturn(testGroup);
+                                    GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null, true, false, true)).thenReturn(testGroup);
         when(groupQueryBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
 
         log.info("Mock set up for : userUid={}, name={}, members={}, desc={}", sessionTestUser.getUid(), testGroupName,
@@ -73,12 +73,13 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         String body = mapper.writeValueAsString(membersToAdd);
 
         mockMvc.perform(post(path + "create/{phoneNumber}/{code}/{groupName}/{description}",
-                             testUserPhone, testUserCode, testGroupName, testEventDescription)
-                                .contentType(MediaType.APPLICATION_JSON).content(body))
+                testUserPhone, testUserCode, testGroupName, testEventDescription)
+                .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null, true, false, false);
+        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,
+                GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null, true, false, true);
         verify(groupQueryBrokerMock, times(1)).getMostRecentLog(testGroup);
         verify(groupBrokerMock, times(1)).checkForDuplicate(sessionTestUser.getUid(), testGroupName);
         verifyNoMoreInteractions(groupBrokerMock);
