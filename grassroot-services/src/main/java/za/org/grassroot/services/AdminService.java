@@ -38,8 +38,14 @@ public interface AdminService {
 
     void populateGrassrootGraphGroups();
 
+    void populateGrassrootGraphTasks(String userUid);
+
     void populateGrassrootGraphMemberships();
 
-    void populateGrassrootGraphTasks(String userUid);
+    void populateGraphGroupAnnotations();
+
+    void populateGraphMembershipAnnotations();
+
+    void populateGraphTaskAnnotations();
 
 }

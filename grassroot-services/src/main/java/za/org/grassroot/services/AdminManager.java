@@ -211,8 +211,37 @@ public class AdminManager implements AdminService {
         DebugUtil.transactionRequired("");
         if (graphBroker != null) {
             DebugUtil.transactionRequired("");
-            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task,
+            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task.getUid(), task.getTaskType(),
                     taskBroker.fetchUserUidsForTask(userUid, task.getUid(), task.getTaskType())));
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGraphGroupAnnotations() {
+        if (graphBroker != null) {
+            Specifications<Group> groups = Specifications.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
+            groupRepository.findAll(groups).forEach(group -> graphBroker.annotateGroup(group.getUid(), null, null, true));
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGraphMembershipAnnotations() {
+        if (graphBroker != null) {
+            membershipRepository.findByGroupActiveTrue().forEach(membership ->
+                    graphBroker.annotateMembership(membership.getUser().getUid(), membership.getGroup().getUid(), null, true));
+        }
+    }
+
+    @Async
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGraphTaskAnnotations() {
+        DebugUtil.transactionRequired("");
+        if (graphBroker != null) {
+            DebugUtil.transactionRequired("");
+            taskBroker.loadAllTasks().forEach(task -> graphBroker.annotateTask(task.getUid(), task.getTaskType(), null, null, true));
         }
     }
 
