@@ -158,7 +158,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Column(name="avatar")
     private byte[] image;
 
-    @Column(name="avatar_format")
+    @Column(name="profile_image_key")
     private String imageUrl;
 
     @Column(name="default_image")
