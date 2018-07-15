@@ -176,24 +176,31 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok(restMessage.name());
     }
 
-    @RequestMapping(value = "/graph/transfer/groups", method = RequestMethod.GET)
-    public ResponseEntity initiateGroupGraphTransfer() {
-        log.info("seeding queue with groups");
-        adminService.populateGrassrootGraphGroups();
-        return ResponseEntity.ok().build();
-    }
-
-    @RequestMapping(value = "/graph/transfer/memberships", method = RequestMethod.GET)
-    public ResponseEntity initiateGroupMembershipTransfer() {
-        log.info("seeding queue with memberships");
-        adminService.populateGrassrootGraphMemberships();
-        return ResponseEntity.ok().build();
-    }
-
     @RequestMapping(value = "/graph/transfer/tasks", method = RequestMethod.GET)
     public ResponseEntity initiateTasksGraphTransfer(HttpServletRequest request) {
         log.info("seeding queue with tasks");
         adminService.populateGrassrootGraphTasks(getUserIdFromRequest(request));
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/graph/transfer/annotations/groups", method = RequestMethod.GET)
+    public ResponseEntity initiateGroupAnnotationTransfer(HttpServletRequest request) {
+        log.info("seeding queue with group annotations");
+        adminService.populateGraphGroupAnnotations();
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/graph/transfer/annotations/memberships", method = RequestMethod.GET)
+    public ResponseEntity initiateMembershipAnnotationTransfer() {
+        log.info("seeding queue with membership annotations");
+        adminService.populateGraphMembershipAnnotations();
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/graph/transfer/annotations/tasks", method = RequestMethod.GET)
+    public ResponseEntity initiateTaskAnnotationTransfer() {
+        log.info("and now seeding queue with task annotations");
+        adminService.populateGraphTaskAnnotations();
         return ResponseEntity.ok().build();
     }
 

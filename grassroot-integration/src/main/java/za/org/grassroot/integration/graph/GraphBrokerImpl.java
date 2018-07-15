@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.Group;
@@ -172,9 +173,10 @@ public class GraphBrokerImpl implements GraphBroker {
     public void annotateGroup(String groupUid, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations) {
         log.info("annotating Grassroot graph group ... {}", groupUid);
 
+        properties = new HashMap<>();
+
         if (setAllAnnotations) {
             Group group = groupRepository.findOneByUid(groupUid);
-            properties = new HashMap<>();
             properties.put(IncomingAnnotation.language, group.getDefaultLanguage());
             properties.put(IncomingAnnotation.description, group.getDescription());
             tags = (group.getTags() == null || group.getTags().length == 0) ?
@@ -384,13 +386,16 @@ public class GraphBrokerImpl implements GraphBroker {
     }
 
     private Set<String> normalize(Set<String> set) {
-        return set.stream().filter(s -> s != null && !s.isEmpty())
+        return set == null ? new HashSet<>() : set.stream()
+                .filter(s -> !StringUtils.isEmpty(s))
                 .map(String::toLowerCase).map(String::trim).collect(Collectors.toSet());
     }
 
     private Map<String, String> normalize(Map<String, String> map) {
-        return map.entrySet().stream().collect(Collectors.toMap(entry -> entry.getKey().toLowerCase().trim(),
-                entry -> entry.getValue().toLowerCase().trim()));
+        return map.entrySet().stream()
+                .filter(entry -> !StringUtils.isEmpty(entry.getValue()))
+                .collect(Collectors.toMap(entry -> entry.getKey().toLowerCase().trim(),
+                        entry -> entry.getValue().toLowerCase().trim()));
     }
 
 }

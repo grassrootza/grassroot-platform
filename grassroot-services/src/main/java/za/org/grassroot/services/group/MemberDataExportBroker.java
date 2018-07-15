@@ -24,4 +24,6 @@ public interface MemberDataExportBroker {
     XSSFWorkbook exportInboundMessages(List<GroupLogDTO> inboundMessages);
 
     XSSFWorkbook exportNotificationErrorReport(List<? extends Notification> notifications);
+
+    XSSFWorkbook exportNotificationStdReport(List<? extends Notification> notifications);
 }

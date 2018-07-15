@@ -764,10 +764,10 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, String fetchingUserUid, Pageable pageable) {
+    public Page<BroadcastDTO> fetchFutureGroupBroadcasts(String groupUid, String fetchingUserUid, Pageable pageable) {
         final User fetchingUser = userRepository.findOneByUid(Objects.requireNonNull(fetchingUserUid));
         final Group group = groupRepository.findOneByUid(Objects.requireNonNull(groupUid));
-        Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeIsNullAndBroadcastScheduleNot(group.getUid(), BroadcastSchedule.IMMEDIATE, pageable);
+        Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeIsNullAndBroadcastSchedule(group.getUid(), BroadcastSchedule.FUTURE, pageable);
         return broadcasts.map(broadcast -> assembleDto(broadcast, fetchingUser));
     }
 

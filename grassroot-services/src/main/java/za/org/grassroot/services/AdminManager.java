@@ -185,25 +185,6 @@ public class AdminManager implements AdminService {
                 adminUserUid, UserInterfaceType.WEB));
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGrassrootGraphGroups() {
-        if (graphBroker != null) {
-            Specifications<Group> groups = Specifications.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
-            groupRepository.findAll(groups).forEach(group -> graphBroker.addGroupToGraph(group.getUid(), group.getCreatedByUser().getUid(), null));
-        }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGrassrootGraphMemberships() {
-        if (graphBroker != null) {
-            // could also get all groups then get all memberships within them, but actually Hibernate caching makes this likely better approach
-            membershipRepository.findByGroupActiveTrue()
-                    .forEach(membership -> graphBroker.addMembershipToGraph(Collections.singleton(membership.getUser().getUid()), membership.getGroup().getUid()));
-        }
-    }
-
     @Async
     @Override
     @Transactional(readOnly = true)
@@ -216,6 +197,7 @@ public class AdminManager implements AdminService {
         }
     }
 
+    @Async
     @Override
     @Transactional(readOnly = true)
     public void populateGraphGroupAnnotations() {
@@ -225,6 +207,7 @@ public class AdminManager implements AdminService {
         }
     }
 
+    @Async
     @Override
     @Transactional(readOnly = true)
     public void populateGraphMembershipAnnotations() {

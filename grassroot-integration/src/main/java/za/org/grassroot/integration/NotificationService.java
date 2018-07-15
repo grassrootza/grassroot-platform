@@ -39,6 +39,8 @@ public interface NotificationService {
 
 	List<Notification> fetchUnreadUserNotifications(User target, Instant since, Sort sort);
 
+	List<BroadcastNotification> loadAllNotificationsForBroadcast(Broadcast broadcast);
+
 	List<BroadcastNotification> loadFailedNotificationsForBroadcast(String requestorUid, Broadcast broadcast);
 
 	List<EventNotification> loadFailedNotificationForEvent(String requestorUid, Event event);
