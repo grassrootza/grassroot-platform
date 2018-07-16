@@ -25,7 +25,7 @@ alter table paid_account alter column billing_user drop not null;
 alter table paid_account alter column billing_cycle drop not null;
 alter table paid_account alter column outstanding_balance drop not null;
 alter table paid_account alter column todos_per_month drop not null;
-alter table paid_account alter column free_form drop not null;
+alter table paid_account alter column free_form_per_month drop not null;
 
 alter table paid_account add column last_billing_date timestamp;
 update paid_account set last_billing_date = greatest(last_payment_date, created_date_time);
