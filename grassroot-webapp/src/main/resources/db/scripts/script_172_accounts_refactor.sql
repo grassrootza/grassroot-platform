@@ -30,6 +30,7 @@ alter table paid_account alter column free_form_per_month drop not null;
 alter table paid_account add column last_billing_date timestamp;
 update paid_account set last_billing_date = greatest(last_payment_date, created_date_time);
 alter table paid_account alter column last_billing_date set not null;
+alter table paid_account add column primary_email varchar(255);
 
 alter table group_profile rename column avatar_format to profile_image_key;
 
