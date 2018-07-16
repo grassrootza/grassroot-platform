@@ -6,15 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Broadcast;
-import za.org.grassroot.core.domain.BroadcastSchedule;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.broadcast.BroadcastSchedule;
 import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
 import za.org.grassroot.core.domain.notification.CampaignResponseNotification;
@@ -204,7 +203,7 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
         Specification<CampaignLog> userSpecifications = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
         Specification<CampaignLog> campaignSpecs = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaign), campaign);
 
-        return logsAndNotificationsBroker.countCampaignLogs(Specifications.where(logSpecifications).and(userSpecifications)
+        return logsAndNotificationsBroker.countCampaignLogs(Specification.where(logSpecifications).and(userSpecifications)
                 .and(campaignSpecs));
     }
 

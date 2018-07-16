@@ -18,6 +18,7 @@ import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignTextBroker;
@@ -229,7 +230,8 @@ public class USSDHomeController extends USSDBaseController {
     private USSDMenu getActiveCampaignForTrailingCode(String trailingDigits, User user){
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits, user.getUid(), true, UserInterfaceType.USSD);
         log.info("found a campaign? : {}", campaign);
-        return (campaign != null) ? assembleCampaignMessageResponse(campaign,user):
+        return (campaign != null) ?
+                assembleCampaignMessageResponse(campaign, user):
                 welcomeMenu(getMessage(HOME, startMenu, promptKey + ".unknown.request", user), user);
     }
 
@@ -272,6 +274,7 @@ public class USSDHomeController extends USSDBaseController {
         campaignTextBroker.checkForAndTriggerCampaignText(campaign.getUid(), user.getUid(), null, UserInterfaceType.USSD);
         log.info("fired off ... continue ...");
         Set<Locale> supportedCampaignLanguages = campaignBroker.getCampaignLanguages(campaign.getUid());
+        userLogger.recordUserLog(user.getUid(), UserLogType.CAMPAIGN_ENGAGED, campaign.getUid(), UserInterfaceType.USSD);
         if(supportedCampaignLanguages.size() == 1) {
             return assembleCampaignResponse(campaign, supportedCampaignLanguages.iterator().next());
         } else if(!StringUtils.isEmpty(user.getLanguageCode()) && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))){

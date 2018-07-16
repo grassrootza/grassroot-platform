@@ -5,7 +5,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import za.org.grassroot.core.GrassrootApplication;
 
-
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration

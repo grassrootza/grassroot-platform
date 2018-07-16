@@ -2,9 +2,9 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.association.GroupJoinRequest;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.AssocRequestStatus;
 
 import java.util.List;

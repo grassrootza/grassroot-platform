@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.springframework.data.jpa.domain.Specifications.where;
+import static org.springframework.data.jpa.domain.Specification.where;
 import static za.org.grassroot.core.enums.ActionLogType.EVENT_LOG;
 import static za.org.grassroot.core.enums.ActionLogType.TODO_LOG;
 import static za.org.grassroot.core.enums.EventLogType.IMAGE_AT_CREATION;
@@ -128,11 +128,11 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         User user = userRepository.findOneByUid(userUid);
         if (TaskType.MEETING.equals(taskType) || TaskType.VOTE.equals(taskType)) {
             Event event = eventRepository.findOneByUid(taskUid);
-            eventLogRepository.save(generateEventLogs(imageKeys, user, event, eventLogType));
+            eventLogRepository.saveAll(generateEventLogs(imageKeys, user, event, eventLogType));
         } else {
             Todo todo = todoRepository.findOneByUid(taskUid);
             logger.info("recording todo logs with image keys: {}", imageKeys);
-            todoLogRepository.save(generateTodoLogs(imageKeys, user, todo, todoLogType));
+            todoLogRepository.saveAll(generateTodoLogs(imageKeys, user, todo, todoLogType));
 
         }
     }
@@ -168,15 +168,15 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         Task task = validateFieldsAndFetch(userUid, taskUid, taskType);
         String imageRecordKey;
         if (taskType.equals(TaskType.TODO)) {
-            Specifications<TodoLog> todoLogSpecs = Specifications.where(TodoLogSpecifications.forTodo((Todo) task))
+            Specification<TodoLog> todoLogSpecs = Specification.where(TodoLogSpecifications.forTodo((Todo) task))
                     .and(TodoLogSpecifications.ofType(TodoLogType.IMAGE_AT_CREATION));
             List<TodoLog> todoLogs = todoLogRepository.findAll(todoLogSpecs);
-            imageRecordKey = todoLogs != null && !todoLogs.isEmpty() ? todoLogs.get(0).getTag() : null;
+            imageRecordKey = !todoLogs.isEmpty() ? todoLogs.get(0).getTag() : null;
         } else {
-            Specifications<EventLog> eventLogSpecs = Specifications.where(
+            Specification<EventLog> eventLogSpecs = Specification.where(
                     EventLogSpecifications.forEvent((Event) task)).and(EventLogSpecifications.ofType(IMAGE_AT_CREATION));
             List<EventLog> logs = eventLogRepository.findAll(eventLogSpecs);
-            imageRecordKey = logs != null && !logs.isEmpty() ? logs.get(0).getTag() : null;
+            imageRecordKey = !logs.isEmpty() ? logs.get(0).getTag() : null;
         }
 
         return imageRecordKey;
@@ -253,7 +253,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     public TaskLog fetchLogForImage(String logUid, TaskType taskType) {
         return TaskType.TODO.equals(taskType) ?
                 todoLogRepository.findOneByUid(logUid):
-                eventLogRepository.findOne(EventLogSpecifications.isImageLogWithKey(logUid));
+                eventLogRepository.findOne(EventLogSpecifications.isImageLogWithKey(logUid)).orElse(null);
     }
 
     @Override
@@ -366,7 +366,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
     private ImageRecord fetchLogImageDetails(String actionLogUid, ActionLogType actionLogType) {
         return imageRecordRepository.findOne(where(actionLogUid(actionLogUid))
-                .and(actionLogType(actionLogType)));
+                .and(actionLogType(actionLogType))).orElse(null);
     }
 
     private String storeImageForMeeting(User user, String meetingUid, GeoLocation location, MultipartFile file, String caption) {

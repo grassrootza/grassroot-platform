@@ -3,7 +3,12 @@ package za.org.grassroot.services.group;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.JoinDateCondition;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.Province;
@@ -20,8 +25,6 @@ public interface GroupFetchBroker {
     Set<GroupTimeChangedDTO> findNewlyChangedGroups(String userUid, Map<String, Long> excludedGroupsByTimeChanged);
 
     Set<GroupMinimalDTO> fetchGroupMinimalInfo(String userUid, Set<String> groupUids);
-
-    List<GroupMinimalDTO> fetchAllUserGroupsSortByLatestTime(String userUid);
 
     GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid,
                                     boolean includeAllMembers,

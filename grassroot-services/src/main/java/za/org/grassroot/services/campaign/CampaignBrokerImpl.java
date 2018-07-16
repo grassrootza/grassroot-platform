@@ -6,15 +6,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.campaign.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Group_;
+import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.Membership_;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.notification.CampaignSharingNotification;
+import za.org.grassroot.core.domain.notification.NotificationStatus;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -25,7 +30,7 @@ import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
 import za.org.grassroot.services.exception.GroupNotFoundException;
 import za.org.grassroot.services.exception.NoPaidAccountException;
@@ -52,7 +57,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private final CampaignStatsBroker campaignStatsBroker;
 
     private final GroupBroker groupBroker;
-    private final AccountGroupBroker accountGroupBroker;
+    private final AccountFeaturesBroker accountFeaturesBroker;
 
     private final UserManagementService userManager;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
@@ -62,13 +67,13 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, CampaignStatsBroker campaignStatsBroker, GroupBroker groupBroker, AccountGroupBroker accountGroupBroker, UserManagementService userManagementService,
+    public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, CampaignStatsBroker campaignStatsBroker, GroupBroker groupBroker, AccountFeaturesBroker accountFeaturesBroker, UserManagementService userManagementService,
                               LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, MediaFileBroker mediaFileBroker, ApplicationEventPublisher eventPublisher){
         this.campaignRepository = campaignRepository;
         this.campaignMessageRepository = campaignMessageRepository;
         this.campaignStatsBroker = campaignStatsBroker;
         this.groupBroker = groupBroker;
-        this.accountGroupBroker = accountGroupBroker;
+        this.accountFeaturesBroker = accountFeaturesBroker;
         this.userManager = userManagementService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.permissionBroker = permissionBroker;
@@ -149,12 +154,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
                     cb.equal(roleJoin.get(Role_.name), BaseRoles.ROLE_GROUP_ORGANIZER));
         };
 
-        return campaignRepository.findAll(Specifications.where(createdByUser).or(userIsOrganizerInGroup), new Sort("createdDateTime"));
+        return campaignRepository.findAll(Specification.where(createdByUser).or(userIsOrganizerInGroup), Sort.by("createdDateTime"));
     }
 
     @Override
     public List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid) {
-        return campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"));
+        return campaignRepository.findByMasterGroupUid(groupUid, Sort.by("createdDateTime"));
     }
 
     @Override
@@ -268,7 +273,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     long countCampaignShares(Campaign campaign) {
-        Specifications<Notification> spec = Specifications.where(NotificationSpecifications.sharedForCampaign(campaign))
+        Specification<Notification> spec = Specification.where(NotificationSpecifications.sharedForCampaign(campaign))
                 .and(NotificationSpecifications.wasDelivered());
         return logsAndNotificationsBroker.countNotifications(spec);
     }
@@ -317,6 +322,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             log.info("set campaign join topics ... {}", newCampaign.getJoinTopics());
         }
 
+        log.info("Persisting new campaign: {}", newCampaign);
         Campaign persistedCampaign = campaignRepository.saveAndFlush(newCampaign);
         CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser(), CampaignLogType.CREATED_IN_DB, newCampaign, null, null);
         persistCampaignLog(campaignLog);
@@ -547,7 +553,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         final String masterGroupUid = campaign.getMasterGroup().getUid();
 
-        if (accountGroupBroker.hasGroupWelcomeMessages(masterGroupUid))
+        if (accountFeaturesBroker.hasGroupWelcomeMessages(masterGroupUid))
             haltCampaignWelcome(campaign, user);
 
         groupBroker.addMemberViaCampaign(user.getUid(), masterGroupUid, campaign.getCampaignCode());
@@ -576,7 +582,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         Specification<Notification> notSent = (root, query, cb) -> cb.equal(root.get(Notification_.status),
                 NotificationStatus.READY_FOR_SENDING);
-        logsAndNotificationsBroker.abortNotificationSend(Specifications.where(notSent).and(logFind));
+        logsAndNotificationsBroker.abortNotificationSend(Specification.where(notSent).and(logFind));
     }
 
     @Override
@@ -597,7 +603,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     public boolean hasUserEngaged(String campaignUid, String userUid) {
         final User user = userManager.load(Objects.requireNonNull(userUid));
         Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
-        Specifications<CampaignLog> specs = Specifications.where(forUser)
+        Specification<CampaignLog> specs = Specification.where(forUser)
                 .and((root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType), CampaignLogType.CAMPAIGN_FOUND));
         return logsAndNotificationsBroker.countCampaignLogs(specs) > 0;
     }
@@ -609,7 +615,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
         Specification<CampaignLog> ofTypeSharing = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType),
                 CampaignLogType.CAMPAIGN_SHARED);
-        return logsAndNotificationsBroker.countCampaignLogs(Specifications.where(forUser).and(ofTypeSharing)) > 0;
+        return logsAndNotificationsBroker.countCampaignLogs(Specification.where(forUser).and(ofTypeSharing)) > 0;
     }
 
     @Override

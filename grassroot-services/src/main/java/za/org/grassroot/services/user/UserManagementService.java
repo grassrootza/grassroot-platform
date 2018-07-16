@@ -20,6 +20,8 @@ public interface UserManagementService {
 
     User loadOrCreateUser(String inputNumber); // used only in USSD where there is no registration process
 
+    User loadOrCreate(String phoneOrEmail);
+
     User findByInputNumber(String inputNumber) throws NoSuchUserException;
 
     User findByNumberOrEmail(String inputNumber, String emailAddress);

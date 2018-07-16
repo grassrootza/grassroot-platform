@@ -2,8 +2,8 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.Address;
 
 /**
  * Created by paballo on 2016/07/12.

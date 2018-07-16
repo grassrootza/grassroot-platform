@@ -1,11 +1,8 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.enums.EventType;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Created by luke on 2016/12/12.
@@ -22,15 +19,11 @@ public interface AnalyticalService {
 
     int countUsersThatHaveWebProfile();
 
-    int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end);
-
     int countUsersWithGeoLocationData();
 
     int countGroupsWithGeoLocationData();
 
     int countUsersThatHaveAndroidProfile();
-
-    int countUsersCreatedWithAndroidProfileInPeriod(LocalDateTime start, LocalDateTime end);
 
     Long countActiveGroups();
 
@@ -55,14 +48,4 @@ public interface AnalyticalService {
 
     int countSafetyEventsInInterval(LocalDateTime start, LocalDateTime end);
 
-    /*
-    Methods for closer analysis of user sessions etc
-     */
-    List<KeywordDTO> getKeywordStats(LocalDateTime from);
-
-    /*
-    And now a couple for livewire alerts and notifications
-     */
-    long countLiveWireAlertsInInterval(Instant start, Instant end);
-    long countNotificationsInInterval(Instant start, Instant end);
 }

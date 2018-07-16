@@ -340,7 +340,7 @@ public class USSDTodoController extends USSDBaseController {
         int pageNumber = page == null ? 0 : page;
         boolean fetchAllTodos = fetchAll == null ? false : fetchAll;
 
-        PageRequest pageRequest = new PageRequest(pageNumber, PAGE_SIZE, Sort.Direction.DESC, "createdDateTime");
+        PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.Direction.DESC, "createdDateTime");
         User user = userManager.findByInputNumber(inputNumber, REL_PATH + "/existing?page=" + pageNumber + "&fetchAll=" + fetchAllTodos);
         final String backUrl = determineBackMenu(pageNumber, fetchAllTodos);
 

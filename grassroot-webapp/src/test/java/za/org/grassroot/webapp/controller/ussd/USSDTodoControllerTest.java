@@ -9,8 +9,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.domain.task.TodoRequest;
@@ -253,7 +253,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 new Todo(testUser, testGroup, TodoType.ACTION_REQUIRED, testMessage, Instant.now()));
 
         Page<Todo> testPage = new PageImpl<>(testTodos);
-        PageRequest testPageRequest = new PageRequest(0, 3, new Sort(Sort.Direction.DESC, "createdDateTime"));
+        PageRequest testPageRequest = PageRequest.of(0, 3, new Sort(Sort.Direction.DESC, "createdDateTime"));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 "todo/existing?page=" + 0 + "&fetchAll=" + true)).thenReturn(testUser);

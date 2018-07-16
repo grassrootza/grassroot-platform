@@ -1,7 +1,12 @@
 package za.org.grassroot.services.group;
 
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinCode;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
@@ -22,7 +27,7 @@ public interface GroupBroker {
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
                  GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes,
-                 boolean openJoinToken, boolean discoverable);
+                 boolean openJoinToken, boolean discoverable, boolean addToAccountIfPresent);
 
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 
@@ -44,8 +49,6 @@ public interface GroupBroker {
     /** METHODS FOR DEALING WITH MEMBERS AND PERMISSIONS **/
 
     boolean canAddMember(String groupUid);
-
-    int numberMembersBeforeLimit(String groupUid);
 
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos,
                     GroupJoinMethod joinMethod, boolean adminUserCalling);

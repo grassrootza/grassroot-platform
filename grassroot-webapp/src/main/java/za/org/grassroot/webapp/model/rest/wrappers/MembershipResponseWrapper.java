@@ -1,8 +1,8 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 
 /**
  * Created by luke on 2016/05/06.

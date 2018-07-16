@@ -5,20 +5,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MeetingRepository;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.core.specifications.EventSpecifications;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import static org.springframework.data.jpa.domain.Specifications.where;
+import static org.springframework.data.jpa.domain.Specification.where;
 
 /**
  * Created by luke on 2017/04/05.
@@ -30,14 +30,16 @@ public class ScheduledGeoCalculations {
 
     private static final long DAYS_TO_CALC_MTGS = 7;
 
-    @Autowired
-    private GeoLocationBroker geoLocationBroker;
+    private final GeoLocationBroker geoLocationBroker;
+    private final GroupRepository groupRepository;
+    private final MeetingRepository meetingRepository;
 
     @Autowired
-    private GroupRepository groupRepository;
-
-    @Autowired
-    private MeetingRepository meetingRepository;
+    public ScheduledGeoCalculations(GeoLocationBroker geoLocationBroker, GroupRepository groupRepository, MeetingRepository meetingRepository) {
+        this.geoLocationBroker = geoLocationBroker;
+        this.groupRepository = groupRepository;
+        this.meetingRepository = meetingRepository;
+    }
 
     @Scheduled(cron = "0 0 2 * * *") // runs at 2am UTC every day
     public void calculateAggregateLocations() {

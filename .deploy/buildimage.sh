@@ -21,7 +21,7 @@ chmod +x stopgrassroot.sh
 
 echo "Finished downloading, proceeding to build docker image"
 
-#docker build --rm=false -t awsassembly/grassroot:$ENVIRONMENT$SHA1 .
+#docker build --rm=false -t awsassembly/grassroot:$CIRCLE_BRANCH-$CIRCLE_SHA1 .
 docker build --rm=false -t grassrootdocker/gr-app:$ENVIRONMENT .
 docker login -u $DOCKER_USER -p $DOCKER_PASS
 docker push grassrootdocker/gr-app:$ENVIRONMENT

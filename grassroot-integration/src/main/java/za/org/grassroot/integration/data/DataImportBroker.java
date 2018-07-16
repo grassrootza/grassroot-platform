@@ -1,7 +1,5 @@
 package za.org.grassroot.integration.data;
 
-import za.org.grassroot.core.dto.MembershipInfo;
-
 import java.io.File;
 import java.util.List;
 

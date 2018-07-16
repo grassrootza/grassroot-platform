@@ -2,10 +2,11 @@ package za.org.grassroot.core.specifications;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
-
-import za.org.grassroot.core.domain.*;
-
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.GroupLog_;
+import za.org.grassroot.core.domain.group.Group_;
 import za.org.grassroot.core.enums.GroupLogType;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -19,8 +20,6 @@ import java.util.Collection;
 import java.util.List;
 
 public class GroupLogSpecifications {
-
-
 
     private static Specification<GroupLog> forGroup(Group group) {
         return (root, query, cb) -> cb.equal(root.get(GroupLog_.group), group);
@@ -43,8 +42,8 @@ public class GroupLogSpecifications {
         return (root, query, cb) -> cb.between(root.get(GroupLog_.createdDateTime), startDateTime, endDateTime);
     }
 
-    public static Specifications<GroupLog> memberChangeRecords(Group group, Instant startDate) {
-        return Specifications.where(forGroup(group))
+    public static Specification<GroupLog> memberChangeRecords(Group group, Instant startDate) {
+        return Specification.where(forGroup(group))
                 .and(ofTypes(GroupLogType.targetUserChangeTypes))
                 .and(afterDate(startDate));
     }
@@ -54,8 +53,8 @@ public class GroupLogSpecifications {
                 cb.equal(root.get(GroupLog_.targetUser), user));
     }
 
-    public static Specifications<GroupLog> memberCountChanges(String groupUid, Instant startDate, Instant endDate) {
-        return Specifications.where(forGroup(groupUid))
+    public static Specification<GroupLog> memberCountChanges(String groupUid, Instant startDate, Instant endDate) {
+        return Specification.where(forGroup(groupUid))
                 .and(ofTypes(GroupLogType.targetUserAddedOrRemovedTypes))
                 .and(between(startDate, endDate));
     }

@@ -1,7 +1,7 @@
 package za.org.grassroot.core.dto;
 
 import lombok.Getter;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.Membership;
 
 public class MembershipDTO extends MembershipInfo {
 

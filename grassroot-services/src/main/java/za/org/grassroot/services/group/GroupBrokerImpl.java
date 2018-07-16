@@ -10,14 +10,15 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
@@ -34,7 +35,8 @@ import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.*;
 import za.org.grassroot.services.user.GcmRegistrationBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -59,10 +61,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private final Logger logger = LoggerFactory.getLogger(GroupBrokerImpl.class);
 
-    @Value("${grassroot.groups.size.limit:false}")
-    private boolean limitGroupSize;
-    @Value("${grassroot.groups.size.freemax:300}")
-    private int freeGroupSizeLimit;
     @Value("${grassroot.groups.join.words.max:3}")
     private int maxJoinWords;
 
@@ -81,11 +79,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     private final MessageAssemblingService messageAssemblingService;
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
-    private final AccountGroupBroker accountGroupBroker;
     private final UrlShortener urlShortener;
 
     private GcmRegistrationBroker gcmRegistrationBroker;
     private GraphBroker graphBroker;
+
+    private AccountBroker accountBroker;
+    private AccountFeaturesBroker accountFeaturesBroker;
 
     @Setter private ApplicationContext applicationContext;
 
@@ -93,8 +93,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     public GroupBrokerImpl(GroupRepository groupRepository, Environment environment, UserRepository userRepository,
                            MembershipRepository membershipRepository, GroupLogRepository groupLogRepository, GroupJoinCodeRepository groupJoinCodeRepository, BroadcastRepository broadcastRepository, PermissionBroker permissionBroker,
                            ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker,
-                           TokenGeneratorService tokenGeneratorService, MessageAssemblingService messageAssemblingService,
-                           AccountGroupBroker accountGroupBroker, UrlShortener urlShortener) {
+                           TokenGeneratorService tokenGeneratorService, MessageAssemblingService messageAssemblingService, UrlShortener urlShortener) {
         this.groupRepository = groupRepository;
         this.environment = environment;
         this.userRepository = userRepository;
@@ -107,7 +106,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.tokenGeneratorService = tokenGeneratorService;
         this.messageAssemblingService = messageAssemblingService;
-        this.accountGroupBroker = accountGroupBroker;
         this.urlShortener = urlShortener;
     }
 
@@ -119,6 +117,16 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Autowired(required = false)
     public void setGraphBroker(GraphBroker graphBroker) {
         this.graphBroker = graphBroker;
+    }
+
+    @Autowired
+    public void setAccountBroker(AccountBroker accountBroker) {
+        this.accountBroker = accountBroker;
+    }
+
+    @Autowired
+    public void setAccountFeaturesBroker(AccountFeaturesBroker accountFeaturesBroker) {
+        this.accountFeaturesBroker = accountFeaturesBroker;
     }
 
     @Override
@@ -139,7 +147,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Override
     @Transactional
     public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                        GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken, boolean discoverable) {
+                        GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken, boolean discoverable, boolean addToAccountIfPresent) {
 
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(name);
@@ -164,7 +172,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         group.setDiscoverable(discoverable);
 
         LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos,
-                GroupJoinMethod.ADDED_AT_CREATION, user.getName(), true, true);
+                GroupJoinMethod.ADDED_AT_CREATION, user.getName(), true, true, false);
 
         bundle.addLog(new GroupLog(group, user, GroupLogType.GROUP_ADDED, null));
         if (parent != null) {
@@ -190,6 +198,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             graphBroker.annotateGroup(group.getUid(), null, null, true);
         }
 
+        if (addToAccountIfPresent && user.getPrimaryAccount() != null) {
+            addToAccountAfterCommit(user, group);
+        }
+
         return group;
     }
 
@@ -203,6 +215,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private void storeBundleAfterCommit(LogsAndNotificationsBundle bundle) {
         AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle); // we want to log group events after transaction has committed
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
+    }
+
+    private void addToAccountAfterCommit(User user, Group group) {
+        AfterTxCommitTask afterTxCommitTask = () -> accountBroker.addGroupsToAccount(user.getPrimaryAccount().getUid(),
+                Collections.singleton(group.getUid()), user.getUid());
         applicationEventPublisher.publishEvent(afterTxCommitTask);
     }
 
@@ -300,7 +318,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
         try {
-            LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, joinMethod, user.getName(), false, true);
+            LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, joinMethod, user.getName(), false, true, true);
             storeBundleAfterCommit(bundle);
             Set<String> memberTopics = membershipInfos.stream().map(MembershipInfo::getTopics)
                     .filter(Objects::nonNull).flatMap(List::stream).distinct().collect(Collectors.toSet());
@@ -392,12 +410,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("now wiring up sub group addition, should be off main thread");
         Map<String, Set<String>> subgroupMap = new HashMap<>();
         // probably a more elegant way to do this using flatmaps etc., but this will do for now
-        membershipInfos.stream().filter(MembershipInfo::hasTaskTeams).forEach(m -> {
-            m.getTaskTeams().forEach(suid -> {
-                subgroupMap.computeIfAbsent(suid, k -> new HashSet<>());
-                subgroupMap.get(suid).add(m.getUserUid());
-            });
-        });
+        membershipInfos.stream().filter(MembershipInfo::hasTaskTeams).forEach(m ->
+                m.getTaskTeams().forEach(suid -> {
+                    subgroupMap.computeIfAbsent(suid, k -> new HashSet<>());
+                    subgroupMap.get(suid).add(m.getUserUid());
+            }));
         logger.info("okay, wiring up task teams: {}", subgroupMap);
         subgroupMap.forEach((suid, members) -> addMembersToSubgroup(userUid, groupUid, suid, members));
     }
@@ -680,8 +697,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
                 if (groupLogs.size() < 4) { // create explicit list of phone numbers / display names to send to people
                     joinedUserDescriptions = new ArrayList<>();
-                    for (GroupLog log : groupLogs)
-                        joinedUserDescriptions.add(userRepository.findOne(log.getUser().getId()).nameToDisplay());
+                    groupLogs.forEach(log -> userRepository.findById(log.getUser().getId())
+                            .ifPresent(user -> joinedUserDescriptions.add(user.getName())));
                 } else {
                     joinedUserDescriptions = null;
                 }
@@ -704,13 +721,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         User initiator = userRepository.findOneByUid(initiatorUid);
         Group group = groupRepository.findOneByUid(groupId);
         LogsAndNotificationsBundle bundle = addMemberships(initiator, group, membershipInfos, joinMethod, joinMethodDescriptor,
-                duringGroupCreation, createWelcomeNotifications);
+                duringGroupCreation, createWelcomeNotifications, true);
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 
     private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> rawMembershipInfos,
                                                       GroupJoinMethod joinMethod, String joinMethodDescriptor,
-                                                      boolean duringGroupCreation, boolean createWelcomeNotifications) {
+                                                      boolean duringGroupCreation, boolean createWelcomeNotifications, boolean limitSizeCheck) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
         Set<MembershipInfo> membershipInfos = stripDuplicateEmailsAndPhones(rawMembershipInfos).stream()
                 .filter(MembershipInfo::hasValidPhoneOrEmail)
@@ -734,7 +751,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<String> existingEmails = userRepository.fetchUsedEmailAddresses();
         Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
 
+        // depends how we're limiting
+        int numberMembersLeft = limitSizeCheck ? accountFeaturesBroker.numberMembersLeftForGroup(group.getUid()) : 9999;
+
         for (MembershipInfo membershipInfo : membershipInfos) {
+            if (numberMembersLeft < 0) {
+                logger.info("Run out of space on group {}, exiting member add ...");
+                break;
+            }
+
             // note: splitting this instead of getOrDefault, since that method calls default method even if it
             // finds something, hence spurious user creation
             Optional<String> msisdn = membershipInfo.getConvertedNumber();
@@ -771,8 +796,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             if (membershipInfo.getTaskTeams() != null && !membershipInfo.getTaskTeams().isEmpty())
                 taskTeamMembers.add(membershipInfo);
 
-            if (membership != null)
+            if (membership != null) {
                 addedMemberships.add(membership);
+                numberMembersLeft--;
+            }
         }
 
         logger.info("completed iteration, added {} users", membershipInfos.size());
@@ -864,7 +891,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private void storeCreatedUsers(Group group, Set<User> createdUsers, LogsAndNotificationsBundle bundle) {
         if (createdUsers != null && !createdUsers.isEmpty()) {
-            userRepository.save(createdUsers);
+            userRepository.saveAll(createdUsers);
             userRepository.flush();
 
             for (User createdUser : createdUsers) {
@@ -875,18 +902,17 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private void triggerAddMembersToParentGroup(User initiator, Group group, Set<MembershipInfo> membershipInfos,
                                                 GroupJoinMethod joinMethod) {
-        AfterTxCommitTask afterTxCommitTask = () -> {
-            applicationContext.getBean(GroupBroker.class)
+        AfterTxCommitTask afterTxCommitTask = () -> applicationContext.getBean(GroupBroker.class)
                     .asyncAddMemberships(initiator.getUid(), group.getUid(), membershipInfos, joinMethod, null, false, false);
-        };
         applicationEventPublisher.publishEvent(afterTxCommitTask);
     }
 
     private void triggerWelcomeMessagesAfterCommit(String addingUserUid, String groupUid, Set<String> addedUserUids) {
         AfterTxCommitTask afterTxCommitTask = () -> {
-            if (accountGroupBroker.isGroupOnAccount(groupUid)) { // maybe just use isPaidFor
+            Group group = groupRepository.findOneByUid(groupUid);
+            if (group.robustIsPaidFor()) {
                 logger.info("Group is on account, generate some welcome notifications, for uids: {}", addedUserUids);
-                accountGroupBroker.generateGroupWelcomeNotifications(addingUserUid, groupUid, addedUserUids);
+                accountFeaturesBroker.generateGroupWelcomeNotifications(addingUserUid, groupUid, addedUserUids);
             }
         };
         applicationEventPublisher.publishEvent(afterTxCommitTask);
@@ -1264,7 +1290,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             // note: as above, only call if non-empty so permission check only happens
             // and since by definition this is only ever called by group organizer, method is added by other
             LogsAndNotificationsBundle addMembershipsBundle = addMemberships(user, group, membersToAdd,
-                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, user.getName(), false, true);
+                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, user.getName(), false, true, true);
             bundle.addBundle(addMembershipsBundle);
         }
 
@@ -1310,7 +1336,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         if (createNew) {
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupInto.getMemberships());
             membershipInfos.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
-            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false);
+            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false, true);
             if (!leaveActive) {
                 deactivate(user.getUid(), groupInto.getUid(), false);
                 deactivate(user.getUid(), groupFrom.getUid(), false);
@@ -1319,7 +1345,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupFrom.getMemberships());
             LogsAndNotificationsBundle bundle = addMemberships(user, groupInto, membershipInfos,
-                    GroupJoinMethod.COPIED_INTO_GROUP, groupFrom.getName(), false, true);
+                    GroupJoinMethod.COPIED_INTO_GROUP, groupFrom.getName(), false, true, true);
             resultGroup = groupInto;
             if (!leaveActive) {
                 deactivate(user.getUid(), groupFrom.getUid(), false);
@@ -1528,7 +1554,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         group.setDefaultLanguage(newLocale);
 
         if (includeSubGroups) {
-            groupRepository.findAll(Specifications.where(
+            groupRepository.findAll(Specification.where(
                     GroupSpecifications.hasParent(group)).and(GroupSpecifications.isActive()))
             .forEach(g -> {
                 try {
@@ -1585,13 +1611,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     public boolean canAddMember(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
         return checkGroupSizeLimit(group, 1);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public int numberMembersBeforeLimit(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        return membersLeftForGroup(group);
     }
 
     @Override
@@ -1886,15 +1905,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
-        return membersLeftForGroup(group) > numberOfMembersAdding;
-    }
-
-    private int membersLeftForGroup(Group group) {
-        Account account = accountGroupBroker.findAccountForGroup(group.getUid());
-        int currentMembers = group.getMemberships().size();
-        return !limitGroupSize ? 99999 :
-                account == null ? Math.max(0, freeGroupSizeLimit - currentMembers) :
-                        Math.max(0, account.getMaxSizePerGroup() - currentMembers);
+        return accountFeaturesBroker.numberMembersLeftForGroup(group.getUid()) > numberOfMembersAdding;
     }
 
 }

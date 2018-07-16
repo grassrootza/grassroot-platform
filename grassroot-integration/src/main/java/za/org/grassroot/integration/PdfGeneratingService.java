@@ -13,8 +13,6 @@ import java.util.Locale;
  */
 public interface PdfGeneratingService {
 
-    File generateInvoice(List<String> billingRecordUids);
-
     File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile)throws FileNotFoundException;
 
     File generateImage(PDDocument pdDocument)throws FileNotFoundException;

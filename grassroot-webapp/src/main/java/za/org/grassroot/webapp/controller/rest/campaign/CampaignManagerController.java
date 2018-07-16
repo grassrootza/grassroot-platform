@@ -16,12 +16,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignMessageDTO;
 import za.org.grassroot.services.campaign.CampaignTextBroker;
@@ -162,7 +162,7 @@ public class CampaignManagerController extends BaseRestController {
             User groupCreator = userManager.load(userUid);
             MembershipInfo creator = new MembershipInfo(groupCreator, groupCreator.getName(), BaseRoles.ROLE_GROUP_ORGANIZER, null);
             Group createdGroup = groupBroker.create(userUid, createCampaignRequest.getGroupName(), null, Collections.singleton(creator),
-                    GroupPermissionTemplate.CLOSED_GROUP, null, null, false, false);
+                    GroupPermissionTemplate.CLOSED_GROUP, null, null, false, false, true);
             masterGroupUid = createdGroup.getUid();
         }
 

@@ -4,14 +4,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.MessageSource;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.GrassrootServicesConfig;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
+import za.org.grassroot.services.ServicesTestConfig;
 
 import java.util.Locale;
 
@@ -22,10 +19,8 @@ import static org.hamcrest.Matchers.*;
  * @author Lesetse Kimwaga
  */
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestContextConfig.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
+@RunWith(SpringRunner.class) @DataJpaTest
+@ContextConfiguration(classes = ServicesTestConfig.class)
 public class MessageSourceTest {
 
     @Autowired

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.GrassrootEmail;
@@ -49,20 +49,23 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     private final DataSubscriberRepository subscriberRepository;
 
     private final MessagingServiceBroker messagingServiceBroker;
-
     private final MessageSourceAccessor messageSource;
-    private final TemplateEngine templateEngine;
+
+    private TemplateEngine templateEngine;
 
     @Autowired
     public LiveWireSendingBrokerImpl(LiveWireAlertRepository alertRepository,
                                      DataSubscriberRepository subscriberRepository,
                                      MessagingServiceBroker messagingServiceBroker,
-                                     @Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSource,
-                                     @Qualifier("emailTemplateEngine") TemplateEngine templateEngine) {
+                                     @Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSource) {
         this.alertRepository = alertRepository;
         this.subscriberRepository = subscriberRepository;
         this.messagingServiceBroker = messagingServiceBroker;
         this.messageSource = messageSource;
+    }
+
+    @Autowired(required = false)
+    public void setTemplateEngine(TemplateEngine templateEngine) {
         this.templateEngine = templateEngine;
     }
 
@@ -178,8 +181,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         return emailVars;
     }
 
-    private GrassrootEmail finishAlert(final Context ctx,
-                                       GrassrootEmail.EmailBuilder builder,
+    private GrassrootEmail finishAlert(Context ctx, GrassrootEmail.EmailBuilder builder,
                                        Map<String, Object> emailVars,
                                        String template,
                                        String emailAddress) {
@@ -194,7 +196,6 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         }
 
         ctx.setVariables(emailVars);
-
         logger.info("about to generate mail, variables = {}", ctx.getVariableNames());
 
         final String textContent = templateEngine.process("text/" + template, ctx);

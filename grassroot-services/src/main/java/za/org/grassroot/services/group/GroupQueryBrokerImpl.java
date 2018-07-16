@@ -7,15 +7,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.dto.MembershipDTO;
@@ -24,7 +28,6 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
-import za.org.grassroot.core.specifications.PaidGroupSpecifications;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -60,9 +63,6 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Autowired
     private GroupRepository groupRepository;
-
-    @Autowired
-    private PaidGroupRepository paidGroupRepository;
 
     @Autowired
     private GroupLocationRepository groupLocationRepository;
@@ -162,16 +162,16 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Override
     public Optional<Group> findGroupFromJoinCode(String joinCode) {
-        Group groupToReturn = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode));
-        if (groupToReturn == null) return Optional.empty();
-        if (groupToReturn.getTokenExpiryDateTime().isBefore(Instant.now())) return Optional.empty();
-        return Optional.of(groupToReturn);
+        Optional<Group> groupToReturn = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode));
+        if (!groupToReturn.isPresent()) return Optional.empty();
+        if (groupToReturn.get().getTokenExpiryDateTime().isBefore(Instant.now())) return Optional.empty();
+        return groupToReturn;
     }
 
     @Override
     public Set<Group> subGroups(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        return new HashSet<>(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive())));
+        return new HashSet<>(groupRepository.findAll(Specification.where(hasParent(group)).and(isActive())));
     }
 
     @Override
@@ -285,16 +285,15 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Transactional(readOnly = true)
     public Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize) {
         Objects.requireNonNull(user);
-        return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(pageNumber, pageSize));
+        return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user,
+                PageRequest.of(pageNumber, pageSize));
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean isGroupPaidFor(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        return paidGroupRepository.count(Specifications
-                .where(PaidGroupSpecifications.isForGroup(group))
-                .and(PaidGroupSpecifications.expiresAfter(Instant.now()))) > 0;
+        return group.isPaidFor() && group.getAccount() != null;
     }
 
     /*
@@ -329,7 +328,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     private List<Group> parentChain(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        List<Group> parentGroups = new ArrayList<Group>();
+        List<Group> parentGroups = new ArrayList<>();
         recursiveParentGroups(group, parentGroups);
         return parentGroups;
     }
@@ -420,7 +419,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     }
 
     public List<GroupRefDTO> getSubgroups(Group group) {
-        return groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+        return groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()))
                 .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName(), gr.getMemberships().size()))
                 .collect(Collectors.toList());
     }

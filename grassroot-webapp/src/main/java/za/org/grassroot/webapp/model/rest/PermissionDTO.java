@@ -3,8 +3,8 @@ package za.org.grassroot.webapp.model.rest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ImmutableMap;
 import org.springframework.context.support.MessageSourceAccessor;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.group.Group;
 
 import java.util.Locale;
 import java.util.Set;

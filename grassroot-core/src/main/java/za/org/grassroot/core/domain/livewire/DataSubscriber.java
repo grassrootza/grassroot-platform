@@ -1,13 +1,13 @@
 package za.org.grassroot.core.domain.livewire;
 
 import org.hibernate.annotations.Type;
-import org.hibernate.validator.constraints.Email;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
+import javax.validation.constraints.Email;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;

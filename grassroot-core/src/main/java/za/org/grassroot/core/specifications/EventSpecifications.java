@@ -1,8 +1,11 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Group_;
+import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.Membership_;
 import za.org.grassroot.core.domain.task.AbstractEventEntity_;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Event_;
@@ -10,7 +13,6 @@ import za.org.grassroot.core.enums.EventType;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
-import java.util.Collection;
 
 /**
  * Created by luke on 2016/09/26.
@@ -18,7 +20,7 @@ import java.util.Collection;
  */
 public final class EventSpecifications {
 
-    public static Specifications<Event> upcomingEventsForUser(User user) {
+    public static Specification<Event> upcomingEventsForUser(User user) {
         Specification<Event> basicProperties = (root, query, cb) -> cb.and(cb.isFalse(root.get("canceled")), cb.isTrue(root.get("rsvpRequired")),
                 cb.greaterThan(root.get("eventStartDateTime"), Instant.now()));
         Specification<Event> userInAncestorGroup = (root, query, cb) -> {
@@ -34,7 +36,7 @@ public final class EventSpecifications {
                     cb.greaterThan(root.get("createdDateTime"), parentGroupMembership.get("joinTime")));
         };
 
-        return Specifications.where(basicProperties)
+        return Specification.where(basicProperties)
                 .and(EventSpecifications.hasAllUsersAssignedOrIsAssigned(user))
                 .and(userInAncestorGroup)
                 .and(userJoinedAfterVote);

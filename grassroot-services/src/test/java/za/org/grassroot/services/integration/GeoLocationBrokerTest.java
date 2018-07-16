@@ -5,13 +5,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
@@ -21,6 +19,7 @@ import za.org.grassroot.core.repository.PreviousPeriodUserLocationRepository;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.ServicesTestConfig;
 import za.org.grassroot.services.geo.CenterCalculationResult;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.GeographicSearchType;
@@ -35,16 +34,12 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.*;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestContextConfig.class)
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
+@RunWith(SpringRunner.class) @DataJpaTest
+@ContextConfiguration(classes = ServicesTestConfig.class)
 public class GeoLocationBrokerTest {
-
-	@Autowired @InjectMocks
-	private GeoLocationBroker geoLocationBroker;
 
 	@Autowired
 	private PreviousPeriodUserLocationRepository previousPeriodUserLocationRepository;
@@ -60,6 +55,9 @@ public class GeoLocationBrokerTest {
 
 	@Mock
 	private UserLocationLogRepository userLocationLogRepository;
+
+	@Autowired
+	private GeoLocationBroker geoLocationBroker;
 
 	private User testUser;
 

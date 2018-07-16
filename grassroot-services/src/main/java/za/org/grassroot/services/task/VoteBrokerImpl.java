@@ -4,15 +4,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.UserLanguageNotification;
 import za.org.grassroot.core.domain.notification.VoteResultsNotification;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -288,7 +288,7 @@ public class VoteBrokerImpl implements VoteBroker {
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {
         Map<String, Long> results = new LinkedHashMap<>();
-        List<EventLog> eventLogs = eventLogRepository.findAll(Specifications.where(isResponseToVote(vote)));
+        List<EventLog> eventLogs = eventLogRepository.findAll(Specification.where(isResponseToVote(vote)));
         options.forEach(o -> results.put(o, eventLogs.stream().filter(el -> o.equalsIgnoreCase(el.getTag())).count()));
         return results;
     }
@@ -298,14 +298,14 @@ public class VoteBrokerImpl implements VoteBroker {
         // option responses (note: if no responses at all, it will still return valid result, since we
         // know at this point that it is a yes/no vote)
 
-        return eventLogRepository.count(Specifications.where(ofType(EventLogType.VOTE_OPTION_RESPONSE))) == 0 ?
+        return eventLogRepository.count(Specification.where(ofType(EventLogType.VOTE_OPTION_RESPONSE))) == 0 ?
                 calculateOldVoteResult(vote) :
                 calculateMultiOptionResults(vote, optionsForYesNoVote); // will just return
     }
 
     private Map<String, Long> calculateOldVoteResult(Vote vote) {
 
-        List<EventLog> eventLogs = eventLogRepository.findAll(Specifications.where(
+        List<EventLog> eventLogs = eventLogRepository.findAll(Specification.where(
                 ofType(EventLogType.RSVP)).and(forEvent(vote)));
         Map<String, Long> results = new LinkedHashMap<>();
         results.put(YES, eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.YES)).count());

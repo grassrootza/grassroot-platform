@@ -10,14 +10,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EntityForUserResponse;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.UserResponseBroker;
-import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignTextBroker;
 import za.org.grassroot.services.group.GroupBroker;
@@ -52,7 +58,7 @@ public class IncomingSMSController {
     private final UserManagementService userManager;
 
     private final GroupBroker groupBroker;
-    private final AccountGroupBroker accountGroupBroker;
+    private final AccountFeaturesBroker accountFeaturesBroker;
 
     private final CampaignBroker campaignBroker;
     private final CampaignTextBroker campaignTextBroker;
@@ -70,12 +76,12 @@ public class IncomingSMSController {
 
     @Autowired
     public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, GroupBroker groupBroker,
-                                 AccountGroupBroker accountGroupBroker, CampaignBroker campaignBroker,
+                                 AccountFeaturesBroker accountFeaturesBroker, CampaignBroker campaignBroker,
                                  CampaignTextBroker campaignTextBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userResponseBroker = userResponseBroker;
         this.userManager = userManager;
         this.groupBroker = groupBroker;
-        this.accountGroupBroker = accountGroupBroker;
+        this.accountFeaturesBroker = accountFeaturesBroker;
         this.campaignTextBroker = campaignTextBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.campaignBroker = campaignBroker;
@@ -111,8 +117,8 @@ public class IncomingSMSController {
             final String groupUid = groupMatches.iterator().next();
             Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), groupUid, message, UserInterfaceType.INCOMING_SMS);
             // if group has custom welcome messages those will be triggered for everyone, in group broker, so don't do it here
-            reply = membership.getGroup().isPaidFor() && !accountGroupBroker.hasGroupWelcomeMessages(groupUid) ?
-                    accountGroupBroker.generateGroupWelcomeReply(user.getUid(), groupUid) : "";
+            reply = membership.getGroup().isPaidFor() && !accountFeaturesBroker.hasGroupWelcomeMessages(groupUid) ?
+                    accountFeaturesBroker.generateGroupWelcomeReply(user.getUid(), groupUid) : "";
             bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, MATCHED + message, UserInterfaceType.INCOMING_SMS));
         } else {
             log.info("received a join word but don't know what to do with it");

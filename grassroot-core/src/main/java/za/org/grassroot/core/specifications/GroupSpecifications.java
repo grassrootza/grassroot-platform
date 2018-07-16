@@ -1,7 +1,13 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.Role_;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Group_;
+import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.Membership_;
 
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Predicate;
@@ -31,10 +37,6 @@ public final class GroupSpecifications {
             Predicate canSeeMembers = cb.isMember(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, members.get(Membership_.role).get(Role_.permissions));
             return cb.and(isMember, canSeeMembers);
         };
-    }
-
-    public static Specification<Group> paidForStatus(boolean isPaidFor) {
-        return (root, query, cb) -> cb.equal(root.get(Group_.paidFor), isPaidFor);
     }
 
     public static Specification<Group> isActive() {

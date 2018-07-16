@@ -1,32 +1,31 @@
 package za.org.grassroot.core.repository;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignType;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.enums.MessageVariationAssignment;
+import za.org.grassroot.core.enums.UserInterfaceType;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.*;
 
-@RunWith(SpringRunner.class)
+@Slf4j @RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class CampaignRepositoryTest {
 
     @Autowired
@@ -41,7 +40,7 @@ public class CampaignRepositoryTest {
     @Test
     public void testCreateCampaign(){
         User user = userRepository.save(new User("3456", null, null));
-        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user, AccountPaymentType.DIRECT_DEPOSIT, AccountBillingCycle.MONTHLY));
+        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user));
         Campaign campaign = campaignRepository.saveAndFlush(new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION,null, account));
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getUid());
@@ -56,7 +55,7 @@ public class CampaignRepositoryTest {
     @Test
     public void testCampaignMessages(){
         User user = userRepository.save(new User("3456", null, null));
-        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user, AccountPaymentType.DIRECT_DEPOSIT, AccountBillingCycle.MONTHLY));
+        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION, null, account);
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage(user, campaign, CampaignActionType.OPENING, "testing_123", Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL);
@@ -74,7 +73,7 @@ public class CampaignRepositoryTest {
         List<String> tags = new ArrayList<>();
         tags.add("braamfontein");
         User user = userRepository.save(new User("3456", null, null));
-        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user, AccountPaymentType.DIRECT_DEPOSIT, AccountBillingCycle.MONTHLY));
+        Account account = accountRepository.save(new Account(user, "test", AccountType.ENTERPRISE, user));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX, CampaignType.INFORMATION, null, account);
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage(user, campaign, CampaignActionType.OPENING, "testing_123", Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL);

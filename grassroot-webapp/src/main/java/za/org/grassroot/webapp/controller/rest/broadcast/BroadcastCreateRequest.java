@@ -5,9 +5,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
-import za.org.grassroot.core.domain.BroadcastSchedule;
-import za.org.grassroot.core.domain.GroupJoinMethod;
-import za.org.grassroot.core.domain.JoinDateCondition;
+import za.org.grassroot.core.domain.broadcast.BroadcastSchedule;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.JoinDateCondition;
 import za.org.grassroot.core.enums.Province;
 
 import java.time.Instant;

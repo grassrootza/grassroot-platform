@@ -30,4 +30,6 @@ public interface LocationInfoBroker {
 
     void assembleAndSendForPlace(String dataSetLabel, String infoSetTag, String placeId, String targetUserUid);
 
+    List<String> getDatasetLabelsForAccount(String accountUid);
+
 }

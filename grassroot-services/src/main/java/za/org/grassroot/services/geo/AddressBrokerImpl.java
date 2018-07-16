@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -190,7 +190,7 @@ public class AddressBrokerImpl implements AddressBroker {
     private Address storeAddressRawAfterDuplicateCheck(Address address) {
         address.setPrimary(false); // to make sure we never accidentally override
         Address storedAddress;
-        List<Address> duplicateCheck = addressRepository.findAll(Specifications
+        List<Address> duplicateCheck = addressRepository.findAll(Specification
                         .where(forUser(address.getResident()))
                         .and(matchesStreetArea(address.getHouse(), address.getStreet(), address.getNeighbourhood())),
                 new Sort(Sort.Direction.DESC, "createdDateTime"));
@@ -262,7 +262,7 @@ public class AddressBrokerImpl implements AddressBroker {
     @Transactional
     public boolean hasAddressOrLocation(String userUid) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
-        Specifications<Address> specs = Specifications.where(forUser(user)).and(hasLocationTownOrPostalCode());
+        Specification<Address> specs = Specification.where(forUser(user)).and(hasLocationTownOrPostalCode());
 
         if (addressRepository.count(specs) > 0)
             return true;

@@ -3,11 +3,11 @@ package za.org.grassroot.services.group;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -75,10 +75,10 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
         Instant startTimeInstant = startTime.atStartOfDay(Clock.systemDefaultZone().getZone()).toInstant();
         Instant endTimeInstant = endTime.atStartOfDay(Clock.systemDefaultZone().getZone()).toInstant();
 
-        Specifications<GroupLog> groupLogSpec = GroupLogSpecifications.memberCountChanges(groupUid, startTimeInstant, endTimeInstant);
+        Specification<GroupLog> groupLogSpec = GroupLogSpecifications.memberCountChanges(groupUid, startTimeInstant, endTimeInstant);
         List<GroupLog> memberCountChanges = groupLogRepository.findAll(groupLogSpec);
 
-        Specifications<Membership> startingMemberCountSpec = Specifications.where(
+        Specification<Membership> startingMemberCountSpec = Specification.where(
                 MembershipSpecifications.forGroup(group))
                 .and(MembershipSpecifications.membersJoinedBefore(startTimeInstant));
 

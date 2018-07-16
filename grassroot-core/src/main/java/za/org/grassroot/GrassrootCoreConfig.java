@@ -4,15 +4,9 @@ import net.sf.ehcache.CacheManager;
 import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
 import org.springframework.context.annotation.*;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import za.org.grassroot.core.ProductionDatabaseConfig;
-import za.org.grassroot.core.StagingDatabaseConfig;
-import za.org.grassroot.core.StandaloneDatabaseConfig;
-import za.org.grassroot.core.StandaloneLocalPGConfig;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.NonLocalDatabaseConfig;
 
 import java.io.IOException;
 
@@ -24,7 +18,7 @@ import java.io.IOException;
 @EnableAspectJAutoProxy
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @ComponentScan("za.org.grassroot")
-@Import({StandaloneDatabaseConfig.class, StandaloneLocalPGConfig.class, StagingDatabaseConfig.class, ProductionDatabaseConfig.class})
+@Import({NonLocalDatabaseConfig.class})
 public class GrassrootCoreConfig {
 
 	@Bean
@@ -40,7 +34,4 @@ public class GrassrootCoreConfig {
 		return factory;
 	}
 
-	public GrantedAuthority administratorRole() {
-		return new SimpleGrantedAuthority(BaseRoles.ROLE_SYSTEM_ADMIN);
-	}
 }

@@ -6,9 +6,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.domain.task.VoteRequest;
 import za.org.grassroot.services.UserResponseBroker;
@@ -309,7 +309,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(eventRequestBrokerMock.finish(testUser.getUid(), requestUid, true)).thenReturn("fake-UID");
         when(eventBrokerMock.load("fake-UID")).thenReturn(savedVote);
-        when(accountGroupBrokerMock.numberEventsLeftForParent("fake-UID")).thenReturn(99);
+        when(accountFeaturesBrokerMock.numberEventsLeftForParent("fake-UID")).thenReturn(99);
 
         mockMvc.perform(get(path + "send")
                 .param(phoneParam, testUserPhone)

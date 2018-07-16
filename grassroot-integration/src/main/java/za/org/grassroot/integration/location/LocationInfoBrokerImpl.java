@@ -9,6 +9,8 @@ import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -248,6 +250,11 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
+    @Override
+    public List<String> getDatasetLabelsForAccount(String accountUid) {
+        return getDataSetsForAccount(accountUid);
+    }
+
     private void assembleAndSendHealthClinics(TownLookupResult place, String targetUserUid, Set<String> accountUids) {
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl(izweLamiLambda)
                 .path("/closest")
@@ -276,7 +283,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             accountLogRepository.saveAndFlush(accountLog);
             Set<Notification> messages = notificationsFromRecords(dataSet, records, user, accountLog, 160);
             log.info("generated messages to send out, in total {} messages", messages.size());
-            notificationRepository.save(messages);
+            notificationRepository.saveAll(messages);
         }
     }
 
@@ -363,6 +370,35 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 return null;
             }
         }
+    }
+
+    private List<String> getDataSetsForAccount(final String accountUid) {
+        DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+
+        ScanRequest scanRequest = new ScanRequest()
+                .withTableName("geo_apis");
+
+        // would be nicer to do this with a filter expression but AWS SDK docs are a complete disaster so not clear at
+        // all how to do a contains query
+        log.info("Scanning for data sets matching account uid: {}", accountUid);
+        try {
+            ScanResult result = dynamoDBClient.scan(scanRequest);
+            List<String> dataSets = getDataSetsFromResults(result, accountUid);
+            log.info("Finished, data sets: {}", dataSets);
+            return dataSets;
+        } catch (AmazonServiceException e) {
+            log.error("Error getting data sets: ", e);
+            return new ArrayList<>();
+        }
+    }
+
+    private List<String> getDataSetsFromResults(ScanResult result, String accountUid) {
+        return result.getItems() == null ? new ArrayList<>() : result.getItems().stream()
+                .filter(item -> {
+                    List<String> accountUids = item.get("account_uids").getSS();
+                    return accountUids != null && accountUids.contains(accountUid);
+                })
+                .map(item -> item.get("data_set_label").getS()).collect(Collectors.toList());
     }
 
     private List<String> getFromUri(URI uri) {

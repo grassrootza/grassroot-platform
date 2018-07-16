@@ -4,11 +4,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import za.org.grassroot.core.domain.Broadcast;
-import za.org.grassroot.core.domain.BroadcastSchedule;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.broadcast.BroadcastSchedule;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.group.Group;
 
 import java.util.List;
 

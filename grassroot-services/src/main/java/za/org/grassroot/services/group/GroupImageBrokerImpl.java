@@ -2,13 +2,13 @@ package za.org.grassroot.services.group;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -20,6 +20,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Created by luke on 2016/09/26.
@@ -61,8 +62,9 @@ public class GroupImageBrokerImpl implements GroupImageBroker {
     }
 
     @Override
-    public Group getGroupByImageUrl(String imageUrl) {
-        return groupRepository.findOne(Specifications.where(GroupSpecifications.hasImageUrl(imageUrl)));
+    public Optional<Group> getGroupByUidOrImageUrl(String uidOrImageUrl) {
+        Group group = groupRepository.findOneByUid(uidOrImageUrl);
+        return group != null ? Optional.of(group) : groupRepository.findOne(Specification.where(GroupSpecifications.hasImageUrl(uidOrImageUrl)));
     }
 
     @Override

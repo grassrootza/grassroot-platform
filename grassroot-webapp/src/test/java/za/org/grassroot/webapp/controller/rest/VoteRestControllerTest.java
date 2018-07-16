@@ -5,10 +5,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
@@ -17,6 +17,8 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.services.task.VoteHelper;
 import za.org.grassroot.webapp.controller.android1.VoteRestController;
+
+import java.util.Optional;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
@@ -78,7 +80,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(voteBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
-        when(eventLogRepositoryMock.findOne(any(Specifications.class))).thenReturn(eventLog);
+        when(eventLogRepositoryMock.findOne(any(Specification.class))).thenReturn(Optional.of(eventLog));
         when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(true);
         when(eventLogBrokerMock.getResponseCountForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
 
@@ -87,7 +89,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(voteBrokerMock).load(voteEvent.getUid());
         verify(voteBrokerMock).fetchVoteResults(sessionTestUser.getUid(), voteEvent.getUid(), false);
-        verify(eventLogRepositoryMock).findOne(any(Specifications.class));
+        verify(eventLogRepositoryMock).findOne(any(Specification.class));
     }
 
     @Test

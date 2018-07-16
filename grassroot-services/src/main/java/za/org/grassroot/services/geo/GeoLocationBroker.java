@@ -1,12 +1,12 @@
 package za.org.grassroot.services.geo;
 
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.security.InvalidParameterException;

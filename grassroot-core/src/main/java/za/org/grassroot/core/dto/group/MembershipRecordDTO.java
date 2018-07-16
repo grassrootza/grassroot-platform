@@ -1,8 +1,8 @@
 package za.org.grassroot.core.dto.group;
 
 import lombok.Getter;
-import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.GroupLogType;
 
 @Getter

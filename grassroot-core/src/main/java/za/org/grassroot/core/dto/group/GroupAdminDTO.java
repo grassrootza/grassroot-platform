@@ -2,9 +2,7 @@ package za.org.grassroot.core.dto.group;
 
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
-import za.org.grassroot.core.domain.Group;
-
-import java.util.Comparator;
+import za.org.grassroot.core.domain.group.Group;
 
 @ApiModel
 @Getter

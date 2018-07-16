@@ -8,7 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -27,9 +27,9 @@ import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
+import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.GeoLocationUtils;
-import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -85,7 +85,7 @@ public class LiveWireContactBrokerImpl implements LiveWireContactBroker {
         }
 
         // todo : a lot of work on the filtering, including incorporating the location
-        Specifications<User> lwireContactSpecs = Specifications.where(UserSpecifications.isLiveWireContact());
+        Specification<User> lwireContactSpecs = Specification.where(UserSpecifications.isLiveWireContact());
         if (!StringUtils.isEmpty(filterTerm)) {
             lwireContactSpecs = lwireContactSpecs.and(UserSpecifications.nameContains(filterTerm));
         }
@@ -104,7 +104,7 @@ public class LiveWireContactBrokerImpl implements LiveWireContactBroker {
         logger.info("firstElement = {}, lastElement = {}", firstElement, lastElement);
 
         List<LiveWireContactDTO> contactsTotal = userRepository
-                .findAll(Specifications.where(UserSpecifications.uidIn(userUids)))
+                .findAll(Specification.where(UserSpecifications.uidIn(userUids)))
                 .stream()
                 .map(this::generateFromUser)
                 .filter(c -> StringUtils.isEmpty(filterTerm) || c.matchesFilter(filterTerm))
@@ -130,7 +130,7 @@ public class LiveWireContactBrokerImpl implements LiveWireContactBroker {
             throw new AccessDeniedException("Error! Querying user is not authorized");
         }
 
-        Specifications<User> lwireContactSpecs = Specifications.where(UserSpecifications.isLiveWireContact());
+        Specification<User> lwireContactSpecs = Specification.where(UserSpecifications.isLiveWireContact());
         Set<String> userUids = userRepository.findAll(lwireContactSpecs).stream()
                 .map(User::getUid)
                 .collect(Collectors.toSet());
@@ -139,7 +139,7 @@ public class LiveWireContactBrokerImpl implements LiveWireContactBroker {
         }
 
         return userRepository
-                .findAll(Specifications.where(UserSpecifications.uidIn(userUids)))
+                .findAll(Specification.where(UserSpecifications.uidIn(userUids)))
                 .stream()
                 .map(this::generateFromUser)
                 .sorted(Comparator.comparing(LiveWireContactDTO::getContactName))
@@ -223,7 +223,7 @@ public class LiveWireContactBrokerImpl implements LiveWireContactBroker {
 
         List<String> userUids = locationQuery.getResultList();
         if (userUids != null && !userUids.isEmpty()) {
-            users.addAll(userRepository.findAll(Specifications
+            users.addAll(userRepository.findAll(Specification
                     .where(UserSpecifications.isLiveWireContact())
                     .and(UserSpecifications.uidIn(locationQuery.getResultList()))));
         }

@@ -1,10 +1,10 @@
 package za.org.grassroot.services.task;
 
 import org.springframework.data.domain.Page;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.Meeting;
@@ -58,8 +58,6 @@ public interface EventBroker {
 
     void updateReminderSettings(String userUid, String eventUid, EventReminderType reminderType, int customReminderMinutes);
 
-	void updateDescription(String userUid, String eventUid, String eventDescription);
-
 	void cancel(String userUid, String eventUid, boolean notifyMembers);
 
 	void sendScheduledReminder(String eventUid);
@@ -69,10 +67,6 @@ public interface EventBroker {
 	void sendMeetingRSVPsToDate(String meetingUid);
 
 	void sendMeetingAcknowledgements(String meetingUid);
-
-	void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids);
-
-	void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids);
 
 	void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location, UserInterfaceType interfaceType);
 

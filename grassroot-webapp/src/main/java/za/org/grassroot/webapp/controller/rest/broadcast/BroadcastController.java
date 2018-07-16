@@ -14,11 +14,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.Broadcast;
-import za.org.grassroot.core.domain.BroadcastSchedule;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.broadcast.BroadcastSchedule;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.dto.BroadcastDTO;
@@ -26,11 +26,10 @@ import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.UrlShortener;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.broadcasts.BroadcastBroker;
 import za.org.grassroot.services.broadcasts.BroadcastComponents;
 import za.org.grassroot.services.broadcasts.BroadcastInfo;
@@ -60,18 +59,16 @@ import java.util.stream.Collectors;
 public class BroadcastController extends BaseRestController {
 
     private final BroadcastBroker broadcastBroker;
-    private final AccountBillingBroker billingBroker;
     private final UrlShortener urlShortener;
     private final NotificationService notificationService;
     private final MemberDataExportBroker memberDataExportBroker;
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker,
-                               AccountBillingBroker billingBroker, UrlShortener urlShortener, NotificationService notificationService, MemberDataExportBroker memberDataExportBroker, PermissionBroker permissionBroker) {
+    public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker, UrlShortener urlShortener,
+                               NotificationService notificationService, MemberDataExportBroker memberDataExportBroker, PermissionBroker permissionBroker) {
         super(jwtService, userManagementService);
         this.broadcastBroker = broadcastBroker;
-        this.billingBroker = billingBroker;
         this.urlShortener = urlShortener;
         this.notificationService = notificationService;
         this.memberDataExportBroker = memberDataExportBroker;
@@ -224,12 +221,12 @@ public class BroadcastController extends BaseRestController {
     @RequestMapping(value = "/cost-this-month", method = RequestMethod.GET)
     public ResponseEntity<Long> getAccountCostThisMonth(HttpServletRequest request) {
         User user = getUserFromRequest(request);
-
         Account primaryAccount = user.getPrimaryAccount();
         TemporalAdjuster startOfMonth = (Temporal date) -> ((LocalDateTime)date).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
         Instant firstDayOfMonth = LocalDateTime.now().with(startOfMonth).toInstant(OffsetDateTime.now().getOffset());
-        long costSinceLastBill = billingBroker.calculateMessageCostsInPeriod(primaryAccount, firstDayOfMonth, Instant.now());
-        return ResponseEntity.ok(costSinceLastBill);
+        // todo: restore this out of account broker (just using logs)
+        // long costSinceLastBill = billingBroker.calculateMessageCostsInPeriod(primaryAccount, firstDayOfMonth, Instant.now());
+        return ResponseEntity.ok(0L);
     }
 
     @RequestMapping(value = "/sending-report/{broadcastUid}/download", method = RequestMethod.GET)

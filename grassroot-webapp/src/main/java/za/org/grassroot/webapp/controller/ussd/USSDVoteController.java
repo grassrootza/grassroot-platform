@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.EntityForUserResponse;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventRequest;
 import za.org.grassroot.core.domain.task.Vote;
@@ -18,7 +18,7 @@ import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.task.EventBroker;
@@ -60,7 +60,7 @@ public class USSDVoteController extends USSDBaseController {
     private final EventRequestBroker eventRequestBroker;
     private final VoteBroker voteBroker;
     private final PermissionBroker permissionBroker;
-    private final AccountGroupBroker accountGroupBroker;
+    private final AccountFeaturesBroker accountFeaturesBroker;
 
     private USSDEventUtil eventUtil;
     private USSDGroupUtil groupUtil;
@@ -69,12 +69,12 @@ public class USSDVoteController extends USSDBaseController {
     private static final USSDSection thisSection = USSDSection.VOTES;
 
     @Autowired
-    public USSDVoteController(EventBroker eventBroker, EventRequestBroker eventRequestBroker, VoteBroker voteBroker, PermissionBroker permissionBroker, AccountGroupBroker accountGroupBroker) {
+    public USSDVoteController(EventBroker eventBroker, EventRequestBroker eventRequestBroker, VoteBroker voteBroker, PermissionBroker permissionBroker, AccountFeaturesBroker accountFeaturesBroker) {
         this.eventBroker = eventBroker;
         this.eventRequestBroker = eventRequestBroker;
         this.voteBroker = voteBroker;
         this.permissionBroker = permissionBroker;
-        this.accountGroupBroker = accountGroupBroker;
+        this.accountFeaturesBroker = accountFeaturesBroker;
     }
 
     @Autowired
@@ -364,7 +364,7 @@ public class USSDVoteController extends USSDBaseController {
         try {
             String createdUid = eventRequestBroker.finish(user.getUid(), requestUid, true);
             Event vote = eventBroker.load(createdUid);
-            int eventsLeft = accountGroupBroker.numberEventsLeftForParent(vote.getUid());
+            int eventsLeft = accountFeaturesBroker.numberEventsLeftForParent(vote.getUid());
             final String prompt = eventsLeft < EVENT_LIMIT_WARNING_THRESHOLD ?
                     getMessage(thisSection, "send", promptKey + ".limit", String.valueOf(eventsLeft), user) :
                     getMessage(thisSection, "send", promptKey, user);

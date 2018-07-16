@@ -5,7 +5,8 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,6 +18,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
@@ -409,6 +412,36 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
     }
 
+    @Override
+    @Transactional
+    public User loadOrCreate(String phoneOrEmail) {
+        User user = findByUsernameLoose(phoneOrEmail);
+        if (user != null)
+            return user;
+
+        try {
+            log.info("Neither phone nor email matched existing, creating with: {}", phoneOrEmail);
+            if (EmailValidator.getInstance().isValid(phoneOrEmail))
+                user = new User(null, null, phoneOrEmail);
+            else if (PhoneNumberUtil.testInputNumber(phoneOrEmail))
+                user = new User(PhoneNumberUtil.convertPhoneNumber(phoneOrEmail), null, null);
+
+            if (user == null)
+                throw new IllegalArgumentException("Error! Phone or email is valid for neither format");
+
+            user = userRepository.save(user);
+            asyncRecordNewUser(user.getUid(), "Created via loadOrCreate");
+
+            return user;
+        } catch (IllegalArgumentException e) {
+            log.error("Error! : {}", e.getMessage());
+            return null;
+        } catch (DataIntegrityViolationException e) {
+            log.error("Error creating or loading user: ", e);
+            return null;
+        }
+    }
+
     /*
     Method to load or save a user and store that they have initiated the session. Putting it in services and making it
     distinct from standard loadOrCreateUser because we may want to optimize it aggressively in future.
@@ -533,8 +566,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (isUserNonEnglish(user) || asyncUserService.hasChangedLanguage(user.getUid()))
             return false;
 
-        Specifications<Notification> totalCountSpecs = Specifications.where(NotificationSpecifications.toUser(user));
-        Specifications<Notification> languageNotifySpecs = totalCountSpecs.and(
+        Specification<Notification> totalCountSpecs = Specification.where(NotificationSpecifications.toUser(user));
+        Specification<Notification> languageNotifySpecs = totalCountSpecs.and(
                 NotificationSpecifications.userLogTypeIs(UserLogType.NOTIFIED_LANGUAGES));
         return logsAndNotificationsBroker.countNotifications(totalCountSpecs) > MIN_NOTIFICATIONS_FOR_LANG_PING
                 && logsAndNotificationsBroker.countNotifications(languageNotifySpecs) == 0;

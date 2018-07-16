@@ -1,7 +1,6 @@
 package za.org.grassroot.services.group;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
 
