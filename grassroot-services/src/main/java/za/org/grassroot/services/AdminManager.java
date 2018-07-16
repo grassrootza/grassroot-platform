@@ -13,10 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.GroupJoinMethod;
-import za.org.grassroot.core.domain.group.GroupLog;
-import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.domain.notification.SystemInfoNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -46,6 +43,7 @@ public class AdminManager implements AdminService {
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final RoleRepository roleRepository;
+    private final MembershipRepository membershipRepository;
     private final GroupBroker groupBroker;
     private final GroupLogRepository groupLogRepository;
     private final UserLogRepository userLogRepository;
@@ -56,10 +54,11 @@ public class AdminManager implements AdminService {
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
+    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, RoleRepository roleRepository, MembershipRepository membershipRepository1, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.roleRepository = roleRepository;
+        this.membershipRepository = membershipRepository1;
         this.groupBroker = groupBroker;
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
@@ -228,6 +227,7 @@ public class AdminManager implements AdminService {
         logsAndNotificationsBroker.storeBundle(bundle);
 
         return usersToReceive.getTotalElements();
+
     }
 
     @Async
@@ -237,8 +237,40 @@ public class AdminManager implements AdminService {
         DebugUtil.transactionRequired("");
         if (graphBroker != null) {
             DebugUtil.transactionRequired("");
-            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task,
+            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task.getUid(), task.getTaskType(),
                     taskBroker.fetchUserUidsForTask(userUid, task.getUid(), task.getTaskType())));
+        }
+    }
+
+
+    @Async
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGraphGroupAnnotations() {
+        if (graphBroker != null) {
+            Specification<Group> groups = Specification.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
+            groupRepository.findAll(groups).forEach(group -> graphBroker.annotateGroup(group.getUid(), null, null, true));
+        }
+    }
+
+    @Async
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGraphMembershipAnnotations() {
+        if (graphBroker != null) {
+            membershipRepository.findByGroupActiveTrue().forEach(membership ->
+                    graphBroker.annotateMembership(membership.getUser().getUid(), membership.getGroup().getUid(), null, true));
+        }
+    }
+
+    @Async
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGraphTaskAnnotations() {
+        DebugUtil.transactionRequired("");
+        if (graphBroker != null) {
+            DebugUtil.transactionRequired("");
+            taskBroker.loadAllTasks().forEach(task -> graphBroker.annotateTask(task.getUid(), task.getTaskType(), null, null, true));
         }
     }
 

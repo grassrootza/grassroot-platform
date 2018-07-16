@@ -29,7 +29,7 @@ public interface BroadcastBroker {
 
     Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, String fetchingUserUid, Pageable pageable);
 
-    Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, String fetchingUserUid, Pageable pageable);
+    Page<BroadcastDTO> fetchFutureGroupBroadcasts(String groupUid, String fetchingUserUid, Pageable pageable);
 
     List<BroadcastDTO> fetchCampaignBroadcasts(String campaignUid, String fetchingUserUid);
 

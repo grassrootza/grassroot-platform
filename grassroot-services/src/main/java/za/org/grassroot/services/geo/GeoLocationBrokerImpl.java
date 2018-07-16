@@ -21,6 +21,8 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
+import za.org.grassroot.integration.graph.GraphBroker;
+import za.org.grassroot.graph.dto.IncomingAnnotation;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -52,6 +54,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	private final EntityManager entityManager;
 
 	private UssdLocationServicesBroker ussdLocationServicesBroker;
+//	private GraphBroker graphBroker;
 
     @Autowired
     public GeoLocationBrokerImpl(UserLocationLogRepository userLocationLogRepository, PreviousPeriodUserLocationRepository previousPeriodUserLocationRepository, UserRepository userRepository, GroupRepository groupRepository, GroupLocationRepository groupLocationRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, MeetingLocationRepository meetingLocationRepository, EntityManager entityManager) {
@@ -64,6 +67,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
         this.eventLogRepository = eventLogRepository;
         this.meetingLocationRepository = meetingLocationRepository;
         this.entityManager = entityManager;
+//		this.graphBroker = graphBroker;
     }
 
     @Autowired(required = false)
@@ -200,6 +204,12 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 			float score = result.getEntityCount() / (float) memberUids.size();
 			GroupLocation groupLocation = new GroupLocation(group, localDate, result.getCenter(), score, LocationSource.CALCULATED);
 			groupLocationRepository.save(groupLocation);
+
+			// now update group location annotation in graph, commented out temporarily until fix graph broker auto-wiring.
+//			Map<String, String> groupProperties = new HashMap<>();
+//			groupProperties.put(IncomingAnnotation.latitude, String.valueOf(result.getCenter().getLatitude()));
+//			groupProperties.put(IncomingAnnotation.longitude, String.valueOf(result.getCenter().getLongitude()));
+//			graphBroker.annotateGroup(groupUid, groupProperties, null, false);
 		} else {
 			logger.debug("No member location data found for group {} for local date {}", group, localDate);
 		}

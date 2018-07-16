@@ -24,12 +24,12 @@ import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.broadcasts.BroadcastBroker;
 import za.org.grassroot.services.broadcasts.BroadcastComponents;
 import za.org.grassroot.services.broadcasts.BroadcastInfo;
@@ -62,15 +62,17 @@ public class BroadcastController extends BaseRestController {
     private final UrlShortener urlShortener;
     private final NotificationService notificationService;
     private final MemberDataExportBroker memberDataExportBroker;
+    private final PermissionBroker permissionBroker;
 
     @Autowired
-    public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker, MediaFileBroker mediaFileBroker,
-                               UrlShortener urlShortener, NotificationService notificationService, MemberDataExportBroker memberDataExportBroker) {
+    public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker, UrlShortener urlShortener,
+                               NotificationService notificationService, MemberDataExportBroker memberDataExportBroker, PermissionBroker permissionBroker) {
         super(jwtService, userManagementService);
         this.broadcastBroker = broadcastBroker;
         this.urlShortener = urlShortener;
         this.notificationService = notificationService;
         this.memberDataExportBroker = memberDataExportBroker;
+        this.permissionBroker = permissionBroker;
     }
 
     @RequestMapping(value = "/fetch/group/{groupUid}", method = RequestMethod.GET)
@@ -83,7 +85,7 @@ public class BroadcastController extends BaseRestController {
         if(broadcastSchedule.equals(BroadcastSchedule.IMMEDIATE)){
             broadcastDTOPage = broadcastBroker.fetchSentGroupBroadcasts(groupUid, userUid, pageable);
         } else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE)) {
-            broadcastDTOPage = broadcastBroker.fetchScheduledGroupBroadcasts(groupUid, userUid, pageable);
+            broadcastDTOPage = broadcastBroker.fetchFutureGroupBroadcasts(groupUid, userUid, pageable);
         }
 
         if (broadcastDTOPage.getNumberOfElements() > 0) {
@@ -209,6 +211,7 @@ public class BroadcastController extends BaseRestController {
     @RequestMapping(value = "/resend/{broadcastUid}", method = RequestMethod.POST)
     public ResponseEntity<BroadcastDTO> resentBroadcast(HttpServletRequest request, @PathVariable String broadcastUid,
                                                         boolean resendText, boolean resendEmail, boolean resendFb, boolean resendTwitter) {
+        validateBroadcastPermission(request, broadcastUid, Permission.GROUP_PERMISSION_SEND_BROADCAST);
         final String userUid = getUserIdFromRequest(request);
         final String resentUid = broadcastBroker.resendBroadcast(userUid, broadcastUid,
                 resendText, resendEmail, resendFb, resendTwitter);
@@ -218,7 +221,6 @@ public class BroadcastController extends BaseRestController {
     @RequestMapping(value = "/cost-this-month", method = RequestMethod.GET)
     public ResponseEntity<Long> getAccountCostThisMonth(HttpServletRequest request) {
         User user = getUserFromRequest(request);
-
         Account primaryAccount = user.getPrimaryAccount();
         TemporalAdjuster startOfMonth = (Temporal date) -> ((LocalDateTime)date).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
         Instant firstDayOfMonth = LocalDateTime.now().with(startOfMonth).toInstant(OffsetDateTime.now().getOffset());
@@ -227,35 +229,56 @@ public class BroadcastController extends BaseRestController {
         return ResponseEntity.ok(0L);
     }
 
-    @RequestMapping(value = "/error-report/{broadcastUid}/download", method = RequestMethod.GET)
-    public ResponseEntity<byte[]> fetchTaskFailedNotifications(@PathVariable String broadcastUid,
-            HttpServletRequest request) {
+    @RequestMapping(value = "/sending-report/{broadcastUid}/download", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> fetchBroadcastNotifications(@PathVariable String broadcastUid, HttpServletRequest request) {
+        try {
+            validateBroadcastPermission(request, broadcastUid, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+            Broadcast broadcast = broadcastBroker.getBroadcast(broadcastUid);
+            List <BroadcastNotification> notifications = notificationService.loadAllNotificationsForBroadcast(broadcast);
+            XSSFWorkbook xls = memberDataExportBroker.exportNotificationStdReport(notifications);
+            return wrapExcelForDownload(xls, "broadcast_sending_report.xlsx");
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+    }
 
+    @RequestMapping(value = "/error-report/{broadcastUid}/download", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> fetchTaskFailedNotifications(@PathVariable String broadcastUid, HttpServletRequest request) {
         try {
             User user = getUserFromRequest(request);
-
-            String fileName = "task_error_report.xlsx";
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
-            headers.add("Cache-Control", "no-cache");
-            headers.add("Pragma", "no-cache");
-            headers.add("Expires", "0");
-
             Broadcast broadcast = broadcastBroker.getBroadcast(broadcastUid);
             List <BroadcastNotification> notifications = notificationService.loadFailedNotificationsForBroadcast(user.getUid(), broadcast);
-
 			XSSFWorkbook xls = memberDataExportBroker.exportNotificationErrorReport(notifications);
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			xls.write(baos);
-            return new ResponseEntity<>( baos.toByteArray(), headers, HttpStatus.OK);
-        }catch (IOException e) {
-			log.error("IO Exception generating spreadsheet!", e);
-			throw new FileCreationException();
-		}
-		catch (AccessDeniedException e) {
+			return wrapExcelForDownload(xls, "broadcast_error_report.xlsx");
+        } catch (AccessDeniedException e) {
 			throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 		}
+    }
+
+    private void validateBroadcastPermission(HttpServletRequest request, String broadcastUid, Permission ancestorGroupPerm) {
+        User user = getUserFromRequest(request);
+        Broadcast broadcast = broadcastBroker.getBroadcast(broadcastUid);
+
+        if (!broadcast.getCreatedByUser().equals(user))
+            permissionBroker.validateGroupPermission(user, broadcast.getGroup(), ancestorGroupPerm);
+    }
+
+    private ResponseEntity<byte[]> wrapExcelForDownload(XSSFWorkbook workbook, String fileName) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        headers.add("Cache-Control", "no-cache");
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            workbook.write(baos);
+            return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
+        } catch (IOException e) {
+            log.error("IO Exception generating spreadsheet!", e);
+            throw new FileCreationException();
+        }
     }
 
     private void fillInContent(BroadcastCreateRequest createRequest, BroadcastComponents bc) {

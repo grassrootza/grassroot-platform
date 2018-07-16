@@ -146,6 +146,14 @@ public class NotificationManager implements NotificationService{
 
     @Override
     @Transactional(readOnly = true)
+    public List<BroadcastNotification> loadAllNotificationsForBroadcast(Broadcast broadcast) {
+        Specification<BroadcastNotification> forBroadcast = (root, query, cb) ->
+                cb.equal(root.get(BroadcastNotification_.broadcast), broadcast);
+        return broadcastNotificationRepository.findAll(forBroadcast);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<BroadcastNotification> loadFailedNotificationsForBroadcast(String requestorUid, Broadcast broadcast) {
         Specification<BroadcastNotification> forBroadcast = (root, query, cb) ->
                 cb.equal(root.get(BroadcastNotification_.broadcast), broadcast);

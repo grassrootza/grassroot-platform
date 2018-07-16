@@ -183,4 +183,25 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok().build();
     }
 
+    @RequestMapping(value = "/graph/transfer/annotations/groups", method = RequestMethod.GET)
+    public ResponseEntity initiateGroupAnnotationTransfer(HttpServletRequest request) {
+        log.info("seeding queue with group annotations");
+        adminService.populateGraphGroupAnnotations();
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/graph/transfer/annotations/memberships", method = RequestMethod.GET)
+    public ResponseEntity initiateMembershipAnnotationTransfer() {
+        log.info("seeding queue with membership annotations");
+        adminService.populateGraphMembershipAnnotations();
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/graph/transfer/annotations/tasks", method = RequestMethod.GET)
+    public ResponseEntity initiateTaskAnnotationTransfer() {
+        log.info("and now seeding queue with task annotations");
+        adminService.populateGraphTaskAnnotations();
+        return ResponseEntity.ok().build();
+    }
+
 }

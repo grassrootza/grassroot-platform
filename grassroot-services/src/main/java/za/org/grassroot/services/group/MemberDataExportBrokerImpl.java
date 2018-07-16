@@ -35,6 +35,9 @@ import java.util.stream.Collectors;
 @Service @Slf4j
 public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
+    private static final DateTimeFormatter STD_FORMATTER = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+            .withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
+
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
 
@@ -283,9 +286,9 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     @Override
     public XSSFWorkbook exportNotificationErrorReport(List<? extends Notification> notifications) {
         XSSFWorkbook workbook = new XSSFWorkbook();
-        XSSFSheet sheet = workbook.createSheet("Group members");
+        XSSFSheet sheet = workbook.createSheet("Error Messages");
 
-        generateHeader(workbook, sheet, new String[]{"Created time", "Phone number", "Email"},
+        generateHeader(workbook, sheet, new String[]{"Time sent", "Phone number", "Email", "Errors"},
                 new int[]{7000, 5000, 7000, 7000});
 
         //table content stuff
@@ -299,22 +302,53 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         //we are starting from 1 because row number 0 is header
         int rowIndex = 1;
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
-                .withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
-
         for (Notification notification : notifications) {
             ArrayList<String> tableColumns = new ArrayList<>();
-            tableColumns.add(notification.getCreatedDateTime() == null ? "" : formatter.format(notification.getCreatedDateTime()));
+            tableColumns.add(notification.getCreatedDateTime() == null ? "" : STD_FORMATTER.format(notification.getCreatedDateTime()));
             tableColumns.add(notification.getTarget().getPhoneNumber() == null ? "" : notification.getTarget().getPhoneNumber());
             tableColumns.add(notification.getTarget().getEmailAddress() == null ? "" : notification.getTarget().getEmailAddress());
             for (NotificationSendError notificationSendError : notification.getSendingErrors()) {
-                tableColumns.add(notificationSendError.getErrorTime() == null ? "" : formatter.format(notificationSendError.getErrorTime()) + " - " + notificationSendError.getErrorMessage());
+                tableColumns.add(notificationSendError.getErrorTime() == null ? "" : STD_FORMATTER.format(notificationSendError.getErrorTime()) + " - " + notificationSendError.getErrorMessage());
             }
             String[] values = tableColumns.toArray(new String[0]);
             addRow(sheet, rowIndex, values);
             rowIndex++;
 
         }
+        return workbook;
+    }
+
+    @Override
+    public XSSFWorkbook exportNotificationStdReport(List<? extends Notification> notifications) {
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Error Messages");
+
+        generateHeader(workbook, sheet, new String[]{"Time sent", "Phone number", "Email", "Status", "Receipt time", "Message"},
+                new int[]{7000, 5000, 7000, 7000, 7000, 21000});
+
+        // usual stuff that API makes annoyingly difficult to stick in a method
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+
+        //we are starting from 1 because row number 0 is header
+        int rowIndex = 1;
+
+        for (Notification n: notifications) {
+            String[] tableColumns = new String[6];
+            tableColumns[0] = STD_FORMATTER.format(n.getCreatedDateTime());
+            tableColumns[1] = n.getTarget().getPhoneNumber() == null ? "" : n.getTarget().getPhoneNumber();
+            tableColumns[2] = n.getTarget().getEmailAddress() == null ? "" : n.getTarget().getEmailAddress();
+            tableColumns[3] = n.getStatus().name();
+            tableColumns[4] = STD_FORMATTER.format(n.getLastStatusChange());
+            tableColumns[5] = n.getMessage();
+            addRow(sheet, rowIndex, tableColumns);
+            rowIndex++;
+        }
+
         return workbook;
     }
 

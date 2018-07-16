@@ -195,6 +195,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (graphBroker != null) {
             graphBroker.addGroupToGraph(group.getUid(), userUid, null);
+            graphBroker.annotateGroup(group.getUid(), null, null, true);
         }
 
         if (addToAccountIfPresent && user.getPrimaryAccount() != null) {
@@ -832,6 +833,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (!duringGroupCreation && graphBroker != null)
             graphBroker.addMembershipToGraph(addedUserUids, group.getUid());
+
+        if (!duringGroupCreation && graphBroker != null)
+            for (Membership membership : addedMemberships)
+                graphBroker.annotateMembership(membership.getUser().getUid(), membership.getGroup().getUid(), null, true);
 
         return bundle;
     }

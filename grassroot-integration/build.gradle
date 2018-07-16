@@ -10,7 +10,7 @@ repositories {
 dependencies {
     compile project(':grassroot-core')
 
-    compile group: 'za.org.grassroot', name: 'grassroot-graph-domain', version: '0.0.2b'
+    compile group: 'za.org.grassroot', name: 'grassroot-graph-domain', version: '0.0.3'
 
     compile group: 'org.springframework', name: 'spring-web', version: libs.springVersion
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-webflux', version: libs.springBootVersion

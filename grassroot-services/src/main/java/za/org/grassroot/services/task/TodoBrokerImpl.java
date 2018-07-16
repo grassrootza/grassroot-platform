@@ -156,7 +156,8 @@ public class TodoBrokerImpl implements TodoBroker {
 
         if (graphBroker != null) {
             List<String> assignedUids = todo.getMembers().stream().map(User::getUid).collect(Collectors.toList());
-            graphBroker.addTaskToGraph(todo, assignedUids);
+            graphBroker.addTaskToGraph(todo.getUid(), todo.getTaskType(), assignedUids);
+            graphBroker.annotateTask(todo.getUid(), todo.getTaskType(), null, null, true);
         }
 
         return todo.getUid();

@@ -23,7 +23,7 @@ public interface BroadcastRepository extends JpaRepository<Broadcast, Integer>, 
 
     Page<Broadcast> findByGroupUidAndSentTimeNotNull(String groupUid, Pageable pageable);
 
-    Page<Broadcast> findByGroupUidAndSentTimeIsNullAndBroadcastScheduleNot(String groupUid, BroadcastSchedule broadcastSchedule, Pageable pageable);
+    Page<Broadcast> findByGroupUidAndSentTimeIsNullAndBroadcastSchedule(String groupUid, BroadcastSchedule broadcastSchedule, Pageable pageable);
 
     List<Broadcast> findByCampaign(Campaign campaign);
 
