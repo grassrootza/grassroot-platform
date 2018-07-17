@@ -1,7 +1,6 @@
 package za.org.grassroot.webapp.interceptor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
@@ -11,13 +10,12 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * Created by paballo on 2016/03/17.
  */
+@Slf4j
 public class SimpleLoggingInterceptor extends HandlerInterceptorAdapter {
 
-    private static final Logger logger = LoggerFactory.getLogger(SimpleLoggingInterceptor.class);
-
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
-            throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        log.info("Handling request, IP appears as: {}", request.getRemoteAddr());
         long startTime = System.currentTimeMillis();
         request.setAttribute("startTime", startTime);
         return true;
@@ -35,6 +33,6 @@ public class SimpleLoggingInterceptor extends HandlerInterceptorAdapter {
         long endTime = System.currentTimeMillis();
         long executeTime = endTime - startTime;
 
-        logger.debug("{} ms : [{}]", executeTime, handler);
+        log.debug("{} ms : [{}]", executeTime, handler);
     }
 }
