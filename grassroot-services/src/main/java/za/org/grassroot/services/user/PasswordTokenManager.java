@@ -184,7 +184,8 @@ public class PasswordTokenManager implements PasswordTokenService {
         Objects.requireNonNull(code);
 
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(phoneNumber, VerificationCodeType.LONG_AUTH);
-        if (token != null && Instant.now().plus(OLD_TOKEN_REFRESH_WINDOW_DAYS, ChronoUnit.DAYS).isAfter(token.getExpiryDateTime())) {
+        boolean validExpiredToken = token != null && code.equals(token.getCode());
+        if (validExpiredToken && Instant.now().plus(OLD_TOKEN_REFRESH_WINDOW_DAYS, ChronoUnit.DAYS).isAfter(token.getExpiryDateTime())) {
             Instant oldExpiry = token.getExpiryDateTime();
             token.setExpiryDateTime(oldExpiry.plus(TOKEN_LIFE_SPAN_DAYS, ChronoUnit.DAYS));
             return true;
@@ -278,7 +279,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         }
 
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(user.getUsername(), VerificationCodeType.LONG_AUTH);
-        log.debug("found token for user: {}", token);
+        log.info("passed code {}, found token for user: {}", token);
         return token != null && code.equals(token.getCode()) && Instant.now().isBefore(token.getExpiryDateTime());
     }
 

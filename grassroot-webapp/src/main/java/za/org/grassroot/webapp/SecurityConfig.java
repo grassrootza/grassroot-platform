@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @EnableWebSecurity @Slf4j
-public class MultiSecurityConfig {
+public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/v2/api/news/**",
@@ -50,7 +50,7 @@ public class MultiSecurityConfig {
     private final Environment environment;
 
     @Autowired
-    public MultiSecurityConfig(Environment environment) {
+    public SecurityConfig(Environment environment) {
         this.environment = environment;
     }
 
@@ -72,17 +72,16 @@ public class MultiSecurityConfig {
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             log.info("Setting up API security configuration");
-            http
-                    .antMatcher("/v2/api/**")
-                    .csrf().disable()
-                    .sessionManagement()
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                    .and()
-                    .addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class)
-                    .authorizeRequests()
-                    .antMatchers(HttpMethods.OPTIONS, "/v2/**").permitAll()
-                        .antMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .antMatchers(AUTH_ENDPOINTS).permitAll();
+            http.antMatcher("/v2/api/**")
+                .csrf().disable()
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class)
+                .authorizeRequests()
+                .antMatchers(HttpMethods.OPTIONS, "/v2/**").permitAll()
+                    .antMatchers(PUBLIC_ENDPOINTS).permitAll()
+                    .antMatchers(AUTH_ENDPOINTS).permitAll();
         }
 
         @Override
@@ -115,7 +114,7 @@ public class MultiSecurityConfig {
 
     private String assembleUssdGatewayAccessString() {
         if (environment.acceptsProfiles("localpg")) {
-            log.info("permitting all requests ...");
+            log.info("Permitting all requests ...");
             return "permitAll";
         }
 
