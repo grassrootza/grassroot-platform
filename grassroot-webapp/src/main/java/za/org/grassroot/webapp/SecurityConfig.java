@@ -113,7 +113,7 @@ public class SecurityConfig {
     }
 
     private String assembleUssdGatewayAccessString() {
-        if (environment.acceptsProfiles("localpg", "staging")) {
+        if (environment.acceptsProfiles("localpg")) {
             log.info("Permitting all requests ...");
             return "permitAll";
         }

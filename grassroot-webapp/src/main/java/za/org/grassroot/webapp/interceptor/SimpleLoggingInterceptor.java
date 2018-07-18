@@ -17,7 +17,7 @@ public class SimpleLoggingInterceptor extends HandlerInterceptorAdapter {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        log.info("Handling request, IP appears as: {}", request.getRemoteAddr());
+        log.debug("Handling request, IP appears as: {}", request.getRemoteAddr());
         List<String> headers = Collections.list(request.getHeaderNames());
         Map<String, String> allHeaders = headers.stream().collect(Collectors.toMap(name -> name, request::getHeader));
         log.info("All headers: {}", allHeaders);
