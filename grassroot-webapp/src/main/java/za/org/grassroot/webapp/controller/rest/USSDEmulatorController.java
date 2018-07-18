@@ -31,7 +31,7 @@ import java.security.cert.X509Certificate;
  */
 @Slf4j @Controller
 @RequestMapping("/emulator/ussd/")
-@Profile("localpg")
+@Profile(value = {"localpg", "staging"})
 public class USSDEmulatorController extends BaseController {
 
     private static final String phoneNumberParam = "msisdn";
