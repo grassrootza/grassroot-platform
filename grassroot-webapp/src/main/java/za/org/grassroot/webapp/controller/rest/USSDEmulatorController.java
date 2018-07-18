@@ -38,12 +38,15 @@ public class USSDEmulatorController extends BaseController {
     private static final String inputStringParam = "request";
     private static final String linkParam = "link";
 
-    public USSDEmulatorController(UserManagementService userManagementService, PermissionBroker permissionBroker, Environment environment) {
+    private final Environment environment;
+
+    public USSDEmulatorController(UserManagementService userManagementService, PermissionBroker permissionBroker, Environment environment, Environment environment1) {
         super(userManagementService, permissionBroker);
+        this.environment = environment1;
     }
 
     private String getBaseUrl() {
-		return "http://localhost:8080/";
+		return environment.acceptsProfiles("staging") ? "https://staging.grassroot.org.za" : "http://localhost:8080/";
 	}
 
     @RequestMapping(value = "view/{userPhone}", method = RequestMethod.GET)
