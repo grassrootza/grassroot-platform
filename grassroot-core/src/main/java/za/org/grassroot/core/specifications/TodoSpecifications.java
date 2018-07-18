@@ -9,6 +9,7 @@ import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
 /**
@@ -68,6 +69,8 @@ public final class TodoSpecifications {
 
     public static Specifications<Todo> todosForUserResponse(User user) {
         Specification<Todo> isOfType = (root, query, cb) -> root.get(Todo_.type).in(TodoType.typesRequiringResponse());
+        Specification<Todo> isCurrent = (root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate),
+                Instant.now().minus(1L, ChronoUnit.DAYS)); // to provide a little buffer for instant actions
         Specification<Todo> isAssigned = (root, query, cb) -> {
             Join<Todo, TodoAssignment> join = root.join(Todo_.assignments);
             query.distinct(true);
@@ -76,7 +79,7 @@ public final class TodoSpecifications {
                     cb.isFalse(join.get(TodoAssignment_.hasResponded)),
                     cb.isTrue(join.get(TodoAssignment_.shouldRespond)));
         };
-        return Specifications.where(isOfType).and(isAssigned);
+        return Specifications.where(isOfType).and(isCurrent).and(isAssigned);
     }
 
     public static Specification<Todo> todosUserAssigned(User user) {

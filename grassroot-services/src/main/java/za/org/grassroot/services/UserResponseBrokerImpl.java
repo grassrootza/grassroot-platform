@@ -169,8 +169,4 @@ public class UserResponseBrokerImpl implements UserResponseBroker {
         }
     }
 
-    private void checkForAndSendAcknowledgement() {
-
-    }
-
 }
