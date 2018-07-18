@@ -53,7 +53,7 @@ public class MVCConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         log.info("Adding interceptor for legacy Android controllers");
         registry.addInterceptor(localeChangeInterceptor());
-        registry.addInterceptor(loggingInterceptor());
+//        registry.addInterceptor(loggingInterceptor());
         registry.addInterceptor(tokenValidationInterceptor())
                 .addPathPatterns("/api/group/**")
                 .addPathPatterns("/api/user/profile/**")
