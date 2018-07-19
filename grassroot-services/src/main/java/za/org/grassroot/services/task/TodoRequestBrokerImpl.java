@@ -14,7 +14,6 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.TodoRequestRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountFeaturesBroker;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -29,16 +28,14 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 	private final GroupRepository groupRepository;
 	private final TodoBroker todoBroker;
 	private final PermissionBroker permissionBroker;
-	private final AccountFeaturesBroker accountFeaturesBroker;
-	private final TodoRequestRepository todoRequestRepository;
+    private final TodoRequestRepository todoRequestRepository;
 
     @Autowired
-    public TodoRequestBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, AccountFeaturesBroker accountFeaturesBroker, TodoRequestRepository todoRequestRepository) {
+    public TodoRequestBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, TodoRequestRepository todoRequestRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoBroker = todoBroker;
         this.permissionBroker = permissionBroker;
-        this.accountFeaturesBroker = accountFeaturesBroker;
         this.todoRequestRepository = todoRequestRepository;
     }
 

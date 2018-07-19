@@ -80,7 +80,6 @@ public class USSDGroupController extends USSDBaseController {
             unsubscribePrompt = "unsubscribe",
             groupTokenMenu = "token",
             groupVisibility = "visibility",
-            mergeGroupMenu = "merge",
             inactiveMenu = "inactive",
             validity = "validity",
             invalidGroups = "clean",

@@ -27,7 +27,6 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
@@ -116,7 +115,7 @@ public class USSDMeetingController extends USSDBaseController {
     }
 
     @Autowired
-    public USSDMeetingController(EventBroker eventBroker, GroupBroker groupBroker, TaskBroker taskBroker, EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, AccountFeaturesBroker accountFeaturesBroker, GeoLocationBroker geoLocationBroker) {
+    public USSDMeetingController(EventBroker eventBroker, GroupBroker groupBroker, TaskBroker taskBroker, EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, AccountFeaturesBroker accountFeaturesBroker, GeoLocationBroker geoLocationBroker) {
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;

@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -102,9 +101,8 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     @Override
     @Transactional(readOnly = true)
     public boolean hasUserGivenLocationPermission(String userUid) {
-        List<UserLog> permissionLogs = userLogRepository.findAll(Specification
-                .where(ofType(UserLogType.GAVE_LOCATION_PERMISSION))
-                .or(ofType(UserLogType.REVOKED_LOCATION_PERMISSION)),
+        List<UserLog> permissionLogs = userLogRepository.findAll(
+                where(ofType(UserLogType.GAVE_LOCATION_PERMISSION)).or(ofType(UserLogType.REVOKED_LOCATION_PERMISSION)),
                 new Sort(Sort.Direction.DESC, "creationTime"));
         return permissionLogs != null && !permissionLogs.isEmpty()
                 && UserLogType.GAVE_LOCATION_PERMISSION.equals(permissionLogs.get(0).getUserLogType());

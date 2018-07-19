@@ -168,13 +168,13 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         Task task = validateFieldsAndFetch(userUid, taskUid, taskType);
         String imageRecordKey;
         if (taskType.equals(TaskType.TODO)) {
-            Specification<TodoLog> todoLogSpecs = Specification.where(TodoLogSpecifications.forTodo((Todo) task))
+            Specification<TodoLog> todoLogSpecs = where(TodoLogSpecifications.forTodo((Todo) task))
                     .and(TodoLogSpecifications.ofType(TodoLogType.IMAGE_AT_CREATION));
             List<TodoLog> todoLogs = todoLogRepository.findAll(todoLogSpecs);
             imageRecordKey = !todoLogs.isEmpty() ? todoLogs.get(0).getTag() : null;
         } else {
-            Specification<EventLog> eventLogSpecs = Specification.where(
-                    EventLogSpecifications.forEvent((Event) task)).and(EventLogSpecifications.ofType(IMAGE_AT_CREATION));
+            Specification<EventLog> eventLogSpecs = where(EventLogSpecifications.forEvent((Event) task))
+                    .and(EventLogSpecifications.ofType(IMAGE_AT_CREATION));
             List<EventLog> logs = eventLogRepository.findAll(eventLogSpecs);
             imageRecordKey = !logs.isEmpty() ? logs.get(0).getTag() : null;
         }

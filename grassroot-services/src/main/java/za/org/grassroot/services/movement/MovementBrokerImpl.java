@@ -1,5 +1,6 @@
 package za.org.grassroot.services.movement;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +14,7 @@ import za.org.grassroot.integration.graph.GraphBroker;
 import java.util.List;
 import java.util.Objects;
 
-@Service
+@Service @Slf4j
 public class MovementBrokerImpl implements MovementBroker {
 
     private final UserRepository userRepository;
@@ -58,36 +59,36 @@ public class MovementBrokerImpl implements MovementBroker {
 
     @Override
     public void alterPermissionType(String userUid, String movementUid, MovementPermissionType permissionType) {
-
+        log.info("Set some permissions");
     }
 
     @Override
     public void addOrganizer(String userUid, String movementUid, String organizerUid) {
-
+        log.info("Add an organizer");
     }
 
     @Override
     public void addMember(String userUid, String movementUid, String memberToAddUid) {
-
+        log.info("Add a member");
     }
 
     @Override
     public void addGroup(String userUid, String movementUid, String groupUid) {
-
+        log.info("Add a group");
     }
 
     @Override
     public void requestToJoin(String userUid, String movementUid) {
-
+        log.info("Ask to join movement");
     }
 
     @Override
     public void requestToAddGroup(String userUid, String movementUid) {
-
+        log.info("Ask to add group to movement");
     }
 
     @Override
     public void approveRequestToAddGroup(String userUid, String movementUid, String groupUid) {
-
+        log.info("Approve request to add group to movement");
     }
 }

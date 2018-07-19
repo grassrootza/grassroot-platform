@@ -40,9 +40,9 @@ public class USSDEmulatorController extends BaseController {
 
     private final Environment environment;
 
-    public USSDEmulatorController(UserManagementService userManagementService, PermissionBroker permissionBroker, Environment environment, Environment environment1) {
+    public USSDEmulatorController(UserManagementService userManagementService, PermissionBroker permissionBroker, Environment environment) {
         super(userManagementService, permissionBroker);
-        this.environment = environment1;
+        this.environment = environment;
     }
 
     private String getBaseUrl() {

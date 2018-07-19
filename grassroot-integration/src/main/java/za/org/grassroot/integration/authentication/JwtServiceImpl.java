@@ -27,8 +27,6 @@ public class JwtServiceImpl implements JwtService {
     private static final Logger logger = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     private String keyIdentifier;
-    @Value("${grassroot.jwt.token-time-to-live.inMilliSeconds:6000000}")
-    private Long jwtTimeToLiveInMilliSeconds;
     @Value("${grassroot.jwt.token-expiry-grace-period.inMilliseconds:1209600000}")
     private Long jwtTokenExpiryGracePeriodInMilliseconds;
 
