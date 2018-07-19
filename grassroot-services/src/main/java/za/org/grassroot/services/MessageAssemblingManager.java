@@ -140,7 +140,8 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         final String messageKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey)
                 + (todo.hasImage() ? ".image" : ".new"
                 + (todo.getActionByDate().isBefore(Instant.now().plus(1, ChronoUnit.HOURS)) ? ".instant" : ""));
-        log.debug("generating todo message, with key: {}, for locale: {}", messageKey, locale);
+        log.debug("generating message for key {}, language {}, with fields: {}",
+                messageKey, locale, Arrays.toString(todoFields));
         return messageSourceAccessor.getMessage(messageKey, todoFields, locale);
     }
 
@@ -186,16 +187,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         optionsWithCount.forEach((option, count) -> {
             sb.append(", ").append(option).append(" = ").append(String.valueOf(count));
         });
-        sb.append(", ").append(
-                messageSourceAccessor.getMessage("sms.vote.send.results.noreply",
-                new String[] { countNoReply(optionsWithCount, vote) }));
         return sb.toString();
-    }
-
-    // todo : watch TX counts here (on object graph)
-    private String countNoReply(Map<String, Long> count, Vote vote) {
-        long totalVotes = count.values().stream().mapToLong(Long::longValue).sum();
-        return String.valueOf(vote.getAllMembers().size() - totalVotes);
     }
 
     @Override
