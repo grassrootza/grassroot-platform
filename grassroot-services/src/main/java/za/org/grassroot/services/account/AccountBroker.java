@@ -64,4 +64,7 @@ public interface AccountBroker {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     Map<String, String> loadDisabledAccountMap();
 
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void updateDataSetLabels(String userUid, String accountUid, String dataSetLabels, boolean updateReferenceTables);
+
 }

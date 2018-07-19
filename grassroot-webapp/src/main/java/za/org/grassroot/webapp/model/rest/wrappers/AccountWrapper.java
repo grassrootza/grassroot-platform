@@ -3,10 +3,13 @@ package za.org.grassroot.webapp.model.rest.wrappers;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -36,6 +39,8 @@ public class AccountWrapper {
     private long notificationsSinceLastBill;
     private long chargedUssdSinceLastBill;
 
+    private List<String> geoDataSets;
+
     public AccountWrapper(Account account, User user) {
         this.uid = account.getUid();
         this.createdByUserName = account.getCreatedByUser().nameToDisplay();
@@ -60,6 +65,9 @@ public class AccountWrapper {
                     .filter(otherAccount -> !account.isClosed())
                     .collect(Collectors.toMap(Account::getUid, Account::getName));
         }
+
+        this.geoDataSets = StringUtils.isEmpty(account.getGeoDataSets()) ? null :
+                Arrays.asList(StringUtils.split(account.getGeoDataSets(), ","));
     }
 
 }

@@ -416,6 +416,7 @@ public class USSDGroupUtil extends USSDUtil {
             String visibilityMenuOptionPrompt = group.isDiscoverable() ? getMessage(menuKey + hideGroup, user)
                     : getMessage(menuKey + showGroup, user);
             listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupUid), getMessage(tokenKey, user));
+            listMenu.addMenuOption(groupMenuWithId("language", groupUid), getMessage("group.advanced.options.language", user));
             listMenu.addMenuOption(groupMenuWithId(visibility, groupUid), visibilityMenuOptionPrompt);
         }
 

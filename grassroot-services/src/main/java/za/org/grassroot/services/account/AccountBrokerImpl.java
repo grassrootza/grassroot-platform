@@ -567,8 +567,7 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     private long countDataSetSessions(String accountUid, Instant start, Instant end) {
-        // once have firm faith that both sides of this will match up, just use account list, but for now, this is
-        // not so expensive and is more reliable
+        // once have firm faith that both sides of this will match up, just use account list, but for now, this is not so expensive and is more reliable
         List<String> dataSetLabels = locationInfoBroker.getDatasetLabelsForAccount(accountUid);
         if (dataSetLabels == null || dataSetLabels.isEmpty())
             return 0;
@@ -602,6 +601,32 @@ public class AccountBrokerImpl implements AccountBroker {
         // to ensure we preserve ordering, doing this, vs collector
         disabledAccounts.forEach(account -> accountMap.put(account.getUid(), account.getAccountName()));
         return accountMap;
+    }
+
+    @Override
+    public void updateDataSetLabels(String userUid, String accountUid, String dataSetLabels, boolean updateReferenceTables) {
+        User admin = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        permissionBroker.validateSystemRole(admin, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+
+        final String oldLabels = account.getGeoDataSets();
+        account.setGeoDataSets(dataSetLabels);
+
+        if (updateReferenceTables) {
+            Set<String> oldLabelList = StringUtils.commaDelimitedListToSet(oldLabels);
+            Set<String> newLabelList = StringUtils.commaDelimitedListToSet(dataSetLabels);
+
+            oldLabelList.removeAll(newLabelList); // i.e., leave behind those to remove
+            newLabelList.removeAll(oldLabelList); // i.e., leave behind the new ones
+
+            locationInfoBroker.updateDataSetAccountLabels(accountUid, newLabelList, oldLabelList);
+        }
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .user(admin)
+                .accountLogType(AccountLogType.GEO_API_UPDATED)
+                .description(oldLabels + "-->>" + dataSetLabels).build());
     }
 
     private Specification<Account> isEnabled() {

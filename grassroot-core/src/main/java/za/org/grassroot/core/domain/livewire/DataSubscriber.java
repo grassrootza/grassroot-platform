@@ -7,7 +7,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import javax.validation.constraints.Email;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -55,7 +54,6 @@ public class DataSubscriber {
     @Column(name = "active")
     private boolean active;
 
-    @Email
     @Column(name = "primary_email", nullable = false)
     private String primaryEmail;
 

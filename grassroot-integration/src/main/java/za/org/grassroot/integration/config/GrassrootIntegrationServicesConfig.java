@@ -21,9 +21,10 @@ public class GrassrootIntegrationServicesConfig implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // note: these do not tell the corresponding service to trust _this_ server necessarily, which would be an obvious
         // vulnerability, but instead tell it to refresh the keys it has stored for the services that it is wired to trust
-        log.info("HTTP servlet booted, telling messaging server to refresh keys");
-        WebClient.create(UriComponentsBuilder.fromUriString(messagingServiceUrl).port(messagingServicePort)
-                .path(REFRESH_PATH).toUriString())
+        final String messageServerInstruction = UriComponentsBuilder.fromUriString(messagingServiceUrl).port(messagingServicePort)
+                .path(REFRESH_PATH).toUriString();
+        log.info("HTTP servlet booted, telling messaging server to refresh keys, URL: {}", messageServerInstruction);
+        WebClient.create(messageServerInstruction)
                 .get()
                 .retrieve()
                 .bodyToMono(Boolean.class)

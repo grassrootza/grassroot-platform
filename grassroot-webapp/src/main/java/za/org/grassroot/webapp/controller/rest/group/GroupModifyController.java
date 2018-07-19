@@ -257,13 +257,11 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "members/add/topics/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Assign topic(s) - special tags - to a member")
     public ResponseEntity<GroupFullDTO> assignTopicsToMembers(HttpServletRequest request, @PathVariable String groupUid,
-                                                              @RequestParam List<String> memberUids,
+                                                              @RequestParam Set<String> memberUids,
                                                               @RequestParam List<String> topics,
                                                               @RequestParam(required = false) Boolean onlyAdd) {
-        for (String memberUid : memberUids) {
-            groupBroker.assignMembershipTopics(getUserIdFromRequest(request), groupUid, memberUid, new HashSet<>(topics),
+        groupBroker.assignMembershipTopics(getUserIdFromRequest(request), groupUid, memberUids, new HashSet<>(topics),
                     onlyAdd != null && onlyAdd);
-        }
         groupStatsBroker.getTopicInterestStatsRaw(groupUid, true);
         return ResponseEntity.ok().build();
     }

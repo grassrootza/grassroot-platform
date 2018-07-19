@@ -20,7 +20,6 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import javax.validation.constraints.Email;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,7 +43,6 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Column(name = "phone_number", nullable = true, length = 20, unique = true)
     @Setter private String phoneNumber;
 
-    @Email
     @Column(name = "email_address", nullable = true, unique = true) // enforcing one user per email add.
     private String emailAddress;
 

@@ -1125,20 +1125,20 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics, boolean preservePrior) {
+    public void assignMembershipTopics(String userUid, String groupUid, Set<String> memberUids, Set<String> topics, boolean preservePrior) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(memberUid);
+        Objects.requireNonNull(memberUids);
         Objects.requireNonNull(topics);
 
-        logger.info("updating user topics to: {}", topics);
+        logger.info("updating user topics to: {}, for {} members", topics, memberUids.size());
 
         User assigningUser = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        User alteredUser = userRepository.findOneByUid(memberUid);
-        Membership member = group.getMembership(alteredUser);
+        List<Membership> memberships = membershipRepository.findByGroupAndUserUidIn(group, memberUids);
 
-        if (!alteredUser.equals(assigningUser)) {
+        // must be group organizer unless it's user updating their own topics
+        if (!memberships.isEmpty() && (memberships.size() > 1 || !memberships.get(0).getUser().equals(assigningUser))) {
             try {
                 permissionBroker.validateGroupPermission(assigningUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
             } catch (AccessDeniedException e) {
@@ -1153,9 +1153,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         if (preservePrior) {
-            member.addTopics(topics);
+            memberships.forEach(member -> member.addTopics(topics));
         } else {
-            member.setTopics(topics);
+            memberships.forEach(member -> member.setTopics(topics));
         }
     }
 
@@ -1538,19 +1538,19 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
-        Group group = load(groupUid);;
+        Group group = load(groupUid);
         User user = userRepository.findOneByUid(userUid);
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         Set<User> groupMembers = group.getMembers();
 
-        for (User member : groupMembers) {
-            if (!member.isHasInitiatedSession()) {
-                logger.info("User hasn't set their own language, so adjusting it to: " + newLocale + " for this user: " + member.nameToDisplay());
-                member.setLanguageCode(newLocale);
-            }
-        }
+        groupMembers.stream().filter(member -> !member.isHasInitiatedSession() || member.getLanguageCode() == null)
+                .forEach(member -> {
+                    logger.info("User hasn't set their own language, so adjusting it to: {}, for user {}", newLocale, member);
+                    member.setLanguageCode(newLocale);
+                });
+
         group.setDefaultLanguage(newLocale);
 
         if (includeSubGroups) {
@@ -1566,7 +1566,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.LANGUAGE_CHANGED,
-                                                                     String.format("Set default language to %s", newLocale))));
+                String.format("Set default language to %s", newLocale))));
 
     }
 

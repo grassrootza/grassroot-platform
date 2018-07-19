@@ -74,6 +74,15 @@ public class AdminAccountsController extends BaseRestController {
         return ResponseEntity.ok(wrapAccount(request, accountUid));
     }
 
+    @RequestMapping(value = "/update/datasets", method = RequestMethod.POST)
+    public ResponseEntity updateAccountDataSets(HttpServletRequest request, @RequestParam String accountUid,
+                                                @RequestParam String geoDataSets,
+                                                @RequestParam(required = false) Boolean updateDynamoReference) {
+        accountBroker.updateDataSetLabels(getUserIdFromRequest(request), accountUid,
+                geoDataSets, updateDynamoReference != null ? updateDynamoReference : false);
+        return ResponseEntity.ok(wrapAccount(request, accountUid));
+    }
+
     @RequestMapping(value = "/enable/account", method = RequestMethod.POST)
     public ResponseEntity enableAccount(HttpServletRequest request, @RequestParam String accountUid,
                                         @RequestParam String logMessage) {

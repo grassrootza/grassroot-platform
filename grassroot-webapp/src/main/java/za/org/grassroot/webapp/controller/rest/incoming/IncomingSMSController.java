@@ -189,8 +189,8 @@ public class IncomingSMSController {
         Campaign campaign = campaignBroker.load(campaignUid);
         log.info("Adding tag to user with number {}, tag is {}, campaign {}", phoneNumber, tag, campaign);
 
-        groupBroker.assignMembershipTopics(user.getUid(), campaign.getMasterGroup().getUid(), user.getUid(),
-                Collections.singleton(tag), true);
+        groupBroker.assignMembershipTopics(user.getUid(), campaign.getMasterGroup().getUid(),
+                Collections.singleton(user.getUid()), Collections.singleton(tag), true);
 
         log.info("Successfully tagged user");
 

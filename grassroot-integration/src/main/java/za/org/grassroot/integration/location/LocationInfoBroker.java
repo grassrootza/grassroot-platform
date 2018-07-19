@@ -5,6 +5,7 @@ import za.org.grassroot.core.enums.Province;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /*
 Central point for calling APIs that provide info on a location, including search
@@ -31,5 +32,7 @@ public interface LocationInfoBroker {
     void assembleAndSendForPlace(String dataSetLabel, String infoSetTag, String placeId, String targetUserUid);
 
     List<String> getDatasetLabelsForAccount(String accountUid);
+
+    void updateDataSetAccountLabels(String accountUid, Set<String> labelsToAdd, Set<String> labelsToRemove);
 
 }

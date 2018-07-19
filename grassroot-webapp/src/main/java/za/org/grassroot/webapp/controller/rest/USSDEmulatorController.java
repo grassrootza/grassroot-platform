@@ -46,7 +46,7 @@ public class USSDEmulatorController extends BaseController {
     }
 
     private String getBaseUrl() {
-		return environment.acceptsProfiles("staging") ? "https://staging.grassroot.org.za" : "http://localhost:8080/";
+		return environment.acceptsProfiles("staging") ? "https://staging.grassroot.org.za/" : "http://localhost:8080/";
 	}
 
     @RequestMapping(value = "view/{userPhone}", method = RequestMethod.GET)

@@ -8,6 +8,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
+import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
@@ -230,7 +231,6 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.info("retrieved records from geo api, looks like: {}", records);
             String logMessage = dataSetLabel + " " + infoSetTag + String.join(", ", records);
             sendAndLogRecords(dataSetLabel, records, accountUids, logMessage, user);
-
         }
     }
 
@@ -252,7 +252,38 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     @Override
     public List<String> getDatasetLabelsForAccount(String accountUid) {
-        return getDataSetsForAccount(accountUid);
+        // would be nicer to do this with a filter expression but AWS SDK docs are a complete disaster so not clear at all how to do a contains query
+        ScanRequest scanRequest = new ScanRequest().withTableName("geo_apis");
+        log.info("Scanning for data sets matching account uid: {}", accountUid);
+        try {
+            ScanResult result = dynamoDBClient.scan(scanRequest);
+            List<String> dataSets = getDataSetsFromResults(result, accountUid);
+            log.info("Finished, data sets: {}", dataSets);
+            return dataSets;
+        } catch (AmazonServiceException e) {
+            log.error("Error getting data sets: ", e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public void updateDataSetAccountLabels(String accountUid, Set<String> labelsToAdd, Set<String> labelsToRemove) {
+        log.info("Updating DynamoDB records for account {}, adding: {}, removing: {}", accountUid, labelsToAdd, labelsToRemove);
+        for (String dataSetLabel : labelsToAdd) {
+            List<String> currentUids = getFromDynamo(dataSetLabel, "account_uids", false);
+            if (!currentUids.contains(accountUid)) {
+                currentUids.add(accountUid);
+                updateDynamoRecord(dataSetLabel, "account_uids", currentUids);
+            }
+        }
+
+        for (String dataSetLabel: labelsToRemove) {
+            List<String> currentUids = getFromDynamo(dataSetLabel, "account_uids", false);
+            if (currentUids.contains(accountUid)) {
+                currentUids.remove(accountUid);
+                updateDynamoRecord(dataSetLabel, "account_uids", currentUids);
+            }
+        }
     }
 
     private void assembleAndSendHealthClinics(TownLookupResult place, String targetUserUid, Set<String> accountUids) {
@@ -372,26 +403,6 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
-    private List<String> getDataSetsForAccount(final String accountUid) {
-        DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
-
-        ScanRequest scanRequest = new ScanRequest()
-                .withTableName("geo_apis");
-
-        // would be nicer to do this with a filter expression but AWS SDK docs are a complete disaster so not clear at
-        // all how to do a contains query
-        log.info("Scanning for data sets matching account uid: {}", accountUid);
-        try {
-            ScanResult result = dynamoDBClient.scan(scanRequest);
-            List<String> dataSets = getDataSetsFromResults(result, accountUid);
-            log.info("Finished, data sets: {}", dataSets);
-            return dataSets;
-        } catch (AmazonServiceException e) {
-            log.error("Error getting data sets: ", e);
-            return new ArrayList<>();
-        }
-    }
-
     private List<String> getDataSetsFromResults(ScanResult result, String accountUid) {
         return result.getItems() == null ? new ArrayList<>() : result.getItems().stream()
                 .filter(item -> {
@@ -427,6 +438,20 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         } catch (AmazonServiceException e) {
             log.error("Error!", e);
             throw new IllegalArgumentException("No results for that dataset and field");
+        }
+    }
+
+    private void updateDynamoRecord(String dataSetLabel, String field, Object newValue) {
+        DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+        Table geoApiTable = dynamoDB.getTable("geo_apis");
+        UpdateItemSpec spec = new UpdateItemSpec()
+                .withPrimaryKey("data_set_label", dataSetLabel)
+                .withAttributeUpdate(new AttributeUpdate(field).put(newValue));
+        try {
+            UpdateItemOutcome outcome = geoApiTable.updateItem(spec);
+            log.info("Completed updating, outcome: {}", outcome);
+        } catch (AmazonServiceException e) {
+            log.error("Error updating!", e);
         }
     }
 

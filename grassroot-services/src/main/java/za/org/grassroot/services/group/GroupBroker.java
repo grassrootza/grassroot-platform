@@ -88,7 +88,7 @@ public interface GroupBroker {
                                  Province province);
 
     // note: only accepts topics that are from the group itself
-    void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics, boolean preservePrior);
+    void assignMembershipTopics(String userUid, String groupUid, Set<String> memberUids, Set<String> topics, boolean preservePrior);
 
     void removeTopicFromMembers(String userUid, String groupUid, Collection<String> topic, Set<String> memberUids);
 

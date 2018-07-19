@@ -594,7 +594,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_TAGGED, campaign, channel,
                 Campaign.JOIN_TOPIC_PREFIX + joinTopic);
 
-        groupBroker.assignMembershipTopics(userUid, campaign.getMasterGroup().getUid(), userUid, Collections.singleton(joinTopic), true);
+        groupBroker.assignMembershipTopics(userUid, campaign.getMasterGroup().getUid(), Collections.singleton(userUid), Collections.singleton(joinTopic), true);
         persistCampaignLog(campaignLog);
     }
 
