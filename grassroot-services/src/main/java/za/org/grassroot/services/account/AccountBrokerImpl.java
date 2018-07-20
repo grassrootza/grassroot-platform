@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -560,28 +561,20 @@ public class AccountBrokerImpl implements AccountBroker {
         log.info("Counted {} campaign sessions for account", countSessions);
 
         if (locationInfoBroker != null && account.sponsorsDataSet()) {
-            countSessions += countDataSetSessions(accountUid, startTime, endTime);
+            countSessions += countDataSetSessionsForAccount(accountUid, startTime, endTime);
         }
 
         return countSessions;
     }
 
-    private long countDataSetSessions(String accountUid, Instant start, Instant end) {
+    private long countDataSetSessionsForAccount(String accountUid, Instant start, Instant end) {
         // once have firm faith that both sides of this will match up, just use account list, but for now, this is not so expensive and is more reliable
         List<String> dataSetLabels = locationInfoBroker.getDatasetLabelsForAccount(accountUid);
         if (dataSetLabels == null || dataSetLabels.isEmpty())
             return 0;
 
         log.info("Counting sessions for data sets: {}", dataSetLabels);
-        final String countGeoSessionsQuery = "select count(distinct ul) from UserLog ul " +
-                "where ul.creationTime between :start and :end and " +
-                "ul.userLogType = :logType and ul.description in :dataSets";
-        TypedQuery<Long> geoApiSessionCount = entityManager.createQuery(countGeoSessionsQuery, Long.class)
-                .setParameter("start", start).setParameter("end", end)
-                .setParameter("logType", UserLogType.GEO_APIS_CALLED).setParameter("dataSets", dataSetLabels);
-        long countGeoCalls = geoApiSessionCount.getSingleResult();
-        log.info("And counted {} sessions for those APIs", countGeoCalls);
-        return countGeoCalls;
+        return countSessionsForDatasets(dataSetLabels, start, end);
     }
 
     @Override
@@ -629,6 +622,32 @@ public class AccountBrokerImpl implements AccountBroker {
                 .description(oldLabels + "-->>" + dataSetLabels).build());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public DataSetInfo fetchDataSetInfo(String userUid, String dataSetLabel, Instant start, Instant end) {
+        User user = userRepository.findOneByUid(userUid);
+        validateUserCanViewDataset(user, dataSetLabel);
+
+        return DataSetInfo.builder()
+                .dataSetLabel(dataSetLabel)
+                .description(locationInfoBroker.getDescriptionForDataSet(dataSetLabel))
+                .usersCount(countUsersForDataSets(Collections.singleton(dataSetLabel), start, end))
+                .userSessionCount(countSessionsForDatasets(Collections.singleton(dataSetLabel), start, end))
+                .notificationsCount(countNotificationsForDataSet(dataSetLabel, start, end))
+                .start(start).end(end).build();
+    }
+
+    private long countNotificationsForDataSet(String dataSetLabel, Instant start, Instant end) {
+        final String accountLogOnlyQueryText = countQueryOpening() +
+                "n.accountLog in (select al from AccountLog al where al.description like :dataSetStart)";
+        TypedQuery<Long> countNonGroupsQuery = entityManager.createQuery(accountLogOnlyQueryText, Long.class)
+                .setParameter("start", start).setParameter("end", end).setParameter("dataSetStart", dataSetLabel + "%");
+        long dataSetNotifications = countNonGroupsQuery.getSingleResult();
+        log.info("Counted {} notifications for the dataset {}", dataSetNotifications, dataSetLabel);
+
+        return dataSetNotifications;
+    }
+
     private Specification<Account> isEnabled() {
         return (root, query, cb) -> cb.and(cb.isTrue(root.get(Account_.enabled)), cb.isFalse(root.get(Account_.closed)));
     }
@@ -670,6 +689,40 @@ public class AccountBrokerImpl implements AccountBroker {
         return "select count(n) from Notification n " +
                 "where n.createdDateTime between :start and :end and " +
                 "n.status in ('DELIVERED', 'READ') and ";
+    }
+
+    private long countSessionsForDatasets(Collection<String> dataSets, Instant start, Instant end) {
+        return countForDataSets("select count(distinct ul) from UserLog ul", dataSets, start, end);
+    }
+
+    private long countUsersForDataSets(Collection<String> dataSets, Instant start, Instant end) {
+        return countForDataSets("select count(distinct ul.userUid) from UserLog ul", dataSets, start, end);
+    }
+
+    private long countForDataSets(String prefix, Collection<String> dataSets, Instant start, Instant end) {
+        final String countGeoSessionsQuery = prefix + " where ul.creationTime between :start and :end and " +
+                "ul.userLogType = :logType and ul.description in :dataSets";
+        TypedQuery<Long> geoApiSessionCount = entityManager.createQuery(countGeoSessionsQuery, Long.class)
+                .setParameter("start", start).setParameter("end", end)
+                .setParameter("logType", UserLogType.GEO_APIS_CALLED).setParameter("dataSets", dataSets);
+        long countGeoCalls = geoApiSessionCount.getSingleResult();
+        log.info("Counted {} sessions for dataSets {}, prefix {}", countGeoCalls, dataSets, prefix);
+        return countGeoCalls;
+    }
+
+    private void validateUserCanViewDataset(User user, String dataSetLabel) {
+        Set<String> accountUids = locationInfoBroker.getAccountUidsForDataSets(dataSetLabel);
+        List<Account> accounts = accountRepository.findByUidIn(accountUids);
+
+        if (accounts == null || accounts.isEmpty())
+            throw new IllegalArgumentException("Error! No accounts found for datasets");
+
+        boolean primaryAccountMatches = accounts.contains(user.getPrimaryAccount());
+        if (!primaryAccountMatches && !permissionBroker.isSystemAdmin(user)) {
+            Set<Account> userAccounts = user.getAccountsAdministered();
+            if (accounts.stream().noneMatch(userAccounts::contains))
+                throw new AccessDeniedException("Only account admins of sponsoring datasets can see stats");
+        }
     }
 
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {

@@ -35,4 +35,8 @@ public interface LocationInfoBroker {
 
     void updateDataSetAccountLabels(String accountUid, Set<String> labelsToAdd, Set<String> labelsToRemove);
 
+    Set<String> getAccountUidsForDataSets(String dataSetLabel);
+
+    String getDescriptionForDataSet(String dataSetLabel);
+
 }

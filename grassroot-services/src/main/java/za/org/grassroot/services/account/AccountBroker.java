@@ -67,4 +67,6 @@ public interface AccountBroker {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateDataSetLabels(String userUid, String accountUid, String dataSetLabels, boolean updateReferenceTables);
 
+    DataSetInfo fetchDataSetInfo(String userUid, String dataSetLabel, Instant start, Instant end);
+
 }

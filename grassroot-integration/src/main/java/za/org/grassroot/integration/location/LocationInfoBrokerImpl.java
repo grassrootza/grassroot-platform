@@ -286,6 +286,19 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
+    @Override
+    public Set<String> getAccountUidsForDataSets(String dataSetLabel) {
+        Set<String> accountUids = getSponsoringAccountUids(dataSetLabel);
+        if (accountUids == null)
+            throw new IllegalArgumentException("Error! No accounts found for dataset");
+        return accountUids;
+    }
+
+    @Override
+    public String getDescriptionForDataSet(String dataSetLabel) {
+        return getItemForDataSet(dataSetLabel, "description").getString("description");
+    }
+
     private void assembleAndSendHealthClinics(TownLookupResult place, String targetUserUid, Set<String> accountUids) {
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl(izweLamiLambda)
                 .path("/closest")
@@ -293,7 +306,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 .queryParam("longitude", place.getLongitude())
                 .queryParam("size", 5);
         ResponseEntity<RangedInformation[]> results = restTemplate.getForEntity(componentsBuilder.build().toUri(), RangedInformation[].class);
-        List<String> records = Arrays.stream(results.getBody())
+        List<String> records = results.getBody() == null ? new ArrayList<>() : Arrays.stream(results.getBody())
                 .sorted(Comparator.comparing(RangedInformation::getDistance))
                 .map(RangedInformation::getInformation).collect(Collectors.toList());
         log.info("okay, got these results: {}, and records: {}", results.getBody(), records);
@@ -307,10 +320,11 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private void sendAndLogRecords(String dataSet, List<String> records, Set<String> accountUids, String logMessage, User user) {
         List<Account> accounts = accountRepository.findByUidIn(accountUids);
         if (accounts != null && !accounts.isEmpty()) {
+            final String description = StringUtils.truncate(dataSet + ":" + logMessage, 255);
             AccountLog accountLog = new AccountLog.Builder(accounts.get(0))
                     .user(user)
                     .accountLogType(AccountLogType.GEO_API_MESSAGE_SENT)
-                    .description(logMessage.substring(0, Math.min(255, logMessage.length()))).build();
+                    .description(description).build();
             accountLogRepository.saveAndFlush(accountLog);
             Set<Notification> messages = notificationsFromRecords(dataSet, records, user, accountLog, 160);
             log.info("generated messages to send out, in total {} messages", messages.size());
@@ -423,6 +437,12 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     private List<String> getFromDynamo(String dataSetLabel, String field, boolean sort) {
+        Set<String> resultSet = getItemForDataSet(dataSetLabel, field).getStringSet(field);
+        return resultSet == null ? new ArrayList<>() :
+                sort ? resultSet.stream().sorted().collect(Collectors.toList()) : new ArrayList<>(resultSet);
+    }
+
+    private Item getItemForDataSet(String dataSetLabel, String field) {
         DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
         Table geoApiTable = dynamoDB.getTable("geo_apis");
         GetItemSpec spec = new GetItemSpec()
@@ -432,9 +452,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.info("trying to read the data set info with key {}, field {}", dataSetLabel, field);
             Item outcome = geoApiTable.getItem(spec);
             log.info("got the outcome, looks like: {}", outcome);
-            Set<String> resultSet = outcome.getStringSet(field);
-            return resultSet == null ? new ArrayList<>() :
-                    sort ? resultSet.stream().sorted().collect(Collectors.toList()) : new ArrayList<>(resultSet);
+            return outcome;
         } catch (AmazonServiceException e) {
             log.error("Error!", e);
             throw new IllegalArgumentException("No results for that dataset and field");

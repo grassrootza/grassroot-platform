@@ -22,6 +22,7 @@ import za.org.grassroot.integration.billing.BillingServiceBroker;
 import za.org.grassroot.integration.billing.SubscriptionRecordDTO;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.account.DataSetInfo;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
@@ -275,6 +276,41 @@ public class AccountUserController extends BaseRestController {
         }catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
         }
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/fetch/dataset/{datasetLabel}", method = RequestMethod.GET)
+    public ResponseEntity<DataSetInfo> fetchDatasetInfo(@PathVariable String dataSetLabel,
+                                                        @RequestParam(required = false) Long startTimeMillis,
+                                                        @RequestParam(required = false) Long endTimeMillis,
+                                                        @RequestParam(required = false) String accountUid,
+                                                        HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        Account account = StringUtils.isEmpty(accountUid) ? user.getPrimaryAccount() : accountBroker.loadAccount(accountUid);
+        Instant start = startTimeMillis != null ? Instant.ofEpochMilli(startTimeMillis) : account.getLastBillingDate();
+        Instant end = endTimeMillis != null ? Instant.ofEpochMilli(endTimeMillis) : Instant.now();
+
+        DataSetInfo counts = accountBroker.fetchDataSetInfo(user.getUid(), dataSetLabel, start, end);
+        log.info("completed dataset counts: {}", counts);
+        return ResponseEntity.ok(counts);
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/fetch/all/dataset", method = RequestMethod.GET)
+    public ResponseEntity<List<DataSetInfo>> fetchDataSets(@RequestParam(required = false) String accountUid,
+                                                           @RequestParam(required = false) Long startTimeMillis,
+                                                           @RequestParam(required = false) Long endTimeMillis,
+                                                           HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        Account account = StringUtils.isEmpty(accountUid) ? user.getPrimaryAccount() : accountBroker.loadAccount(accountUid);
+        Instant start = startTimeMillis != null ? Instant.ofEpochMilli(startTimeMillis) : account.getLastBillingDate();
+        Instant end = endTimeMillis != null ? Instant.ofEpochMilli(endTimeMillis) : Instant.now();
+        List<DataSetInfo> dataCounts = Arrays.stream(account.getGeoDataSets().split(",")).map(label -> {
+            DataSetInfo counts = accountBroker.fetchDataSetInfo(user.getUid(), label, start, end);
+            log.info("for {} got counts {}", label, counts);
+            return counts;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(dataCounts);
     }
 
     private ResponseEntity<AccountWrapper> wrappedAccount(String accountUid, HttpServletRequest request) {
