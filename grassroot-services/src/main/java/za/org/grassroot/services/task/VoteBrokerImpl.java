@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.UserLanguageNotification;
 import za.org.grassroot.core.domain.notification.VoteResultsNotification;
@@ -22,7 +23,9 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.VoteRepository;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.MessageAssemblingService;
@@ -61,14 +64,16 @@ public class VoteBrokerImpl implements VoteBroker {
     private static final List<String> optionsForYesNoVote = Arrays.asList(YES, NO, ABSTAIN);
 
     private final UserManagementService userService;
+    private final GroupRepository groupRepository;
     private final VoteRepository voteRepository;
     private final EventLogRepository eventLogRepository;
     private final MessageAssemblingService messageService;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    public VoteBrokerImpl(UserManagementService userService, VoteRepository voteRepository, EventLogRepository eventLogRepository, MessageAssemblingService messageService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public VoteBrokerImpl(UserManagementService userService, GroupRepository groupRepository, VoteRepository voteRepository, EventLogRepository eventLogRepository, MessageAssemblingService messageService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userService = userService;
+        this.groupRepository = groupRepository;
         this.voteRepository = voteRepository;
         this.eventLogRepository = eventLogRepository;
         this.messageService = messageService;
@@ -284,6 +289,19 @@ public class VoteBrokerImpl implements VoteBroker {
                 throw e;
             }
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasMassVoteOpen(String groupUid) {
+        final Group group = groupRepository.findOneByUid(groupUid);
+        return voteRepository.count(EventSpecifications.isOpenMassVoteForGroup(group)) > 0;
+    }
+
+    @Override
+    public Vote getMassVoteForGroup(String groupUid) {
+
+        return null;
     }
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {

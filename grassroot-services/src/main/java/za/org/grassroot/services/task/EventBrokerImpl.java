@@ -478,6 +478,10 @@ public class EventBrokerImpl implements EventBroker {
 			vote.setSpecialForm(helper.getSpecialForm());
 		}
 
+		if (helper.isRandomizeOptions()) {
+			vote.setRandomize(true);
+		}
+
 		voteRepository.save(vote);
 
 		if (!StringUtils.isEmpty(helper.getTaskImageKey())) {

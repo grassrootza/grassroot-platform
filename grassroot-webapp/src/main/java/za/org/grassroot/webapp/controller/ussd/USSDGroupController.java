@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -26,6 +27,7 @@ import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -62,6 +64,9 @@ public class USSDGroupController extends USSDBaseController {
     private final GroupQueryBroker groupQueryBroker;
     private final GeoLocationBroker geoLocationBroker;
     private final GroupJoinRequestService groupJoinRequestService;
+
+    private VoteBroker voteBroker; // for mass votes / polls on join, leaving as setter because may remove sometime in future
+    private USSDVoteController ussdVoteController; // to assemble the vote
 
     @Setter(AccessLevel.PACKAGE) private USSDGroupUtil ussdGroupUtil;
 
@@ -101,10 +106,20 @@ public class USSDGroupController extends USSDBaseController {
         this.ussdGroupUtil = ussdGroupUtil;
     }
 
-    /*
-    Join code menu
-     */
+    @Autowired
+    public void setVoteBroker(VoteBroker voteBroker) {
+        this.voteBroker = voteBroker;
+    }
+
+    @Autowired
+    public void setUssdVoteController(USSDVoteController ussdVoteController) {
+        this.ussdVoteController = ussdVoteController;
+    }
+
+    // with mass votes this may get tricky, though most of it involves very fast & indexed select or count queries,
+    // but still adding in timing so that we can watch out
     protected USSDMenu lookForJoinCode(User user, String trailingDigits) {
+        long startTime = System.currentTimeMillis();
         Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
         if (!searchResult.isPresent())
             return null;
@@ -112,17 +127,30 @@ public class USSDGroupController extends USSDBaseController {
         Group group = searchResult.get();
         log.debug("adding user via join code ... {}", trailingDigits);
         Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD);
+        USSDMenu menu;
         if (group.getJoinTopics() != null && !group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
-            final String prompt = getMessage(HOME, startMenu, promptKey + ".group.topics", group.getName(), user);
-            final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
-            USSDMenu menu = new USSDMenu(prompt);
-            group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));
-            return menu;
+            menu = askForJoinTopics(group, user);
+        } else if (voteBroker.hasMassVoteOpen(group.getUid())) {
+            Vote massVote = voteBroker.getMassVoteForGroup(group.getUid());
+            final String prompt = getMessage("home.start.prompt.group.vote", new String[] { group.getName(), massVote.getName() }, user);
+            menu = ussdVoteController.assembleVoteMenu(user, massVote); // handles option setting, etc.
+            menu.setPromptMessage(prompt); // because this is better in this context than standard
+            log.info("Created a mass vote, here it is: {}", menu);
         } else {
             String promptStart = (group.hasName()) ? getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
                     getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);
-            return setUserProfile(user, promptStart);
+            menu = setUserProfile(user, promptStart);
         }
+        log.info("Completed use of group join code, time taken : {} msecs", System.currentTimeMillis() - startTime);
+        return menu;
+    }
+
+    private USSDMenu askForJoinTopics(Group group, User user) {
+        final String prompt = getMessage(HOME, startMenu, promptKey + ".group.topics", group.getName(), user);
+        final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
+        USSDMenu menu = new USSDMenu(prompt);
+        group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));
+        return menu;
     }
 
     @RequestMapping(value = homePath + "group/join/topics")

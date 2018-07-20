@@ -23,5 +23,7 @@ public class VoteHelper {
     @Builder.Default private Set<String> assignMemberUids = Collections.emptySet();
     private List<String> options;
     private EventSpecialForm specialForm;
+    @Builder.Default private boolean randomizeOptions = false;
+
 
 }

@@ -126,6 +126,7 @@ public class EventCreateController extends BaseRestController{
                                                   @RequestParam(required = false) String description,
                                                   @RequestParam long time,
                                                   @RequestParam(required = false) EventSpecialForm specialForm,
+                                                  @RequestParam(required = false) Boolean randomizeOptions,
                                                   @RequestParam(required = false) String mediaFileUid,
                                                   @RequestParam(required = false) @ApiParam(value = "UIDs of assigned members, if left blank all " +
                                                               "members of the parent are assigned") Set<String> assignedMemberUids){
@@ -138,12 +139,20 @@ public class EventCreateController extends BaseRestController{
             User user = userService.load(userUid);
 
             assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
-            log.info("title={}, description={}, time={}, members={}, options={}, special form={}", title, description, eventStartDateTime, assignedMemberUids, voteOptions, specialForm);
+            log.info("title={}, description={}, time={}, members={}, options={}, special form={}, randomize={}", title, description, eventStartDateTime, assignedMemberUids, voteOptions, specialForm, randomizeOptions);
 
             VoteHelper helper = VoteHelper.builder()
-                    .userUid(user.getUid()).parentUid(parentUid).parentType(parentType)
-                    .name(title).eventStartDateTime(eventStartDateTime).description(description).options(voteOptions)
-                    .taskImageKey(mediaFileUid).assignMemberUids(assignedMemberUids).specialForm(specialForm)
+                    .userUid(user.getUid())
+                    .parentUid(parentUid)
+                    .parentType(parentType)
+                    .name(title)
+                    .eventStartDateTime(eventStartDateTime)
+                    .description(description)
+                    .options(voteOptions)
+                    .taskImageKey(mediaFileUid)
+                    .assignMemberUids(assignedMemberUids)
+                    .specialForm(specialForm)
+                    .randomizeOptions(randomizeOptions != null && randomizeOptions)
                     .build();
 
             log.info("corresponding helper: {}", helper);
