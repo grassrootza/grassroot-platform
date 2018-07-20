@@ -3,6 +3,7 @@ package za.org.grassroot.services.task;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -20,6 +21,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
+import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
@@ -81,6 +83,7 @@ public class EventBrokerImpl implements EventBroker {
 	private final EntityManager entityManager;
 
 	private PasswordTokenService tokenService;
+	private ApplicationEventPublisher applicationEventPublisher;
 	private GraphBroker graphBroker;
 
 	@Autowired
@@ -107,9 +110,15 @@ public class EventBrokerImpl implements EventBroker {
 		this.tokenService = tokenService;
 	}
 
+	// almost certainly there's a better way to do both of these
 	@Autowired(required = false)
 	public void setGraphBroker(GraphBroker graphBroker) {
 		this.graphBroker = graphBroker;
+	}
+
+	@Autowired(required = false)
+	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
 	@Override
@@ -158,13 +167,19 @@ public class EventBrokerImpl implements EventBroker {
 		generateResponseTokens(meeting);
 
 		log.info("called store bundle, exiting create mtg method ... triggering graph if enabled");
-		if (graphBroker != null) {
-			List<String> assignedUids = meeting.getMembers().stream().map(User::getUid).collect(Collectors.toList());
-			graphBroker.addTaskToGraph(meeting.getUid(), meeting.getTaskType(), assignedUids);
-			graphBroker.annotateTask(meeting.getUid(), meeting.getTaskType(), null, null, true);
+		if (graphBroker != null && applicationEventPublisher != null) {
+			applicationEventPublisher.publishEvent(addToGraph(meeting));
 		}
 
 		return meeting;
+	}
+
+	private AfterTxCommitTask addToGraph(Meeting meeting) {
+		return () -> {
+			List<String> assignedUids = meeting.getMembers().stream().map(User::getUid).collect(Collectors.toList());
+			graphBroker.addTaskToGraph(meeting.getUid(), meeting.getTaskType(), assignedUids);
+			graphBroker.annotateTask(meeting.getUid(), meeting.getTaskType(), null, null, true);
+		};
 	}
 
 	private Meeting setReminder(Meeting meeting, MeetingBuilderHelper helper) {

@@ -86,13 +86,14 @@ public class TodoBrokerImpl implements TodoBroker {
         this.tokenService = tokenService;
     }
 
+    @Autowired
+    public void setAccountFeaturesBroker(AccountFeaturesBroker accountFeaturesBroker) {
+        this.accountFeaturesBroker = accountFeaturesBroker;
+    }
+
     @Autowired(required = false)
     public void setGraphBroker(GraphBroker graphBroker) {
         this.graphBroker = graphBroker;
-    }
-
-    public void setAccountFeaturesBroker(AccountFeaturesBroker accountFeaturesBroker) {
-        this.accountFeaturesBroker = accountFeaturesBroker;
     }
 
     @Override
@@ -155,12 +156,18 @@ public class TodoBrokerImpl implements TodoBroker {
         log.info("and now we are done with todo creation ... adding to graph, if enabled");
 
         if (graphBroker != null) {
-            List<String> assignedUids = todo.getMembers().stream().map(User::getUid).collect(Collectors.toList());
-            graphBroker.addTaskToGraph(todo.getUid(), todo.getTaskType(), assignedUids);
-            graphBroker.annotateTask(todo.getUid(), todo.getTaskType(), null, null, true);
+            eventPublisher.publishEvent(placeTodoInGraph(todo));
         }
 
         return todo.getUid();
+    }
+
+    private AfterTxCommitTask placeTodoInGraph(Todo todo) {
+        return () -> {
+            List<String> assignedUids = todo.getMembers().stream().map(User::getUid).collect(Collectors.toList());
+            graphBroker.addTaskToGraph(todo.getUid(), todo.getTaskType(), assignedUids);
+            graphBroker.annotateTask(todo.getUid(), todo.getTaskType(), null, null, true);
+        };
     }
 
     private Todo checkForDuplicate(User creator, Group group, TodoHelper helper) {

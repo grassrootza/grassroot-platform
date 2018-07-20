@@ -13,21 +13,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.group.Group;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.task.Task;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.AbstractEventEntity;
+import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.MembershipRepository;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.TodoRepository;
-import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.graph.domain.Actor;
 import za.org.grassroot.graph.domain.Event;
 import za.org.grassroot.graph.domain.GrassrootGraphEntity;
@@ -35,11 +31,7 @@ import za.org.grassroot.graph.domain.enums.ActorType;
 import za.org.grassroot.graph.domain.enums.EventType;
 import za.org.grassroot.graph.domain.enums.GraphEntityType;
 import za.org.grassroot.graph.domain.enums.GrassrootRelationship;
-import za.org.grassroot.graph.dto.ActionType;
-import za.org.grassroot.graph.dto.IncomingDataObject;
-import za.org.grassroot.graph.dto.IncomingGraphAction;
-import za.org.grassroot.graph.dto.IncomingRelationship;
-import za.org.grassroot.graph.dto.IncomingAnnotation;
+import za.org.grassroot.graph.dto.*;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
@@ -147,8 +139,11 @@ public class GraphBrokerImpl implements GraphBroker {
         try {
             DebugUtil.transactionRequired("");
             log.info("adding task to Grassroot Graph ... {}", taskUid);
-
             Task task = getTask(taskUid, taskType);
+            if (task == null) {
+                log.error("Error getting task of type {} and uid {}", taskType, taskUid);
+                return;
+            }
             Event taskEvent = createTaskEvent(task);
             IncomingGraphAction action = wrapEntityCreation(taskEvent);
             addParticipants(action, new HashSet<String>(assignedUserUids), GraphEntityType.ACTOR,
@@ -217,6 +212,11 @@ public class GraphBrokerImpl implements GraphBroker {
         log.info("annotating Grassroot graph task ... {}", taskUid);
 
         Task task = getTask(taskUid, taskType);
+        if (task == null) {
+            log.error("Error, task given to graph broker is null, check if TX is committed, etc. type: {}, uid: {}", taskType, taskUid);
+            return;
+        }
+
         if (setAllAnnotations) {
             properties = new HashMap<>();
             if (TaskType.MEETING.equals(taskType) || TaskType.VOTE.equals(taskType)) {
@@ -389,7 +389,7 @@ public class GraphBrokerImpl implements GraphBroker {
 
     private Task getTask(String taskUid, TaskType taskType) {
         switch (taskType) {
-            case MEETING:
+            case MEETING:   return eventRepository.findOneByUid(taskUid);
             case VOTE:      return eventRepository.findOneByUid(taskUid);
             case TODO:      return todoRepository.findOneByUid(taskUid);
         }
