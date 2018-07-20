@@ -1,8 +1,8 @@
 package za.org.grassroot.core.dto;
 
 import lombok.Getter;
-import za.org.grassroot.core.domain.GroupJoinMethod;
-import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
 
 import java.util.List;

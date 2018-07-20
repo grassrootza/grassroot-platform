@@ -2,9 +2,7 @@ package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.account.Account;
-import za.org.grassroot.core.enums.AccountBillingCycle;
-import za.org.grassroot.core.enums.AccountPaymentType;
-import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.domain.group.Group;
 
 import java.time.Instant;
 import java.util.List;
@@ -18,78 +16,57 @@ public interface AccountBroker {
 
     Account loadAccount(String accountUid);
 
-    Account loadPrimaryAccountForUser(String userUid, boolean loadEvenIfDisabled);
+    Account loadDefaultAccountForUser(String userUid);
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    List<Account> loadAllAccounts(boolean visibleOnly, AccountPaymentType paymentMethod, AccountBillingCycle billingCycle);
+    String createAccount(String userUid, String accountName, String billedUserUid, String billingEmail, String ongoingPaymentRef);
 
-    String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
-                         AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle, boolean enableFreeTrial);
+    void setAccountSubscriptionRef(String userUid, String accountUid, String subscriptionId);
 
-    void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, AccountPaymentType paymentType,
-                       boolean ensureUserAddedToAdmin, boolean setBillingUser);
+    void setAccountPaymentRef(String userUid, String accountUid, String paymentRef);
 
-    // note: should only adjust billing date if this is called at end of successful payment cycle
-    void updateAccountPaymentCycleAndMethod(String userUid, String accountUid, AccountPaymentType paymentType,
-                                            AccountBillingCycle billingCycle, boolean adjustNextBillingDate);
+    void setLastBillingDate(String userUid, String accountUid, Instant newLastBillingDate);
 
-    void updateAccountPaymentType(String userUid, String accountUid, AccountPaymentType paymentType);
+    void enableAccount(String userUid, String accountUid, String logMessage);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void setAccountPrimary(String userUid, String accountUid);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
-    void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole, boolean generateClosingBill);
+    void disableAccount(String administratorUid, String accountUid, String reasonToRecord);
 
-    @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
-    void closeAccount(String userUid, String accountUid, boolean generateClosingBill);
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void addAdministrator(String userUid, String accountUid, String administratorUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void removeAdministrator(String userUid, String accountUid, String adminToRemoveUid, boolean preventRemovingSelfOrBilling);
 
-    void changeAccountType(String userUid, String accountUid, AccountType newAccountType, Set<String> groupsToRemove);
+    void addGroupsToAccount(String accountUid, Set<String> groupUid, String addingUserUid);
 
-    // the next two should only be called by system admin, administrators can only do type switch
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
-    void updateAccountGroupLimits(String userUid, String accountUid, int numberOfGroups, int maxSizePerGroup,
-                                  int maxDepth, int messagesPerMonth, int todosPerMonth, int eventsPerMonth);
+    void addAllUserCreatedGroupsToAccount(String accountUid, String userUid);
 
-    /* Methods to work out some limits left on account */
+    Set<Group> fetchGroupsUserCanAddToAccount(String accountUid, String userUid);
 
-    Map<AccountType, Integer> getNumberGroupsPerType();
+    void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
 
-    Map<AccountType, Integer> getNumberMessagesPerType();
+    void renameAccount(String adminUid, String accountUid, String accountName);
 
-    Map<AccountType, Integer> getGroupSizeLimits();
+    @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
+    void closeAccount(String userUid, String accountUid, String closingReason);
 
-    Map<AccountType, Integer> getAccountTypeFees();
+    long countAccountNotifications(String accountUid, Instant startTime, Instant endTime);
 
-    Map<AccountType, Integer> getEventMonthlyLimits();
+    long countChargedNotificationsForGroup(String accountUid, String groupUid, Instant startTime, Instant endTime);
 
-    /* Some methods to facilitate testing */
+    long countChargedUssdSessionsForAccount(String accountUid, Instant startTime, Instant endTime);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void resetAccountBillingDates(Instant commonInstant);
+    List<Account> loadAllAccounts(boolean enabledOnly);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void updateAccountBalance(String adminUid, String accountUid, long newBalance);
+    Map<String, String> loadDisabledAccountMap();
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void updateAccountFee(String adminUid, String accountUid, long newFee);
+    void updateDataSetLabels(String userUid, String accountUid, String dataSetLabels, boolean updateReferenceTables);
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void modifyAccount(String adminUid, String accountUid, AccountType accountType,
-                       long subscriptionFee, boolean chargePerMessage, long costPerMessage);
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void setAccountVisibility(String adminUid, String accountUid, boolean visible);
-
-    void modifyAccount(String adminUid, String accountUid, AccountType accountType,
-                       String accountName, String billingEmail, AccountBillingCycle billingCycle);
-
-    void closeAccountRest(String userUid, String accountUid, boolean generateClosingBill);
+    DataSetInfo fetchDataSetInfo(String userUid, String dataSetLabel, Instant start, Instant end);
 
 }

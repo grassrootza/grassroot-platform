@@ -1,155 +1,73 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import za.org.grassroot.core.domain.account.Account;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.AccountBillingCycle;
-import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.group.Group;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2017/01/11.
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL) @Getter @Setter
 public class AccountWrapper {
 
     private final String uid;
+
     private final String createdByUserName;
     private final boolean createdByCallingUser;
 
-    private final String billingUserName;
-    private final String billingUserEmail;
-    private final String billingUserUid;
-    private final boolean billedToCallingUser;
-
     private final boolean enabled;
-    private final AccountType type;
 
     private final String name;
-    private final int maxNumberGroups;
-    private final int maxSizePerGroup;
-    private final int maxSubGroupDepth;
-    private final int todosPerGroupPerMonth;
-    private final int freeFormMessages;
+    private final String subscriptionId;
+    private final long lastBillingDateMillis;
 
-    private final long lastPaymentDateMilli;
-    private final long nextBillingDateMilli;
+    private final Map<String, String> paidForGroups;
+    private final Map<String, String> otherAdmins;
 
-    private final long outstandingBalance;
-    private final int subscriptionFee;
+    private final boolean primary;
+    private Map<String, String> otherAccounts;
 
-    private final int groupsLeft;
-    private final int messagesLeft;
+    private long notificationsSinceLastBill;
+    private long chargedUssdSinceLastBill;
 
-    private final AccountBillingCycle billingCycle;
+    private List<String> geoDataSets;
 
-    public AccountWrapper(Account account, User callingUser, int groupsLeft, int messagesLeft) {
+    public AccountWrapper(Account account, User user) {
         this.uid = account.getUid();
         this.createdByUserName = account.getCreatedByUser().nameToDisplay();
-        this.createdByCallingUser = account.getCreatedByUser().equals(callingUser);
-
-        this.billingUserName = account.getBillingUser() == null ? "" : account.getBillingUser().nameToDisplay();
-        this.billingUserEmail = account.getBillingUser() == null ? "" : account.getBillingUser().getEmailAddress();
-        this.billingUserUid = account.getBillingUser() == null ? "" : account.getBillingUser().getUid();
-        this.billedToCallingUser = account.getBillingUser() != null && account.getBillingUser().equals(callingUser);
+        this.createdByCallingUser = account.getCreatedByUser().equals(user);
 
         this.enabled = account.isEnabled();
         this.name = account.getAccountName();
-        this.type = account.getType();
+        this.subscriptionId = account.getSubscriptionRef();
+        this.lastBillingDateMillis = account.getLastBillingDate().toEpochMilli();
 
-        this.maxNumberGroups = account.getMaxNumberGroups();
-        this.maxSizePerGroup = account.getMaxSizePerGroup();
-        this.maxSubGroupDepth = account.getMaxSubGroupDepth();
-        this.todosPerGroupPerMonth = account.getTodosPerGroupPerMonth();
-        this.freeFormMessages = account.getFreeFormMessages();
+        // these are pretty inefficient but this should be occassional - turn into a query at some point
+        this.paidForGroups = account.getPaidGroups().stream().collect(Collectors.toMap(Group::getUid, Group::getName));
 
-        this.lastPaymentDateMilli = account.getLastPaymentDate() == null ? 0 : account.getLastPaymentDate().toEpochMilli();
-        this.nextBillingDateMilli = account.getNextBillingDate() == null ? 0 : account.getNextBillingDate().toEpochMilli();
-        this.outstandingBalance = account.getOutstandingBalance();
-        this.subscriptionFee = account.getSubscriptionFee();
+        this.otherAdmins = account.getAdministrators().stream()
+                .filter(otherUser -> !user.equals(otherUser))
+                .collect(Collectors.toMap(User::getUid, User::getName));
 
-        this.groupsLeft = groupsLeft;
-        this.messagesLeft = messagesLeft;
+        this.primary = account.equals(user.getPrimaryAccount());
+        if (user.getAccountsAdministered() != null && !user.getAccountsAdministered().isEmpty()) {
+            this.otherAccounts = user.getAccountsAdministered().stream()
+                    .filter(otherAccount -> !account.equals(otherAccount))
+                    .filter(otherAccount -> !account.isClosed())
+                    .collect(Collectors.toMap(Account::getUid, Account::getName));
+        }
 
-        this.billingCycle = account.getBillingCycle();
+        this.geoDataSets = StringUtils.isEmpty(account.getGeoDataSets()) ? null :
+                Arrays.asList(StringUtils.split(account.getGeoDataSets(), ","));
     }
 
-    public String getUid() {
-        return uid;
-    }
-
-    public String getCreatedByUserName() {
-        return createdByUserName;
-    }
-
-    public boolean isCreatedByCallingUser() {
-        return createdByCallingUser;
-    }
-
-    public String getBillingUserName() {
-        return billingUserName;
-    }
-
-    public String getBillingUserEmail() { return billingUserEmail; }
-
-    public boolean isBilledToCallingUser() {
-        return billedToCallingUser;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public AccountType getType() { return type; }
-
-    public int getMaxNumberGroups() {
-        return maxNumberGroups;
-    }
-
-    public int getMaxSizePerGroup() {
-        return maxSizePerGroup;
-    }
-
-    public int getMaxSubGroupDepth() {
-        return maxSubGroupDepth;
-    }
-
-    public int getTodosPerGroupPerMonth() {
-        return todosPerGroupPerMonth;
-    }
-
-    public int getFreeFormMessages() {
-        return freeFormMessages;
-    }
-
-    public long getLastPaymentDateMilli() {
-        return lastPaymentDateMilli;
-    }
-
-    public long getNextBillingDateMilli() {
-        return nextBillingDateMilli;
-    }
-
-    public long getOutstandingBalance() {
-        return outstandingBalance;
-    }
-
-    public int getSubscriptionFee() {
-        return subscriptionFee;
-    }
-
-    public int getGroupsLeft() {
-        return groupsLeft;
-    }
-
-    public int getMessagesLeft() {
-        return messagesLeft;
-    }
-
-    public AccountBillingCycle getBillingCycle() { return billingCycle; }
-
-    public String getBillingUserUid() { return billingUserUid; }
 }

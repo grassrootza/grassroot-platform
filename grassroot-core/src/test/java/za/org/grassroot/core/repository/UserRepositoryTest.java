@@ -1,26 +1,28 @@
 package za.org.grassroot.core.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.annotation.Rollback;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.StandaloneDatabaseConfig;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.TestContextConfiguration;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,14 +35,9 @@ import static org.junit.Assert.*;
 /**
  * @author Lesetse Kimwaga
  */
-
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {StandaloneDatabaseConfig.class})
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
+@Slf4j @RunWith(SpringRunner.class) @DataJpaTest
+@ContextConfiguration(classes = TestContextConfiguration.class)
 public class UserRepositoryTest {
-
-    private static final Logger log = LoggerFactory.getLogger(UserRepositoryTest.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -156,10 +153,10 @@ public class UserRepositoryTest {
     public void shouldSetAccounts() {
         User userAcc = new User("098765", null, null);
         assertNotNull(userAcc.getUid());
-        Account account = new Account(userAcc,"", AccountType.FREE,userAcc,
-                AccountPaymentType.FREE_TRIAL,AccountBillingCycle.ANNUAL);
-        Account account1 = new Account(userAcc,"", AccountType.FREE,userAcc,
-                AccountPaymentType.FREE_TRIAL,AccountBillingCycle.MONTHLY);
+        Account account = new Account(userAcc,"", AccountType.FREE,userAcc
+        );
+        Account account1 = new Account(userAcc,"", AccountType.FREE,userAcc
+        );
         Set<Account> accounts = new HashSet<>();
         userAcc.setAccountsAdministered(accounts);
         userAcc.setPrimaryAccount(account);

@@ -1,16 +1,16 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.task.AbstractEventEntity_;
-import za.org.grassroot.core.domain.task.Event;
-import za.org.grassroot.core.domain.task.Event_;
-import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Group_;
+import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.Membership_;
+import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.enums.EventSpecialForm;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
-import java.util.Collection;
 
 /**
  * Created by luke on 2016/09/26.
@@ -18,7 +18,7 @@ import java.util.Collection;
  */
 public final class EventSpecifications {
 
-    public static Specifications<Event> upcomingEventsForUser(User user) {
+    public static Specification<Event> upcomingEventsForUser(User user) {
         Specification<Event> basicProperties = (root, query, cb) -> cb.and(cb.isFalse(root.get("canceled")), cb.isTrue(root.get("rsvpRequired")),
                 cb.greaterThan(root.get("eventStartDateTime"), Instant.now()));
         Specification<Event> userInAncestorGroup = (root, query, cb) -> {
@@ -26,18 +26,21 @@ public final class EventSpecifications {
             return cb.equal(userGroupJoin.get("user"), user);
         };
 
-        //N.B. remove this if statement if you want to allow votes for people that joined the group late
-        Specification<Event> userJoinedAfterVote = (root, query, cb) -> {
-            Join<Event, Membership> parentGroupMembership = root.join("ancestorGroup").join("memberships");
-            parentGroupMembership.on(cb.equal(parentGroupMembership.get("user").get("id"), user.getId()));
-            return cb.or(cb.notEqual(root.get("type"), EventType.VOTE),
-                    cb.greaterThan(root.get("createdDateTime"), parentGroupMembership.get("joinTime")));
-        };
+        // For the moment, response rates are relatively low, and hence having people see votes is more necessary
+        // than, e.g., hypothetically preventing an organizer manipulating a vote by adding lots of people (and anyway,
+        // that is easy to do by just adding them prior to vote). Hence removing this. _But_ it's a fiddly spec and
+        // we may want it back in the future, so leaving it in here.
 
-        return Specifications.where(basicProperties)
+//        Specification<Event> userJoinedAfterVote = (root, query, cb) -> {
+//            Join<Event, Membership> parentGroupMembership = root.join("ancestorGroup").join("memberships");
+//            parentGroupMembership.on(cb.equal(parentGroupMembership.get("user").get("id"), user.getId()));
+//            return cb.or(cb.notEqual(root.get("type"), EventType.VOTE),
+//                    cb.greaterThan(root.get("createdDateTime"), parentGroupMembership.get("joinTime")));
+//        };
+
+        return Specification.where(basicProperties)
                 .and(EventSpecifications.hasAllUsersAssignedOrIsAssigned(user))
-                .and(userInAncestorGroup)
-                .and(userJoinedAfterVote);
+                .and(userInAncestorGroup);
     }
 
     public static Specification<Event> hasAllUsersAssignedOrIsAssigned(User user) {
@@ -79,6 +82,12 @@ public final class EventSpecifications {
             Join<Group, Membership> members = groups.join(Group_.memberships);
             return cb.equal(members.get(Membership_.user), user);
         };
+    }
+
+    public static Specification<Vote> isOpenMassVoteForGroup(Group group) {
+        return (root, query, cb) -> cb.and(
+                cb.isFalse(root.get(Vote_.canceled)), cb.equal(root.get(Vote_.specialForm), EventSpecialForm.MASS_VOTE),
+                cb.greaterThan(root.get(Vote_.eventStartDateTime), Instant.now()), cb.equal(root.get(Vote_.ancestorGroup), group));
     }
 
 }

@@ -5,9 +5,9 @@ package za.org.grassroot.core.enums;
  */
 public enum AccountType {
 
+    STANDARD,
     FREE,
     LIGHT,
-    STANDARD,
     LARGE,
     HEAVY,
     ENTERPRISE;

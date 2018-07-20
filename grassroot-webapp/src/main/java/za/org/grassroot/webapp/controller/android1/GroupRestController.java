@@ -3,8 +3,7 @@ package za.org.grassroot.webapp.controller.android1;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import liquibase.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
@@ -13,10 +12,15 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
@@ -34,12 +38,11 @@ import java.util.stream.Collectors;
 /**
  * Created by paballo.
  */
-@RestController
+@RestController @Slf4j
 @RequestMapping(value = "/api/group", produces = MediaType.APPLICATION_JSON_VALUE)
 public class GroupRestController extends GroupAbstractRestController {
 
-    private static final Logger log = LoggerFactory.getLogger(GroupRestController.class);
-
+    private final AccountFeaturesBroker accountFeaturesBroker;
     private final MessageSourceAccessor messageSourceAccessor;
 
     private final static Set<Permission> permissionsDisplayed = Sets.newHashSet(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
@@ -51,7 +54,8 @@ public class GroupRestController extends GroupAbstractRestController {
             Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
     @Autowired
-    public GroupRestController(@Qualifier("messageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+    public GroupRestController(AccountFeaturesBroker accountFeaturesBroker, @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+        this.accountFeaturesBroker = accountFeaturesBroker;
         this.messageSourceAccessor = messageSourceAccessor;
     }
 
@@ -86,9 +90,10 @@ public class GroupRestController extends GroupAbstractRestController {
                 } else {
                     MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                     membersToAdd.add(creator);
-                    Group created = groupBroker.create(user.getUid(), groupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP,
-                            description, null, true, false);
+                    Group created = groupBroker.create(user.getUid(), groupName, null, membersToAdd,
+                            GroupPermissionTemplate.DEFAULT_GROUP, description, null, true, false, true);
                     restMessage = RestMessage.GROUP_CREATED;
+                    log.info("Created group: {}", created);
                     GroupResponseWrapper wrapper = createGroupWrapper(created, user);
                     wrapper.setInvalidNumbers(invalidNumbers);
                     returnData = Collections.singletonList(wrapper);
@@ -105,7 +110,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
     @RequestMapping(value = "members/left/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> numberMembersLeftForGroup(@PathVariable String groupUid) {
-        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, groupBroker.numberMembersBeforeLimit(groupUid));
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, accountFeaturesBroker.numberMembersLeftForGroup(groupUid));
     }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)

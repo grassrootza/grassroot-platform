@@ -13,11 +13,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.group.Group;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.domain.task.AbstractEventEntity;
 import za.org.grassroot.core.domain.task.Todo;
@@ -104,6 +104,17 @@ public class GraphBrokerImpl implements GraphBroker {
                 ActorType.INDIVIDUAL.name(), groupUid, GraphEntityType.ACTOR, ActorType.GROUP.name()));
 
         dispatchAction(action, "group");
+    }
+
+    @Override
+    public void addMovementToGraph(String movementUid, String creatingUserUid) {
+        log.info("adding movement to Grassroot graph ...");
+        Actor movement = new Actor(ActorType.MOVEMENT, movementUid);
+        IncomingGraphAction action = wrapEntityCreation(movement);
+        IncomingRelationship genRel = generatorRelationship(creatingUserUid, GraphEntityType.ACTOR,
+                ActorType.INDIVIDUAL.name(), movementUid, GraphEntityType.ACTOR, ActorType.MOVEMENT.name());
+        action.addRelationship(genRel);
+        dispatchAction(action, "movement");
     }
 
     @Override

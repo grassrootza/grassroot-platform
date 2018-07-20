@@ -1,8 +1,11 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Group_;
+import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.Membership_;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 
@@ -67,7 +70,7 @@ public final class TodoSpecifications {
         };
     }
 
-    public static Specifications<Todo> todosForUserResponse(User user) {
+    public static Specification<Todo> todosForUserResponse(User user) {
         Specification<Todo> isOfType = (root, query, cb) -> root.get(Todo_.type).in(TodoType.typesRequiringResponse());
         Specification<Todo> isCurrent = (root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate),
                 Instant.now().minus(1L, ChronoUnit.DAYS)); // to provide a little buffer for instant actions
@@ -79,7 +82,7 @@ public final class TodoSpecifications {
                     cb.isFalse(join.get(TodoAssignment_.hasResponded)),
                     cb.isTrue(join.get(TodoAssignment_.shouldRespond)));
         };
-        return Specifications.where(isOfType).and(isCurrent).and(isAssigned);
+        return Specification.where(isOfType).and(isCurrent).and(isAssigned);
     }
 
     public static Specification<Todo> todosUserAssigned(User user) {
@@ -94,9 +97,9 @@ public final class TodoSpecifications {
     }
 
 
-    public static Specifications<Todo> checkForDuplicates(Instant intervalStart, Instant intervalEnd, User creator, Group group,
+    public static Specification<Todo> checkForDuplicates(Instant intervalStart, Instant intervalEnd, User creator, Group group,
                                                           String explanation) {
-        return Specifications
+        return Specification
                 .where(actionByDateBetween(intervalStart, intervalEnd))
                 .and((root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.message), explanation))
                 .and((root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.parentGroup), group))
@@ -109,13 +112,13 @@ public final class TodoSpecifications {
     }
 
     public static Specification<TodoAssignment> userInAndForTodo(Set<User> userSet, Todo todo) {
-        return Specifications.where((root, query, cb) -> cb.and(
+        return Specification.where((root, query, cb) -> cb.and(
                 cb.equal(root.get(TodoAssignment_.todo), todo),
                 root.get(TodoAssignment_.user).in(userSet)));
     }
 
-    public static Specifications<TodoAssignment> userAssignmentCanRespond(User user, Todo todo) {
-        return Specifications.where(userAssignment(user, todo))
+    public static Specification<TodoAssignment> userAssignmentCanRespond(User user, Todo todo) {
+        return Specification.where(userAssignment(user, todo))
                 .and((root, query, cb) -> cb.or(
                         cb.isTrue(root.get(TodoAssignment_.assignedAction)), cb.isTrue(root.get(TodoAssignment_.validator))));
     }

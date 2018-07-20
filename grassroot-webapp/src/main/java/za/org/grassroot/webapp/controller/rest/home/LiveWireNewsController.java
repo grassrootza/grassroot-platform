@@ -41,7 +41,7 @@ public class LiveWireNewsController {
     @RequestMapping(value = "/page/number",method = RequestMethod.GET)
     public ResponseEntity<Integer> findAlertpageNumber(@RequestParam String alertUid){
         int page = 0;
-        Pageable pageable = new PageRequest(page,10, Sort.Direction.DESC,"creationTime");
+        Pageable pageable = PageRequest.of(page, 10, Sort.Direction.DESC,"creationTime");
         boolean found = false;
 
         Page<LiveWireAlert> liveWireAlerts = liveWireAlertBroker.findPublicAlerts(pageable);
@@ -56,7 +56,7 @@ public class LiveWireNewsController {
                 break;
             }else{
                 page++;
-                pageable = new PageRequest(page,10, Sort.Direction.DESC,"creationTime");
+                pageable = PageRequest.of(page,10, Sort.Direction.DESC,"creationTime");
                 liveWireAlerts = liveWireAlertBroker.findPublicAlerts(pageable);
             }
         }

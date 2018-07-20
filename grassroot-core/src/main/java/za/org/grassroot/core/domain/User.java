@@ -5,12 +5,13 @@ import lombok.Setter;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
-import org.hibernate.validator.constraints.Email;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.DeliveryRoute;
@@ -42,7 +43,6 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Column(name = "phone_number", nullable = true, length = 20, unique = true)
     @Setter private String phoneNumber;
 
-    @Email
     @Column(name = "email_address", nullable = true, unique = true) // enforcing one user per email add.
     private String emailAddress;
 

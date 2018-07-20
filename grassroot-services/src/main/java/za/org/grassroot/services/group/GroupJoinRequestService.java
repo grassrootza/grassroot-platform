@@ -1,7 +1,7 @@
 package za.org.grassroot.services.group;
 
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
+import za.org.grassroot.core.domain.group.Group;
 
 import java.util.List;
 

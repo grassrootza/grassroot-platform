@@ -8,7 +8,10 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
+import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -228,7 +231,6 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.info("retrieved records from geo api, looks like: {}", records);
             String logMessage = dataSetLabel + " " + infoSetTag + String.join(", ", records);
             sendAndLogRecords(dataSetLabel, records, accountUids, logMessage, user);
-
         }
     }
 
@@ -248,6 +250,55 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
+    @Override
+    public List<String> getDatasetLabelsForAccount(String accountUid) {
+        // would be nicer to do this with a filter expression but AWS SDK docs are a complete disaster so not clear at all how to do a contains query
+        ScanRequest scanRequest = new ScanRequest().withTableName("geo_apis");
+        log.info("Scanning for data sets matching account uid: {}", accountUid);
+        try {
+            ScanResult result = dynamoDBClient.scan(scanRequest);
+            List<String> dataSets = getDataSetsFromResults(result, accountUid);
+            log.info("Finished, data sets: {}", dataSets);
+            return dataSets;
+        } catch (AmazonServiceException e) {
+            log.error("Error getting data sets: ", e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public void updateDataSetAccountLabels(String accountUid, Set<String> labelsToAdd, Set<String> labelsToRemove) {
+        log.info("Updating DynamoDB records for account {}, adding: {}, removing: {}", accountUid, labelsToAdd, labelsToRemove);
+        for (String dataSetLabel : labelsToAdd) {
+            List<String> currentUids = getFromDynamo(dataSetLabel, "account_uids", false);
+            if (!currentUids.contains(accountUid)) {
+                currentUids.add(accountUid);
+                updateDynamoRecord(dataSetLabel, "account_uids", currentUids);
+            }
+        }
+
+        for (String dataSetLabel: labelsToRemove) {
+            List<String> currentUids = getFromDynamo(dataSetLabel, "account_uids", false);
+            if (currentUids.contains(accountUid)) {
+                currentUids.remove(accountUid);
+                updateDynamoRecord(dataSetLabel, "account_uids", currentUids);
+            }
+        }
+    }
+
+    @Override
+    public Set<String> getAccountUidsForDataSets(String dataSetLabel) {
+        Set<String> accountUids = getSponsoringAccountUids(dataSetLabel);
+        if (accountUids == null)
+            throw new IllegalArgumentException("Error! No accounts found for dataset");
+        return accountUids;
+    }
+
+    @Override
+    public String getDescriptionForDataSet(String dataSetLabel) {
+        return getItemForDataSet(dataSetLabel, "description").getString("description");
+    }
+
     private void assembleAndSendHealthClinics(TownLookupResult place, String targetUserUid, Set<String> accountUids) {
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl(izweLamiLambda)
                 .path("/closest")
@@ -255,7 +306,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 .queryParam("longitude", place.getLongitude())
                 .queryParam("size", 5);
         ResponseEntity<RangedInformation[]> results = restTemplate.getForEntity(componentsBuilder.build().toUri(), RangedInformation[].class);
-        List<String> records = Arrays.stream(results.getBody())
+        List<String> records = results.getBody() == null ? new ArrayList<>() : Arrays.stream(results.getBody())
                 .sorted(Comparator.comparing(RangedInformation::getDistance))
                 .map(RangedInformation::getInformation).collect(Collectors.toList());
         log.info("okay, got these results: {}, and records: {}", results.getBody(), records);
@@ -269,14 +320,15 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private void sendAndLogRecords(String dataSet, List<String> records, Set<String> accountUids, String logMessage, User user) {
         List<Account> accounts = accountRepository.findByUidIn(accountUids);
         if (accounts != null && !accounts.isEmpty()) {
+            final String description = StringUtils.truncate(dataSet + ":" + logMessage, 255);
             AccountLog accountLog = new AccountLog.Builder(accounts.get(0))
                     .user(user)
                     .accountLogType(AccountLogType.GEO_API_MESSAGE_SENT)
-                    .description(logMessage.substring(0, Math.min(255, logMessage.length()))).build();
+                    .description(description).build();
             accountLogRepository.saveAndFlush(accountLog);
             Set<Notification> messages = notificationsFromRecords(dataSet, records, user, accountLog, 160);
             log.info("generated messages to send out, in total {} messages", messages.size());
-            notificationRepository.save(messages);
+            notificationRepository.saveAll(messages);
         }
     }
 
@@ -365,6 +417,15 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
+    private List<String> getDataSetsFromResults(ScanResult result, String accountUid) {
+        return result.getItems() == null ? new ArrayList<>() : result.getItems().stream()
+                .filter(item -> {
+                    List<String> accountUids = item.get("account_uids").getSS();
+                    return accountUids != null && accountUids.contains(accountUid);
+                })
+                .map(item -> item.get("data_set_label").getS()).collect(Collectors.toList());
+    }
+
     private List<String> getFromUri(URI uri) {
         try {
             ResponseEntity<String[]> availableInfo = restTemplate.getForEntity(uri, String[].class);
@@ -376,6 +437,12 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     private List<String> getFromDynamo(String dataSetLabel, String field, boolean sort) {
+        Set<String> resultSet = getItemForDataSet(dataSetLabel, field).getStringSet(field);
+        return resultSet == null ? new ArrayList<>() :
+                sort ? resultSet.stream().sorted().collect(Collectors.toList()) : new ArrayList<>(resultSet);
+    }
+
+    private Item getItemForDataSet(String dataSetLabel, String field) {
         DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
         Table geoApiTable = dynamoDB.getTable("geo_apis");
         GetItemSpec spec = new GetItemSpec()
@@ -385,12 +452,24 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.info("trying to read the data set info with key {}, field {}", dataSetLabel, field);
             Item outcome = geoApiTable.getItem(spec);
             log.info("got the outcome, looks like: {}", outcome);
-            Set<String> resultSet = outcome.getStringSet(field);
-            return resultSet == null ? new ArrayList<>() :
-                    sort ? resultSet.stream().sorted().collect(Collectors.toList()) : new ArrayList<>(resultSet);
+            return outcome;
         } catch (AmazonServiceException e) {
             log.error("Error!", e);
             throw new IllegalArgumentException("No results for that dataset and field");
+        }
+    }
+
+    private void updateDynamoRecord(String dataSetLabel, String field, Object newValue) {
+        DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+        Table geoApiTable = dynamoDB.getTable("geo_apis");
+        UpdateItemSpec spec = new UpdateItemSpec()
+                .withPrimaryKey("data_set_label", dataSetLabel)
+                .withAttributeUpdate(new AttributeUpdate(field).put(newValue));
+        try {
+            UpdateItemOutcome outcome = geoApiTable.updateItem(spec);
+            log.info("Completed updating, outcome: {}", outcome);
+        } catch (AmazonServiceException e) {
+            log.error("Error updating!", e);
         }
     }
 

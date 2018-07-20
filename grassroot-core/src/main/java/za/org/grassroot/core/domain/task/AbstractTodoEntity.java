@@ -2,8 +2,8 @@ package za.org.grassroot.core.domain.task;
 
 import lombok.Getter;
 import lombok.Setter;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.core.util.UIDGenerator;

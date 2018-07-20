@@ -8,7 +8,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -20,6 +27,7 @@ import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -31,7 +39,9 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Optional;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
@@ -55,6 +65,9 @@ public class USSDGroupController extends USSDBaseController {
     private final GeoLocationBroker geoLocationBroker;
     private final GroupJoinRequestService groupJoinRequestService;
 
+    private VoteBroker voteBroker; // for mass votes / polls on join, leaving as setter because may remove sometime in future
+    private USSDVoteController ussdVoteController; // to assemble the vote
+
     @Setter(AccessLevel.PACKAGE) private USSDGroupUtil ussdGroupUtil;
 
     private static final String
@@ -72,7 +85,6 @@ public class USSDGroupController extends USSDBaseController {
             unsubscribePrompt = "unsubscribe",
             groupTokenMenu = "token",
             groupVisibility = "visibility",
-            mergeGroupMenu = "merge",
             inactiveMenu = "inactive",
             validity = "validity",
             invalidGroups = "clean",
@@ -94,10 +106,20 @@ public class USSDGroupController extends USSDBaseController {
         this.ussdGroupUtil = ussdGroupUtil;
     }
 
-    /*
-    Join code menu
-     */
+    @Autowired
+    public void setVoteBroker(VoteBroker voteBroker) {
+        this.voteBroker = voteBroker;
+    }
+
+    @Autowired
+    public void setUssdVoteController(USSDVoteController ussdVoteController) {
+        this.ussdVoteController = ussdVoteController;
+    }
+
+    // with mass votes this may get tricky, though most of it involves very fast & indexed select or count queries,
+    // but still adding in timing so that we can watch out
     protected USSDMenu lookForJoinCode(User user, String trailingDigits) {
+        long startTime = System.currentTimeMillis();
         Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
         if (!searchResult.isPresent())
             return null;
@@ -105,17 +127,30 @@ public class USSDGroupController extends USSDBaseController {
         Group group = searchResult.get();
         log.debug("adding user via join code ... {}", trailingDigits);
         Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD);
+        USSDMenu menu;
         if (group.getJoinTopics() != null && !group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
-            final String prompt = getMessage(HOME, startMenu, promptKey + ".group.topics", group.getName(), user);
-            final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
-            USSDMenu menu = new USSDMenu(prompt);
-            group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));
-            return menu;
+            menu = askForJoinTopics(group, user);
+        } else if (voteBroker.hasMassVoteOpen(group.getUid())) {
+            Vote massVote = voteBroker.getMassVoteForGroup(group.getUid());
+            final String prompt = getMessage("home.start.prompt.group.vote", new String[] { group.getName(), massVote.getName() }, user);
+            menu = ussdVoteController.assembleVoteMenu(user, massVote); // handles option setting, etc.
+            menu.setPromptMessage(prompt); // because this is better in this context than standard
+            log.info("Created a mass vote, here it is: {}", menu);
         } else {
             String promptStart = (group.hasName()) ? getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
                     getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);
-            return setUserProfile(user, promptStart);
+            menu = setUserProfile(user, promptStart);
         }
+        log.info("Completed use of group join code, time taken : {} msecs", System.currentTimeMillis() - startTime);
+        return menu;
+    }
+
+    private USSDMenu askForJoinTopics(Group group, User user) {
+        final String prompt = getMessage(HOME, startMenu, promptKey + ".group.topics", group.getName(), user);
+        final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
+        USSDMenu menu = new USSDMenu(prompt);
+        group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));
+        return menu;
     }
 
     @RequestMapping(value = homePath + "group/join/topics")
@@ -270,7 +305,7 @@ public class USSDGroupController extends USSDBaseController {
             } else {
                 MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                 createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
-                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false);
+                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, false);
             }
 
             cacheManager.putUssdMenuForUser(inputNumber, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));
@@ -718,106 +753,8 @@ public class USSDGroupController extends USSDBaseController {
     }
 
     /**
-     * SECTION: MERGING GROUP MENUS (AND DEACTIVATE)
+     * SECTION: GROUP INACTIVE AND LANGUAGE
      */
-
-    @RequestMapping(value = groupPath + mergeGroupMenu)
-    @ResponseBody
-    public Request selectMergeGroups(@RequestParam(value = phoneNumber) String inputNumber,
-                                     @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-        USSDMenu menu;
-        User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
-
-        log.info("selecting merge candidates, with groupUid = {}", groupUid);
-        Set<Group> mergeCandidates = groupQueryBroker.mergeCandidates(user.getUid(), groupUid);
-        log.info("selected merge candidates, returned = {}", mergeCandidates);
-
-        if (mergeCandidates.size() == 0) {
-            menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey + ".error", user));
-            menu.addMenuOption(groupMenuWithId(existingGroupMenu, groupUid),
-                    getMessage(thisSection, mergeGroupMenu, optionsKey + "back", user));
-            menu.addMenuOptions(optionsHomeExit(user, false));
-        } else {
-            menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey, user));
-            menu = ussdGroupUtil.addGroupsToMenu(menu, groupMenus + mergeGroupMenu + "-confirm?firstGroupSelected=" + groupUid,
-                    new ArrayList<>(mergeCandidates), user);
-        }
-        return menuBuilder(menu);
-    }
-
-    @RequestMapping(value = groupPath + mergeGroupMenu + "-confirm")
-    @ResponseBody
-    public Request confirmMerge(@RequestParam(value = phoneNumber) String inputNumber,
-                                @RequestParam(value = groupUidParam) String groupUid1,
-                                @RequestParam(value = "firstGroupSelected") String firstGroupSelected) throws URISyntaxException {
-
-        // todo: specify which one is smaller
-        User user = userManager.findByInputNumber(inputNumber, saveGroupMenuWithParams(mergeGroupMenu + "-confirm", groupUid1,
-                        "&firstGroupSelected=" + firstGroupSelected));
-        String[] groupNames = new String[]{groupBroker.load(groupUid1).getName(""), groupBroker.load(firstGroupSelected).getName("")};
-
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu + "-confirm", promptKey, groupNames, user));
-        String urlRoot = groupMenus + mergeGroupMenu + doSuffix + "&groupUid1=" + groupUid1 + "&groupUid2=" + firstGroupSelected + "&action=";
-        String messageRoot = thisSection.toKey() + mergeGroupMenu + "-confirm." + optionsKey;
-
-        menu.addMenuOption(urlRoot + "inactive", getMessage(messageRoot + "yes.inactive", user));
-        menu.addMenuOption(urlRoot + "active", getMessage(messageRoot + "yes.active", user));
-        menu.addMenuOption(urlRoot + "new", getMessage(messageRoot + "yes.newgroup", user));
-        menu.addMenuOption(groupMenuWithId(mergeGroupMenu, firstGroupSelected), getMessage(messageRoot + "change.second", user));
-        menu.addMenuOption(groupMenus + existingGroupMenu, getMessage(messageRoot + "change.both", user));
-
-        return menuBuilder(menu);
-    }
-
-    @RequestMapping(value = groupPath + mergeGroupMenu + "-newname")
-    @ResponseBody
-    public Request nameNewMergedGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber,
-                                      @RequestParam(value = "groupUid1") String groupUid1,
-                                      @RequestParam(value = "groupUid2") String groupUid2) throws URISyntaxException {
-
-        String groupsSuffix = "?groupUid1=" + groupUid1 + "&groupUid2=" + groupUid2;
-        User user = userManager.findByInputNumber(inputNumber, groupMenus + mergeGroupMenu + "-newname" + groupsSuffix);
-        return menuBuilder(new USSDMenu(getMessage(thisSection, mergeGroupMenu + "-newname", promptKey, user),
-                groupMenus + mergeGroupMenu + doSuffix + groupsSuffix));
-    }
-
-    @RequestMapping(value = groupPath + mergeGroupMenu + doSuffix)
-    @ResponseBody
-    public Request mergeDo(@RequestParam(value = phoneNumber, required = true) String inputNumber,
-                           @RequestParam(value = groupUidParam + "1", required = true) String firstGroupUid,
-                           @RequestParam(value = groupUidParam + "2", required = true) String secondGroupUid,
-                           @RequestParam(value = "action", required = false) String action,
-                           @RequestParam(value = userInputParam, required = false) String userInput) throws URISyntaxException {
-
-        User user = userManager.findByInputNumber(inputNumber, null); // resetting return flag
-        Group firstGroup = groupBroker.load(firstGroupUid);
-        Group secondGroup = groupBroker.load(secondGroupUid);
-
-        Group resultGroup;
-
-        switch (action) {
-            case "inactive":
-                resultGroup = groupBroker.merge(user.getUid(), firstGroup.getUid(), secondGroup.getUid(), false, false, false, null);
-                break;
-            case "active":
-                resultGroup = groupBroker.merge(user.getUid(), firstGroup.getUid(), secondGroup.getUid(), true, false, false, null);
-                break;
-            case "new":
-                resultGroup = groupBroker.merge(user.getUid(), firstGroup.getUid(), secondGroup.getUid(), false, false, true, userInput);
-                break;
-            default:
-                resultGroup = groupBroker.merge(user.getUid(), firstGroup.getUid(), secondGroup.getUid(), false, false, false, null);
-                break;
-        }
-
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu + doSuffix, promptKey, user));
-
-        menu.addMenuOption(groupMenuWithId(existingGroupMenu, resultGroup.getUid()),
-                getMessage(thisSection, mergeGroupMenu + doSuffix, optionsKey + "group", user));
-        menu.addMenuOptions(optionsHomeExit(user, false));
-
-        return menuBuilder(menu);
-    }
 
     @RequestMapping(value = groupPath + inactiveMenu)
     @ResponseBody
@@ -934,6 +871,28 @@ public class USSDGroupController extends USSDBaseController {
         ussdMenu.addMenuOption("start_force", getMessage("start", sessionUser));
 
         return menuBuilder(ussdMenu);
+    }
+
+    @RequestMapping(value = groupPath + "/language")
+    @ResponseBody
+    public Request selectGroupLanguage(@RequestParam(value = phoneNumber) String inputNumber,
+                                       @RequestParam String groupUid) throws URISyntaxException {
+        final User user = userManager.findByInputNumber(inputNumber);
+        final String prompt = getMessage("group.language.prompt", user);
+        USSDMenu menu = new USSDMenu(prompt, languageOptions("group/language/select?groupUid=" + groupUid + "&language="));
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = groupPath + "/language/select")
+    @ResponseBody
+    public Request confirmGroupLanguage(@RequestParam(value = phoneNumber) String inputNumber,
+                                        @RequestParam String groupUid,
+                                        @RequestParam String language) throws URISyntaxException {
+        final User user = userManager.findByInputNumber(inputNumber);
+        groupBroker.updateGroupDefaultLanguage(user.getUid(), groupUid, language, false);
+        final String prompt = getMessage("group.language.selected", user);
+        USSDMenu menu = new USSDMenu(prompt, optionsHomeExit(user, false));
+        return menuBuilder(menu);
     }
 
     private boolean isValidGroupName(String groupName) {

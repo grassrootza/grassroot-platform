@@ -1,6 +1,6 @@
 package za.org.grassroot.services.group;
 
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 
 /**
  * Created by luke on 2016/11/23.

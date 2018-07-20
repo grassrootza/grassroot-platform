@@ -5,17 +5,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.TodoRequest;
 import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.TodoRequestRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.exception.AccountLimitExceededException;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -30,16 +28,14 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 	private final GroupRepository groupRepository;
 	private final TodoBroker todoBroker;
 	private final PermissionBroker permissionBroker;
-	private final AccountGroupBroker accountGroupBroker;
-	private final TodoRequestRepository todoRequestRepository;
+    private final TodoRequestRepository todoRequestRepository;
 
     @Autowired
-    public TodoRequestBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, AccountGroupBroker accountGroupBroker, TodoRequestRepository todoRequestRepository) {
+    public TodoRequestBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, TodoRequestRepository todoRequestRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoBroker = todoBroker;
         this.permissionBroker = permissionBroker;
-        this.accountGroupBroker = accountGroupBroker;
         this.todoRequestRepository = todoRequestRepository;
     }
 
@@ -75,7 +71,7 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
         // todo: get this fixed (under JIRA issue)
-//        if (accountGroupBroker.numberTodosLeftForGroup(group.getUid()) < 1)
+//        if (accountFeaturesBroker.numberTodosLeftForGroup(group.getUid()) < 1)
 //            throw new AccountLimitExceededException();
 
         request.setParent(group);

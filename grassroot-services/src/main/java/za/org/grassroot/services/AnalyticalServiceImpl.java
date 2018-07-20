@@ -1,30 +1,19 @@
 package za.org.grassroot.services;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
-import za.org.grassroot.core.specifications.NotificationSpecifications;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
-import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
 
-import static org.springframework.data.jpa.domain.Specifications.where;
+import static org.springframework.data.jpa.domain.Specification.where;
 import static za.org.grassroot.core.specifications.UserSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
 
@@ -34,38 +23,24 @@ import static za.org.grassroot.core.util.DateTimeUtil.*;
 @Service
 public class AnalyticalServiceImpl implements AnalyticalService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AnalyticalServiceImpl.class);
-
-    @Value("${grassroot.keywords.excluded:''}")
-    private String listOfWordsToExcludeFromStat;
-
     private final UserRepository userRepository;
-    private final UserLogRepository userLogRepository;
     private final GroupRepository groupRepository;
     private final VoteRepository voteRepository;
     private final MeetingRepository meetingRepository;
     private final TodoRepository todoRepository;
     private final GeoLocationBroker geoLocationBroker;
-    private final EntityManager entityManager;
     private final SafetyEventRepository safetyEventRepository;
-    private final LiveWireAlertRepository liveWireAlertRepository;
-    private final NotificationRepository notificationRepository;
 
     @Autowired
-    public AnalyticalServiceImpl(UserRepository userRepository, UserLogRepository userLogRepository, GroupRepository groupRepository,
-                                 VoteRepository voteRepository, MeetingRepository meetingRepository, EntityManager entityManager,
-                                 TodoRepository todoRepository, GeoLocationBroker geoLocationBroker, SafetyEventRepository safetyRepository, LiveWireAlertRepository liveWireAlertRepository, NotificationRepository notificationRepository) {
+    public AnalyticalServiceImpl(UserRepository userRepository, GroupRepository groupRepository, VoteRepository voteRepository, MeetingRepository meetingRepository,
+                                 TodoRepository todoRepository, GeoLocationBroker geoLocationBroker, SafetyEventRepository safetyRepository) {
         this.userRepository = userRepository;
-        this.userLogRepository = userLogRepository;
         this.groupRepository = groupRepository;
         this.voteRepository = voteRepository;
         this.meetingRepository = meetingRepository;
-        this.entityManager = entityManager;
         this.todoRepository = todoRepository;
         this.geoLocationBroker = geoLocationBroker;
         this.safetyEventRepository = safetyRepository;
-        this.liveWireAlertRepository = liveWireAlertRepository;
-        this.notificationRepository = notificationRepository;
     }
 
     @Override
@@ -104,14 +79,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
 
     @Override
     @Transactional(readOnly = true)
-    public int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end) {
-        return (int) userRepository.count(where(hasWebProfile())
-                .and(createdAfter(convertToSystemTime(start, getSAST())))
-                .and(createdBefore(convertToSystemTime(end, getSAST()))));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public int countUsersWithGeoLocationData() {
         return geoLocationBroker.fetchUsersWithRecordedAverageLocations(LocalDate.now()).size();
     }
@@ -126,14 +93,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Transactional(readOnly = true)
     public int countUsersThatHaveAndroidProfile(){
         return (int) userRepository.count(hasAndroidProfile());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public int countUsersCreatedWithAndroidProfileInPeriod(LocalDateTime start, LocalDateTime end) {
-        return (int) userRepository.count(where(hasAndroidProfile())
-                .and(createdAfter(convertToSystemTime(start, getSAST())))
-                .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
 
     @Override
@@ -191,54 +150,4 @@ public class AnalyticalServiceImpl implements AnalyticalService {
         Instant endInstant = end == null ? getVeryLongAwayInstant() : convertToSystemTime(end, getSAST());
         return (int) safetyEventRepository.countByCreatedDateTimeBetween(startInstant, endInstant);
     }
-
-    @Override
-    @Transactional
-    public List<KeywordDTO> getKeywordStats(LocalDateTime localDate) {
-        List<KeywordDTO> rawStats = processRawStats(DateTimeUtil.convertToSystemTime(localDate, DateTimeUtil.getSAST()));
-        List<String> excludedWords = Lists.newArrayList(Splitter.on(",").split(listOfWordsToExcludeFromStat));
-        logger.info("got raw stats, now applying these strings as filter: " + excludedWords);
-
-        List<KeywordDTO> filteredTerms = new ArrayList<>();
-        rawStats.stream()
-                .filter(w -> !excludedWords.contains(w.getKeyword()))
-                .forEach(filteredTerms::add);
-
-        return filteredTerms;
-    }
-
-    @Override
-    public long countLiveWireAlertsInInterval(Instant start, Instant end) {
-        return liveWireAlertRepository.countByCreationTimeBetween(start, end);
-    }
-
-    @Override
-    public long countNotificationsInInterval(Instant start, Instant end) {
-        return notificationRepository.count(NotificationSpecifications.createdTimeBetween(start, end));
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<KeywordDTO> processRawStats(Instant fromDate) {
-        return entityManager.createNativeQuery("SELECT word as keyword, group_name_count, meeting_name_count, " +
-                "vote_name_count, todo_count, nentry AS total_occurence " +
-                "FROM ts_stat(fromName" +
-                "" +fromDate + "" +
-                "" +fromDate + "" +
-                "" +fromDate  +")" +
-                "LEFT OUTER JOIN (SELECT word AS group_name,nentry AS group_name_count " +
-                "FROM ts_stat(\'SELECT to_tsvector(keyword) " +
-                "FROM (SELECT g.name as keyword FROM group_profile g where g.created_date_time > '\'" + fromDate + "\'\') as keywords\'))" +
-                " AS groups ON (word=group_name) LEFT OUTER JOIN (SELECT word as meeting_name,nentry as meeting_name_count " +
-                "FROM ts_stat(\'SELECT to_tsvector(keyword) FROM (SELECT e.name as keyword  FROM event e " +
-                "where e.created_date_time > '\'" +fromDate+"\'\' and e.type=\'\'MEETING\'\' ) as keywords\')) as meetings on(word=meeting_name)" +
-                "left outer join (select word as vote_name,nentry as vote_name_count FROM ts_stat(\'SELECT to_tsvector(keyword) " +
-                "FROM (SELECT e.name as keyword  FROM event e where e.created_date_time > '\'"+fromDate + "\'\' and e.type=\'\'VOTE\'\' )" +
-                " as keywords\')) as votes on (word=vote_name) " +
-                "left outer join (select word as action_name,nentry  as todo_count FROM ts_stat(fromName" +
-                "" +fromDate + "" +
-                ")) as todos on(word=action_name) " +
-                "ORDER BY total_occurence DESC, word limit 100", KeywordDTO.class)
-                .getResultList();
-    }
-
 }

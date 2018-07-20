@@ -1,16 +1,20 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.AccountLog_;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.campaign.CampaignLog_;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.GroupLog_;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.domain.notification.BroadcastNotification_;
+import za.org.grassroot.core.domain.notification.NotificationStatus;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.*;
 
@@ -72,11 +76,11 @@ public final class NotificationSpecifications {
         };
     }
 
-    public static Specifications<Notification> sentOrBetterSince(Instant time) {
+    public static Specification<Notification> sentOrBetterSince(Instant time) {
         List<NotificationStatus> sentOrBetterStatuses = Arrays.asList(NotificationStatus.SENT, NotificationStatus.DELIVERED, NotificationStatus.READ);
         Specification<Notification> sentOrBetter = (root, query, cb) -> root.get(Notification_.status).in(sentOrBetterStatuses);
         Specification<Notification> statusChangedSince = (root, query, cb) -> cb.greaterThan(root.get(Notification_.lastStatusChange), time);
-        return Specifications.where(statusChangedSince).and(sentOrBetter);
+        return Specification.where(statusChangedSince).and(sentOrBetter);
     }
 
     public static Specification<Notification> ancestorGroupIs(final Group group) {
@@ -126,36 +130,36 @@ public final class NotificationSpecifications {
         return (root, query, cb) -> root.get(Notification_.deliveryChannel).in(deliveryChannels);
     }
 
-    public static Specifications<Notification> unReadUserNotifications(User target, Instant since) {
-        return Specifications.where(toUser(target))
+    public static Specification<Notification> unReadUserNotifications(User target, Instant since) {
+        return Specification.where(toUser(target))
                 .and(createdTimeBetween(since, Instant.now()))
-                .and(Specifications.not(wasDelivered()));
+                .and(Specification.not(wasDelivered()));
     }
 
-    public static Specifications<Notification> notificationsForSending() {
+    public static Specification<Notification> notificationsForSending() {
 
         Specification<Notification> readyStatus = (root, query, cb) -> cb.equal(root.get("status"), NotificationStatus.READY_FOR_SENDING);
 
         Instant now = Instant.now();
         Specification<Notification> sendOnlyAfterIsNull = (root, query, cb) -> cb.isNull(root.get("sendOnlyAfter"));
         Specification<Notification> sendOnlyAfterIsInPast = (root, query, cb) -> cb.lessThan(root.get("sendOnlyAfter"), now);
-        Specifications<Notification> sendOnlyAfterOK = Specifications.where(sendOnlyAfterIsNull).or(sendOnlyAfterIsInPast);
+        Specification<Notification> sendOnlyAfterOK = Specification.where(sendOnlyAfterIsNull).or(sendOnlyAfterIsInPast);
 
-        return Specifications.where(readyStatus).and(readyStatus).and(sendOnlyAfterOK);
+        return Specification.where(readyStatus).and(readyStatus).and(sendOnlyAfterOK);
     }
 
     public static Specification<Notification> messageNotRead() {
         return (root, query, cb) -> cb.notEqual(root.get(Notification_.status), NotificationStatus.READ);
     }
 
-    public static Specifications<Notification> unreadAndroidNotifications() {
+    public static Specification<Notification> unreadAndroidNotifications() {
 
         Specification<Notification> messageNotUndeliverable = (root, query, cb) -> cb.notEqual(root.get("status"), NotificationStatus.UNDELIVERABLE);
         Specification<Notification> messageNotReadyForSending = (root, query, cb) -> cb.notEqual(root.get("status"), NotificationStatus.READY_FOR_SENDING);
         Specification<Notification> androidChannel = (root, query, cb) -> cb.equal(root.get("deliveryChannel"), DeliveryRoute.ANDROID_APP);
         Specification<Notification> notSentByAat = (root, query, cb) -> cb.notEqual(root.get("sentViaProvider"), MessagingProvider.AAT);
 
-        return Specifications
+        return Specification
                 .where(messageNotRead())
                 .and(messageNotUndeliverable)
                 .and(messageNotReadyForSending)

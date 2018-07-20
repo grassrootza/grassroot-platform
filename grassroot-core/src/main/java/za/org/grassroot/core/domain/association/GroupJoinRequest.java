@@ -1,8 +1,8 @@
 package za.org.grassroot.core.domain.association;
 
 
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.AssociationRequestType;
 
 import javax.persistence.*;

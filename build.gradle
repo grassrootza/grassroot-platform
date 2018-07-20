@@ -1,14 +1,20 @@
 allprojects  {
   apply plugin: 'maven'
   group = 'za.org.grassroot'
-  version = '1.1.4'
+  version = '1.2.0'
+
+  task downloadDependencies() {
+    description 'Download all dependencies to the Gradle cache'
+    doLast {
+      configurations.findAll { it.canBeResolved }.files
+    }
+  }
 }
 
 ext.libs = [
-        springVersion: '4.3.14.RELEASE',
-        springBootVersion: '1.5.10.RELEASE',
-        springSecurityVersion: '4.2.4.RELEASE',
-        thymeleafVersion: '3.0.0.RELEASE',
+        springVersion: '5.0.7.RELEASE',
+        springBootVersion: '2.0.3.RELEASE',
+        springSecurityVersion: '5.0.6.RELEASE',
         jacksonVersion: '2.8.7'
 ]
 
@@ -19,12 +25,12 @@ subprojects {
 
   sourceCompatibility = 1.8
   targetCompatibility = 1.8
-  
+
   repositories {
     mavenLocal()
     maven { url "http://repo.maven.apache.org/maven2" }
     maven { url "http://optimizely.bintray.com/optimizely" }
-    maven { url  "https://dl.bintray.com/grassrootza/grassroot-graph" }
+    maven { url "https://dl.bintray.com/grassrootza/grassroot-graph" }
   }
 
   test {
@@ -38,33 +44,24 @@ subprojects {
     systemProperty "grassroot.sms.gateway.username", "grassrootstest"
     systemProperty "grassroot.sms.gateway.password", "test"
   }
-  
+
   dependencies {
-    compile group: 'com.google.guava', name: 'guava', version:'19.0'
+
+    compile group: 'com.google.guava', name: 'guava', version: '19.0'
     compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.7.0'
     compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.7.0'
 
-    compile group: 'org.projectlombok', name: 'lombok', version: '1.16.18'
-    compile group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
+    compile group: 'org.projectlombok', name: 'lombok', version: '1.18.0'
 
-    testCompile group: 'org.springframework', name: 'spring-test', version:libs.springVersion
-    testCompile group: 'junit', name: 'junit', version:'4.12'
-    testCompile group: 'org.dbunit', name: 'dbunit', version:'2.5.3'
-    testCompile group: 'com.github.springtestdbunit', name: 'spring-test-dbunit', version:'1.3.0'
+    testCompile group: 'org.springframework', name: 'spring-test', version: libs.springVersion
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.dbunit', name: 'dbunit', version: '2.5.3'
+    testCompile group: 'com.github.springtestdbunit', name: 'spring-test-dbunit', version: '1.3.0'
 
     testCompile group: 'org.hamcrest', name: 'hamcrest-library', version: '1.3'
     testCompile group: 'org.mockito', name: 'mockito-core', version: '1.10.19'
-    testCompile group: 'org.powermock', name: 'powermock-module-junit4', version:'1.6.5'
-  }
+    testCompile group: 'org.powermock', name: 'powermock-module-junit4', version: '1.6.5'
 
-}
-
-allprojects {
-  task downloadDependencies() {
-    description 'Download all dependencies to the Gradle cache'
-    doLast {
-      configurations.findAll { it.canBeResolved }.files
-    }
+    testCompile group: 'org.springframework.boot', name: 'spring-boot-test-autoconfigure', version: libs.springBootVersion
   }
-  
 }

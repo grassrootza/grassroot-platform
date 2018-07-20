@@ -6,14 +6,14 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.webapp.controller.rest.task.EventCreateController;
 

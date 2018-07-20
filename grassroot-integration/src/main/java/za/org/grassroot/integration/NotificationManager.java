@@ -9,10 +9,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Todo;
@@ -65,7 +67,8 @@ public class NotificationManager implements NotificationService{
     @Override
     @Transactional(readOnly = true)
     public Page<Notification> fetchPagedAndroidNotifications(User target, int pageNumber, int pageSize) {
-        return notificationRepository.findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(target, DeliveryRoute.ANDROID_APP, new PageRequest(pageNumber, pageSize));
+        return notificationRepository.findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(target, DeliveryRoute.ANDROID_APP,
+                PageRequest.of(pageNumber, pageSize));
     }
 
     @Override
@@ -73,7 +76,7 @@ public class NotificationManager implements NotificationService{
     public List<Notification> fetchSentOrBetterSince(String userUid, Instant sentSince, DeliveryRoute deliveryChannel) {
         Objects.requireNonNull(userUid);
         User target = userRepository.findOneByUid(userUid);
-        Specifications<Notification> specifications = Specifications.where(toUser(target))
+        Specification<Notification> specifications = Specification.where(toUser(target))
                 .and(sentOrBetterSince(sentSince));
         if (deliveryChannel != null) {
             specifications = specifications.and(forDeliveryChannel(deliveryChannel));
@@ -86,7 +89,7 @@ public class NotificationManager implements NotificationService{
     public void updateNotificationsViewedAndRead(Set<String> notificationUids) {
         List<Notification> notifications = notificationRepository.findByUidIn(notificationUids);
         notifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false, false, null));
-        notificationRepository.save(notifications); // TX management not being super reliable on this
+        notificationRepository.saveAll(notifications); // TX management not being super reliable on this
         Set<String> userUids = notifications.stream().map(n -> n.getTarget().getUid()).collect(Collectors.toSet());
         clearUnreadCaches(userUids);
     }
@@ -95,11 +98,11 @@ public class NotificationManager implements NotificationService{
     @Transactional
     public void markAllUserNotificationsRead(String userUid, Instant sinceTime) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
-        Specifications<Notification> specs = Specifications
+        Specification<Notification> specs = Specification
                 .where(messageNotRead()).and(toUser(user)).and(createdTimeBetween(sinceTime, Instant.now()));
         List<Notification> unreadNotifications = notificationRepository.findAll(specs);
         unreadNotifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false, false, null));
-        notificationRepository.save(unreadNotifications);
+        notificationRepository.saveAll(unreadNotifications);
         // update cache, since this may happen & get a next call within 10 secs on front end
         clearUnreadCaches(Collections.singleton(userUid));
     }
@@ -123,7 +126,7 @@ public class NotificationManager implements NotificationService{
         Specification<Notification> recently = createdTimeBetween(fromInstant, toInstant);
         Specification<Notification> isFailed = isInFailedStatus();
         Specification<Notification> forGroup = ancestorGroupIsTimeLimited(group, fromInstant);
-        Specifications<Notification> specs = Specifications.where(recently).and(isFailed).and(forGroup);
+        Specification<Notification> specs = Specification.where(recently).and(isFailed).and(forGroup);
         return notificationRepository.findAll(specs);
     }
 
@@ -156,7 +159,7 @@ public class NotificationManager implements NotificationService{
                 cb.equal(root.get(BroadcastNotification_.broadcast), broadcast);
         Specification<BroadcastNotification> isFailed = (root, query, cb) ->
                 root.get(BroadcastNotification_.status).in(FAILED_STATUS);
-        Specifications<BroadcastNotification> specs = Specifications.where(forBroadcast).and(isFailed);
+        Specification<BroadcastNotification> specs = Specification.where(forBroadcast).and(isFailed);
         return broadcastNotificationRepository.findAll(specs);
     }
 
@@ -167,7 +170,7 @@ public class NotificationManager implements NotificationService{
                 cb.equal(root.get(EventNotification_.event), event);
         Specification<EventNotification> isFailed = (root, query, cb) ->
                 root.get(EventNotification_.status).in(FAILED_STATUS);
-        Specifications<EventNotification> specs = Specifications.where(forEvent).and(isFailed);
+        Specification<EventNotification> specs = Specification.where(forEvent).and(isFailed);
         return eventNotificationRepository.findAll(specs);
     }
 
@@ -177,7 +180,7 @@ public class NotificationManager implements NotificationService{
                 cb.equal(root.get(TodoNotification_.todo), todo);
         Specification<TodoNotification> isFailed = (root, query, cb) ->
                 root.get(TodoNotification_.status).in(FAILED_STATUS);
-        Specifications<TodoNotification> specs = Specifications.where(forEvent).and(isFailed);
+        Specification<TodoNotification> specs = Specification.where(forEvent).and(isFailed);
         return todoNotificationRepository.findAll(specs);
     }
 
@@ -188,7 +191,7 @@ public class NotificationManager implements NotificationService{
                 cb.equal(root.get(EventNotification_.event).get("uid"), eventUid);
         Specification<EventNotification> isFailed = (root, query, cb) ->
                 root.get(BroadcastNotification_.status).in(FAILED_STATUS);
-        Specifications<EventNotification> specs = Specifications.where(forEvent).and(isFailed);
+        Specification<EventNotification> specs = Specification.where(forEvent).and(isFailed);
         return eventNotificationRepository.count(specs);
     }
 
@@ -198,7 +201,7 @@ public class NotificationManager implements NotificationService{
                 cb.equal(root.get(TodoNotification_.todo).get("uid"), todoUid);
         Specification<TodoNotification> isFailed = (root, query, cb) ->
                 root.get(TodoNotification_.status).in(FAILED_STATUS);
-        Specifications<TodoNotification> specs = Specifications.where(forEvent).and(isFailed);
+        Specification<TodoNotification> specs = Specification.where(forEvent).and(isFailed);
         return todoNotificationRepository.count(specs);
     }
 }

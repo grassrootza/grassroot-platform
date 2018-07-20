@@ -8,8 +8,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.PermissionBroker;
@@ -412,6 +416,7 @@ public class USSDGroupUtil extends USSDUtil {
             String visibilityMenuOptionPrompt = group.isDiscoverable() ? getMessage(menuKey + hideGroup, user)
                     : getMessage(menuKey + showGroup, user);
             listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupUid), getMessage(tokenKey, user));
+            listMenu.addMenuOption(groupMenuWithId("language", groupUid), getMessage("group.advanced.options.language", user));
             listMenu.addMenuOption(groupMenuWithId(visibility, groupUid), visibilityMenuOptionPrompt);
         }
 

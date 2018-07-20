@@ -1,13 +1,13 @@
 package za.org.grassroot.services.util;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.CampaignLogType;
 
 import java.time.Instant;
@@ -19,19 +19,19 @@ public interface LogsAndNotificationsBroker {
 
 	void storeBundle(LogsAndNotificationsBundle bundle);
 
-	long countNotifications(Specifications<Notification> specifications);
+	long countNotifications(Specification<Notification> specifications);
 
-	<T extends Notification> long countNotifications(Specifications<T> specs, Class<T> notificationType);
+	<T extends Notification> long countNotifications(Specification<T> specs, Class<T> notificationType);
 
 	List<ActionLog> fetchMembershipLogs(Membership membership);
 
-	long countCampaignLogs(Specifications<CampaignLog> specs);
+	long countCampaignLogs(Specification<CampaignLog> specs);
 
 	List<PublicActivityLog> fetchMostRecentPublicLogs(Integer numberLogs);
 
 	void updateCache(Collection<ActionLog> actionLogs);
 
-	void abortNotificationSend(Specifications specifications);
+	void abortNotificationSend(Specification specifications);
 
 	Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve, Instant sinceTime);
 

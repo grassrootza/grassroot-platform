@@ -2,7 +2,7 @@ package za.org.grassroot.webapp.controller.rest;
 
 import lombok.extern.slf4j.Slf4j;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.model.http.AuthorizationHeader;
 

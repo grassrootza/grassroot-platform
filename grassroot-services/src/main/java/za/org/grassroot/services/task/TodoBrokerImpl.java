@@ -7,12 +7,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.TodoCancelledNotification;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
@@ -28,10 +30,8 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.exception.MemberLacksPermissionException;
-import za.org.grassroot.services.exception.ResponseNotAllowedException;
-import za.org.grassroot.services.exception.TodoDeadlineNotInFutureException;
-import za.org.grassroot.services.exception.TodoTypeMismatchException;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
+import za.org.grassroot.services.exception.*;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.FullTextSearchUtils;
@@ -62,6 +62,7 @@ public class TodoBrokerImpl implements TodoBroker {
     private TaskImageBroker taskImageBroker;
     private PasswordTokenService tokenService;
     private GraphBroker graphBroker;
+    private AccountFeaturesBroker accountFeaturesBroker;
 
     @Autowired
     public TodoBrokerImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserManagementService userService, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
@@ -88,6 +89,10 @@ public class TodoBrokerImpl implements TodoBroker {
     @Autowired(required = false)
     public void setGraphBroker(GraphBroker graphBroker) {
         this.graphBroker = graphBroker;
+    }
+
+    public void setAccountFeaturesBroker(AccountFeaturesBroker accountFeaturesBroker) {
+        this.accountFeaturesBroker = accountFeaturesBroker;
     }
 
     @Override
@@ -117,6 +122,10 @@ public class TodoBrokerImpl implements TodoBroker {
             Todo possibleDuplicate = checkForDuplicate(user, (Group) parent, todoHelper);
             if (possibleDuplicate != null) {
                 return possibleDuplicate.getUid();
+            }
+
+            if (accountFeaturesBroker.numberTodosLeftForGroup(parent.getUid()) < 0) {
+                throw new AccountLimitExceededException();
             }
         }
 
@@ -159,7 +168,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Instant intervalEnd = helper.getDueDateTime().plus(180, ChronoUnit.SECONDS);
 
         return todoRepository.findOne(TodoSpecifications.checkForDuplicates(intervalStart, intervalEnd, creator, group,
-                helper.getSubject()));
+                helper.getSubject())).orElse(null);
     }
 
     private Todo setTodoImage(Todo todo, User user, TodoHelper todoHelper) {
@@ -223,7 +232,8 @@ public class TodoBrokerImpl implements TodoBroker {
             todoAssignment.setValidator(true);
             todoAssignment.setShouldRespond(true);
         });
-        todoAssignmentRepository.save(duplicateAssignments);
+
+        todoAssignmentRepository.saveAll(duplicateAssignments);
 
         Set<String> newAssignments = new HashSet<>(confirmingMemberUids);
         newAssignments.removeAll(duplicateAssignments.stream().map(a -> a.getUser().getUid()).collect(Collectors.toSet()));
@@ -313,7 +323,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
         User user = userService.load(userUid);
         // last in first out (at present - makes most sense if user is responding to something)
-        Pageable limit = new PageRequest(0, 1, new Sort(Sort.Direction.DESC, "createdDateTime"));
+        Pageable limit = PageRequest.of(0, 1, new Sort(Sort.Direction.DESC, "createdDateTime"));
         Page<Todo> result = todoRepository.findAll(TodoSpecifications.todosForUserResponse(user), limit);
         return result.getNumberOfElements() == 0 ? null : result.getContent().get(0);
     }
@@ -499,9 +509,9 @@ public class TodoBrokerImpl implements TodoBroker {
     public List<Todo> fetchTodosForUser(String userUid, boolean forceIncludeCreated, boolean limitToNeedingResponse, Instant intervalStart, Instant intervalEnd, Sort sort) {
         Objects.requireNonNull(userUid);
         User user = userService.load(userUid);
-        Specifications<Todo> specs = limitToNeedingResponse ?
+        Specification<Todo> specs = limitToNeedingResponse ?
                 TodoSpecifications.todosForUserResponse(user) :
-                Specifications.where(TodoSpecifications.userPartOfParent(user));
+                Specification.where(TodoSpecifications.userPartOfParent(user));
 
         if (forceIncludeCreated) {
             specs = specs.or((root, query, cb) -> cb.equal(root.get(Todo_.createdByUser), user));
@@ -524,7 +534,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Objects.requireNonNull(userUid);
         User user = userService.load(userUid);
         log.info("page request in here: {}", pageRequest.toString());
-        Specifications<Todo> specs = Specifications.where(TodoSpecifications.todosUserCreated(user));
+        Specification<Todo> specs = Specification.where(TodoSpecifications.todosUserCreated(user));
         if (!createdOnly) {
             specs = specs.and(TodoSpecifications.todosUserAssigned(user));
         }
@@ -543,11 +553,11 @@ public class TodoBrokerImpl implements TodoBroker {
         // this is causing more trouble than it's worth, so removing it for now
 //        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
 
-        Specifications<Todo> specs;
+        Specification<Todo> specs;
         if (limitToNeedingResponse) {
             specs = TodoSpecifications.todosForUserResponse(user).and(TodoSpecifications.hasGroupAsParent(group));
         } else {
-            specs = Specifications.where(TodoSpecifications.hasGroupAsParent(group));
+            specs = Specification.where(TodoSpecifications.hasGroupAsParent(group));
         }
 
         specs = specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.cancelled)));
@@ -592,7 +602,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
         User user = userService.load(userUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
-        return todoAssignmentRepository.findOne(TodoSpecifications.userAssignment(user, todo));
+        return todoAssignmentRepository.findOne(TodoSpecifications.userAssignment(user, todo)).orElse(null);
     }
 
     @Override
@@ -616,7 +626,7 @@ public class TodoBrokerImpl implements TodoBroker {
             throw new AccessDeniedException("Error, only creating or assigned user can see todo details");
         }
 
-        Specifications<TodoAssignment> specs = Specifications.where((root, query, cb) -> cb.equal(root.get(TodoAssignment_.todo), todo));
+        Specification<TodoAssignment> specs = Specification.where((root, query, cb) -> cb.equal(root.get(TodoAssignment_.todo), todo));
 
         if (respondedOnly) {
             specs = specs.and((root, query, cb) -> cb.isTrue(root.get(TodoAssignment_.hasResponded)));
@@ -630,8 +640,8 @@ public class TodoBrokerImpl implements TodoBroker {
             specs = specs.and((root, query, cb) -> cb.isTrue(root.get(TodoAssignment_.validator)));
         }
 
-        List<Sort.Order> orders = Arrays.asList(new Sort.Order("hasResponded"), new Sort.Order(Sort.Direction.DESC, "responseTime"));
-        return todoAssignmentRepository.findAll(specs, new Sort(orders));
+        List<Sort.Order> orders = Arrays.asList(Sort.Order.by("hasResponded"), new Sort.Order(Sort.Direction.DESC, "responseTime"));
+        return todoAssignmentRepository.findAll(specs, Sort.by(orders));
     }
 
     @Override
@@ -785,14 +795,7 @@ public class TodoBrokerImpl implements TodoBroker {
     }
 
     private TodoAssignment validateUserCanRespondToTodo(User user, Todo todo) {
-        TodoAssignment todoAssignment = todoAssignmentRepository.findOne(
-                TodoSpecifications.userAssignment(user, todo));
-        if (todoAssignment == null) {
-            throw new ResponseNotAllowedException();
-        }
-        if (TodoType.VALIDATION_REQUIRED.equals(todo.getType()) && !todoAssignment.isValidator() && todo.getAncestorGroup().getMembership(user) != null) {
-            throw new ResponseNotAllowedException();
-        }
-        return todoAssignment;
+        return todoAssignmentRepository.findOne(TodoSpecifications.userAssignment(user, todo))
+                .orElseThrow(ResponseNotAllowedException::new);
     }
 }

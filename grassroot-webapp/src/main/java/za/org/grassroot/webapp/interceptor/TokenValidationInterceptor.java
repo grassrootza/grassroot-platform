@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 import za.org.grassroot.core.domain.VerificationTokenCode;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -47,6 +47,7 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        log.info("Prehandling legacy request");
         if (request.getMethod().equalsIgnoreCase(RequestMethod.OPTIONS.toString()))
             return true;
 
@@ -57,12 +58,15 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
         if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {
+            log.info("Found a header in legacy interceptor, so returning true");
             return true;
         } else if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenExpired(token)) {
             isTokenExpired = true;
         } else if(authorizationHeader.doesNotHaveBearerToken()) {
             Map<String, String> legacyVars = getLegacyTokenParams(request);
+            log.info("Legacy params: {}", legacyVars);
             if (isLegacyTokenValid(legacyVars)) {
+                log.info("Legacy token is valid, allowing request");
                 return true;
             }
             isTokenExpired = isLegacyTokenExpired(legacyVars);
@@ -97,9 +101,13 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
     }
 
     private boolean isLegacyTokenValid(Map<String, String> pathVars) {
-        return !pathVars.isEmpty() &&
-                (passwordTokenService.isLongLiveAuthValid(pathVars.get("phoneNumber"), pathVars.get("code"))
-                || passwordTokenService.extendAuthCodeIfExpiring(pathVars.get("phoneNumber"), pathVars.get("code")));
+        if (pathVars.isEmpty()) {
+            log.info("No path variables, returning false");
+            return false;
+        }
+        boolean tokenValid = passwordTokenService.isLongLiveAuthValid(pathVars.get("phoneNumber"), pathVars.get("code"));
+        log.info("Completed token code check, result: {}", tokenValid);
+        return tokenValid || passwordTokenService.extendAuthCodeIfExpiring(pathVars.get("phoneNumber"), pathVars.get("code"));
     }
 
     private boolean isLegacyTokenExpired(Map<String, String> pathVars) {

@@ -1,7 +1,7 @@
 package za.org.grassroot.core.dto.group;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.util.InstantToMilliSerializer;
 
 import java.time.Instant;

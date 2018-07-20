@@ -61,14 +61,14 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
             "</request>";
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         base.port(port);
         XMLUnit.setIgnoreWhitespace(true);
         XMLUnit.setNormalizeWhitespace(true);
     }
 
     @Test
-    public void userStartLocale() throws  Exception {
+    public void userStartLocale() {
 
         final URI requestUri = assembleUssdURI("start").queryParam(phoneParam, testPhoneZu).build().toUri();
         executeQuery(requestUri);
@@ -101,7 +101,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
     // Test to check that a user can rename themselves and be greeted on next access
 
     @Test
-    public void userRename() throws Exception {
+    public void userRename() {
 
         final URI createUserUri = testPhoneUri("start").build().toUri();
         final URI renameUserUri = testPhoneUri(userPath + "name-do").queryParam(freeTextParam, testDisplayName).build().toUri();
@@ -132,120 +132,6 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
        // assertThat(welcomeMenu.getBody(), containsString(testDisplayName)); // just checking contains name, not exact format
 
     }
-
-
- //   Test that the testGroup joining code is working
-  //  todo: figure out where to start and end transaction to get all of this to not throw spurious failures
-
-    @Test
-    public void joiningCode() throws Exception {
-
-  /*      User testUser = createTestUser();
-        Group testGroup = createTestGroup();
-        testGroup = groupManager.generateGroupToken(testGroup, 1);
-        String groupToken = testGroup.getGroupTokenCode();
-
-        final URI useJoinCode = assembleUssdURI("start").queryParam(phoneParam, nonGroupPhone).
-                queryParam("request", "*134*1994*" + groupToken + "#").build().toUri();
-
-        Long groupId = testGroup.getId();
-        log.info("Group token URI testing: " + useJoinCode.toString());
-        log.info("The testGroup itself has the token: " + groupManager.loadGroup(groupId).getGroupTokenCode() + ", " +
-                         "and testGroup now stored as: " + groupManager.loadGroup(testGroup.getId()));
-        ResponseEntity<String> responseEntity = executeQuery(useJoinCode);
-
-        User nonGroupUser = userManager.findByInputNumber(nonGroupPhone);
-
-        assertNotNull(nonGroupUser);
-        assertThat(responseEntity.getStatusCode(), is(OK));
-        assertThat(groupManager.tokenExists(groupToken), is(true));
-        assertThat(groupManager.groupHasValidToken(testGroup), is(true));
-        assertThat(groupManager.findGroupByToken(groupToken).getId(), is(testGroup.getId()));
-        assertThat(groupManager.isUserInGroup(testGroup, nonGroupUser), is(false));*/
-
-    }
-
-    /*
-    Test that resuming from a menu interruption works, and that it clears after that
-    todo: fix so that it works with new / refactored interruption logic and menus
-     */
-    /*@Test
-    public void interruptionResume() throws Exception {
-
-        User testUser = createTestUser();
-        Group testGroup = createTestGroup();
-
-        // Have to generate an event for a reliable ID, since the in-memory DB might have created some elsewhere
-        Long eventId = eventManager.createEvent("testEvent", testUser).getId();
-
-        // generating an interruption in the middle of creating a meeting
-        List<URI> getToGroupCreation = Arrays.asList(testPhoneUriBuild("mtg/start"), testPhoneUri("mtg/testGroup").queryParam(eventParam, "" + eventId).
-                                                             queryParam(freeTextParam, secondGroupPhone).build().toUri(),
-                                                     testPhoneUriBuild("start"));
-
-        List<URI> getToMeetingStart = Arrays.asList(testPhoneUri("mtg/place").queryParam(eventParam, "" + eventId).queryParam("menukey", "subject").
-                queryParam(freeTextParam, "interrupted").build().toUri(), testPhoneUriBuild("start"), testPhoneUriBuild("start_force"));
-
-        List<URI> allURIs = new ArrayList<>(getToGroupCreation);
-        // allURIs.addAll(getToMeetingStart); // removing for the moment--throwing null pointer errors because of persistence issues
-
-        for (URI uri : allURIs) {
-            log.info("In interruption test, calling URI: " + uri.toString());
-            ResponseEntity<String> response = executeQuery(uri);
-            log.info("Response body:" + response.getBody());
-            log.info("Status: " + response.getStatusCode());
-            assertThat(response.getStatusCode(), is(OK));
-        }
-
-        ResponseEntity<String> checkReset = executeQuery(testPhoneUriBuild("start"));
-        assertXMLEqual(startMenuEN, checkReset.getBody());
-
-    }*/
-
-    /*
-    Test that meeting RSVP works, both yes and no
-     */
-   /* @Test
-    public void ussdRSVP() throws Exception {
-
-        createTestUser();
-        createTestGroup();
-        Event testMeeting = createTestMeeting();
-        Long eventId = testMeeting.getId();
-
-        List<URI> rsvpYes = Arrays.asList(assembleUssdURI("start").queryParam(phoneParam, secondGroupPhone).build().toUri(),
-                                          assembleUssdURI("rsvp").queryParam(phoneParam, secondGroupPhone).queryParam(eventParam, "" + eventId).
-                                                  queryParam("confirmed", "yes").build().toUri());
-
-        List<URI> rsvpNo = Arrays.asList(assembleUssdURI("start").queryParam(phoneParam, thirdGroupPhone).build().toUri(),
-                                         assembleUssdURI("rsvp").queryParam(phoneParam, thirdGroupPhone).queryParam(eventParam, "" + eventId).
-                                                 queryParam("confirmed", "no").build().toUri());
-
-        List<ResponseEntity<String>> rsvpYesResponses = executeQueries(rsvpYes);
-        List<ResponseEntity<String>> rsvpNoResponses = executeQueries(rsvpNo);
-
-        List<ResponseEntity<String>> rsvpResponses = new ArrayList<>(rsvpYesResponses);
-        rsvpResponses.addAll(rsvpNoResponses);
-
-        User yesUser = userManager.findByInputNumber(secondGroupPhone);
-        User noUser = userManager.findByInputNumber(thirdGroupPhone);
-
-        assertNotNull(yesUser);
-        assertNotNull(noUser);
-
-        for (ResponseEntity<String> response : rsvpResponses) {
-            log.info("Response body: " + response.getBody());
-            log.info("Status: " + response.getStatusCode());
-            //assertThat(response.getStatusCode(), is(OK));
-        }
-
-        /* As with similar tests elsewhere, these are failing because of strange persistence behaviour
-        assertThat(eventManager.getListOfUsersThatRSVPYesForEvent(testMeeting).contains(yesUser), is(true));
-        assertThat(eventManager.getListOfUsersThatRSVPNoForEvent(testMeeting).contains(noUser), is(true));
-        assertThat(eventLogManager.hasUserRespondedToEvent(testMeeting, yesUser), is(true));
-        assertThat(eventLogManager.userRsvpNoForEvent(testMeeting, noUser), is(true));*/
-
- //   }
 
 }
 

@@ -1,7 +1,7 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 

@@ -1,7 +1,7 @@
 package za.org.grassroot.core.util;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
 import java.io.Serializable;
@@ -14,6 +14,7 @@ import java.util.Arrays;
 public class StringArrayUserType<T extends Serializable> implements UserType {
 
     protected static final int[] SQL_TYPES = { Types.ARRAY };
+
     private  Class<T> typeParameterClass;
 
     @Override
@@ -52,7 +53,7 @@ public class StringArrayUserType<T extends Serializable> implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet resultSet, String[] names, SessionImplementor session, Object owner)
+    public Object nullSafeGet(ResultSet resultSet, String[] names, SharedSessionContractImplementor session, Object owner)
             throws HibernateException, SQLException {
         if (resultSet.wasNull()) {
             return null;
@@ -68,7 +69,7 @@ public class StringArrayUserType<T extends Serializable> implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement statement, Object value, int index, SessionImplementor session)
+    public void nullSafeSet(PreparedStatement statement, Object value, int index, SharedSessionContractImplementor session)
             throws HibernateException, SQLException {
         Connection connection = statement.getConnection();
         if (value == null) {

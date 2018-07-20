@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain;
 import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.util.UIDGenerator;
 

@@ -2,9 +2,9 @@ package za.org.grassroot.core.domain.notification;
 
 import lombok.Getter;
 import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;

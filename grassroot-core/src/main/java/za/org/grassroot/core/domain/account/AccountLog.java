@@ -2,9 +2,9 @@ package za.org.grassroot.core.domain.account;
 
 import lombok.Getter;
 import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.Broadcast;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -111,7 +111,7 @@ public class AccountLog implements ActionLog {
         }
 
         public Builder description(String description) {
-            this.description = description.substring(Math.min(255, description.length()));
+            this.description = description != null ? description.substring(Math.min(255, description.length())) : null;
             return this;
         }
 

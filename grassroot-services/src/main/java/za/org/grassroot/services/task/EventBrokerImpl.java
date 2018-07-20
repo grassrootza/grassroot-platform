@@ -7,13 +7,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
@@ -24,7 +24,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskNameTooLongException;
@@ -74,7 +74,7 @@ public class EventBrokerImpl implements EventBroker {
 	private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 	private final CacheUtilService cacheUtilService;
 	private final MessageAssemblingService messageAssemblingService;
-	private final AccountGroupBroker accountGroupBroker;
+	private final AccountFeaturesBroker accountFeaturesBroker;
 	private final GeoLocationBroker geoLocationBroker;
 	private final TaskImageBroker taskImageBroker;
 
@@ -84,14 +84,14 @@ public class EventBrokerImpl implements EventBroker {
 	private GraphBroker graphBroker;
 
 	@Autowired
-	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserManagementService userService, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker,EntityManager entityManager) {
+	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserManagementService userService, AccountFeaturesBroker accountFeaturesBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker, EntityManager entityManager) {
 		this.meetingRepository = meetingRepository;
 		this.eventLogBroker = eventLogBroker;
 		this.eventRepository = eventRepository;
 		this.voteRepository = voteRepository;
 		this.uidIdentifiableRepository = uidIdentifiableRepository;
 		this.userService = userService;
-		this.accountGroupBroker = accountGroupBroker;
+		this.accountFeaturesBroker = accountFeaturesBroker;
 		this.groupRepository = groupRepository;
 		this.permissionBroker = permissionBroker;
 		this.logsAndNotificationsBroker = logsAndNotificationsBroker;
@@ -216,7 +216,7 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	private void checkForEventLimit(String parentUid) {
-		if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
+		if (eventMonthlyLimitActive && accountFeaturesBroker.numberEventsLeftForGroup(parentUid) < 1) {
 			throw new AccountLimitExceededException();
 		}
 	}
@@ -453,7 +453,7 @@ public class EventBrokerImpl implements EventBroker {
 				return (Vote) possibleDuplicate;
 			}
 
-			if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(helper.getParentUid()) < 1) {
+			if (eventMonthlyLimitActive && accountFeaturesBroker.numberEventsLeftForGroup(helper.getParentUid()) < 1) {
 				throw new AccountLimitExceededException();
 			}
 		}
@@ -476,6 +476,10 @@ public class EventBrokerImpl implements EventBroker {
 
 		if (!EventSpecialForm.ORDINARY.equals(helper.getSpecialForm())) {
 			vote.setSpecialForm(helper.getSpecialForm());
+		}
+
+		if (helper.isRandomizeOptions()) {
+			vote.setRandomize(true);
 		}
 
 		voteRepository.save(vote);
@@ -533,23 +537,7 @@ public class EventBrokerImpl implements EventBroker {
         }
     }
 
-    @Override
-	@Transactional
-    public void updateDescription(String userUid, String eventUid, String eventDescription) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(eventUid);
-
-        Event event = eventRepository.findOneByUid(eventUid);
-        User user = userService.load(userUid);
-
-        if (!event.getCreatedByUser().equals(user)) {
-        	throw new AccessDeniedException("Error! Only the user who created the meeting can change its description");
-		}
-
-		event.setDescription(eventDescription);
-    }
-
-    private void validateEventStartTime(Instant eventStartDateTimeInstant) {
+	private void validateEventStartTime(Instant eventStartDateTimeInstant) {
 		Instant now = Instant.now();
 		if (!eventStartDateTimeInstant.isAfter(now)) {
 			throw new EventStartTimeNotInFutureException("Event start time " + eventStartDateTimeInstant.toString() +
@@ -778,62 +766,6 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	@SuppressWarnings("unchecked") // for weirdness on event.getmembers
-	public void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(eventUid);
-		Objects.requireNonNull(assignMemberUids);
-
-		User user = userService.load(userUid);
-		Event event = eventRepository.findOneByUid(eventUid);
-
-		Set<User> priorMembers = (Set<User>) event.getMembers();
-
-		// consider allowing organizers to also add/remove assignment
-		if (!event.getCreatedByUser().equals(user)) {
-			throw new AccessDeniedException("Error! Only user who created meeting can add members");
-		}
-
-		event.assignMembers(assignMemberUids);
-
-		Set<User> addedMembers = (Set<User>) event.getMembers();
-		addedMembers.removeAll(priorMembers);
-
-		if (!addedMembers.isEmpty()) {
-			EventLog newLog = new EventLog(user, event, ASSIGNED_ADDED);
-			Set<Notification> notifications = constructEventInfoNotifications(event, newLog, addedMembers);
-			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), notifications));
-		}
-	}
-
-	@Override
-	@Transactional
-	@SuppressWarnings("unchecked")
-	public void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(eventUid);
-
-		User user = userService.load(userUid);
-		Event event = eventRepository.findOneByUid(eventUid);
-
-		Set<User> membersRemoved = (Set<User>) event.getMembers();
-
-		if (!event.getCreatedByUser().equals(user)) {
-			throw new AccessDeniedException("Error! Only user who created meeting can remove members");
-		}
-
-		event.removeAssignedMembers(memberUids);
-
-		Set<User> finishedMembers = (Set<User>) event.getMembers();
-		membersRemoved.removeAll(finishedMembers);
-		if (!membersRemoved.isEmpty()) {
-			EventLog newLog = new EventLog(user, event, ASSIGNED_REMOVED);
-			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));
-		}
-	}
-
-    @Override
-	@Transactional
     public void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location, UserInterfaceType interfaceType) {
         Objects.requireNonNull(meetingUid);
 
@@ -872,7 +804,7 @@ public class EventBrokerImpl implements EventBroker {
 			return cachedRsvps;
 		}
 
-		Specifications<Event> specs = EventSpecifications.upcomingEventsForUser(user);
+		Specification<Event> specs = EventSpecifications.upcomingEventsForUser(user);
 		Specification<Event> stripMeetingCreated = (root, query, cb) -> cb.or(cb.notEqual(root.get("type"), EventType.MEETING),
 				cb.notEqual(root.get("createdByUser"), user));
 		List<Event> events = eventRepository
@@ -919,9 +851,9 @@ public class EventBrokerImpl implements EventBroker {
 		Instant endTime = !timeType.equals(EventListTimeType.PAST) ? DateTimeUtil.getVeryLongAwayInstant() : Instant.now();
 		return (eventType.equals(EventType.MEETING)) ?
 				(Page) meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime,
-						new PageRequest(pageNumber, pageSize)) :
+						PageRequest.of(pageNumber, pageSize)) :
 				(Page) voteRepository.findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime,
-						new PageRequest(pageNumber, pageSize));
+						PageRequest.of(pageNumber, pageSize));
 	}
 
 	@Override
@@ -955,7 +887,7 @@ public class EventBrokerImpl implements EventBroker {
 		Instant beginning = (periodStart == null) ? group.getCreatedDateTime() : periodStart;
 		Instant end = (periodEnd == null) ? DateTimeUtil.getVeryLongAwayInstant() : periodEnd;
 
-		Specifications<Event> specifications = Specifications.where(EventSpecifications.notCancelled())
+		Specification<Event> specifications = Specification.where(EventSpecifications.notCancelled())
 				.and(EventSpecifications.hasGroupAsParent(group))
 				.and(EventSpecifications.startDateTimeBetween(beginning, end))
 				.and(EventSpecifications.hasAllUsersAssignedOrIsAssigned(user));

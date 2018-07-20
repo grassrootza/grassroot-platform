@@ -5,22 +5,23 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignType;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.ServicesTestConfig;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignMessageDTO;
 import za.org.grassroot.services.campaign.MessageLanguagePair;
@@ -29,10 +30,8 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Locale;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestContextConfig.class)
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
-@Transactional
+@RunWith(SpringRunner.class) @DataJpaTest
+@ContextConfiguration(classes = ServicesTestConfig.class)
 @WithMockUser(username = "0605550000", roles={"SYSTEM_ADMIN"})
 public class CampaignBrokerTest {
 
@@ -60,7 +59,7 @@ public class CampaignBrokerTest {
         userRepository.save(testUser);
         String groupName = "testGroup";
         testGroup = groupRepository.save(new Group(groupName, testUser));
-        testAccount = accountRepository.save(new Account(testUser, "test", AccountType.ENTERPRISE, testUser, AccountPaymentType.DIRECT_DEPOSIT, AccountBillingCycle.MONTHLY));
+        testAccount = accountRepository.save(new Account(testUser, "test", AccountType.ENTERPRISE, testUser));
         testUser.setPrimaryAccount(testAccount);
         userRepository.save(testUser);
     }
@@ -68,8 +67,8 @@ public class CampaignBrokerTest {
 
     @Test
     public void testCreateAndUpdateCampaign(){
-        Campaign campaign = campaignBroker.create("national campaign","234","our national campaign",testUser.getUid(),
-                testGroup.getUid(), Instant.now(), java.time.Instant.MAX, null, CampaignType.INFORMATION,null, false, 0, null);
+        Campaign campaign = campaignBroker.create("national campaign", "234", "our national campaign", testUser.getUid(),
+                testGroup.getUid(), Instant.now(), DateTimeUtil.getVeryLongAwayInstant(), null, CampaignType.INFORMATION,null, false, 0, null);
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getCreatedByUser().getPhoneNumber(), "0605550000");
         Assert.assertNotNull(campaign.getCampaignCode(), "234");

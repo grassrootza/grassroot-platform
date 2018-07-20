@@ -21,7 +21,7 @@ import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.MediaFileBroker;
-import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.GenericPostResponse;
 import za.org.grassroot.integration.socialmedia.SocialMediaBroker;

@@ -12,7 +12,7 @@ public class FullTextSearchUtils {
 		// utilities
 	}
 
-	public static final String encodeAsTsQueryText(String text, boolean searchAndOnly, boolean addWildCard) {
+	public static String encodeAsTsQueryText(String text, boolean searchAndOnly, boolean addWildCard) {
 		Objects.requireNonNull(text);
 		
 		String[] parts = text.split("\\s+");

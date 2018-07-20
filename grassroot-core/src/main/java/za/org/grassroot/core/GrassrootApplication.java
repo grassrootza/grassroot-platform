@@ -1,16 +1,15 @@
 package za.org.grassroot.core;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import static java.lang.String.format;
 import static org.springframework.util.StringUtils.arrayToCommaDelimitedString;
 
+@Slf4j @EnableTransactionManagement
 public class GrassrootApplication extends SpringApplication {
-
-    private static final Logger logger = LoggerFactory.getLogger(GrassrootApplication.class);
 
     public GrassrootApplication(Class<?> configClass) {
         super(configClass);
@@ -36,9 +35,9 @@ public class GrassrootApplication extends SpringApplication {
         }
 
         if (numberActive == 1) {
-            logger.info("Activating because one profile has been specified.");
+            log.info("Activating because one profile has been specified.");
         } else {
-            logger.info("The default 'standalone' profile is active because no other profiles have been specified.");
+            log.info("The default 'standalone' profile is active because no other profiles have been specified.");
             environment.addActiveProfile(GrassrootApplicationProfiles.INMEMORY);
         }
     }

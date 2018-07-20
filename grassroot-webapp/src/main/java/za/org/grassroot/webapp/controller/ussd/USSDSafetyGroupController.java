@@ -12,21 +12,21 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.exception.LocationNotAvailableException;
 import za.org.grassroot.integration.exception.LocationTrackingImpossibleException;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.SafetyEventBroker;
+import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
-import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -342,7 +342,7 @@ public class USSDSafetyGroupController extends USSDBaseController {
             String groupUid;
             if (!interrupted) {
                 Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
-                Group group = groupBroker.create(user.getUid(), groupName, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false);
+                Group group = groupBroker.create(user.getUid(), groupName, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false, false);
                 groupUid = group.getUid();
                 safetyEventBroker.setSafetyGroup(user.getUid(), groupUid);
             } else {

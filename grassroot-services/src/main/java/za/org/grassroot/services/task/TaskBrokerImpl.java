@@ -8,14 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
@@ -41,7 +41,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
 
 /**
@@ -460,7 +459,7 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(userUid);
 
         Set<Task> userEvents = eventRepository
-                .findAll(Specifications.where(
+                .findAll(Specification.where(
                         EventSpecifications.notCancelled()).and(
                         EventSpecifications.userPartOfGroup(user)))
                 .stream().map(e -> (Task) e).collect(Collectors.toSet());
@@ -771,7 +770,7 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     private EventLog findMostRecentResponseLog(User user, Event event) {
-        List<EventLog> responseLogs = eventLogRepository.findAll(Specifications.where(forEvent(event))
+        List<EventLog> responseLogs = eventLogRepository.findAll(Specification.where(forEvent(event))
                         .and(forUser(user)).and(isResponseToAnEvent()),
         new Sort(Sort.Direction.DESC, "createdDateTime"));
         return responseLogs != null && !responseLogs.isEmpty() ? responseLogs.get(0) : null;
@@ -780,8 +779,8 @@ public class TaskBrokerImpl implements TaskBroker {
     private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {
         Set<TaskDTO> taskDtos = new HashSet<>();
         for (Event event : events) {
-            EventLog userResponseLog = eventLogRepository.findOne(where(forEvent(event))
-                    .and(forUser(user)).and(isResponseToAnEvent()));
+            EventLog userResponseLog = eventLogRepository.findOne(Specification.where(forEvent(event))
+                    .and(forUser(user)).and(isResponseToAnEvent())).orElse(null);
             if (changedSince == null || isEventAddedOrUpdatedSince(event, userResponseLog, changedSince)) {
                 TaskDTO taskDTO = new TaskDTO(event, user, userResponseLog);
                 if (event instanceof Vote) {

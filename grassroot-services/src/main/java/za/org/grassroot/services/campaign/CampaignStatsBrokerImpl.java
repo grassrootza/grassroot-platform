@@ -8,7 +8,6 @@ import net.sf.ehcache.config.CacheConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.User;
@@ -69,8 +68,8 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         return (root, query, cb) -> cb.equal(root.get("campaign"), campaign);
     }
 
-    private static Specifications<CampaignLog> engagementLogsForCampaign(Campaign campaign) {
-        return Specifications.where(forCampaign(campaign)).and(isEngagementLog);
+    private static Specification<CampaignLog> engagementLogsForCampaign(Campaign campaign) {
+        return Specification.where(forCampaign(campaign)).and(isEngagementLog);
     }
 
     @Autowired
@@ -109,7 +108,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
                 CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
         Specification<CampaignLog> withinTime = (root, query, cb) -> cb.between(root.get("creationTime"),
                 startTimeInstant, endTimeInstant);
-        List<CampaignLog> matchingLogs = campaignLogRepository.findAll(Specifications
+        List<CampaignLog> matchingLogs = campaignLogRepository.findAll(Specification
                 .where(forCampaign(campaign)).and(memberAdded).and(withinTime));
 
         // strip out duplicates, so we have only the first entry
@@ -296,7 +295,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
                 results.put(channel.name(), groupLogsByTime(logs, log -> channel.equals(log.getChannel()), groupingFormatter, timeKeys));
             });
         } else {
-            List<User> users = userRepository.findAll(lastStageMap.keySet());
+            List<User> users = userRepository.findAllById(lastStageMap.keySet());
             List<Province> provinces = users.stream().map(User::getProvince).filter(Objects::nonNull).collect(Collectors.toList());
             provinces.forEach(province -> {
                 // these user entities should be Hibernate-cached by this stage, but watch this query in any case

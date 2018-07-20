@@ -23,6 +23,7 @@ public class AuthorizedUserDTO {
     private boolean hasImage;
     private String token;
     private List<String> systemRoles;
+    private boolean hasAccount;
 
     public AuthorizedUserDTO(User user, String token) {
         this.userUid = user.getUid();
@@ -38,6 +39,10 @@ public class AuthorizedUserDTO {
 
         this.systemRoleName = highestSystemRole.isPresent() ? highestSystemRole.get().getName() : "";
         this.token = token;
+
+        this.hasAccount = user.getPrimaryAccount() != null
+                && !user.getPrimaryAccount().isClosed()
+                && user.getPrimaryAccount().isEnabled();
     }
 
 }

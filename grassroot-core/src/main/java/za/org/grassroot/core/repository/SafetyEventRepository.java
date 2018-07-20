@@ -3,9 +3,9 @@ package za.org.grassroot.core.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 
 import java.time.Instant;
 import java.util.List;

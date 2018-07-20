@@ -5,20 +5,19 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.ServicesTestConfig;
 import za.org.grassroot.services.task.EventBroker;
 
 import java.util.List;
@@ -30,10 +29,8 @@ import static org.junit.Assert.assertNotNull;
  * @author Lesetse Kimwaga
  */
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestContextConfig.class)
-@Transactional
-@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
+@RunWith(SpringRunner.class) @DataJpaTest
+@ContextConfiguration(classes = ServicesTestConfig.class)
 public class EventBrokerTest {
 
    // @Rule

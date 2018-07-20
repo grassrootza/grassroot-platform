@@ -8,22 +8,31 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.User_;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.broadcast.BroadcastSchedule;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.campaign.CampaignLog_;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.JoinDateCondition;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.domain.notification.BroadcastNotification;
 import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
 import za.org.grassroot.core.domain.notification.GroupBroadcastNotification;
+import za.org.grassroot.core.domain.notification.NotificationStatus;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.task.TaskDTO;
@@ -33,7 +42,6 @@ import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.socialmedia.*;
-import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -69,7 +77,6 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     // for heavy lifting on filtering, and for getting event members
     private final GroupFetchBroker groupFetchBroker;
     private final TaskBroker taskBroker;
-    private final AccountGroupBroker accountGroupBroker;
 
     private final MessagingServiceBroker messagingServiceBroker;
     private final SocialMediaBroker socialMediaBroker;
@@ -83,7 +90,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private PasswordTokenService tokenService;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, TaskBroker taskBroker, AccountGroupBroker accountGroupBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository, CampaignLogRepository campaignLogRepository, Environment environment) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository,
+                               CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker,
+                               TaskBroker taskBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker,
+                               LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository,
+                               CampaignLogRepository campaignLogRepository, Environment environment) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
@@ -91,7 +102,6 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         this.membershipRepository = membershipRepository;
         this.groupFetchBroker = groupFetchBroker;
         this.taskBroker = taskBroker;
-        this.accountGroupBroker = accountGroupBroker;
         this.messagingServiceBroker = messagingServiceBroker;
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
@@ -110,7 +120,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     public BroadcastInfo fetchGroupBroadcastParams(String userUid, String groupUid) {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        Account account = findAccount(user, group.getUid());
+        Account account = findAccountToChargeBroadcast(user, group.getUid());
 
         BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
         builder.broadcastId(UIDGenerator.generateId());
@@ -134,12 +144,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.isTwitterConnected(twitterAccount != null)
                 .twitterAccount(twitterAccount);
 
-        List<Campaign> associatedCampaigns = campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"));
+        List<Campaign> associatedCampaigns = campaignRepository.findByMasterGroupUid(groupUid, Sort.by("createdDateTime"));
         if (associatedCampaigns != null) {
             builder.campaignNamesUrls(associatedCampaigns
                 .stream().filter(Campaign::isActiveWithUrl).collect(Collectors.toMap(Campaign::getName, Campaign::getLandingUrl)));
         }
-
 
         builder.allMemberCount(membershipRepository.count((root, query, cb) -> cb.equal(root.get("group"), (group))));
 
@@ -182,12 +191,12 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         return builder.build();
     }
 
-    private Specifications<CampaignLog> engagementLogsForCampaign(Campaign campaign) {
+    private Specification<CampaignLog> engagementLogsForCampaign(Campaign campaign) {
         Specification<CampaignLog> forCampaign = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaign), campaign);
         List<CampaignLogType> types = Arrays.asList(CAMPAIGN_PETITION_SIGNED, CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,
                 CAMPAIGN_SHARED, CAMPAIGN_USER_TAGGED);
         Specification<CampaignLog> engaged = (root, query, cb) -> root.get(CampaignLog_.campaignLogType).in(types);
-        return Specifications.where(forCampaign).and(engaged);
+        return Specification.where(forCampaign).and(engaged);
     }
 
     private List<User> getCampaignJoinedUsers(Campaign campaign) {
@@ -195,16 +204,15 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .stream().map(CampaignLog::getUser).distinct().collect(Collectors.toList());
     }
 
-    private Account findAccount(User user, String groupUid) {
-        return user.getPrimaryAccount() != null ?
-                user.getPrimaryAccount() : accountGroupBroker.findAccountForGroup(groupUid);
+    private Account findAccountToChargeBroadcast(User user, String groupUid) {
+        return user.getPrimaryAccount() != null ? user.getPrimaryAccount() : groupRepository.findOneByUid(groupUid).getAccount();
     }
 
     @Override
     @Transactional
     public String sendGroupBroadcast(BroadcastComponents bc) {
         User user = userRepository.findOneByUid(bc.getUserUid());
-        Account account = findAccount(user, bc.getGroupUid());
+        Account account = findAccountToChargeBroadcast(user, bc.getGroupUid());
 
         if (account == null && !StringUtils.isEmpty(bc.getShortMessage())) {
             throw new NoPaidAccountException();
@@ -692,7 +700,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private Set<User> filterCampaignUsers(Broadcast bc, Campaign campaign) {
         log.info("filtering campaign users, or should be, with provinces: {}", bc.getProvinces());
 
-        Specifications<CampaignLog> specs = engagementLogsForCampaign(campaign);
+        Specification<CampaignLog> specs = engagementLogsForCampaign(campaign);
 
         if (!bc.getProvinces().isEmpty()) {
             log.info("wiring up for province: {}", bc.getProvinces());
@@ -789,7 +797,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         Specification<Broadcast> isScheduled = (root, query, cb) -> cb.equal(root.get("broadcastSchedule"), BroadcastSchedule.FUTURE);
         Specification<Broadcast> scheduledTimePast = (root, query, cb) -> cb.lessThan(root.get("scheduledSendTime"), Instant.now());
         Specification<Broadcast> notSent = (root, query, cb) -> cb.isNull(root.get("sentTime"));
-        List<Broadcast> scheduledBroadcasts = broadcastRepository.findAll(Specifications.where(isScheduled)
+        List<Broadcast> scheduledBroadcasts = broadcastRepository.findAll(Specification.where(isScheduled)
                 .and(scheduledTimePast).and(notSent));
         log.info("found {} broadcasts to send", scheduledBroadcasts.size());
         // avoiding send for now, juuuust in case ...
@@ -837,7 +845,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private long countDeliveredSms(Broadcast broadcast) {
-        Specifications<BroadcastNotification> smsSpecs = Specifications
+        Specification<BroadcastNotification> smsSpecs = Specification
                 .where(forBroadcast(broadcast)).and(forShortMessage());
         if (environment.acceptsProfiles("production")) {
             smsSpecs = smsSpecs.and(broadcastDelivered());
@@ -846,8 +854,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private long countDeliveredEmails(Broadcast broadcast) {
-        Specifications<BroadcastNotification> emailSpecs = Specifications
-                .where(forBroadcast(broadcast)).and(forEmail());
+        Specification<BroadcastNotification> emailSpecs = Specification.where(forBroadcast(broadcast)).and(forEmail());
 
         if (environment.acceptsProfiles("production")) {
             emailSpecs = emailSpecs.and(broadcastDelivered());
@@ -857,7 +864,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private boolean hasFailures(Broadcast broadcast) {
-        Specifications<BroadcastNotification> failureSpecs = Specifications
+        Specification<BroadcastNotification> failureSpecs = Specification
                 .where(forBroadcast(broadcast)).and(broadcastFailure());
         long countFailures = logsAndNotificationsBroker.countNotifications(failureSpecs, BroadcastNotification.class);
         log.info("counting failures: {}, fb : {}, twitter: {}", countFailures, broadcast.hasFbPost(), broadcast.hasTwitterPost());

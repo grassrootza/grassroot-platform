@@ -138,7 +138,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
 
         VerificationTokenCode checkForPrior = verificationTokenCodeRepository.findOne(
-                TokenSpecifications.forUserAndEntity(userUid, entityUid));
+                TokenSpecifications.forUserAndEntity(userUid, entityUid)).orElse(null);
 
         log.info("prior token: {}", checkForPrior);
 
@@ -174,7 +174,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         if (taskUid != null) {
             userUids.forEach(uid -> tokens.add(generateEntityResponseToken(uid, taskUid, false)));
         }
-        verificationTokenCodeRepository.save(tokens);
+        verificationTokenCodeRepository.saveAll(tokens);
     }
 
     @Override
@@ -184,7 +184,8 @@ public class PasswordTokenManager implements PasswordTokenService {
         Objects.requireNonNull(code);
 
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(phoneNumber, VerificationCodeType.LONG_AUTH);
-        if (token != null && Instant.now().plus(OLD_TOKEN_REFRESH_WINDOW_DAYS, ChronoUnit.DAYS).isAfter(token.getExpiryDateTime())) {
+        boolean validExpiredToken = token != null && code.equals(token.getCode());
+        if (validExpiredToken && Instant.now().plus(OLD_TOKEN_REFRESH_WINDOW_DAYS, ChronoUnit.DAYS).isAfter(token.getExpiryDateTime())) {
             Instant oldExpiry = token.getExpiryDateTime();
             token.setExpiryDateTime(oldExpiry.plus(TOKEN_LIFE_SPAN_DAYS, ChronoUnit.DAYS));
             return true;
@@ -278,7 +279,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         }
 
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(user.getUsername(), VerificationCodeType.LONG_AUTH);
-        log.debug("found token for user: {}", token);
+        log.info("passed code {}, found token for user: {}", token);
         return token != null && code.equals(token.getCode()) && Instant.now().isBefore(token.getExpiryDateTime());
     }
 
@@ -308,10 +309,10 @@ public class PasswordTokenManager implements PasswordTokenService {
         Objects.requireNonNull(entityUid);
         Objects.requireNonNull(code);
 
-        VerificationTokenCode possibleToken = verificationTokenCodeRepository.findOne(
+        Optional<VerificationTokenCode> possibleToken = verificationTokenCodeRepository.findOne(
                 TokenSpecifications.forUserAndEntity(userUid, entityUid).and(TokenSpecifications.withCode(code)));
 
-        if (possibleToken == null || possibleToken.getExpiryDateTime().isBefore(Instant.now())) {
+        if (!possibleToken.isPresent() || possibleToken.get().getExpiryDateTime().isBefore(Instant.now())) {
             throw new AccessDeniedException("Error! No matching entity/code combination, or match, but expired");
         }
     }
@@ -330,7 +331,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         String letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789+@";
         StringBuilder password = new StringBuilder();
 
-        for (int i = 0; i < 8; i++){
+        for (int i = 0; i < 8; i++) {
             int index = (int)(RANDOM.nextDouble()*letters.length());
             password.append(letters.substring(index, index + 1));
         }

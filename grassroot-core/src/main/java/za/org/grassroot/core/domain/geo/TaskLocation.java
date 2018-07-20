@@ -1,11 +1,12 @@
 package za.org.grassroot.core.domain.geo;
 
 import za.org.grassroot.core.domain.UidIdentifiable;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.TaskType;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import java.time.Instant;
 
 /**

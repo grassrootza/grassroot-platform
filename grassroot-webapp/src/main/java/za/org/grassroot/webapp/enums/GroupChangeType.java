@@ -2,8 +2,8 @@ package za.org.grassroot.webapp.enums;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.task.Event;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.enums.EventType;
 
 /**

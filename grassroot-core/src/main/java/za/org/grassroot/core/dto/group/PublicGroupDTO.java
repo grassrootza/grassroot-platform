@@ -1,7 +1,7 @@
 package za.org.grassroot.core.dto.group;
 
 import lombok.Getter;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 
 @Getter
 public class PublicGroupDTO extends GroupRefDTO {

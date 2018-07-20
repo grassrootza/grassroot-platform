@@ -1,6 +1,5 @@
 package za.org.grassroot.integration.language;
 
-import com.google.protobuf.ByteString;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;

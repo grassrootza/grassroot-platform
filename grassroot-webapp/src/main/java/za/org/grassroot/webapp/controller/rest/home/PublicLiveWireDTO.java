@@ -2,13 +2,12 @@ package za.org.grassroot.webapp.controller.rest.home;
 
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
-import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 

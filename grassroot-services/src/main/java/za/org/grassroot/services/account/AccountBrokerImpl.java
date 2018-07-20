@@ -1,106 +1,85 @@
 package za.org.grassroot.services.account;
 
-import org.apache.commons.collections4.map.HashedMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.env.Environment;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
-import za.org.grassroot.core.domain.account.PaidGroup;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.domain.account.Account_;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.AccountRepository;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
+import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.AdminRemovalException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
-import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.core.specifications.AccountSpecifications.*;
-import static za.org.grassroot.services.account.AccountBillingBrokerImpl.BILLING_TZ;
-import static za.org.grassroot.services.account.AccountBillingBrokerImpl.STD_BILLING_HOUR;
 
 /**
  * Created by luke on 2015/11/12.
  */
-@Service
+@Service @Slf4j
 public class AccountBrokerImpl implements AccountBroker {
 
-    private static final Logger log = LoggerFactory.getLogger(AccountBroker.class);
-
-    private Map<AccountType, Integer> accountFees = new HashMap<>();
-    private double annualDiscount;
-
-    private Map<AccountType, Integer> freeFormPerMonth = new HashMap<>();
-    private Map<AccountType, Integer> messagesCost = new HashMap<>();
-
-    private Map<AccountType, Integer> maxGroupSize = new HashMap<>();
-    private Map<AccountType, Integer> maxGroupNumber = new HashMap<>();
-    private Map<AccountType, Integer> maxSubGroupDepth = new HashMap<>();
-
-    private Map<AccountType, Integer> todosPerMonth = new HashMap<>();
-    private Map<AccountType, Integer> eventsPerMonth = new HashedMap<>();
+    @Value("${accounts.freeform.cost.standard:22}")
+    private int additionalMessageCost;
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final PermissionBroker permissionBroker;
-    private final Environment environment;
     private final ApplicationEventPublisher eventPublisher;
 
-    private final AccountGroupBroker accountGroupBroker;
-    private final AccountBillingBroker accountBillingBroker;
-    private final AccountSponsorshipBroker sponsorshipBroker;
+    private EntityManager entityManager;
+    private LocationInfoBroker locationInfoBroker;
 
     @Autowired
-    public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, PermissionBroker permissionBroker,
-                             LogsAndNotificationsBroker logsAndNotificationsBroker, AccountGroupBroker accountGroupBroker, AccountSponsorshipBroker sponsorshipBroker,
-                             AccountBillingBroker accountBillingBroker, Environment environment, ApplicationEventPublisher eventPublisher) {
+    public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, GroupRepository groupRepository, PermissionBroker permissionBroker,
+                             LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
+        this.groupRepository = groupRepository;
         this.permissionBroker = permissionBroker;
-        this.accountGroupBroker = accountGroupBroker;
-        this.accountBillingBroker = accountBillingBroker;
-        this.sponsorshipBroker = sponsorshipBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.environment = environment;
         this.eventPublisher = eventPublisher;
     }
 
-    @PostConstruct
-    public void init() {
-        annualDiscount = environment.getProperty("accounts.annual.discount", Double.class, (double) (10/12));
-        for (AccountType accountType : AccountType.values()) {
-            final String key = accountType.name().toLowerCase();
-            accountFees.put(accountType, environment.getProperty("accounts.subscription.cost." + key, Integer.class));
-            freeFormPerMonth.put(accountType, environment.getProperty("accounts.messages.monthly." + key, Integer.class));
-            messagesCost.put(accountType, environment.getProperty("accounts.messages.msgcost." + key, Integer.class));
-            maxGroupSize.put(accountType, environment.getProperty("accounts.group.limit." + key, Integer.class));
-            maxGroupNumber.put(accountType, environment.getProperty("accounts.group.max." + key, Integer.class));
-            maxSubGroupDepth.put(accountType, environment.getProperty("accounts.group.subdepth." + key, Integer.class));
-            todosPerMonth.put(accountType, environment.getProperty("accounts.todos.monthly." + key, Integer.class));
-            eventsPerMonth.put(accountType, environment.getProperty("accounts.events.monthly." + key, Integer.class));
-        }
+    @Autowired
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
-        log.info("Loaded account settings : messages = {}, group depth = {}", freeFormPerMonth, maxGroupNumber);
+    @Autowired(required = false)
+    public void setLocationInfoBroker(LocationInfoBroker locationInfoBroker) {
+        this.locationInfoBroker = locationInfoBroker;
     }
 
     @Override
@@ -108,63 +87,70 @@ public class AccountBrokerImpl implements AccountBroker {
         return accountRepository.findOneByUid(accountUid);
     }
 
+    @Override
+    public Account loadDefaultAccountForUser(String userUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        if (user.getPrimaryAccount() != null)
+            return user.getPrimaryAccount();
+
+        // might have a situation where user has had primary account closed, but still admin on others, in which case,
+        // make a random guess, using most recent non-closed account
+
+        return accountRepository.findTopByAdministratorsAndClosedFalse(user, new Sort(Sort.Direction.DESC, "createdDateTime"));
+    }
+
     private void validateAdmin(User user, Account account) {
-        if (!account.getAdministrators().contains(user)) {
+        Objects.requireNonNull(user);
+        Objects.requireNonNull(account);
+
+        if (account.getAdministrators() == null || !account.getAdministrators().contains(user)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Account loadPrimaryAccountForUser(String userUid, boolean loadEvenIfDisabled) {
-        User user = userRepository.findOneByUid(userUid);
-        Account account = user.getPrimaryAccount();
-        return (account != null && (loadEvenIfDisabled || account.isEnabled())) ? account : null;
-    }
-
-    @Override
     @Transactional
-    public String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
-                                AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle, boolean enableFreeTrial) {
+    public String createAccount(String userUid, String accountName, String billedUserUid, String billingEmail, String ongoingPaymentRef) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(billedUserUid);
         Objects.requireNonNull(accountName);
-        Objects.requireNonNull(accountType);
 
         User creatingUser = userRepository.findOneByUid(userUid);
         User billedUser = userRepository.findOneByUid(billedUserUid);
 
-        Account account = new Account(creatingUser, accountName, accountType, billedUser, accountPaymentType,
-                billingCycle == null ? AccountBillingCycle.MONTHLY : billingCycle);
+        Account account = new Account(creatingUser, accountName, AccountType.STANDARD, billedUser);
 
         accountRepository.saveAndFlush(account);
 
         account.addAdministrator(billedUser);
         billedUser.setPrimaryAccount(account);
+
+        if (!StringUtils.isEmpty(billingEmail))
+            account.setPrimaryBillingEmail(billingEmail);
+        else
+            account.setPrimaryBillingEmail(billedUser.getEmailAddress());
+
         permissionBroker.addSystemRole(billedUser, BaseRoles.ROLE_ACCOUNT_ADMIN);
 
         log.info("Created account, now looks like: " + account);
 
-        setAccountLimits(account, accountType);
+        account.setFreeFormCost(additionalMessageCost);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(new AccountLog.Builder(account)
                 .user(creatingUser)
                 .accountLogType(AccountLogType.ACCOUNT_CREATED)
-                .description(accountType.name()).build());
+                .description(accountName + ":" + billedUserUid).build());
 
         bundle.addLog(new AccountLog.Builder(account)
                 .user(billedUser)
                 .accountLogType(AccountLogType.ADMIN_ADDED)
                 .description("billed user set as admin").build());
 
-
-        if (enableFreeTrial) {
+        if (!StringUtils.isEmpty(ongoingPaymentRef)) {
             account.setEnabled(true);
-            account.setEnabledDateTime(Instant.now());
             account.setEnabledByUser(creatingUser);
-            account.setNextBillingDate(LocalDateTime.now().plusMonths(1).toInstant(BILLING_TZ));
-            account.setDefaultPaymentType(AccountPaymentType.FREE_TRIAL); // todo : rethink if want to handle it this way, and/or alter payment type selection UX/UI
+            account.setPaymentRef(ongoingPaymentRef);
 
             bundle.addLog(new AccountLog.Builder(account)
                     .accountLogType(AccountLogType.ACCOUNT_ENABLED)
@@ -172,7 +158,6 @@ public class AccountBrokerImpl implements AccountBroker {
                     .description("account enabled for free trial, at creation")
                     .build());
 
-            creatingUser.setHasUsedFreeTrial(true);
         }
 
         AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
@@ -181,133 +166,81 @@ public class AccountBrokerImpl implements AccountBroker {
         return account.getUid();
     }
 
-    private void setAccountLimits(Account account, AccountType accountType) {
-        account.setSubscriptionFee(calculateSubscriptionFee(account, accountType));
-        account.setFreeFormMessages(freeFormPerMonth.get(accountType));
-        account.setFreeFormCost(messagesCost.get(accountType));
-        account.setMaxSizePerGroup(maxGroupSize.get(accountType));
-        account.setMaxSubGroupDepth(maxSubGroupDepth.get(accountType));
-        account.setMaxNumberGroups(maxGroupNumber.get(accountType));
-        account.setTodosPerGroupPerMonth(todosPerMonth.get(accountType));
-        account.setEventsPerGroupPerMonth(eventsPerMonth.get(accountType));
+    @Override
+    @Transactional
+    public void setAccountSubscriptionRef(String userUid, String accountUid, String subscriptionId) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+
+        validateAdmin(user, account);
+
+        account.setSubscriptionRef(subscriptionId);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
+                .accountLogType(AccountLogType.ACCOUNT_SUB_ID_CHANGED)
+                .description(subscriptionId).build());
     }
 
-    private int calculateSubscriptionFee(Account account, AccountType accountType) {
-        return (int) (accountFees.get(accountType) * (account.isAnnualAccount() ? annualDiscount : 1));
+    @Override
+    public void setAccountPaymentRef(String userUid, String accountUid, String paymentRef) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+
+        validateAdmin(user, account);
+
+        account.setPaymentRef(paymentRef);
+
+        if (!account.isEnabled())
+            account.setEnabled(true);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
+                .accountLogType(AccountLogType.PAYMENT_CHANGED)
+                .description(paymentRef).build());
     }
 
     @Override
     @Transactional
-    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, AccountPaymentType paymentType, boolean ensureUserAddedToAdmin, boolean setBillingUser) {
+    public void setLastBillingDate(String userUid, String accountUid, Instant newLastBillingDate) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+
+        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Instant priorDate = account.getLastBillingDate();
+        account.setLastBillingDate(newLastBillingDate);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
+                .description("from: " + priorDate + "; to: " + newLastBillingDate)
+                .accountLogType(AccountLogType.LAST_BILLING_DATE_CHANGED).build());
+    }
+
+    @Override
+    @Transactional
+    public void enableAccount(String userUid, String accountUid, String logMessage) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
 
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        if (!account.getAdministrators().contains(user) && !sponsorshipBroker.hasUserBeenAskedToSponsor(userUid, accountUid)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
+        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
 
         account.setEnabled(true);
-        account.setEnabledDateTime(Instant.now());
         account.setEnabledByUser(user);
         account.setDisabledDateTime(DateTimeUtil.getVeryLongAwayInstant());
-        account.incrementBillingDate(STD_BILLING_HOUR, AccountBillingBrokerImpl.BILLING_TZ);
 
-        // re-enable any groups that were disabled when the account expired
-        log.info("enabling {} paid groups ... from among ...", account.getPaidGroups().size()); // force a quick cache to avoid N+1
-        account.getPaidGroups().stream()
-                .filter(pg -> PaidGroupStatus.SUSPENDED.equals(pg.getStatus()) && !pg.getGroup().isPaidFor())
-                .forEach(pg -> {
-                    pg.setExpireDateTime(DateTimeUtil.getVeryLongAwayInstant());
-                    pg.setStatus(PaidGroupStatus.ACTIVE);
-                    pg.getGroup().setPaidFor(true);
-                });
-
-        // make sure to store reg in here
-        account.setDefaultPaymentType(paymentType);
-
-        if (setBillingUser && !account.getBillingUser().equals(user)) {
-            account.setBillingUser(user);
+        for (Group paidGroup : account.getPaidGroups()) {
+            paidGroup.setPaidFor(true);
         }
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.ACCOUNT_ENABLED)
                 .user(user)
-                .description("account enabled")
+                .description(logMessage)
                 .build());
 
-        // since the user that enables may be different to user that creates, and leaving out this role breaks a lot of UI, just make sure role is added (no regret)
-        if (ensureUserAddedToAdmin && !account.equals(user.getPrimaryAccount())) {
-            account.addAdministrator(user);
-            user.addAccountAdministered(account);
-            permissionBroker.addSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-
-            bundle.addLog(new AccountLog.Builder(account)
-                    .accountLogType(AccountLogType.ADMIN_ADDED)
-                    .user(user)
-                    .description("account admin added during enabling")
-                    .build());
-        }
-
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
-    }
-
-    @Override
-    @Transactional
-    public void updateAccountPaymentCycleAndMethod(String userUid, String accountUid, AccountPaymentType paymentType, AccountBillingCycle billingCycle, boolean adjustNextBillingDate) {
-        Objects.requireNonNull(accountUid);
-        DebugUtil.transactionRequired("AccountBilling: ");
-
-        // note : not validating user is admin as this may be called by a responding sponsor prior to payment being complete
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        User user = userRepository.findOneByUid(userUid);
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-        if (paymentType != null && !paymentType.equals(account.getDefaultPaymentType())) {
-            account.setDefaultPaymentType(paymentType);
-            bundle.addLog(new AccountLog.Builder(account)
-                    .user(user)
-                    .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
-                    .description(paymentType.name()).build());
-        }
-
-        if (billingCycle != null && !billingCycle.equals(account.getBillingCycle())) {
-            account.setBillingCycle(billingCycle);
-            if (adjustNextBillingDate) {
-                account.incrementBillingDate(STD_BILLING_HOUR, BILLING_TZ);
-            }
-            account.setSubscriptionFee(calculateSubscriptionFee(account, account.getType()));
-            bundle.addLog(new AccountLog.Builder(account)
-                    .user(user)
-                    .accountLogType(AccountLogType.BILLING_CYCLE_CHANGED)
-                    .description(billingCycle.name()).build());
-        }
-
-        logsAndNotificationsBroker.storeBundle(bundle);
-
-    }
-
-    @Override
-    @Transactional
-    public void updateAccountPaymentType(String userUid, String accountUid, AccountPaymentType paymentType) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(paymentType);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        User user = userRepository.findOneByUid(userUid);
-        validateAdmin(user, account);
-
-        account.setDefaultPaymentType(paymentType);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
-                .user(user)
-                .description("Changed to payment method: " + paymentType.name()).build());
     }
 
     @Override
@@ -329,7 +262,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole, boolean generateClosingBill) {
+    public void disableAccount(String administratorUid, String accountUid, String reasonToRecord) {
         Objects.requireNonNull(administratorUid);
         Objects.requireNonNull(accountUid);
 
@@ -337,150 +270,19 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         validateAdmin(user, account);
 
-        if (generateClosingBill) {
-            accountBillingBroker.generateClosingBill(administratorUid, accountUid);
-        }
-
         account.setEnabled(false);
         account.setDisabledDateTime(Instant.now());
         account.setDisabledByUser(user);
 
-        for (PaidGroup paidGroup : account.getPaidGroups()) {
-            paidGroup.setExpireDateTime(Instant.now());
-            paidGroup.setRemovedByUser(user);
-            paidGroup.setStatus(PaidGroupStatus.REMOVED);
-            paidGroup.getGroup().setPaidFor(false);
-        }
-
-        if (removeAdminRole) {
-            for (User admin : account.getAdministrators()) {
-                admin.setPrimaryAccount(null);
-                permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
-            }
+        // note: don't remove admins & groups because they should be preserved if the account is enabled again
+        for (Group paidGroup : account.getPaidGroups()) {
+            paidGroup.setPaidFor(false);
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .user(user)
                 .accountLogType(AccountLogType.ACCOUNT_DISABLED)
                 .description(reasonToRecord).build());
-    }
-
-    @Override
-    @Transactional
-    public void closeAccount(String userUid, String accountUid, boolean generateClosingBill) {
-        // note : this is to remove the account even from views (disabled accounts can be reenabled, so still show up)
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        if (account.isEnabled()) {
-            account.setEnabled(false);
-        }
-
-        if (generateClosingBill) {
-            accountBillingBroker.generateClosingBill(userUid, accountUid);
-        }
-
-        User user = userRepository.findOneByUid(userUid);
-        validateAdmin(user, account); // note: this allows non-billing admin to close account, leaving for now but may revisit
-
-        account.setVisible(false);
-
-        log.info("removing {} paid groups", account.getPaidGroups().size());
-        Set<String> paidGroupUids = account.getPaidGroups().stream().map(pg -> pg.getGroup().getUid()).collect(Collectors.toSet());
-        accountGroupBroker.removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .user(user)
-                .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
-                .description("account closed and removed from view").build());
-
-        log.info("removing {} administrators", account.getAdministrators().size());
-        account.getAdministrators().stream().filter(u -> !u.getUid().equals(userUid))
-                .forEach(a -> removeAdministrator(userUid, accountUid, a.getUid(), false));
-
-        removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
-    }
-
-    @Override
-    @Transactional
-    public void changeAccountType(String userUid, String accountUid, AccountType newAccountType, Set<String> groupsToRemove) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(newAccountType);
-
-        User user = userRepository.findOneByUid(userUid);
-        Account account = accountRepository.findOneByUid(accountUid);
-        validateAdmin(user, account);
-
-        int remainingGroups = (int) account.getPaidGroups().stream().filter(PaidGroup::isActive).count() -
-                (groupsToRemove == null ? 0 : groupsToRemove.size());
-
-        if (remainingGroups > maxGroupNumber.get(newAccountType)) {
-            throw new AccountLimitExceededException();
-        }
-
-        if (groupsToRemove != null && !groupsToRemove.isEmpty()) {
-            accountGroupBroker.removeGroupsFromAccount(accountUid, groupsToRemove, userUid);
-        }
-
-        accountBillingBroker.generateBillOutOfCycle(account.getUid(), false, false, null, false);
-
-        account.setType(newAccountType);
-        setAccountLimits(account, newAccountType);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .user(user)
-                .accountLogType(AccountLogType.TYPE_CHANGED)
-                .description(newAccountType.name()).build());
-    }
-
-    @Override
-    @Transactional
-    public void updateAccountGroupLimits(String userUid, String accountUid, int maxGroups, int maxSizePerGroup, int maxDepth, int messagesPerMonth, int todosPerMonth, int eventsPerMonth) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        User user = userRepository.findOneByUid(userUid);
-
-        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        StringBuilder sb = new StringBuilder("Account limits changed: ");
-
-        if (account.getMaxNumberGroups() != maxGroups) {
-            account.setMaxNumberGroups(maxGroups);
-            sb.append("MaxGroups: ").append(maxGroups).append("; ");
-        }
-
-        if (account.getMaxSizePerGroup() != maxSizePerGroup) {
-            account.setMaxSizePerGroup(maxSizePerGroup);
-            sb.append("MaxSize: ").append(maxSizePerGroup).append("; ");
-        }
-
-        if (account.getMaxSubGroupDepth() != maxDepth) {
-            account.setMaxSubGroupDepth(maxDepth);
-            sb.append("Depth: ").append(maxDepth).append(";");
-        }
-
-        if (account.getFreeFormMessages() != messagesPerMonth) {
-            account.setFreeFormMessages(messagesPerMonth);
-            sb.append("Messages: ").append(messagesPerMonth).append(";");
-        }
-
-        if (account.getTodosPerGroupPerMonth() != todosPerMonth) {
-            account.setTodosPerGroupPerMonth(todosPerMonth);
-            sb.append("Todos per month: ").append(todosPerMonth).append(";");
-        }
-
-        if (account.getEventsPerGroupPerMonth() != eventsPerMonth) {
-            account.setEventsPerGroupPerMonth(eventsPerMonth);
-            sb.append("Events per month: ").append(eventsPerMonth).append(";");
-        }
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .user(user)
-                .accountLogType(AccountLogType.DISCRETE_SETTING_CHANGE)
-                .description(sb.toString()).build());
     }
 
     @Override
@@ -518,6 +320,8 @@ public class AccountBrokerImpl implements AccountBroker {
         Objects.requireNonNull(adminToRemoveUid);
         DebugUtil.transactionRequired("");
 
+        log.info("removing admin, user: {}, admin to remove uid: {}, account uid: {}", userUid, adminToRemoveUid, accountUid);
+
         if (preventRemovingSelfOrBilling && userUid.equals(adminToRemoveUid)) {
             throw new AdminRemovalException("account.admin.remove.error.same");
         }
@@ -528,10 +332,6 @@ public class AccountBrokerImpl implements AccountBroker {
 
         validateAdmin(changingUser, account);
 
-        if (preventRemovingSelfOrBilling && administrator.equals(account.getBillingUser())) {
-            throw new AdminRemovalException("account.admin.remove.error.bill");
-        }
-
         account.removeAdministrator(administrator);
         administrator.removeAccountAdministered(account);
 
@@ -539,7 +339,7 @@ public class AccountBrokerImpl implements AccountBroker {
             administrator.setPrimaryAccount(null);
         }
 
-        if (administrator.getAccountsAdministered().isEmpty()) {
+        if (administrator.getAccountsAdministered() == null || administrator.getAccountsAdministered().isEmpty()) {
             permissionBroker.removeSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
         }
 
@@ -550,242 +350,384 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Account> loadAllAccounts(boolean visibleOnly, AccountPaymentType paymentMethod, AccountBillingCycle billingCycle) {
-        List<Account> accounts;
-        boolean noSpecifications = !visibleOnly && paymentMethod == null && billingCycle == null;
-        if (noSpecifications) {
-            accounts = accountRepository.findAll();
-        } else {
-            Specifications<Account> specifications = null;
-            if (visibleOnly) {
-                specifications = where(isVisible());
-            }
-            if (paymentMethod != null) {
-                specifications = (specifications == null) ? where(defaultPaymentType(paymentMethod)) :
-                        specifications.and(defaultPaymentType(paymentMethod));
-            }
-            if (billingCycle != null) {
-                specifications = (specifications == null) ? where(billingCycle(billingCycle)) :
-                        specifications.and(billingCycle(billingCycle));
-            }
-            accounts = accountRepository.findAll(specifications);
-        }
-        accounts.sort(Comparator.comparing(Account::getAccountName));
-        return accounts;
-    }
-
-    @Override
-    public Map<AccountType, Integer> getNumberGroupsPerType() {
-        return maxGroupNumber;
-    }
-
-    @Override
-    public Map<AccountType, Integer> getNumberMessagesPerType() {
-        return freeFormPerMonth;
-    }
-
-    @Override
-    public Map<AccountType, Integer> getGroupSizeLimits() {
-        return maxGroupSize;
-    }
-
-    @Override
-    public Map<AccountType, Integer> getAccountTypeFees() {
-        return accountFees;
-    }
-
-    @Override
-    public Map<AccountType, Integer> getEventMonthlyLimits() {
-        return eventsPerMonth;
-    }
-
-    @Override
     @Transactional
-    public void resetAccountBillingDates(Instant commonInstant) {
-        if (!environment.acceptsProfiles("production")) {
-            accountRepository.findAll(where(isEnabled()))
-                    .forEach(account -> account.setNextBillingDate(commonInstant));
-        }
-    }
-
-    @Override
-    @Transactional
-    public void updateAccountBalance(String adminUid, String accountUid, long newBalance) {
-        Objects.requireNonNull(adminUid);
+    public void addGroupsToAccount(String accountUid, Set<String> groupUids, String userUid) {
         Objects.requireNonNull(accountUid);
-
-        User admin = userRepository.findOneByUid(adminUid);
-
-        permissionBroker.validateSystemRole(admin, BaseRoles.ROLE_SYSTEM_ADMIN);
+        Objects.requireNonNull(groupUids);
+        Objects.requireNonNull(userUid);
 
         Account account = accountRepository.findOneByUid(accountUid);
-        account.setOutstandingBalance(newBalance);
+        User user = userRepository.findOneByUid(userUid);
+        validateAdmin(user, account);
 
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.SYSADMIN_CHANGED_BALANCE)
-                .user(admin)
-                .billedOrPaid(newBalance)
-                .description("Admin manually adjusted account balance").build());
-    }
+        List<Group> groups = groupRepository
+                .findAll(Specification.where(GroupSpecifications.uidIn(groupUids)));
+        log.info("number of groups matching list: {}", groups.size());
 
-    @Override
-    @Transactional
-    public void updateAccountFee(String adminUid, String accountUid, long newFee) {
-        Objects.requireNonNull(adminUid);
-        Objects.requireNonNull(accountUid);
-
-        User admin = userRepository.findOneByUid(adminUid);
-
-        permissionBroker.validateSystemRole(admin, BaseRoles.ROLE_SYSTEM_ADMIN);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        account.setSubscriptionFee((int) newFee);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.SYSADMIN_CHANGED_BALANCE)
-                .user(admin)
-                .billedOrPaid(newFee)
-                .description("Admin manually adjusted account fee").build());
-    }
-
-    @Override
-    @Transactional
-    public void modifyAccount(String adminUid, String accountUid, AccountType accountType,
-                              long subscriptionFee, boolean chargePerMessage, long costPerMessage) {
-        Objects.requireNonNull(adminUid);
-        Objects.requireNonNull(accountUid);
-
-        User user = userRepository.findOneByUid(adminUid);
-        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        StringBuilder sb = new StringBuilder("Changes: ");
-
-        if (!account.getType().equals(accountType)) {
-            account.setType(accountType);
-            sb.append(" account type = ").append(accountType).append(";");
-        }
-
-        if (account.getSubscriptionFee() != (int) subscriptionFee) {
-            account.setSubscriptionFee((int) subscriptionFee);
-            sb.append(" subscription fee = ").append(subscriptionFee).append(";");
-        }
-
-        if (account.isBillPerMessage() != chargePerMessage) {
-            account.setBillPerMessage(chargePerMessage);
-            sb.append(" per message billing = ").append(chargePerMessage).append(";");
-        }
-
-        if (account.getFreeFormCost() != (int) costPerMessage) {
-            account.setFreeFormMessages((int) costPerMessage);
-            sb.append(" cost per message = ").append(costPerMessage).append(";");
-        }
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.SYSADMIN_MODIFIED_MULTIPLE)
-                .user(user)
-                .description(sb.toString()).build());
-    }
-
-    @Override
-    @Transactional
-    public void setAccountVisibility(String adminUid, String accountUid, boolean visible) {
-        Objects.requireNonNull(adminUid);
-        Objects.requireNonNull(accountUid);
-
-        User user = userRepository.findOneByUid(adminUid);
-        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        account.setEnabled(false);
-        account.setVisible(false);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
-                .user(user)
-                .description("System admin set account invisible").build());
-    }
-
-    private void createAndStoreSingleAccountLog(AccountLog accountLog) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        bundle.addLog(accountLog);
+
+        groups.stream()
+                .filter(group -> !group.isPaidFor())
+                .forEach(group -> {
+                    group.setAccount(account);
+                    group.setPaidFor(true);
+
+                    log.info("Added group {} to account {}", group.getName(), account.getName());
+
+                    bundle.addLog(new AccountLog.Builder(account)
+                            .user(user)
+                            .accountLogType(AccountLogType.GROUP_ADDED)
+                            .group(group)
+                            .paidGroupUid(group.getUid())
+                            .description(group.getName()).build());
+
+                    bundle.addLog(new GroupLog(group, user, GroupLogType.ADDED_TO_ACCOUNT,
+                            null, null, account, "Group added to Grassroot Extra accounts"));
+        });
+
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
     @Override
     @Transactional
-    public void modifyAccount(String adminUid, String accountUid, AccountType accountType, String accountName, String billingEmail, AccountBillingCycle billingCycle) {
+    public void addAllUserCreatedGroupsToAccount(String accountUid, String userUid) {
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(userUid);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        validateAdmin(user, account);
+
+        Set<String> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user)
+                .stream().map(Group::getUid).collect(Collectors.toSet());
+
+        addGroupsToAccount(accountUid, groups, userUid);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Group> fetchGroupsUserCanAddToAccount(String accountUid, String userUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+        validateAdmin(user, account); // should never need to call this witohut admin
+
+        // for the moment, just doing it based on the most general organizer permission
+        Set<Group> userGroups = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        log.debug("User has {} groups with organizer permission", userGroups.size());
+        Set<Group> userGroupsUnpaidFor = userGroups.stream().filter(group -> !group.isPaidFor()).collect(Collectors.toSet());
+        log.debug("After removing paid groups, {} left", userGroupsUnpaidFor.size());
+
+        return userGroupsUnpaidFor;
+    }
+
+    @Override
+    @Transactional
+    public void removeGroupsFromAccount(String accountUid, Set<String> groupUids, String removingUserUid) {
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(groupUids);
+        Objects.requireNonNull(removingUserUid);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        for (String groupUid : groupUids) {
+            Group group = groupRepository.findOneByUid(groupUid);
+            User user = userRepository.findOneByUid(removingUserUid);
+
+            if (!account.getAdministrators().contains(user)) {
+                permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+            }
+
+            account.removePaidGroup(group);
+            group.setPaidFor(false);
+
+            bundle.addLog(new AccountLog.Builder(account)
+                    .user(user)
+                    .accountLogType(AccountLogType.GROUP_REMOVED)
+                    .group(group)
+                    .paidGroupUid(group.getUid())
+                    .description(group.getName()).build());
+
+            bundle.addLog(new GroupLog(group,
+                    user,
+                    GroupLogType.REMOVED_FROM_ACCOUNT,
+                    null, null, account, "Group removed from Grassroot Extra"));
+        }
+
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    @Override
+    @Transactional
+    public void renameAccount(String adminUid, String accountUid, String accountName) {
         Objects.requireNonNull(adminUid);
         Objects.requireNonNull(accountUid);
 
         User user = userRepository.findOneByUid(adminUid);
-//        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-
         Account account = accountRepository.findOneByUid(accountUid);
+
+        validateAdmin(user, account);
+
         StringBuilder sb = new StringBuilder("Changes: ");
-
-        if(!account.getType().equals(accountType)) {
-            account.setType(accountType);
-            sb.append(" account type = ").append(accountType).append(";");
-
-            Map<AccountType, Integer> accountFees = getAccountTypeFees();
-            Integer changedFee = accountFees.get(accountType);
-
-            account.setSubscriptionFee(changedFee);
-            sb.append(" subscription fee = ").append(changedFee).append(";");
-        }
 
         if(!account.getAccountName().equals(accountName)) {
             account.setAccountName(accountName);
             sb.append(" account name = ").append(accountName).append(";");
         }
 
-        if(!account.getBillingUser().getEmailAddress().equals(billingEmail)) {
-            account.getBillingUser().setEmailAddress(billingEmail);
-            sb.append(" account billing email = ").append(billingEmail).append(";");
-        }
-
-        if(!account.getBillingCycle().equals(billingCycle)) {
-            account.setBillingCycle(billingCycle);
-            sb.append(" account billing cycle = ").append(billingCycle).append(";");
-
-        }
-
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.SYSADMIN_MODIFIED_MULTIPLE)
+                .accountLogType(AccountLogType.NAME_CHANGED)
                 .user(user)
                 .description(sb.toString()).build());
     }
 
     @Override
     @Transactional
-    public void closeAccountRest(String userUid, String accountUid, boolean generateClosingBill) {
-        Account account = accountRepository.findOneByUid(Objects.requireNonNull(userUid));
-        User user = userRepository.findOneByUid(Objects.requireNonNull(accountUid));
+    public void closeAccount(String userUid, String accountUid, String closingReason) {
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
 
         validateAdmin(user, account); // note: this allows non-billing admin to close account, leaving for now but may revisit
 
         account.setEnabled(false);
-        account.setVisible(false);
-
-        if (generateClosingBill) {
-            accountBillingBroker.generateClosingBill(userUid, accountUid);
-        }
 
         log.info("removing {} paid groups", account.getPaidGroups().size());
-        Set<String> paidGroupUids = account.getPaidGroups().stream().map(pg -> pg.getGroup().getUid()).collect(Collectors.toSet());
-        accountGroupBroker.removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
+        Set<String> paidGroupUids = account.getPaidGroups().stream().map(Group::getUid).collect(Collectors.toSet());
+        removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .user(user)
-                .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
-                .description("account closed and removed from view").build());
+                .accountLogType(AccountLogType.ACCOUNT_DISABLED)
+                .description(closingReason).build());
 
         log.info("removing {} administrators", account.getAdministrators().size());
-        account.getAdministrators().stream().filter(u -> !u.getUid().equals(userUid))
-                .forEach(a -> removeAdministrator(userUid, accountUid, a.getUid(), false));
+
+        account.getAdministrators().stream().filter(admin -> !admin.equals(user)).forEach(admin -> {
+            admin.removeAccountAdministered(account);
+            if (account.equals(admin.getPrimaryAccount()))
+                admin.setPrimaryAccount(null);
+
+            if (admin.getAccountsAdministered() == null || admin.getAccountsAdministered().isEmpty())
+                permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
+        });
 
         removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
+
+        account.setClosed(true);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countAccountNotifications(String accountUid, Instant startTime, Instant endTime) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        long groupNotifications = account.getPaidGroups().isEmpty() ? 0 :
+                countAllForGroups(account.getPaidGroups(), startTime, endTime);
+
+        final String accountLogOnlyQueryText = countQueryOpening() +
+                "n.groupLog is null and n.eventLog is null and n.todoLog is null and n.campaignLog is null and " +
+                "n.accountLog.account = :account";
+        TypedQuery<Long> countNonGroupsQuery = entityManager.createQuery(accountLogOnlyQueryText, Long.class)
+                .setParameter("start", startTime).setParameter("end", endTime).setParameter("account", account);
+        long accountNotifications = countNonGroupsQuery.getSingleResult();
+        log.info("Counted {} notifications for the account {}", accountNotifications, account.getName());
+
+        return groupNotifications + accountNotifications;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countChargedNotificationsForGroup(String accountUid, String groupUid, Instant start, Instant end) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        return countAllForGroups(Collections.singleton(group), start, end);
+    }
+
+    @Override
+    public long countChargedUssdSessionsForAccount(String accountUid, Instant startTime, Instant endTime) {
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        final String countQuery = "select count(distinct ul) from UserLog ul " +
+                "where ul.creationTime between :start and :end and " +
+                "ul.userLogType = :logType and ul.description in " +
+                "(select c.uid from Campaign c where c.account = :account)";
+
+        TypedQuery<Long> campaignSessionCount = entityManager.createQuery(countQuery, Long.class)
+            .setParameter("start", startTime).setParameter("end", endTime).setParameter("account", account)
+            .setParameter("logType", UserLogType.CAMPAIGN_ENGAGED);
+
+        long countSessions = campaignSessionCount.getSingleResult();
+        log.info("Counted {} campaign sessions for account", countSessions);
+
+        if (locationInfoBroker != null && account.sponsorsDataSet()) {
+            countSessions += countDataSetSessionsForAccount(accountUid, startTime, endTime);
+        }
+
+        return countSessions;
+    }
+
+    private long countDataSetSessionsForAccount(String accountUid, Instant start, Instant end) {
+        // once have firm faith that both sides of this will match up, just use account list, but for now, this is not so expensive and is more reliable
+        List<String> dataSetLabels = locationInfoBroker.getDatasetLabelsForAccount(accountUid);
+        if (dataSetLabels == null || dataSetLabels.isEmpty())
+            return 0;
+
+        log.info("Counting sessions for data sets: {}", dataSetLabels);
+        return countSessionsForDatasets(dataSetLabels, start, end);
+    }
+
+    @Override
+    public List<Account> loadAllAccounts(boolean enabledOnly) {
+        Sort sort = new Sort(Sort.Direction.ASC, "accountName");
+        List<Account> accounts = !enabledOnly ? accountRepository.findAll(sort) :
+                accountRepository.findAll(isEnabled(), sort);
+        log.info("Retrieved {} accounts, for enabled = {}", accounts.size(), enabledOnly);
+        return accounts;
+    }
+
+    @Override
+    public Map<String, String> loadDisabledAccountMap() {
+        Sort sort = new Sort(Sort.Direction.ASC, "accountName");
+        List<Account> disabledAccounts = accountRepository.findAll(isDisabled(), sort);
+        Map<String, String> accountMap = new LinkedHashMap<>();
+        // to ensure we preserve ordering, doing this, vs collector
+        disabledAccounts.forEach(account -> accountMap.put(account.getUid(), account.getAccountName()));
+        return accountMap;
+    }
+
+    @Override
+    public void updateDataSetLabels(String userUid, String accountUid, String dataSetLabels, boolean updateReferenceTables) {
+        User admin = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        permissionBroker.validateSystemRole(admin, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+
+        final String oldLabels = account.getGeoDataSets();
+        account.setGeoDataSets(dataSetLabels);
+
+        if (updateReferenceTables) {
+            Set<String> oldLabelList = StringUtils.commaDelimitedListToSet(oldLabels);
+            Set<String> newLabelList = StringUtils.commaDelimitedListToSet(dataSetLabels);
+
+            oldLabelList.removeAll(newLabelList); // i.e., leave behind those to remove
+            newLabelList.removeAll(oldLabelList); // i.e., leave behind the new ones
+
+            locationInfoBroker.updateDataSetAccountLabels(accountUid, newLabelList, oldLabelList);
+        }
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .user(admin)
+                .accountLogType(AccountLogType.GEO_API_UPDATED)
+                .description(oldLabels + "-->>" + dataSetLabels).build());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DataSetInfo fetchDataSetInfo(String userUid, String dataSetLabel, Instant start, Instant end) {
+        User user = userRepository.findOneByUid(userUid);
+        validateUserCanViewDataset(user, dataSetLabel);
+
+        return DataSetInfo.builder()
+                .dataSetLabel(dataSetLabel)
+                .description(locationInfoBroker.getDescriptionForDataSet(dataSetLabel))
+                .usersCount(countUsersForDataSets(Collections.singleton(dataSetLabel), start, end))
+                .userSessionCount(countSessionsForDatasets(Collections.singleton(dataSetLabel), start, end))
+                .notificationsCount(countNotificationsForDataSet(dataSetLabel, start, end))
+                .start(start).end(end).build();
+    }
+
+    private long countNotificationsForDataSet(String dataSetLabel, Instant start, Instant end) {
+        final String accountLogOnlyQueryText = countQueryOpening() +
+                "n.accountLog in (select al from AccountLog al where al.description like :dataSetStart)";
+        TypedQuery<Long> countNonGroupsQuery = entityManager.createQuery(accountLogOnlyQueryText, Long.class)
+                .setParameter("start", start).setParameter("end", end).setParameter("dataSetStart", dataSetLabel + "%");
+        long dataSetNotifications = countNonGroupsQuery.getSingleResult();
+        log.info("Counted {} notifications for the dataset {}", dataSetNotifications, dataSetLabel);
+
+        return dataSetNotifications;
+    }
+
+    private Specification<Account> isEnabled() {
+        return (root, query, cb) -> cb.and(cb.isTrue(root.get(Account_.enabled)), cb.isFalse(root.get(Account_.closed)));
+    }
+
+    private Specification<Account> isDisabled() {
+        return (root, query, cb) -> cb.and(cb.isFalse(root.get(Account_.enabled)), cb.isFalse(root.get(Account_.closed)));
+    }
+
+    private long countAllForGroups(Set<Group> groups, Instant start, Instant end) {
+        long startTime = System.currentTimeMillis();
+        long groupLogCount = executeGroupsCountQuery("(n.groupLog in (select gl from GroupLog gl where gl.group in :groups))",
+                start, end, groups);
+
+        long eventLogCount = executeGroupsCountQuery("(n.eventLog in (select el from EventLog el where el.event.ancestorGroup in :groups))",
+                start, end, groups);
+
+        long todoLogCount = executeGroupsCountQuery("(n.todoLog in (select tl from TodoLog tl where tl.todo.ancestorGroup in :groups))",
+                start, end, groups);
+
+        long campaignLogCount = executeGroupsCountQuery("(n.campaignLog in (select cl from CampaignLog cl where cl.campaign.masterGroup in :groups))",
+                start, end, groups);
+
+        log.info("In {} msecs, for {} groups, counted {} from group logs, {} from event logs, {} from todo logs, {} from campaign logs",
+                System.currentTimeMillis() - startTime, groups.size(), groupLogCount, eventLogCount, todoLogCount, campaignLogCount);
+
+        return groupLogCount + eventLogCount + todoLogCount + campaignLogCount;
+
+    }
+
+    private long executeGroupsCountQuery(String querySuffix, Instant start, Instant end, Set<Group> groups) {
+        TypedQuery<Long> countQuery = entityManager.createQuery(countQueryOpening() + querySuffix, Long.class)
+                .setParameter("start", start).setParameter("end", end)
+                .setParameter("groups", groups);
+
+        return countQuery.getSingleResult();
+    }
+
+    private String countQueryOpening() {
+        return "select count(n) from Notification n " +
+                "where n.createdDateTime between :start and :end and " +
+                "n.status in ('DELIVERED', 'READ') and ";
+    }
+
+    private long countSessionsForDatasets(Collection<String> dataSets, Instant start, Instant end) {
+        return countForDataSets("select count(distinct ul) from UserLog ul", dataSets, start, end);
+    }
+
+    private long countUsersForDataSets(Collection<String> dataSets, Instant start, Instant end) {
+        return countForDataSets("select count(distinct ul.userUid) from UserLog ul", dataSets, start, end);
+    }
+
+    private long countForDataSets(String prefix, Collection<String> dataSets, Instant start, Instant end) {
+        final String countGeoSessionsQuery = prefix + " where ul.creationTime between :start and :end and " +
+                "ul.userLogType = :logType and ul.description in :dataSets";
+        TypedQuery<Long> geoApiSessionCount = entityManager.createQuery(countGeoSessionsQuery, Long.class)
+                .setParameter("start", start).setParameter("end", end)
+                .setParameter("logType", UserLogType.GEO_APIS_CALLED).setParameter("dataSets", dataSets);
+        long countGeoCalls = geoApiSessionCount.getSingleResult();
+        log.info("Counted {} sessions for dataSets {}, prefix {}", countGeoCalls, dataSets, prefix);
+        return countGeoCalls;
+    }
+
+    private void validateUserCanViewDataset(User user, String dataSetLabel) {
+        Set<String> accountUids = locationInfoBroker.getAccountUidsForDataSets(dataSetLabel);
+        List<Account> accounts = accountRepository.findByUidIn(accountUids);
+
+        if (accounts == null || accounts.isEmpty())
+            throw new IllegalArgumentException("Error! No accounts found for datasets");
+
+        boolean primaryAccountMatches = accounts.contains(user.getPrimaryAccount());
+        if (!primaryAccountMatches && !permissionBroker.isSystemAdmin(user)) {
+            Set<Account> userAccounts = user.getAccountsAdministered();
+            if (accounts.stream().noneMatch(userAccounts::contains))
+                throw new AccessDeniedException("Only account admins of sponsoring datasets can see stats");
+        }
+    }
+
+    private void createAndStoreSingleAccountLog(AccountLog accountLog) {
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(accountLog);
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 }

@@ -1,20 +1,25 @@
 package za.org.grassroot.core.domain.task;
 
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.util.StringArrayUtil;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 
 @Entity
 @DiscriminatorValue("VOTE")
 public class Vote extends Event<VoteContainer> {
+
+	private static final String RANDOMIZE_TAG = "RANDOMIZE";
 
 	@ManyToOne
 	@JoinColumn(name = "parent_meeting_id")
@@ -45,6 +50,28 @@ public class Vote extends Event<VoteContainer> {
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public List<String> getVoteOptions() {
+		List<String> options = StringArrayUtil.arrayToList(getTags());
+		if (shouldRandomize()) {
+			options.remove(RANDOMIZE_TAG); // since that will be within the list
+			Collections.shuffle(options);
+		}
+		return options;
+	}
+
+	public void setRandomize(boolean randomize) {
+		if (randomize) {
+			this.addTag(RANDOMIZE_TAG);
+		} else {
+			this.removeTag(RANDOMIZE_TAG);
+		}
+	}
+
+	private boolean shouldRandomize() {
+		return this.getTagList().contains(RANDOMIZE_TAG);
 	}
 
 	@Override

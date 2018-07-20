@@ -1,7 +1,6 @@
 package za.org.grassroot.core.domain.livewire;
 
 import org.hibernate.annotations.Type;
-import org.hibernate.validator.constraints.Email;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -55,7 +54,6 @@ public class DataSubscriber {
     @Column(name = "active")
     private boolean active;
 
-    @Email
     @Column(name = "primary_email", nullable = false)
     private String primaryEmail;
 

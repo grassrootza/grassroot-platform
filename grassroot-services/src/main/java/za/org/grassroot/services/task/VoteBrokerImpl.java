@@ -4,15 +4,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.UserLanguageNotification;
 import za.org.grassroot.core.domain.notification.VoteResultsNotification;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -22,7 +23,9 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.VoteRepository;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.MessageAssemblingService;
@@ -61,14 +64,16 @@ public class VoteBrokerImpl implements VoteBroker {
     private static final List<String> optionsForYesNoVote = Arrays.asList(YES, NO, ABSTAIN);
 
     private final UserManagementService userService;
+    private final GroupRepository groupRepository;
     private final VoteRepository voteRepository;
     private final EventLogRepository eventLogRepository;
     private final MessageAssemblingService messageService;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    public VoteBrokerImpl(UserManagementService userService, VoteRepository voteRepository, EventLogRepository eventLogRepository, MessageAssemblingService messageService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public VoteBrokerImpl(UserManagementService userService, GroupRepository groupRepository, VoteRepository voteRepository, EventLogRepository eventLogRepository, MessageAssemblingService messageService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userService = userService;
+        this.groupRepository = groupRepository;
         this.voteRepository = voteRepository;
         this.eventLogRepository = eventLogRepository;
         this.messageService = messageService;
@@ -286,9 +291,22 @@ public class VoteBrokerImpl implements VoteBroker {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasMassVoteOpen(String groupUid) {
+        final Group group = groupRepository.findOneByUid(groupUid);
+        return voteRepository.count(EventSpecifications.isOpenMassVoteForGroup(group)) > 0;
+    }
+
+    @Override
+    public Vote getMassVoteForGroup(String groupUid) {
+
+        return null;
+    }
+
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {
         Map<String, Long> results = new LinkedHashMap<>();
-        List<EventLog> eventLogs = eventLogRepository.findAll(Specifications.where(isResponseToVote(vote)));
+        List<EventLog> eventLogs = eventLogRepository.findAll(Specification.where(isResponseToVote(vote)));
         options.forEach(o -> results.put(o, eventLogs.stream().filter(el -> o.equalsIgnoreCase(el.getTag())).count()));
         return results;
     }
@@ -298,14 +316,14 @@ public class VoteBrokerImpl implements VoteBroker {
         // option responses (note: if no responses at all, it will still return valid result, since we
         // know at this point that it is a yes/no vote)
 
-        return eventLogRepository.count(Specifications.where(ofType(EventLogType.VOTE_OPTION_RESPONSE))) == 0 ?
+        return eventLogRepository.count(Specification.where(ofType(EventLogType.VOTE_OPTION_RESPONSE))) == 0 ?
                 calculateOldVoteResult(vote) :
                 calculateMultiOptionResults(vote, optionsForYesNoVote); // will just return
     }
 
     private Map<String, Long> calculateOldVoteResult(Vote vote) {
 
-        List<EventLog> eventLogs = eventLogRepository.findAll(Specifications.where(
+        List<EventLog> eventLogs = eventLogRepository.findAll(Specification.where(
                 ofType(EventLogType.RSVP)).and(forEvent(vote)));
         Map<String, Long> results = new LinkedHashMap<>();
         results.put(YES, eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.YES)).count());

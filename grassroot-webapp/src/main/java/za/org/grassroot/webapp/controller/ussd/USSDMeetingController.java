@@ -11,7 +11,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.EntityForUserResponse;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.Meeting;
@@ -23,9 +27,8 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
-import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -72,7 +75,7 @@ public class USSDMeetingController extends USSDBaseController {
     private final TaskBroker taskBroker;
     private final EventRequestBroker eventRequestBroker;
     private final EventLogBroker eventLogBroker;
-    private final AccountGroupBroker accountGroupBroker;
+    private final AccountFeaturesBroker accountFeaturesBroker;
     private final GeoLocationBroker geoLocationBroker;
 
     private USSDEventUtil eventUtil;
@@ -112,13 +115,13 @@ public class USSDMeetingController extends USSDBaseController {
     }
 
     @Autowired
-    public USSDMeetingController(EventBroker eventBroker, GroupBroker groupBroker, TaskBroker taskBroker, EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, AccountGroupBroker accountGroupBroker, GeoLocationBroker geoLocationBroker) {
+    public USSDMeetingController(EventBroker eventBroker, GroupBroker groupBroker, TaskBroker taskBroker, EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, AccountFeaturesBroker accountFeaturesBroker, GeoLocationBroker geoLocationBroker) {
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;
         this.eventRequestBroker = eventRequestBroker;
         this.eventLogBroker = eventLogBroker;
-        this.accountGroupBroker = accountGroupBroker;
+        this.accountFeaturesBroker = accountFeaturesBroker;
         this.geoLocationBroker = geoLocationBroker;
     }
 
@@ -282,7 +285,7 @@ public class USSDMeetingController extends USSDBaseController {
           return  menuBuilder(groupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, groupName));
         } else {
             Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
-            Group group = groupBroker.create(user.getUid(), userResponse, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false);
+            Group group = groupBroker.create(user.getUid(), userResponse, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, false);
             return menuBuilder(groupUtil.addNumbersToGroupPrompt(user, group, thisSection, groupHandlingMenu));
     }
     }
@@ -355,7 +358,7 @@ public class USSDMeetingController extends USSDBaseController {
         String mtgGroupUid = groupUid != null ? groupUid :
                 ((MeetingRequest) eventRequestBroker.load(passedRequestUid)).getParent().getUid();
         int eventsLeft = eventMonthlyLimitActive ?
-                accountGroupBroker.numberEventsLeftForGroup(mtgGroupUid) : 99;
+                accountFeaturesBroker.numberEventsLeftForGroup(mtgGroupUid) : 99;
 
         String mtgRequestUid;
 
@@ -576,7 +579,7 @@ public class USSDMeetingController extends USSDBaseController {
         if (!eventMonthlyLimitActive) {
             return getMessage(thisSection, send, promptKey, user);
         } else {
-            int numberEventsLeft = accountGroupBroker.numberEventsLeftForParent(eventUid);
+            int numberEventsLeft = accountFeaturesBroker.numberEventsLeftForParent(eventUid);
             return numberEventsLeft < EVENT_LIMIT_WARNING_THRESHOLD ?
                     getMessage(thisSection, send, promptKey + ".limit", String.valueOf(numberEventsLeft), user) :
                     getMessage(thisSection, send, promptKey, user);

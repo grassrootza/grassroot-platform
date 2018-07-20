@@ -2,7 +2,7 @@ package za.org.grassroot.services.broadcasts;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import za.org.grassroot.core.domain.Broadcast;
+import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.TaskType;
 
