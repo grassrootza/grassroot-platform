@@ -3,7 +3,7 @@ FROM tomcat:8-alpine
 WORKDIR /usr/src/grassroot
 
 # SETUP SUPERVISORD TO RUN JAVA AS A PROCESS + OTHER FANCY THINGS SUPERVISORD PROVIDES
-RUN apk add --no-cache supervisor vim nano
+RUN apk add --no-cache supervisor vim nano curl
 COPY .deploy/supervisord.conf /etc/supervisord.conf
 
 # DEFINE ENVIRONMENT VARIABLES
