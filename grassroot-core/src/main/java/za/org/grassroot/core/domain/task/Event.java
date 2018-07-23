@@ -30,7 +30,7 @@ import java.util.Set;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
 public abstract class Event<P extends UidIdentifiable> extends AbstractEventEntity
-		implements TodoContainer, Task<P>, Serializable, TagHolder {
+		implements TodoContainer, Task<P>, Serializable {
 
 	// for present
 	public static final int MAX_NAME_LENGTH = 100;

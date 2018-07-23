@@ -31,6 +31,10 @@ public final class UserSpecifications {
         return (root, query, cb) -> cb.equal(root.get(User_.hasInitiatedSession), true);
     }
 
+    public static Specification<User> isEnabled() {
+        return (root, query, cb) -> cb.isTrue(root.get(User_.enabled));
+    }
+
     public static Specification<User> hasAndroidProfile() {
         return (root, query, cb) -> cb.equal(root.get(User_.hasAndroidProfile), true);
     }

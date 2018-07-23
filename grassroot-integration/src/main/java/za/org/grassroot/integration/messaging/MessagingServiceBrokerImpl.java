@@ -82,6 +82,7 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
                 .buildAndExpand(phoneNumber)
                 .toUri();
         try {
+            log.info("calling: {}", serviceCallUri);
             ResponseEntity<MessageServicePushResponse> responseEntity =
                     restTemplate.exchange(
                             serviceCallUri,

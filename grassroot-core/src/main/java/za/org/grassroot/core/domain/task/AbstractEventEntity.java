@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.task;
 
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -21,7 +22,8 @@ import java.util.Objects;
  * This class should contain all fields common to both Event and EventRequest entity
  */
 @MappedSuperclass
-public abstract class AbstractEventEntity {
+public abstract class AbstractEventEntity implements TagHolder {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)

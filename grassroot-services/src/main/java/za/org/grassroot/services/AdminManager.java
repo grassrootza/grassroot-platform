@@ -12,17 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.User_;
-import za.org.grassroot.core.domain.UserLog;
-import za.org.grassroot.core.domain.UserLog_;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.Group_;
-import za.org.grassroot.core.domain.group.GroupJoinMethod;
-import za.org.grassroot.core.domain.group.GroupLog;
-import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.domain.notification.SystemInfoNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -254,6 +245,15 @@ public class AdminManager implements AdminService {
         }
     }
 
+    @Async
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGraphUserAnnotations() {
+        if (graphBroker != null) {
+            Specification<User> spec = UserSpecifications.hasInitiatedSession().and(UserSpecifications.isEnabled());
+            userRepository.findAll(spec).forEach(user -> graphBroker.annotateUser(user.getUid(), null, null, true));
+        }
+    }
 
     @Async
     @Override
