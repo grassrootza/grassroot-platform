@@ -254,6 +254,17 @@ public class AdminManager implements AdminService {
         }
     }
 
+    @Async
+    @Override
+    @Transactional(readOnly = true)
+    public void populateGraphUserAnnotations() {
+        if (graphBroker != null) {
+            userRepository.findAll().forEach(user -> {
+                if (user.isEnabled() && user.isHasInitiatedSession())
+                    graphBroker.annotateUser(user.getUid(), null, null, true);
+            });
+        }
+    }
 
     @Async
     @Override

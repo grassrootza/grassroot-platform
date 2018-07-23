@@ -101,11 +101,13 @@ public class GraphBrokerImpl implements GraphBroker {
     @Override
     public void addMovementToGraph(String movementUid, String creatingUserUid) {
         log.info("adding movement to Grassroot graph ...");
+
         Actor movement = new Actor(ActorType.MOVEMENT, movementUid);
         IncomingGraphAction action = wrapEntityCreation(movement);
         IncomingRelationship genRel = generatorRelationship(creatingUserUid, GraphEntityType.ACTOR,
                 ActorType.INDIVIDUAL.name(), movementUid, GraphEntityType.ACTOR, ActorType.MOVEMENT.name());
         action.addRelationship(genRel);
+
         dispatchAction(action, "movement");
     }
 
@@ -179,10 +181,9 @@ public class GraphBrokerImpl implements GraphBroker {
     public void annotateGroup(String groupUid, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations) {
         log.info("annotating Grassroot graph group ... {}", groupUid);
 
-        properties = new HashMap<>();
-
         if (setAllAnnotations) {
             Group group = groupRepository.findOneByUid(groupUid);
+            properties = new HashMap<>();
             properties.put(IncomingAnnotation.language, group.getDefaultLanguage());
             properties.put(IncomingAnnotation.description, group.getDescription());
             tags = (group.getTags() == null || group.getTags().length == 0) ?
@@ -308,7 +309,7 @@ public class GraphBrokerImpl implements GraphBroker {
         IncomingDataObject dataObject = new IncomingDataObject(entity.getEntityType(), entity);
         IncomingAnnotation annotation = new IncomingAnnotation(dataObject, null, normalize(properties), normalize(tags), null);
         IncomingGraphAction action = new IncomingGraphAction(dataObject.getGraphEntity().getPlatformUid(),
-                ActionType.ANNOTATE_ENTITY, null, null, new ArrayList<>(Collections.singletonList(annotation)));
+                ActionType.ANNOTATE_ENTITY, null, null, Collections.singletonList(annotation));
         dispatchAction(action, "annotate entity");
     }
 
@@ -316,21 +317,21 @@ public class GraphBrokerImpl implements GraphBroker {
         IncomingDataObject dataObject = new IncomingDataObject(entity.getEntityType(), entity);
         IncomingAnnotation annotation = new IncomingAnnotation(dataObject, null, null, normalize(tagsToRemove), normalize(keysToRemove));
         IncomingGraphAction action = new IncomingGraphAction(dataObject.getGraphEntity().getPlatformUid(),
-                ActionType.REMOVE_ANNOTATION, null, null, new ArrayList<>(Collections.singletonList(annotation)));
+                ActionType.REMOVE_ANNOTATION, null, null, Collections.singletonList(annotation));
         dispatchAction(action, "remove annotations from entity");
     }
 
     private void annotateRelationship(IncomingRelationship relationship, Set<String> tags) {
         IncomingAnnotation annotation = new IncomingAnnotation(null, relationship, null, normalize(tags), null);
         IncomingGraphAction action = new IncomingGraphAction(relationship.getTailEntityPlatformId(),
-                ActionType.ANNOTATE_RELATIONSHIP, null, null, new ArrayList<>(Collections.singletonList(annotation)));
+                ActionType.ANNOTATE_RELATIONSHIP, null, null, Collections.singletonList(annotation));
         dispatchAction(action, "annotate relationship");
     }
 
     private void removeAnnotationsFromRelationship(IncomingRelationship relationship, Set<String> tagsToRemove) {
         IncomingAnnotation annotation = new IncomingAnnotation(null, relationship, null, normalize(tagsToRemove), null);
         IncomingGraphAction action = new IncomingGraphAction(relationship.getTailEntityPlatformId(),
-                ActionType.REMOVE_ANNOTATION, null, null, new ArrayList<>(Collections.singletonList(annotation)));
+                ActionType.REMOVE_ANNOTATION, null, null, Collections.singletonList(annotation));
         dispatchAction(action, "remove annotations from relationship");
     }
 
