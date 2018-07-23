@@ -305,7 +305,9 @@ public class AccountUserController extends BaseRestController {
         Account account = StringUtils.isEmpty(accountUid) ? user.getPrimaryAccount() : accountBroker.loadAccount(accountUid);
         Instant start = startTimeMillis != null ? Instant.ofEpochMilli(startTimeMillis) : account.getLastBillingDate();
         Instant end = endTimeMillis != null ? Instant.ofEpochMilli(endTimeMillis) : Instant.now();
-        List<DataSetInfo> dataCounts = Arrays.stream(account.getGeoDataSets().split(",")).map(label -> {
+        Set<String> dataSets = StringUtils.commaDelimitedListToSet(account.getGeoDataSets());
+        log.info("Datasets extracted: {}; from account: {}", dataSets, account);
+        List<DataSetInfo> dataCounts = dataSets.stream().map(label -> {
             DataSetInfo counts = accountBroker.fetchDataSetInfo(user.getUid(), label, start, end);
             log.info("for {} got counts {}", label, counts);
             return counts;

@@ -611,14 +611,15 @@ public class TaskBrokerImpl implements TaskBroker {
         log.info("number of todos fetched for group = {}", todos.size());
 
         for (Todo todo : todos) {
-            taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), todo.getResponseTag()));
+            taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), getUserResponse(todo, user)));
         }
 
         List<TaskFullDTO> tasks = new ArrayList<>(taskDtos);
-        Collections.sort(tasks, (o1, o2) -> ComparisonChain.start()
+        tasks.sort((o1, o2) -> ComparisonChain.start()
                 .compare(o1.getDeadlineMillis(), o2.getDeadlineMillis())
                 .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
                 .result());
+
         return tasks;
     }
 
