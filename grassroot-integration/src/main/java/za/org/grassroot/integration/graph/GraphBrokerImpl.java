@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.LazyInitializationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -17,9 +16,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.domain.task.AbstractEventEntity;
 import za.org.grassroot.core.domain.task.Task;
-import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.*;
@@ -138,27 +135,23 @@ public class GraphBrokerImpl implements GraphBroker {
     @Transactional
     @SuppressWarnings("unchecked")
     public void addTaskToGraph(String taskUid, TaskType taskType, List<String> assignedUserUids) {
-        try {
-            DebugUtil.transactionRequired("");
-            log.info("adding task to Grassroot Graph ... {}", taskUid);
-            Task task = getTask(taskUid, taskType);
-            if (task == null) {
-                log.error("Error getting task of type {} and uid {}", taskType, taskUid);
-                return;
-            }
-            Event taskEvent = createTaskEvent(task);
-            IncomingGraphAction action = wrapEntityCreation(taskEvent);
-            addParticipants(action, new HashSet<String>(assignedUserUids), GraphEntityType.ACTOR,
-                    ActorType.INDIVIDUAL.name(), task.getUid(), GraphEntityType.EVENT, taskEvent.getEventType().name());
-            action.addRelationship(participatingRelationship(task.getUid(), GraphEntityType.EVENT, taskEvent.getEventType().name(),
-                    task.getAncestorGroup().getUid(), GraphEntityType.ACTOR, ActorType.GROUP.name()));
-            action.addRelationship(generatorRelationship(task.getCreatedByUser().getUid(), GraphEntityType.ACTOR,
-                    ActorType.INDIVIDUAL.name(), task.getUid(), GraphEntityType.EVENT, taskEvent.getEventType().name()));
-
-            dispatchAction(action, "task");
-        } catch (LazyInitializationException e) {
-            log.error("Spring-Hibernate hell continues, can't add to graph, Lazy Init as usual");
+        DebugUtil.transactionRequired("");
+        log.info("adding task to Grassroot Graph ... {}", taskUid);
+        Task task = getTask(taskUid, taskType);
+        if (task == null) {
+            log.error("Error getting task of type {} and uid {}", taskType, taskUid);
+            return;
         }
+        Event taskEvent = createTaskEvent(task);
+        IncomingGraphAction action = wrapEntityCreation(taskEvent);
+        addParticipants(action, new HashSet<>(assignedUserUids), GraphEntityType.ACTOR,
+                ActorType.INDIVIDUAL.name(), task.getUid(), GraphEntityType.EVENT, taskEvent.getEventType().name());
+        action.addRelationship(participatingRelationship(task.getUid(), GraphEntityType.EVENT, taskEvent.getEventType().name(),
+                task.getAncestorGroup().getUid(), GraphEntityType.ACTOR, ActorType.GROUP.name()));
+        action.addRelationship(generatorRelationship(task.getCreatedByUser().getUid(), GraphEntityType.ACTOR,
+                ActorType.INDIVIDUAL.name(), task.getUid(), GraphEntityType.EVENT, taskEvent.getEventType().name()));
+
+        dispatchAction(action, "task");
     }
 
     @Override
@@ -212,8 +205,7 @@ public class GraphBrokerImpl implements GraphBroker {
                 log.error("Error, user given to graph broker is null, userUid: {}, groupUid: {}.", userUid, groupUid);
                 return;
             }
-            tags = (membership.getTags() == null || membership.getTags().length == 0) ?
-                    null : new HashSet<>(Arrays.asList(membership.getTags()));
+            tags = new HashSet<>(membership.getTagList());
         }
 
         annotateRelationship(participatingRelationship(userUid, GraphEntityType.ACTOR, ActorType.INDIVIDUAL.name(),
@@ -232,14 +224,8 @@ public class GraphBrokerImpl implements GraphBroker {
 
         if (setAllAnnotations) {
             properties = new HashMap<>();
-            if (TaskType.MEETING.equals(taskType) || TaskType.VOTE.equals(taskType)) {
-                AbstractEventEntity taskEvent = (AbstractEventEntity) task;
-                properties.put(IncomingAnnotation.description, taskEvent.getDescription());
-                tags = (taskEvent.getTags() == null || taskEvent.getTags().length == 0) ?
-                        null : new HashSet<>(Arrays.asList(taskEvent.getTags()));
-            } else {
-                properties.put(IncomingAnnotation.description, ((Todo) task).getDescription());
-            }
+            properties.put(IncomingAnnotation.description, task.getDescription());
+            tags = new HashSet<>(task.getTagList());
         }
 
         Event event = createTaskEvent(task);
@@ -274,7 +260,10 @@ public class GraphBrokerImpl implements GraphBroker {
     @Override
     public void removeTaskFromGraph(String taskUid, TaskType taskType) {
         log.info("removing task from Grassroot graph ... {}", taskUid);
-        removeEntityFromGraph(createTaskEvent(getTask(taskUid, taskType)));
+        Task task = getTask(taskUid, taskType);
+        if (task != null) {
+            removeEntityFromGraph(createTaskEvent(task));
+        }
     }
 
     @Override
