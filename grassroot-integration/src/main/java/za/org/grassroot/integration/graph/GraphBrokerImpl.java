@@ -167,6 +167,10 @@ public class GraphBrokerImpl implements GraphBroker {
 
         if (setAllAnnotations) {
             User user = userRepository.findOneByUid(userUid);
+            if (user == null) {
+                log.error("Error, user given to graph broker is null, userUid: {}.", userUid);
+                return;
+            }
             properties = new HashMap<>();
             properties.put(IncomingAnnotation.language, user.getLanguageCode());
             String province = Province.CANONICAL_NAMES_ZA.get(user.getProvince());
@@ -183,6 +187,10 @@ public class GraphBrokerImpl implements GraphBroker {
 
         if (setAllAnnotations) {
             Group group = groupRepository.findOneByUid(groupUid);
+            if (group == null) {
+                log.error("Error, user given to graph broker is null, groupUid: {}.", groupUid);
+                return;
+            }
             properties = new HashMap<>();
             properties.put(IncomingAnnotation.language, group.getDefaultLanguage());
             properties.put(IncomingAnnotation.description, group.getDescription());
@@ -200,6 +208,10 @@ public class GraphBrokerImpl implements GraphBroker {
 
         if (setAllAnnotations) {
             Membership membership = membershipRepository.findByGroupUidAndUserUid(groupUid, userUid);
+            if (membership == null) {
+                log.error("Error, user given to graph broker is null, userUid: {}, groupUid: {}.", userUid, groupUid);
+                return;
+            }
             tags = (membership.getTags() == null || membership.getTags().length == 0) ?
                     null : new HashSet<>(Arrays.asList(membership.getTags()));
         }
