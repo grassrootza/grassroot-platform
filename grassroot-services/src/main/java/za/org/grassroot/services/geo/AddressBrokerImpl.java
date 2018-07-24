@@ -53,7 +53,8 @@ public class AddressBrokerImpl implements AddressBroker {
 
     private final EntityManager entityManager;
     private final RestTemplate restTemplate;
-    private final LocationInfoBroker locationInfoBroker;
+
+    private LocationInfoBroker locationInfoBroker;
 
     private UserLocationLogRepository userLocationLogRepository;
 
@@ -61,19 +62,23 @@ public class AddressBrokerImpl implements AddressBroker {
     private String geocodingApiUrl;
 
     @Autowired
-    public AddressBrokerImpl(UserRepository userRepository, AddressRepository addressRepository, AsyncUserLogger asyncUserLogger, AddressLogRepository addressLogRepository, EntityManager entityManager, RestTemplate restTemplate, LocationInfoBroker locationInfoBroker) {
+    public AddressBrokerImpl(UserRepository userRepository, AddressRepository addressRepository, AsyncUserLogger asyncUserLogger, AddressLogRepository addressLogRepository, EntityManager entityManager, RestTemplate restTemplate) {
         this.userRepository = userRepository;
         this.addressRepository = addressRepository;
         this.asyncUserLogger = asyncUserLogger;
         this.addressLogRepository = addressLogRepository;
         this.entityManager = entityManager;
         this.restTemplate = restTemplate;
-        this.locationInfoBroker = locationInfoBroker;
     }
 
     @Autowired(required = false)
     public void setUserLocationLogRepository(UserLocationLogRepository userLocationLogRepository) {
         this.userLocationLogRepository = userLocationLogRepository;
+    }
+
+    @Autowired(required = false)
+    public void setLocationInfoBroker(LocationInfoBroker locationInfoBroker) {
+        this.locationInfoBroker = locationInfoBroker;
     }
 
     @Override
