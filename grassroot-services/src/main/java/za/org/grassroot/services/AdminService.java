@@ -36,14 +36,6 @@ public interface AdminService {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     long sendBatchOfAndroidLinks(String adminUserUid, int batchSize);
 
-    void populateGrassrootGraphTasks(String userUid);
-
     void populateGraphUserAnnotations();
-
-    void populateGraphGroupAnnotations();
-
-    void populateGraphMembershipAnnotations();
-
-    void populateGraphTaskAnnotations();
 
 }

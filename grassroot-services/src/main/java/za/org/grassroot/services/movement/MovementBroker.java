@@ -3,6 +3,8 @@ package za.org.grassroot.services.movement;
 import za.org.grassroot.core.domain.movement.Movement;
 import za.org.grassroot.core.domain.movement.MovementPermissionType;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public interface MovementBroker {
@@ -17,7 +19,7 @@ public interface MovementBroker {
 
     void addOrganizer(String userUid, String movementUid, String organizerUid);
 
-    void addMember(String userUid, String movementUid, String memberToAddUid);
+    void addMembers(String userUid, String movementUid, Collection<String> memberToAddUid);
 
     void addGroup(String userUid, String movementUid, String groupUid);
 

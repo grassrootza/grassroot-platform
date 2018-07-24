@@ -715,7 +715,7 @@ public class AccountBrokerImpl implements AccountBroker {
         List<Account> accounts = accountRepository.findByUidIn(accountUids);
 
         if (accounts == null || accounts.isEmpty())
-            throw new IllegalArgumentException("Error! No accounts found for datasets");
+            throw new IllegalArgumentException("Error! No accounts found for dataset " + dataSetLabel);
 
         boolean primaryAccountMatches = accounts.contains(user.getPrimaryAccount());
         if (!primaryAccountMatches && !permissionBroker.isSystemAdmin(user)) {

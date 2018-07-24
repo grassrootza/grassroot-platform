@@ -20,8 +20,9 @@ public interface LocationInfoBroker {
 
     List<Locale> getAvailableLocalesForDataSet(String dataSetLabel);
 
-    // linked hashmap
-    Map<String, String> getAvailableInfoAndLowestLevelForDataSet(String dataSetLabel);
+    Map<String, String> getAvailableInfoAndLowestLevelForDataSet(String dataSetLabel); // linked hashmap
+
+    Map<String, String> getAvailableSuffixes();
 
     List<String> retrieveRecordsForProvince(String dataSetLabel, String infoSetTag, Province province, Locale locale);
 

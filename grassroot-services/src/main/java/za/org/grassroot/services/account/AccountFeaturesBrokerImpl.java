@@ -74,8 +74,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
     private static final int LARGE_EVENT_LIMIT = 99;
     private static final long WELCOME_MSG_INTERVAL = 60 * 1000; // 1 minute
 
-    private static final String addedDescription = "Group added to Grassroot Extra";
-
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final PermissionBroker permissionBroker;

@@ -2,6 +2,7 @@ package za.org.grassroot.services.movement;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.User;
@@ -11,10 +12,12 @@ import za.org.grassroot.core.repository.MovementRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.graph.GraphBroker;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 @Service @Slf4j
+@ConditionalOnProperty("grassroot.movements.enabled")
 public class MovementBrokerImpl implements MovementBroker {
 
     private final UserRepository userRepository;
@@ -68,7 +71,7 @@ public class MovementBrokerImpl implements MovementBroker {
     }
 
     @Override
-    public void addMember(String userUid, String movementUid, String memberToAddUid) {
+    public void addMembers(String userUid, String movementUid, Collection<String> membersToAddUid) {
         log.info("Add a member");
     }
 

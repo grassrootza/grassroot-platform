@@ -21,7 +21,6 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.UserSpecifications;
-import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.group.GroupBroker;
@@ -236,53 +235,10 @@ public class AdminManager implements AdminService {
     @Async
     @Override
     @Transactional(readOnly = true)
-    public void populateGrassrootGraphTasks(String userUid) {
-        DebugUtil.transactionRequired("");
-        if (graphBroker != null) {
-            DebugUtil.transactionRequired("");
-            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task.getUid(), task.getTaskType(),
-                    taskBroker.fetchUserUidsForTask(userUid, task.getUid(), task.getTaskType())));
-        }
-    }
-
-    @Async
-    @Override
-    @Transactional(readOnly = true)
     public void populateGraphUserAnnotations() {
         if (graphBroker != null) {
             Specification<User> spec = UserSpecifications.hasInitiatedSession().and(UserSpecifications.isEnabled());
             userRepository.findAll(spec).forEach(user -> graphBroker.annotateUser(user.getUid(), null, null, true));
-        }
-    }
-
-    @Async
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGraphGroupAnnotations() {
-        if (graphBroker != null) {
-            Specification<Group> groups = Specification.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
-            groupRepository.findAll(groups).forEach(group -> graphBroker.annotateGroup(group.getUid(), null, null, true));
-        }
-    }
-
-    @Async
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGraphMembershipAnnotations() {
-        if (graphBroker != null) {
-            membershipRepository.findByGroupActiveTrue().forEach(membership ->
-                    graphBroker.annotateMembership(membership.getUser().getUid(), membership.getGroup().getUid(), null, true));
-        }
-    }
-
-    @Async
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGraphTaskAnnotations() {
-        DebugUtil.transactionRequired("");
-        if (graphBroker != null) {
-            DebugUtil.transactionRequired("");
-            taskBroker.loadAllTasks().forEach(task -> graphBroker.annotateTask(task.getUid(), task.getTaskType(), null, null, true));
         }
     }
 
