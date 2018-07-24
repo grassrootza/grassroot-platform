@@ -43,11 +43,15 @@ public class USSDUserController extends USSDBaseController {
     private static final USSDSection thisSection = USSDSection.USER_PROFILE;
 
     private final AddressBroker addressBroker;
-    private final LocationInfoBroker locationInfoBroker;
+    private LocationInfoBroker locationInfoBroker;
 
     @Autowired
-    public USSDUserController(AddressBroker addressBroker, LocationInfoBroker locationInfoBroker) {
+    public USSDUserController(AddressBroker addressBroker) {
         this.addressBroker = addressBroker;
+    }
+
+    @Autowired(required = false)
+    public void setLocationInfoBroker(LocationInfoBroker locationInfoBroker) {
         this.locationInfoBroker = locationInfoBroker;
     }
 

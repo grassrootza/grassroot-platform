@@ -15,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -43,6 +44,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component @Slf4j
+@ConditionalOnProperty("grassroot.geo.apis.enabled")
 public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     private static final String IZWE_LAMI_LABEL = "IZWE_LAMI_CONS";
@@ -179,6 +181,23 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
+    public Map<String, String> getAvailableSuffixes() {
+        try {
+            ScanResult result = dynamoDBClient.scan(new ScanRequest().withTableName("geo_apis"));
+            if (result == null || result.getItems() == null)
+                return new HashMap<>();
+
+            String[] profiles = environment.getActiveProfiles();
+            return result.getItems().stream()
+                    .filter(item -> Arrays.stream(profiles).anyMatch(item.get("profiles").getSS()::contains))
+                    .collect(Collectors.toMap(item -> item.get("suffix").getS(), item -> item.get("data_set_label").getS()));
+        } catch (AmazonServiceException e) {
+            log.error("Error fetching GEO apis from table");
+            return new HashMap<>();
+        }
+    }
+
+    @Override
     public List<String> retrieveRecordsForProvince(String dataSetLabel, String infoSetTag, Province province, Locale locale) {
         if (!useDynamoDirect) {
             URI uriToCall = baseBuilder()
@@ -273,7 +292,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             List<String> currentUids = getFromDynamo(dataSetLabel, "account_uids", false);
             if (!currentUids.contains(accountUid)) {
                 currentUids.add(accountUid);
-                updateDynamoRecord(dataSetLabel, "account_uids", currentUids);
+                log.info("adding uids: {}", currentUids);
+                updateDynamoAccountUids(dataSetLabel, new HashSet<>(currentUids));
             }
         }
 
@@ -281,7 +301,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             List<String> currentUids = getFromDynamo(dataSetLabel, "account_uids", false);
             if (currentUids.contains(accountUid)) {
                 currentUids.remove(accountUid);
-                updateDynamoRecord(dataSetLabel, "account_uids", currentUids);
+                updateDynamoAccountUids(dataSetLabel, new HashSet<>(currentUids));
             }
         }
     }
@@ -459,15 +479,16 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
-    private void updateDynamoRecord(String dataSetLabel, String field, Object newValue) {
+    private void updateDynamoAccountUids(String dataSetLabel, Set<String> accountUids) {
         DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
         Table geoApiTable = dynamoDB.getTable("geo_apis");
+        AttributeUpdate update = new AttributeUpdate("account_uids").put(accountUids);
         UpdateItemSpec spec = new UpdateItemSpec()
                 .withPrimaryKey("data_set_label", dataSetLabel)
-                .withAttributeUpdate(new AttributeUpdate(field).put(newValue));
+                .withAttributeUpdate(update);
         try {
             UpdateItemOutcome outcome = geoApiTable.updateItem(spec);
-            log.info("Completed updating, outcome: {}", outcome);
+            log.info("Completed updating, outcome: {}", outcome.getUpdateItemResult());
         } catch (AmazonServiceException e) {
             log.error("Error updating!", e);
         }

@@ -302,6 +302,7 @@ public class AccountUserController extends BaseRestController {
                                                            @RequestParam(required = false) Long endTimeMillis,
                                                            HttpServletRequest request) {
         User user = getUserFromRequest(request);
+        log.info("Counting dataset results for account: {}", accountUid);
         Account account = StringUtils.isEmpty(accountUid) ? user.getPrimaryAccount() : accountBroker.loadAccount(accountUid);
         Instant start = startTimeMillis != null ? Instant.ofEpochMilli(startTimeMillis) : account.getLastBillingDate();
         Instant end = endTimeMillis != null ? Instant.ofEpochMilli(endTimeMillis) : Instant.now();

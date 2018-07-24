@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignTextBroker;
@@ -29,6 +30,7 @@ import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDCampaignConstants;
 
+import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -59,6 +61,7 @@ public class USSDHomeController extends USSDBaseController {
     private final CampaignBroker campaignBroker;
     private final UserResponseBroker userResponseBroker;
     private CampaignTextBroker campaignTextBroker;
+    private LocationInfoBroker locationInfoBroker;
 
     private static final USSDSection thisSection = HOME;
 
@@ -80,9 +83,7 @@ public class USSDHomeController extends USSDBaseController {
     @Value("${grassroot.geo.apis.enabled:false}")
     private boolean geoApisEnabled;
 
-    private final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
-            new AbstractMap.SimpleEntry<>("1", "IZWE_LAMI_CONS")
-    ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
+    private Map<String, String> geoApiSuffixes;
 
     @Autowired
     public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupController groupController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
@@ -104,6 +105,18 @@ public class USSDHomeController extends USSDBaseController {
     @Autowired(required = false) // may turn this off / on in future
     public void setCampaignTextBroker(CampaignTextBroker campaignTextBroker) {
         this.campaignTextBroker = campaignTextBroker;
+    }
+
+    @Autowired(required = false)
+    public void setLocationInfoBroker(LocationInfoBroker locationInfoBroker) {
+        this.locationInfoBroker = locationInfoBroker;
+    }
+
+    @PostConstruct
+    public void init() {
+        log.info("Initiating USSD, setting geo apis");
+        geoApiSuffixes = locationInfoBroker.getAvailableSuffixes();
+        log.info("Set geo api suffixes: {}", geoApiSuffixes);
     }
 
     @RequestMapping(value = homePath + startMenu)

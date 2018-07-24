@@ -29,7 +29,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 @RestController @Slf4j
 @RequestMapping(value = "/ussd/geo", method = GET, produces = MediaType.APPLICATION_XML_VALUE)
-@ConditionalOnProperty(name = "grassroot.geo.apis.enabled", matchIfMissing = false)
+@ConditionalOnProperty(name = "grassroot.geo.apis.enabled")
 public class USSDGeoApiController extends USSDBaseController {
 
     private static final String REL_PATH = "geo";
