@@ -279,7 +279,6 @@ public class AuthenticationController {
 
     }
 
-
     @ApiOperation(value = "Login using password and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     @RequestMapping(value = "/login-password", method = RequestMethod.POST)
     public AuthorizationResponseDTO webLogin(@RequestParam("username") String username,
@@ -315,12 +314,17 @@ public class AuthenticationController {
     @RequestMapping(value = "/token/validate", method = RequestMethod.GET)
     @ApiOperation(value = "Validate whether a JWT token is available", notes = "Returns TOKEN_STILL_VALID in 'message', or " +
             "else 'INVALID_TOKEN'")
-    public ResponseEntity<ResponseWrapper> validateToken(@RequestParam("token") String token) {
+    public ResponseEntity<ResponseWrapper> validateToken(@RequestParam String token,
+                                                         @RequestParam(required = false) String requiredRole) {
         boolean isJwtTokenValid = jwtService.isJwtTokenValid(token);
+        final ResponseEntity<ResponseWrapper> validResponse = RestUtil.messageOkayResponse(RestMessage.TOKEN_STILL_VALID);
+        final ResponseEntity<ResponseWrapper> invalidResponse = RestUtil.errorResponse(HttpStatus.EXPECTATION_FAILED, RestMessage.INVALID_TOKEN);
         if (isJwtTokenValid) {
-            return RestUtil.messageOkayResponse(RestMessage.TOKEN_STILL_VALID);
+            List<String> userRoles = jwtService.getStandardRolesFromJwtToken(token);
+            return StringUtils.isEmpty(requiredRole) ? validResponse :
+                    userRoles.contains(requiredRole) ? validResponse : invalidResponse;
         } else {
-            return RestUtil.errorResponse(HttpStatus.EXPECTATION_FAILED, RestMessage.INVALID_TOKEN);
+            return invalidResponse;
         }
     }
 

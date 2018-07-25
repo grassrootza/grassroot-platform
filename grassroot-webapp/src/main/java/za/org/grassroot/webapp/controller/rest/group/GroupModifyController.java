@@ -340,8 +340,7 @@ public class GroupModifyController extends GroupBaseController {
         }
     }
 
-    @RequestMapping(value = "/image/upload/{groupUid}", method = RequestMethod.POST,
-            headers = ("content-type=multipart/*"), produces = "application/json", consumes = "image/*")
+    @RequestMapping(value = "/image/upload/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity uploadImage(HttpServletRequest request, @PathVariable String groupUid,
                                       @RequestBody MultipartFile image) {
         final String userUid = getUserIdFromRequest(request);
