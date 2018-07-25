@@ -60,7 +60,7 @@ public class UserController extends BaseRestController {
     }
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back")
-    @RequestMapping(value = "/image/change", method = RequestMethod.POST)
+    @RequestMapping(value = "/image/change", method = RequestMethod.POST, produces = "text/plain")
     public ResponseEntity uploadProfileImage(@RequestBody MultipartFile photo, HttpServletRequest request) {
         String userUid = getUserIdFromRequest(request);
         String imageKey = userProfileImagesFolder + "/" + userUid;
