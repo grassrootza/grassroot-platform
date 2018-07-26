@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupAdminDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.authentication.JwtService;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 
 
 @RestController @Grassroot2RestController
@@ -119,8 +121,8 @@ public class AdminRestController extends BaseRestController{
         if(!StringUtils.isEmpty(searchTerm)){
             List<Group> groups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
             groups.forEach(group -> groupAdminDTOS.add(new GroupAdminDTO(group)));
-            Collections.sort(groupAdminDTOS,
-                    Comparator.comparing((GroupAdminDTO groupAdminDTO) -> groupAdminDTO.getMemberCount()).reversed());
+            groupAdminDTOS.sort(Comparator.comparing(
+                    (Function<GroupAdminDTO, Integer>) GroupRefDTO::getMemberCount).reversed());
         }
         return ResponseEntity.ok(groupAdminDTOS);
     }
@@ -147,7 +149,7 @@ public class AdminRestController extends BaseRestController{
         User user;
         try{
             user = userManagementService.findByNumberOrEmail(phoneNumber,email);
-        }catch (NoSuchUserException e){
+        } catch (NoSuchUserException e){
             log.info("User not found");
             user = null;
         }

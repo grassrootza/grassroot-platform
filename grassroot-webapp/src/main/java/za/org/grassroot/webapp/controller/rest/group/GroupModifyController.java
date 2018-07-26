@@ -43,6 +43,7 @@ import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupStatsBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.controller.rest.file.MediaUploadResult;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -340,8 +341,7 @@ public class GroupModifyController extends GroupBaseController {
         }
     }
 
-    @RequestMapping(value = "/image/upload/{groupUid}", method = RequestMethod.POST,
-            headers = ("content-type=multipart/*"), produces = "application/json", consumes = "image/*")
+    @RequestMapping(value = "/image/upload/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity uploadImage(HttpServletRequest request, @PathVariable String groupUid,
                                       @RequestBody MultipartFile image) {
         final String userUid = getUserIdFromRequest(request);
@@ -351,8 +351,9 @@ public class GroupModifyController extends GroupBaseController {
                 byte[] imageBytes = image.getBytes();
                 String imageUrl = ImageUtil.generateFileName(image,request);
                 groupImageBroker.saveGroupImage(userUid, groupUid, imageUrl, imageBytes);
-                log.info("image uploaded, returning URL: {}", imageUrl);
-                return ResponseEntity.ok(imageUrl);
+                MediaUploadResult result = MediaUploadResult.builder().imageUrl(imageUrl).build();
+                log.info("image uploaded, returning entity: {}", imageUrl);
+                return ResponseEntity.ok(result);
             } catch (IOException | IllegalArgumentException e) {
                 log.error("error uploading image", e);
                 return RestUtil.errorResponse(RestMessage.BAD_PICTURE_FORMAT);

@@ -220,6 +220,7 @@ public class AccountUserController extends BaseRestController {
             return ResponseEntity.ok().build();
         } else {
             long startTime = System.currentTimeMillis();
+            log.info("Fetching account, user entity : {}", user);
             AccountWrapper accountWrapper = new AccountWrapper(account, user);
             log.info("Assembled user account wrapper, time : {} msecs", System.currentTimeMillis() - startTime);
             long accountNotifications = accountBroker.countAccountNotifications(account.getUid(),
