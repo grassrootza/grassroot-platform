@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.group.Group;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +56,7 @@ public class AccountWrapper {
         this.paidForGroups = account.getPaidGroups().stream().collect(Collectors.toMap(Group::getUid, Group::getName));
 
         this.otherAdmins = account.getAdministrators().stream()
+                .filter(Objects::nonNull)
                 .filter(otherUser -> !user.equals(otherUser))
                 .collect(Collectors.toMap(User::getUid, User::getName));
 

@@ -420,7 +420,7 @@ public class TaskBrokerImpl implements TaskBroker {
         Set<Event> events = loadChangedOrNewEvents(userEvents, knownTasksByTimeChanged);
         Set<Todo> todos = loadChangedOrNewTodos(userTodos, knownTasksByTimeChanged);
 
-        Map<String, Instant> uidInstantMap = Stream.concat(userEvents.stream(), userTodos.stream())
+        Map<String, Instant> uidInstantMap = Stream.concat(userEvents.stream().distinct(), userTodos.stream().distinct())
                 .collect(taskTimeChangedCollector());
 
         return combineTasks(events, todos, uidInstantMap);
