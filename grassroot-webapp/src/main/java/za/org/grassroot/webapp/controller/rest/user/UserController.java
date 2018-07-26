@@ -25,6 +25,7 @@ import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.controller.rest.file.MediaUploadResult;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -60,7 +61,7 @@ public class UserController extends BaseRestController {
     }
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back")
-    @RequestMapping(value = "/image/change", method = RequestMethod.POST, produces = "text/plain")
+    @RequestMapping(value = "/image/change", method = RequestMethod.POST)
     public ResponseEntity uploadProfileImage(@RequestBody MultipartFile photo, HttpServletRequest request) {
         String userUid = getUserIdFromRequest(request);
         String imageKey = userProfileImagesFolder + "/" + userUid;
@@ -69,7 +70,8 @@ public class UserController extends BaseRestController {
 
         String storedFileUid = mediaFileBroker.storeFile(photo, MediaFunction.USER_PROFILE_IMAGE, null, imageKey, photo.getName());
         userService.updateHasImage(userUid, true);
-        return ResponseEntity.ok(storedFileUid);
+        MediaUploadResult result = MediaUploadResult.builder().mediaRecordUid(storedFileUid).build();
+        return ResponseEntity.ok(result);
     }
 
     @ApiOperation(value = "Updates user profile data",

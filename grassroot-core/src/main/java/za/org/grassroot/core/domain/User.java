@@ -410,7 +410,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         if (displayName != null && displayName.trim().length() > 0) {
             return displayName;
         } else if (unknownPrefix.trim().length() == 0) {
-            return invertPhoneNumber(phoneNumber);
+            return !StringUtils.isEmpty(phoneNumber) ? invertPhoneNumber(phoneNumber) : emailAddress;
         } else {
             return unknownPrefix + " (" + invertPhoneNumber(phoneNumber) + ")";
         }
