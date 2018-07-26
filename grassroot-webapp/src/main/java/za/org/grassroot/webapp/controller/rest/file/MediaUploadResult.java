@@ -1,9 +1,12 @@
 package za.org.grassroot.webapp.controller.rest.file;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import za.org.grassroot.core.domain.media.MediaFunction;
 
-@NoArgsConstructor @Builder @Getter @Setter @ToString
+@Builder @Getter @Setter @ToString
 public class MediaUploadResult {
 
     private String mediaFileKey;
