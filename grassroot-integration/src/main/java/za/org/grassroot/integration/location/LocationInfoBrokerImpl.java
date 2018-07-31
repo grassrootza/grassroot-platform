@@ -17,12 +17,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
@@ -35,6 +38,7 @@ import za.org.grassroot.core.repository.AccountLogRepository;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.integration.authentication.JwtService;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
@@ -57,6 +61,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private final AccountLogRepository accountLogRepository;
     private final NotificationRepository notificationRepository;
 
+    private JwtService jwtService;
+
     private boolean useDynamoDirect;
     private AmazonDynamoDB dynamoDBClient;
 
@@ -74,6 +80,11 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         this.accountRepository = accountRepository;
         this.accountLogRepository = accountLogRepository;
         this.notificationRepository = notificationRepository;
+    }
+
+    @Autowired
+    public void setJwtService(JwtService jwtService) {
+        this.jwtService = jwtService;
     }
 
     @PostConstruct
@@ -102,6 +113,10 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 .port(geoApiPort);
     }
 
+    private RequestEntity stdRequestEntity(URI uri, HttpMethod method) {
+        return new RequestEntity(jwtService.createHeadersForLambdaCall(), method, uri);
+    }
+
     @Override
     public List<TownLookupResult> lookupPostCodeOrTown(String postCodeOrTown, Province province) {
         try {
@@ -112,9 +127,9 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 uriBuilder.queryParam("province", Province.CANONICAL_NAMES_ZA.getOrDefault(province, ""));
             }
 
-            ResponseEntity<TownLookupResult[]> lookupResult = restTemplate.getForEntity(uriBuilder.build().toUri(), TownLookupResult[].class);
-            log.info("list: {}, lookup result: {}", Arrays.asList(lookupResult.getBody()), lookupResult);
-            return Arrays.asList(lookupResult.getBody());
+            ResponseEntity<TownLookupResult[]> lookupResult = restTemplate.exchange(
+                    stdRequestEntity(uriBuilder.build().toUri(), HttpMethod.GET), TownLookupResult[].class);
+            return lookupResult.getBody() != null ? Arrays.asList(lookupResult.getBody()) : new ArrayList<>();
         } catch (RestClientException e) {
             log.error("Error constructing or executing lookup URL: ", e);
             return new ArrayList<>();
@@ -124,12 +139,13 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Override
     public TownLookupResult lookupPlaceDetails(String placeId) {
         try {
-            URI uri = UriComponentsBuilder.fromUriString(placeLookupLambda)
+            UriComponents uriComponents = UriComponentsBuilder.fromUriString(placeLookupLambda)
                     .pathSegment("details")
                     .pathSegment("{placeId}")
-                    .buildAndExpand(placeId).toUri();
-            log.info("calling url: {}", uri);
-            ResponseEntity<TownLookupResult> responseEntity = restTemplate.getForEntity(uri, TownLookupResult.class);
+                    .buildAndExpand(placeId);
+            log.info("calling url: {}", uriComponents.toUri());
+            ResponseEntity<TownLookupResult> responseEntity =
+                    restTemplate.exchange(stdRequestEntity(uriComponents.toUri(), HttpMethod.GET), TownLookupResult.class);
             log.info("found place: {}", responseEntity.getBody());
             return responseEntity.getBody();
         } catch (RestClientException e) {
@@ -416,8 +432,9 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.info("retrieving sponsoring account for dataset {}, with URL {}", dataSet, uriToCall);
             try {
                 ResponseEntity<String[]> accountResponse = restTemplate.getForEntity(uriToCall, String[].class);
-                return new HashSet<>(Arrays.asList(accountResponse.getBody()));
+                return accountResponse.getBody() != null ? new HashSet<>(Arrays.asList(accountResponse.getBody())) : new HashSet<>();
             } catch (RestClientException e) {
+                log.error("Error calling account list: {}", e);
                 return null;
             }
         } else {
@@ -430,7 +447,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 Item outcome = geoApiTable.getItem(spec);
                 log.info("got the outcome, looks like: {}", outcome);
                 return outcome != null ? outcome.getStringSet("account_uids") : new HashSet<>();
-            } catch (Exception e) {
+            } catch (AmazonServiceException e) {
                 log.error("Error getting account UIDs: {}", e);
                 return null;
             }
@@ -448,8 +465,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     private List<String> getFromUri(URI uri) {
         try {
-            ResponseEntity<String[]> availableInfo = restTemplate.getForEntity(uri, String[].class);
-            return Arrays.asList(availableInfo.getBody());
+            ResponseEntity<String[]> availableInfo = restTemplate.exchange(stdRequestEntity(uri, HttpMethod.GET), String[].class);
+            return availableInfo.getBody() != null ? Arrays.asList(availableInfo.getBody()) : new ArrayList<>();
         } catch (RestClientException e) {
             log.error("error calling geo API!", e);
             return new ArrayList<>();

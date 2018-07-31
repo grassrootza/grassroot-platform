@@ -22,7 +22,7 @@ import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
-import za.org.grassroot.core.dto.MembershipDTO;
+import za.org.grassroot.core.dto.membership.MembershipDTO;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;

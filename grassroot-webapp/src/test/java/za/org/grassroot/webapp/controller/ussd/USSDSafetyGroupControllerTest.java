@@ -11,7 +11,7 @@ import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.util.USSDUrlUtil;

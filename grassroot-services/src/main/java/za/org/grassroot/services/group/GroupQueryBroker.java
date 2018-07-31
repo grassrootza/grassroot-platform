@@ -5,7 +5,7 @@ import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
-import za.org.grassroot.core.dto.MembershipDTO;
+import za.org.grassroot.core.dto.membership.MembershipDTO;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.services.ChangedSinceData;
 

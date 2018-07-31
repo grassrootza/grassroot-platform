@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.integration.MediaFileBroker;
+import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.group.GroupImageBroker;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -19,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Optional;
 
 @Slf4j
@@ -33,11 +35,18 @@ public class IncomingImageFetchController {
     private final StorageBroker storageBroker;
     private final GroupImageBroker groupImageBroker;
 
+    private PdfGeneratingService pdfGeneratingService; // may decide to turn off in future deployments
+
     @Autowired
     public IncomingImageFetchController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker, GroupImageBroker groupImageBroker) {
         this.mediaFileBroker = mediaFileBroker;
         this.storageBroker = storageBroker;
         this.groupImageBroker = groupImageBroker;
+    }
+
+    @Autowired
+    public void setPdfGeneratingService(PdfGeneratingService pdfGeneratingService) {
+        this.pdfGeneratingService = pdfGeneratingService;
     }
 
     @RequestMapping(value = "/broadcast/{mediaFileKey}", method = RequestMethod.GET)
@@ -72,6 +81,15 @@ public class IncomingImageFetchController {
     public ResponseEntity<byte[]> getGroupProfileImage(@PathVariable String groupUid) {
         Optional<Group> group = groupImageBroker.getGroupByUidOrImageUrl(groupUid);
         return group.map(this::convertGroupToImage).orElse(ResponseEntity.notFound().build());
+    }
+
+    @RequestMapping(value = "/flyer/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> getGroupFlyerImage(@PathVariable String groupUid,
+                                                     @RequestParam String typeOfFile,
+                                                     @RequestParam boolean color,
+                                                     @RequestParam Locale language) throws IOException {
+        File image = pdfGeneratingService.generateGroupFlyer(groupUid, color, language, typeOfFile);
+        return convertFileToResponse(image, typeOfFile.equals("JPEG") ? MediaType.IMAGE_JPEG : MediaType.APPLICATION_PDF);
     }
 
     @RequestMapping(value = "/get", params = {"imageId"})
@@ -123,6 +141,17 @@ public class IncomingImageFetchController {
             log.error("couldn't set MIME heading ...", e);
         }
         String filename = "image-" + record.getKey() + "." + record.getMimeType();
+        log.debug("file name : {}", filename);
+        headers.setContentDispositionFormData(filename, filename);
+        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+        return new ResponseEntity<>(data, headers, HttpStatus.OK);
+    }
+
+    private ResponseEntity<byte[]> convertFileToResponse(File imageFile, MediaType mediaType) throws IOException {
+        byte[] data = IOUtils.toByteArray(new FileInputStream(imageFile));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(mediaType);
+        String filename = imageFile.getName();
         log.debug("file name : {}", filename);
         headers.setContentDispositionFormData(filename, filename);
         headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");

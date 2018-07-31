@@ -13,7 +13,7 @@ import java.util.Locale;
  */
 public interface PdfGeneratingService {
 
-    File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile)throws FileNotFoundException;
+    File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile);
 
     File generateImage(PDDocument pdDocument)throws FileNotFoundException;
 

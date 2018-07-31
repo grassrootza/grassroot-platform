@@ -2,7 +2,7 @@ package za.org.grassroot.integration.data;
 
 import lombok.Getter;
 import lombok.Setter;
-import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 
 import java.util.List;
 

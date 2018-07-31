@@ -22,7 +22,7 @@ import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
-import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;

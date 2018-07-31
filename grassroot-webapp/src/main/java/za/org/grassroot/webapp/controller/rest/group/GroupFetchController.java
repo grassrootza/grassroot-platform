@@ -24,8 +24,9 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.JoinDateCondition;
-import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.dto.membership.MembershipFullDTO;
+import za.org.grassroot.core.dto.membership.MembershipStdDTO;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -169,31 +170,32 @@ public class GroupFetchController extends BaseRestController {
     }
 
     @RequestMapping(value = "/members", method = RequestMethod.GET)
-    public Page<MembershipFullDTO> fetchGroupMembers(@RequestParam String groupUid, Pageable pageable, HttpServletRequest request) {
+    public Page<MembershipStdDTO> fetchGroupMembers(@RequestParam String groupUid, Pageable pageable, HttpServletRequest request) {
         User user = getUserFromRequest(request);
         log.info("fetching users, with pageable: {}", pageable);
-        return groupFetchBroker.fetchGroupMembers(user, groupUid, pageable);
+        return groupFetchBroker.fetchGroupMembers(user, groupUid, pageable).map(MembershipStdDTO::new);
     }
 
     @RequestMapping(value = "/members/filter", method = RequestMethod.GET)
-    public List<MembershipFullDTO> filterGroupMembers(@RequestParam String groupUid,
-                                                      @RequestParam (required = false) Collection<Province> provinces,
-                                                      @RequestParam (required = false) Boolean noProvince,
-                                                      @RequestParam (required = false) Collection<String> taskTeams,
-                                                      @RequestParam (required = false) Collection<String> topics,
-                                                      @RequestParam (required = false) Collection<String> affiliations,
-                                                      @RequestParam (required = false) Collection<GroupJoinMethod> joinMethods,
-                                                      @RequestParam (required = false) Collection<String> joinedCampaignsUids,
-                                                      @RequestParam (required = false) Integer joinDaysAgo,
-                                                      @RequestParam (required = false)  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)  LocalDate joinDate,
-                                                      @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
-                                                      @RequestParam (required = false) String namePhoneOrEmail,
-                                                      @RequestParam (required = false) Collection<String> languages,
-                                                      HttpServletRequest request) {
+    public List<MembershipStdDTO> filterGroupMembers(@RequestParam String groupUid,
+                                                     @RequestParam (required = false) Collection<Province> provinces,
+                                                     @RequestParam (required = false) Boolean noProvince,
+                                                     @RequestParam (required = false) Collection<String> taskTeams,
+                                                     @RequestParam (required = false) Collection<String> topics,
+                                                     @RequestParam (required = false) Collection<String> affiliations,
+                                                     @RequestParam (required = false) Collection<GroupJoinMethod> joinMethods,
+                                                     @RequestParam (required = false) Collection<String> joinedCampaignsUids,
+                                                     @RequestParam (required = false) Integer joinDaysAgo,
+                                                     @RequestParam (required = false)  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)  LocalDate joinDate,
+                                                     @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
+                                                     @RequestParam (required = false) String namePhoneOrEmail,
+                                                     @RequestParam (required = false) Collection<String> languages,
+                                                     HttpServletRequest request) {
         log.info("filtering, name phone or email = {}", namePhoneOrEmail);
         return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, noProvince, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
-                joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages).stream().map(MembershipFullDTO::new).collect(Collectors.toList());
+                joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages).stream()
+                .map(MembershipStdDTO::new).collect(Collectors.toList());
     }
 
     @RequestMapping(value = "/members/filter/download/{groupUid}", method = RequestMethod.GET)
@@ -209,19 +211,16 @@ public class GroupFetchController extends BaseRestController {
 
     @RequestMapping(value = "/members/new", method = RequestMethod.GET)
     @ApiOperation(value = "Returns members joined recently to groups where logged in user has permission to see member details")
-    public ResponseEntity<Page<MembershipFullDTO>> getRecentlyJoinedUsers(@RequestParam(required = false) Integer howRecentInDays, HttpServletRequest request, Pageable pageable) {
+    public ResponseEntity<List<MemberFrontPageInfo>> getRecentlyJoinedUsers(@RequestParam(required = false) Integer howRecentInDays, HttpServletRequest request, Pageable pageable) {
 
         int daysLimit = howRecentInDays != null ? howRecentInDays : 7;
         User loggedInUser = getUserFromRequest(request);
-        if (loggedInUser != null) {
-            log.info("fetching users with pageable: {}", pageable);
-            Page<MembershipFullDTO> page = groupFetchBroker
-                    .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(daysLimit, ChronoUnit.DAYS), pageable)
-                    .map(MembershipFullDTO::new);
-            log.info("number users back: {}", page.getSize());
-            return ResponseEntity.ok(page);
-        } else
-            return new ResponseEntity<>((Page<MembershipFullDTO>) null, HttpStatus.FORBIDDEN);
+        log.info("fetching users with pageable: {}", pageable);
+        Page<MemberFrontPageInfo> page = groupFetchBroker
+                .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(daysLimit, ChronoUnit.DAYS), pageable)
+                .map(MemberFrontPageInfo::new);
+        log.info("number users back: {}", page.getNumberOfElements());
+        return ResponseEntity.ok(page.getContent());
     }
 
     @RequestMapping(value = "/members/activity/{groupUid}", method = RequestMethod.GET)

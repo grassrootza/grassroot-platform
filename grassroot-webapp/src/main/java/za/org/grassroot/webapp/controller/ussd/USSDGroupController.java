@@ -16,7 +16,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Vote;
-import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;

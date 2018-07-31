@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupAdminDTO;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.Province;
@@ -31,7 +31,6 @@ import za.org.grassroot.webapp.enums.RestMessage;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;

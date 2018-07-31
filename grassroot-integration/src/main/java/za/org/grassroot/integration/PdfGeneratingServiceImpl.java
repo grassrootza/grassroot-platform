@@ -57,7 +57,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     }
 
     @Override
-    public File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {//Enum
+    public File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
         // load group entity from group repository using uid
         PdfDocument pdfDocument = null;
         PDDocument pd = null;
