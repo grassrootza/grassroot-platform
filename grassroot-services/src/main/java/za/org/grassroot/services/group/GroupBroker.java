@@ -61,7 +61,7 @@ public interface GroupBroker {
 
     void asyncMemberToSubgroupAdd(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 
-    void copyMembersIntoGroup(String userUid, String fromGroupUid, String toGroupUid, Set<String> memberUids, boolean keepTopics, String addTopic);
+    void copyAllMembersIntoGroup(String userUid, String fromGroupUid, String toGroupUid, boolean keepTopics, String addTopic);
 
     Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
 
@@ -87,10 +87,9 @@ public interface GroupBroker {
     void updateMembershipDetails(String userUid, String groupUid, String memberUid, String name, String phone, String email,
                                  Province province);
 
-    // note: only accepts topics that are from the group itself
-    void assignMembershipTopics(String userUid, String groupUid, Set<String> memberUids, Set<String> topics, boolean preservePrior);
+    void assignMembershipTopics(String userUid, String groupUid, boolean allMembers, Set<String> memberUids, Set<String> topics, boolean preservePrior);
 
-    void removeTopicFromMembers(String userUid, String groupUid, Collection<String> topic, Set<String> memberUids);
+    void removeTopicFromMembers(String userUid, String groupUid, Collection<String> topic, boolean allMembers, Set<String> memberUids);
 
     void alterMemberTopicsTeamsOrgs(String userUid, String groupUid, String memberUid, Set<String> affiliations, Set<String> taskTeams, Set<String> topics);
 

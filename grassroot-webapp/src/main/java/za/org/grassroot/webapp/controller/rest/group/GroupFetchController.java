@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +26,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.JoinDateCondition;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.dto.membership.MembershipStdDTO;
@@ -177,7 +180,8 @@ public class GroupFetchController extends BaseRestController {
     }
 
     @RequestMapping(value = "/members/filter", method = RequestMethod.GET)
-    public List<MembershipStdDTO> filterGroupMembers(@RequestParam String groupUid,
+    public Page<MembershipStdDTO> filterGroupMembers(@RequestParam String groupUid,
+                                                     @RequestParam int maxEntities,
                                                      @RequestParam (required = false) Collection<Province> provinces,
                                                      @RequestParam (required = false) Boolean noProvince,
                                                      @RequestParam (required = false) Collection<String> taskTeams,
@@ -192,10 +196,12 @@ public class GroupFetchController extends BaseRestController {
                                                      @RequestParam (required = false) Collection<String> languages,
                                                      HttpServletRequest request) {
         log.info("filtering, name phone or email = {}", namePhoneOrEmail);
-        return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
+        List<Membership> memberships = groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, noProvince, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
-                joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages).stream()
+                joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages);
+        List<MembershipStdDTO> dtos = memberships.stream().limit(maxEntities)
                 .map(MembershipStdDTO::new).collect(Collectors.toList());
+        return new PageImpl<>(dtos, PageRequest.of(0, maxEntities), memberships.size());
     }
 
     @RequestMapping(value = "/members/filter/download/{groupUid}", method = RequestMethod.GET)
@@ -211,7 +217,7 @@ public class GroupFetchController extends BaseRestController {
 
     @RequestMapping(value = "/members/new", method = RequestMethod.GET)
     @ApiOperation(value = "Returns members joined recently to groups where logged in user has permission to see member details")
-    public ResponseEntity<List<MemberFrontPageInfo>> getRecentlyJoinedUsers(@RequestParam(required = false) Integer howRecentInDays, HttpServletRequest request, Pageable pageable) {
+    public ResponseEntity<Page<MemberFrontPageInfo>> getRecentlyJoinedUsers(@RequestParam(required = false) Integer howRecentInDays, HttpServletRequest request, Pageable pageable) {
 
         int daysLimit = howRecentInDays != null ? howRecentInDays : 7;
         User loggedInUser = getUserFromRequest(request);
@@ -220,7 +226,7 @@ public class GroupFetchController extends BaseRestController {
                 .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(daysLimit, ChronoUnit.DAYS), pageable)
                 .map(MemberFrontPageInfo::new);
         log.info("number users back: {}", page.getNumberOfElements());
-        return ResponseEntity.ok(page.getContent());
+        return ResponseEntity.ok(page);
     }
 
     @RequestMapping(value = "/members/activity/{groupUid}", method = RequestMethod.GET)

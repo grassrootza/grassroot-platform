@@ -21,11 +21,11 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinCode;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.dto.membership.MembershipFullDTO;
-import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.dto.group.JoinWordDTO;
+import za.org.grassroot.core.dto.membership.MembershipFullDTO;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
@@ -196,6 +196,17 @@ public class GroupModifyController extends GroupBaseController {
         return ResponseEntity.ok().build();
     }
 
+    @RequestMapping(value = "members/copy/{fromGroupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Copy all the members from a group into another")
+    public ResponseEntity copyAllGroupMembersToAnother(HttpServletRequest request,
+                                                       @PathVariable String fromGroupUid,
+                                                       @RequestParam String toGroupUid,
+                                                       @RequestParam boolean keepTopics,
+                                                       @RequestParam(required = false) String addTopic) {
+        groupBroker.copyAllMembersIntoGroup(getUserIdFromRequest(request), fromGroupUid, toGroupUid, keepTopics, addTopic);
+        return ResponseEntity.ok().build();
+    }
+
     @RequestMapping(value = "/members/add/taskteam/{parentUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Add member(s) to a task team / subgroup (of the 'parent' group)", notes = "Returns the modified task team / subgroup in full")
     public ResponseEntity<GroupFullDTO> addMembersToSubgroup(HttpServletRequest request,
@@ -260,9 +271,15 @@ public class GroupModifyController extends GroupBaseController {
     public ResponseEntity<GroupFullDTO> assignTopicsToMembers(HttpServletRequest request, @PathVariable String groupUid,
                                                               @RequestParam Set<String> memberUids,
                                                               @RequestParam List<String> topics,
+                                                              @RequestParam boolean applyToAll,
                                                               @RequestParam(required = false) Boolean onlyAdd) {
-        groupBroker.assignMembershipTopics(getUserIdFromRequest(request), groupUid, memberUids, new HashSet<>(topics),
-                    onlyAdd != null && onlyAdd);
+        log.info("Assigning topics, applying to all ? : {}", applyToAll);
+        groupBroker.assignMembershipTopics(getUserIdFromRequest(request),
+                groupUid,
+                applyToAll,
+                memberUids,
+                new HashSet<>(topics),
+                onlyAdd != null && onlyAdd);
         groupStatsBroker.getTopicInterestStatsRaw(groupUid, true);
         return ResponseEntity.ok().build();
     }
@@ -271,8 +288,10 @@ public class GroupModifyController extends GroupBaseController {
     @ApiOperation(value = "Remove topic(s) - special tags - from members")
     public ResponseEntity<GroupFullDTO> removeTopicsFromMembers(HttpServletRequest request, @PathVariable String groupUid,
                                                               @RequestParam List<String> memberUids,
-                                                              @RequestParam List<String> topics) {
-        groupBroker.removeTopicFromMembers(getUserIdFromRequest(request), groupUid, topics, new HashSet<>(memberUids));
+                                                              @RequestParam List<String> topics,
+                                                              @RequestParam boolean applyToAll) {
+        log.info("removing topics ... apply all ? : {}", applyToAll);
+        groupBroker.removeTopicFromMembers(getUserIdFromRequest(request), groupUid, topics, applyToAll, new HashSet<>(memberUids));
         groupStatsBroker.getTopicInterestStatsRaw(groupUid, true);
         return ResponseEntity.ok().build();
     }
