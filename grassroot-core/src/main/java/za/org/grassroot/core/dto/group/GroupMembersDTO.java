@@ -2,7 +2,7 @@ package za.org.grassroot.core.dto.group;
 
 import lombok.Getter;
 import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.dto.MembershipDTO;
+import za.org.grassroot.core.dto.membership.MembershipDTO;
 
 import java.util.Set;
 import java.util.stream.Collectors;

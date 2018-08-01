@@ -22,7 +22,7 @@ import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
-import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
@@ -421,39 +421,34 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void copyMembersIntoGroup(String userUid, String fromGroupUid, String toGroupUid, Set<String> memberUids, boolean keepTopics, String addTopic) {
+    public void copyAllMembersIntoGroup(String userUid, String fromGroupUid, String toGroupUid, boolean keepTopics, String addTopic) {
         User user = userRepository.findOneByUid(userUid);
         Group toGroup = groupRepository.findOneByUid(toGroupUid);
+        Group fromGroup = groupRepository.findOneByUid(fromGroupUid);
 
         permissionBroker.validateGroupPermission(user, toGroup, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        permissionBroker.validateGroupPermission(user, fromGroup, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
-        if (!checkGroupSizeLimit(toGroup, memberUids.size())) {
+        Set<User> userSet = fromGroup.getMembers();
+
+        if (!checkGroupSizeLimit(toGroup, userSet.size())) {
             throw new GroupSizeLimitExceededException();
         }
 
-        List<User> users = userRepository.findByUidIn(memberUids);
-        Set<User> userSet = new HashSet<>(users);
-        logger.info("list size {}, set size {}", users.size(), userSet.size());
         Set<Membership> memberships = toGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupUid);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        // recursively add users to all parent groups
-        Group parentGroup = toGroup.getParent();
-        while (parentGroup != null) {
-            parentGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, null);
-            createSubGroupAddedLogs(parentGroup, toGroup, user, users, bundle);
-            parentGroup = parentGroup.getParent();
-        }
-
-        for (User u  : users) {
+        Set<String> userUids = new HashSet<>();
+        for (User u  : userSet) {
+            userUids.add(u.getUid());
             GroupLog groupLog = new GroupLog(toGroup, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, null);
             bundle.addLog(groupLog);
             notifyNewMembersOfUpcomingMeetings(bundle, u, toGroup, groupLog);
         }
 
         if (keepTopics) {
-            transferTopics(fromGroupUid, memberUids, memberships);
+            transferTopics(fromGroupUid, userUids, memberships);
         }
 
         if (!StringUtils.isEmpty(addTopic)) {
@@ -1125,17 +1120,18 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void assignMembershipTopics(String userUid, String groupUid, Set<String> memberUids, Set<String> topics, boolean preservePrior) {
+    public void assignMembershipTopics(String userUid, String groupUid, boolean allMembers, Set<String> memberUids, Set<String> topics, boolean preservePrior) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(memberUids);
         Objects.requireNonNull(topics);
 
-        logger.info("updating user topics to: {}, for {} members", topics, memberUids.size());
-
         User assigningUser = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        List<Membership> memberships = membershipRepository.findByGroupAndUserUidIn(group, memberUids);
+        List<Membership> memberships = allMembers ? membershipRepository.findByGroupUid(groupUid) :
+                membershipRepository.findByGroupAndUserUidIn(group, memberUids);
+
+        logger.info("updating user topics to: {}, for {} members, apply all ? {}", topics, memberships.size(), allMembers);
 
         // must be group organizer unless it's user updating their own topics
         if (!memberships.isEmpty() && (memberships.size() > 1 || !memberships.get(0).getUser().equals(assigningUser))) {
@@ -1161,7 +1157,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void removeTopicFromMembers(String userUid, String groupUid, Collection<String> topics, Set<String> memberUids) {
+    public void removeTopicFromMembers(String userUid, String groupUid, Collection<String> topics, boolean allMembers, Set<String> memberUids) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(topics);
@@ -1172,10 +1168,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         permissionBroker.validateGroupPermission(alteringUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
-        List<User> users = userRepository.findByUidIn(memberUids);
-        List<Membership> members = membershipRepository.findByGroupAndUserIn(group, users);
-
-        members.forEach(m -> m.removeTopics(topics));
+        List<Membership> memberships = allMembers ? membershipRepository.findByGroupUid(groupUid) :
+                membershipRepository.findByGroupAndUserUidIn(group, memberUids);
+        memberships.forEach(m -> m.removeTopics(topics));
     }
 
     @Override
@@ -1635,7 +1630,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private JoinTokenOpeningResult openJoinTokenInternal(User user, Group group, LocalDateTime expiryDateTime) {
 
-        final Instant currentExpiry = (group.getTokenExpiryDateTime() != null) ? group.getTokenExpiryDateTime() : null;
+        final Instant currentExpiry = group.getTokenExpiryDateTime();
         final Instant expirySystemTime = expiryDateTime == null ? getVeryLongAwayInstant() : convertToSystemTime(expiryDateTime, getSAST());
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
@@ -1649,7 +1644,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         if (currentExpiry != null && currentExpiry.isAfter(Instant.now())) {
             if (!temporary) {
                 group.setTokenExpiryDateTime(getVeryLongAwayInstant());
-            } else if (expiryDateTime != null) {
+            } else {
                 group.setTokenExpiryDateTime(expirySystemTime);
             }
             token = group.getGroupTokenCode();

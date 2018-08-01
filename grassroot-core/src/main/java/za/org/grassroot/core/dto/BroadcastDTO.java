@@ -10,7 +10,6 @@ import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.JoinDateCondition;
 import za.org.grassroot.core.enums.Province;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
@@ -31,8 +30,8 @@ public class BroadcastDTO {
     private long smsCount;
     private long emailCount;
 
-    private Instant dateTimeSent;
-    private Instant scheduledSendTime;
+    private Long dateTimeSentMillis;
+    private Long scheduledSendTimeMillis;
 
     private float costEstimate;
 
@@ -64,8 +63,8 @@ public class BroadcastDTO {
         this.shortMessageSent = !StringUtils.isEmpty(broadcast.getSmsTemplate1());
         this.emailSent = !StringUtils.isEmpty(broadcast.getEmailContent());
 
-        this.dateTimeSent = broadcast.getSentTime();
-        this.scheduledSendTime = broadcast.getScheduledSendTime();
+        this.dateTimeSentMillis = broadcast.getSentTime() != null ? broadcast.getSentTime().toEpochMilli() : null;
+        this.scheduledSendTimeMillis = broadcast.getScheduledSendTime() != null ? broadcast.getScheduledSendTime().toEpochMilli() : null;
 
         this.smsContent = broadcast.getSmsTemplate1();
         this.emailContent = broadcast.getEmailContent();

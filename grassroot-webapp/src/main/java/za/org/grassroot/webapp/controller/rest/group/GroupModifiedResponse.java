@@ -2,7 +2,7 @@ package za.org.grassroot.webapp.controller.rest.group;
 
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
-import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 
 import java.util.List;
 

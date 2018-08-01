@@ -1,5 +1,6 @@
 package za.org.grassroot.integration.authentication;
 
+import org.springframework.http.HttpHeaders;
 import za.org.grassroot.integration.PublicCredentials;
 
 import java.util.List;
@@ -15,13 +16,13 @@ public interface JwtService {
     String TYPE_KEY = "TYPE";
 
     PublicCredentials getPublicCredentials();
+
     String createJwt(CreateJwtTokenRequest request);
+
+    HttpHeaders createHeadersForLambdaCall();
 
     /**
      * Refresh token if old token is still valid or has expired but is still within the expiration grace period.
-     * @param oldToken
-     * @param jwtType
-     * @param shortExpiryMillis
      * @return new token if old token is still valid or has expired but is still within the expiration grace period.
      * Otherwise, return <code></code>null.
      */

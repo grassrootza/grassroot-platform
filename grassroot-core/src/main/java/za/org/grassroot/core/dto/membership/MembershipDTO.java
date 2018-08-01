@@ -1,4 +1,4 @@
-package za.org.grassroot.core.dto;
+package za.org.grassroot.core.dto.membership;
 
 import lombok.Getter;
 import za.org.grassroot.core.domain.group.Membership;

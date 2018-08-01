@@ -9,7 +9,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinCode;
 import za.org.grassroot.core.domain.group.JoinCodeType;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.dto.MembershipDTO;
+import za.org.grassroot.core.dto.membership.MembershipDTO;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
