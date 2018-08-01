@@ -20,6 +20,7 @@ public final class BaseRoles {
     public static final String ROLE_COMMITTEE_MEMBER = "ROLE_COMMITTEE_MEMBER";
     public static final String ROLE_ORDINARY_MEMBER  = "ROLE_ORDINARY_MEMBER";
     public static final String ROLE_GROUP_OBSERVER   = "ROLE_GROUP_OBSERVER";
+    public static final String ROLE_SYSTEM_CALL      = "ROLE_SYSTEM_CALL"; // just for inter-service comms
 
     // note: ordering here is important, as will be default order for drop downs etc
     public static final List<String> groupRoles = Arrays.asList(ROLE_ORDINARY_MEMBER,

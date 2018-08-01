@@ -135,7 +135,7 @@ workflows:
           - build
         filters:
           branches:
-            only: staging
+            only: preprod
     - deploy-production:
         requires:
           - build

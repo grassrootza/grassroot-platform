@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupAdminDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.authentication.JwtService;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 
 
 @RestController @Grassroot2RestController
@@ -119,8 +121,8 @@ public class AdminRestController extends BaseRestController{
         if(!StringUtils.isEmpty(searchTerm)){
             List<Group> groups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
             groups.forEach(group -> groupAdminDTOS.add(new GroupAdminDTO(group)));
-            Collections.sort(groupAdminDTOS,
-                    Comparator.comparing((GroupAdminDTO groupAdminDTO) -> groupAdminDTO.getMemberCount()).reversed());
+            groupAdminDTOS.sort(Comparator.comparing(
+                    (Function<GroupAdminDTO, Integer>) GroupRefDTO::getMemberCount).reversed());
         }
         return ResponseEntity.ok(groupAdminDTOS);
     }
@@ -147,7 +149,7 @@ public class AdminRestController extends BaseRestController{
         User user;
         try{
             user = userManagementService.findByNumberOrEmail(phoneNumber,email);
-        }catch (NoSuchUserException e){
+        } catch (NoSuchUserException e){
             log.info("User not found");
             user = null;
         }
@@ -176,31 +178,10 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok(restMessage.name());
     }
 
-    @RequestMapping(value = "/graph/transfer/tasks", method = RequestMethod.GET)
-    public ResponseEntity initiateTasksGraphTransfer(HttpServletRequest request) {
-        log.info("seeding queue with tasks");
-        adminService.populateGrassrootGraphTasks(getUserIdFromRequest(request));
-        return ResponseEntity.ok().build();
-    }
-
-    @RequestMapping(value = "/graph/transfer/annotations/groups", method = RequestMethod.GET)
-    public ResponseEntity initiateGroupAnnotationTransfer(HttpServletRequest request) {
-        log.info("seeding queue with group annotations");
-        adminService.populateGraphGroupAnnotations();
-        return ResponseEntity.ok().build();
-    }
-
-    @RequestMapping(value = "/graph/transfer/annotations/memberships", method = RequestMethod.GET)
-    public ResponseEntity initiateMembershipAnnotationTransfer() {
-        log.info("seeding queue with membership annotations");
-        adminService.populateGraphMembershipAnnotations();
-        return ResponseEntity.ok().build();
-    }
-
-    @RequestMapping(value = "/graph/transfer/annotations/tasks", method = RequestMethod.GET)
-    public ResponseEntity initiateTaskAnnotationTransfer() {
-        log.info("and now seeding queue with task annotations");
-        adminService.populateGraphTaskAnnotations();
+    @RequestMapping(value = "/graph/transfer/annotations/users", method = RequestMethod.GET)
+    public ResponseEntity initiateUserAnnotationTransfer(HttpServletRequest request) {
+        log.info("seeding queue with user annotations");
+        adminService.populateGraphUserAnnotations();
         return ResponseEntity.ok().build();
     }
 

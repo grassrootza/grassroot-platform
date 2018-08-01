@@ -154,6 +154,17 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     }
 
     @Override
+    public void setTags(String[] tags) {
+        log.info("Tags not yet implemented in todos");
+    }
+
+    @Override
+    public String[] getTags() {
+        log.info("Get tags called in todo");
+        return new String[0];
+    }
+
+    @Override
     public Set<User> assignMembers(Set<String> memberUids) {
         Objects.requireNonNull(memberUids);
 

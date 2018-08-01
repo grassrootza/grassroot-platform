@@ -1,0 +1,4 @@
+files:
+  - source: /grassroot-webapp/src/main/resources/messages.properties
+    translation: >-
+      /grassroot-webapp/src/main/resources/messages_%two_letters_code%.properties

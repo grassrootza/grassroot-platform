@@ -13,7 +13,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
-import za.org.grassroot.integration.authentication.JwtType;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     private HttpHeaders jwtHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE)));
+        headers.add("Authorization", "Bearer " + jwtService.createJwt(CreateJwtTokenRequest.makeSystemToken()));
         return headers;
     }
 
@@ -87,10 +86,9 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public String initiateTwitterConnection(String userUid) {
-        final URI uri = twBaseUri("twitter/connect/request/{userUid}")
-                .buildAndExpand(userUid).toUri();
+        final URI uri = twBaseUri("twitter/connect/request/{userUid}").buildAndExpand(userUid).toUri();
         log.info("initiating twitter lambda, url: {}", uri);
-        ResponseEntity<String> parameters = restTemplate.getForEntity(uri, String.class);
+        ResponseEntity<String> parameters = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity(jwtHeaders()), String.class);
         log.info("okay got back params: {}", parameters.getBody());
         return "https://api.twitter.com/oauth/authorize?" + parameters.getBody();
     }
@@ -152,7 +150,8 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     public TwitterAccount isTwitterAccountConnected(String userUid) {
         try {
             final URI uri = twBaseUri("twitter/status/{userUid}").buildAndExpand(userUid).toUri();
-            ResponseEntity<TwitterAccount> twAccount = restTemplate.getForEntity(uri, TwitterAccount.class);
+            ResponseEntity<TwitterAccount> twAccount = restTemplate.exchange(uri, HttpMethod.GET,
+                    new HttpEntity<>(jwtHeaders()), TwitterAccount.class);
             log.info("got twitter account: ", twAccount);
             return twAccount.getBody();
         } catch (RestClientException e) {

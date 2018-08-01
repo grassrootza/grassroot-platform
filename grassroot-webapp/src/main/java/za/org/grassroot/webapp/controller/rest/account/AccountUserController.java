@@ -220,6 +220,7 @@ public class AccountUserController extends BaseRestController {
             return ResponseEntity.ok().build();
         } else {
             long startTime = System.currentTimeMillis();
+            log.info("Fetching account, user entity : {}", user);
             AccountWrapper accountWrapper = new AccountWrapper(account, user);
             log.info("Assembled user account wrapper, time : {} msecs", System.currentTimeMillis() - startTime);
             long accountNotifications = accountBroker.countAccountNotifications(account.getUid(),
@@ -302,10 +303,13 @@ public class AccountUserController extends BaseRestController {
                                                            @RequestParam(required = false) Long endTimeMillis,
                                                            HttpServletRequest request) {
         User user = getUserFromRequest(request);
+        log.info("Counting dataset results for account: {}", accountUid);
         Account account = StringUtils.isEmpty(accountUid) ? user.getPrimaryAccount() : accountBroker.loadAccount(accountUid);
         Instant start = startTimeMillis != null ? Instant.ofEpochMilli(startTimeMillis) : account.getLastBillingDate();
         Instant end = endTimeMillis != null ? Instant.ofEpochMilli(endTimeMillis) : Instant.now();
-        List<DataSetInfo> dataCounts = Arrays.stream(account.getGeoDataSets().split(",")).map(label -> {
+        Set<String> dataSets = StringUtils.commaDelimitedListToSet(account.getGeoDataSets());
+        log.info("Datasets extracted: {}; from account: {}", dataSets, account);
+        List<DataSetInfo> dataCounts = dataSets.stream().map(label -> {
             DataSetInfo counts = accountBroker.fetchDataSetInfo(user.getUid(), label, start, end);
             log.info("for {} got counts {}", label, counts);
             return counts;

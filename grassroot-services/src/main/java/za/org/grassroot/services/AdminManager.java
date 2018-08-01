@@ -12,17 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.User_;
-import za.org.grassroot.core.domain.UserLog;
-import za.org.grassroot.core.domain.UserLog_;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.Group_;
-import za.org.grassroot.core.domain.group.GroupJoinMethod;
-import za.org.grassroot.core.domain.group.GroupLog;
-import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.domain.notification.SystemInfoNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -30,7 +21,6 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.UserSpecifications;
-import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.group.GroupBroker;
@@ -245,44 +235,10 @@ public class AdminManager implements AdminService {
     @Async
     @Override
     @Transactional(readOnly = true)
-    public void populateGrassrootGraphTasks(String userUid) {
-        DebugUtil.transactionRequired("");
+    public void populateGraphUserAnnotations() {
         if (graphBroker != null) {
-            DebugUtil.transactionRequired("");
-            taskBroker.loadAllTasks().forEach(task -> graphBroker.addTaskToGraph(task.getUid(), task.getTaskType(),
-                    taskBroker.fetchUserUidsForTask(userUid, task.getUid(), task.getTaskType())));
-        }
-    }
-
-
-    @Async
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGraphGroupAnnotations() {
-        if (graphBroker != null) {
-            Specification<Group> groups = Specification.where((root, query, cb) -> cb.isTrue(root.get(Group_.active)));
-            groupRepository.findAll(groups).forEach(group -> graphBroker.annotateGroup(group.getUid(), null, null, true));
-        }
-    }
-
-    @Async
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGraphMembershipAnnotations() {
-        if (graphBroker != null) {
-            membershipRepository.findByGroupActiveTrue().forEach(membership ->
-                    graphBroker.annotateMembership(membership.getUser().getUid(), membership.getGroup().getUid(), null, true));
-        }
-    }
-
-    @Async
-    @Override
-    @Transactional(readOnly = true)
-    public void populateGraphTaskAnnotations() {
-        DebugUtil.transactionRequired("");
-        if (graphBroker != null) {
-            DebugUtil.transactionRequired("");
-            taskBroker.loadAllTasks().forEach(task -> graphBroker.annotateTask(task.getUid(), task.getTaskType(), null, null, true));
+            Specification<User> spec = UserSpecifications.hasInitiatedSession().and(UserSpecifications.isEnabled());
+            userRepository.findAll(spec).forEach(user -> graphBroker.annotateUser(user.getUid(), null, null, true));
         }
     }
 

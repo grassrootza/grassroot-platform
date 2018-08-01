@@ -2,6 +2,7 @@ package za.org.grassroot.integration.authentication;
 
 import lombok.Getter;
 import lombok.Setter;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
@@ -48,6 +49,13 @@ public class CreateJwtTokenRequest {
         if (shortExpiryMillis != null) {
             this.shortExpiryMillis = shortExpiryMillis;
         }
+    }
+
+    // strictly for microservice
+    public static CreateJwtTokenRequest makeSystemToken() {
+        CreateJwtTokenRequest request = new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE);
+        request.claims.put(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_SYSTEM_CALL);
+        return request;
     }
 
 }
