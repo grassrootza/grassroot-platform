@@ -93,9 +93,9 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
     private Map<String, String> getLegacyTokenParams(HttpServletRequest request) {
         Map<String, String> vars = new HashMap<>();
         Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-        if (pathVariables.containsKey("phoneNumber"))
+        if (pathVariables != null && pathVariables.containsKey("phoneNumber"))
             vars.put("phoneNumber", String.valueOf(pathVariables.get("phoneNumber")).trim());
-        if (pathVariables.containsKey("code"))
+        if (pathVariables != null && pathVariables.containsKey("code"))
             vars.put("code", String.valueOf(pathVariables.get("code")).trim());
         return vars;
     }

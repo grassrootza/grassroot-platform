@@ -101,7 +101,7 @@ public class JwtServiceImpl implements JwtService {
             return true;
         }
         catch (ExpiredJwtException e) {
-            logger.error("Token validation failed. The token is expired.", e);
+            logger.error("Token validation failed. The token is expired. Exception: {}", e.getMessage());
             return false;
         }
         catch (Exception e) {
