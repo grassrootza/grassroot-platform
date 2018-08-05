@@ -2,6 +2,7 @@ package za.org.grassroot.core.dto.membership;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.Province;
@@ -35,6 +36,18 @@ public class MembershipStdDTO {
         this.affiliations = membership.getAffiliations();
         this.canEditDetails = !(user.hasPassword() || user.isHasSetOwnName());
         this.contactError = user.isContactError();
+    }
+
+    public boolean hasEmail() {
+        return !StringUtils.isEmpty(emailAddress);
+    }
+
+    public boolean hasPhone() {
+        return !StringUtils.isEmpty(phoneNumber);
+    }
+
+    public boolean hasBoth() {
+        return hasEmail() && hasPhone();
     }
 
 }

@@ -28,6 +28,8 @@ import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -45,22 +47,19 @@ public class AdminManager implements AdminService {
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final RoleRepository roleRepository;
-    private final MembershipRepository membershipRepository;
     private final GroupBroker groupBroker;
     private final GroupLogRepository groupLogRepository;
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
 
     private GraphBroker graphBroker;
-    private TaskBroker taskBroker;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, MembershipRepository membershipRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
+    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.roleRepository = roleRepository;
-        this.membershipRepository = membershipRepository;
         this.groupBroker = groupBroker;
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
@@ -70,11 +69,6 @@ public class AdminManager implements AdminService {
     @Autowired(required = false)
     public void setGraphBroker(GraphBroker graphBroker) {
         this.graphBroker = graphBroker;
-    }
-
-    @Autowired(required = false)
-    public void setTaskBroker(TaskBroker taskBroker) {
-        this.taskBroker = taskBroker;
     }
 
     @Autowired
@@ -240,6 +234,29 @@ public class AdminManager implements AdminService {
             Specification<User> spec = UserSpecifications.hasInitiatedSession().and(UserSpecifications.isEnabled());
             userRepository.findAll(spec).forEach(user -> graphBroker.annotateUser(user.getUid(), null, null, true));
         }
+    }
+
+    @Override
+    @Transactional
+    public int freeUpInactiveJoinTokens() {
+        // this is a pretty heavy activity, so don't do it often, and can't really think of a better way
+        Instant oneYearAgo = Instant.now().minus(365, ChronoUnit.DAYS);
+        Specification<GroupLog> joinCodeUseInLastYear = (root, query, cb) -> cb.and(
+                cb.greaterThan(root.get(GroupLog_.createdDateTime), oneYearAgo),
+                cb.equal(root.get(GroupLog_.groupLogType), GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE));
+        List<GroupLog> groupLogs = groupLogRepository.findAll(joinCodeUseInLastYear);
+        Set<Long> groupLogIds = groupLogs.stream().map(log -> log.getGroup().getId()).collect(Collectors.toSet());
+        logger.info("retrieved {} group log IDs that used token in last year", groupLogIds.size());
+        Specification<Group> hasJoinCodeButNotIn = (root, query, cb) -> cb.and(
+                cb.not(root.get(Group_.id).in(groupLogIds)),
+                cb.isNotNull(root.get(Group_.groupTokenCode)),
+                cb.greaterThan(root.get(Group_.tokenExpiryDateTime), Instant.now())
+        );
+        List<Group> groupsThatCanRecycleCode = groupRepository.findAll(hasJoinCodeButNotIn);
+        int numberOfGroups = groupsThatCanRecycleCode.size();
+        logger.info("found {} groups that can recycle their join code", numberOfGroups);
+        // then we'll invalidate and notify user (but first, let's see how many)
+        return numberOfGroups;
     }
 
     private void validateAdminRole(String adminUserUid) {

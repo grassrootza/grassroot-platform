@@ -38,4 +38,6 @@ public interface AdminService {
 
     void populateGraphUserAnnotations();
 
+    int freeUpInactiveJoinTokens();
+
 }

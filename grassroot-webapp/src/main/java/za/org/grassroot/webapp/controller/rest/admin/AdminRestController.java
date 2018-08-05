@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupAdminDTO;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.authentication.JwtService;
@@ -175,6 +175,11 @@ public class AdminRestController extends BaseRestController{
             restMessage = RestMessage.UPLOADED;
         }
         return ResponseEntity.ok(restMessage.name());
+    }
+
+    @RequestMapping(value = "/groups/tokens/recycle", method = RequestMethod.POST)
+    public ResponseEntity triggerGroupTokenRecycle() {
+        return ResponseEntity.ok(this.adminService.freeUpInactiveJoinTokens());
     }
 
     @RequestMapping(value = "/graph/transfer/annotations/users", method = RequestMethod.GET)

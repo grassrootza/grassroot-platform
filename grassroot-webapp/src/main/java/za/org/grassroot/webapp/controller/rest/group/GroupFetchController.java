@@ -9,8 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -180,7 +178,7 @@ public class GroupFetchController extends BaseRestController {
     }
 
     @RequestMapping(value = "/members/filter", method = RequestMethod.GET)
-    public Page<MembershipStdDTO> filterGroupMembers(@RequestParam String groupUid,
+    public GroupFilterResponse filterGroupMembers(@RequestParam String groupUid,
                                                      @RequestParam int maxEntities,
                                                      @RequestParam (required = false) Collection<Province> provinces,
                                                      @RequestParam (required = false) Boolean noProvince,
@@ -199,9 +197,21 @@ public class GroupFetchController extends BaseRestController {
         List<Membership> memberships = groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, noProvince, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
                 joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages);
-        List<MembershipStdDTO> dtos = memberships.stream().limit(maxEntities)
-                .map(MembershipStdDTO::new).collect(Collectors.toList());
-        return new PageImpl<>(dtos, PageRequest.of(0, maxEntities), memberships.size());
+
+        // if this becomes non-performant, use a projection
+        GroupFilterResponse response = new GroupFilterResponse();
+        List<MembershipStdDTO> dtos = memberships.stream().map(MembershipStdDTO::new).collect(Collectors.toList());
+
+        // dtos are now in memory so this is fine
+        response.setNumberSms(dtos.stream().filter(MembershipStdDTO::hasPhone).count());
+        response.setNumberEmail(dtos.stream().filter(MembershipStdDTO::hasEmail).count());
+        response.setNumberSmsAndEmail(dtos.stream().filter(MembershipStdDTO::hasBoth).count());
+        response.setTotalElements(dtos.size());
+
+        // sublist too fragile, hence using this, though looks slightly clumsy
+        response.setContent(dtos.stream().limit(maxEntities).collect(Collectors.toList()));
+
+        return response;
     }
 
     @RequestMapping(value = "/members/filter/download/{groupUid}", method = RequestMethod.GET)

@@ -156,6 +156,16 @@ public class USSDCampaignController extends USSDBaseController {
         return menuBuilder(processFinalOptionsMenu(campaign, user, "", user.getLocale()));
     }
 
+    @RequestMapping(value = campaignUrl + "user/name")
+    public Request processNameRequest(@RequestParam(value = phoneNumber) String inputNumber,
+                                      @RequestParam String campaignUid,
+                                      @RequestParam(value = userInputParam) String enteredName) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        userManager.updateDisplayName(user.getUid(), user.getUid(), enteredName);
+        Campaign campaign = campaignBroker.load(campaignUid);
+        return menuBuilder(processFinalOptionsMenu(campaign, user, "", user.getLocale()));
+    }
+
     private USSDMenu joinGroupOrFinalOptionsMenu(Campaign campaign, User user, String promptStart, Locale locale) {
         USSDMenu menu;
         if (!campaignBroker.isUserInCampaignMasterGroup(campaign.getUid(), user.getUid())) {
@@ -198,7 +208,7 @@ public class USSDCampaignController extends USSDBaseController {
             final String prompt = getMessage("campaign.joined.town", user);
             menu = new USSDMenu(prompt, userMenus + "town/select");
         } else {
-            menu = genericPositiveExit(campaign.getUid(), locale);
+            menu = genericPositiveExit(campaign.getUid(), user, locale);
         }
         return menu;
     }
@@ -213,7 +223,7 @@ public class USSDCampaignController extends USSDBaseController {
             CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
             return menuBuilder(buildCampaignUSSDMenu(message));
         } else {
-            return menuBuilder(genericPositiveExit(campaignUid, user.getLocale()));
+            return menuBuilder(genericPositiveExit(campaignUid, user, user.getLocale()));
         }
     }
 
@@ -234,7 +244,7 @@ public class USSDCampaignController extends USSDBaseController {
         User user = userManager.findByInputNumber(inputNumber);
         final String shareDefault = getMessage("campaign.share.send.generic", user);
         campaignBroker.sendShareMessage(campaignUid, user.getUid(), userInput, shareDefault, UserInterfaceType.USSD);
-        return menuBuilder(genericPositiveExit(campaignUid, user.getLocale()));
+        return menuBuilder(genericPositiveExit(campaignUid, user, user.getLocale()));
     }
 
     private USSDMenu buildCampaignUSSDMenu(CampaignMessage campaignMessage){
@@ -261,13 +271,15 @@ public class USSDCampaignController extends USSDBaseController {
         return new USSDMenu(prompt, campaignMenus + "share/do?campaignUid=" + campaignUid);
     }
 
-    private USSDMenu genericPositiveExit(String campaignUid, Locale locale) {
+    private USSDMenu genericPositiveExit(String campaignUid, User user, Locale locale) {
         log.info("inside generic positive exit ...");
         List<CampaignMessage> campaignMessage = campaignBroker.findCampaignMessage(campaignUid,
                 CampaignActionType.EXIT_POSITIVE, locale);
         log.info("found a campaign message? : {}", campaignMessage);
-        return !campaignMessage.isEmpty() ? buildCampaignUSSDMenu(campaignMessage.get(0)) :
+        USSDMenu menu = !campaignMessage.isEmpty() ? buildCampaignUSSDMenu(campaignMessage.get(0)) :
                 new USSDMenu(getMessage("campaign.exit_positive.generic", locale.getLanguage()));
+        menu.addMenuOptions(optionsHomeExit(user, false));
+        return menu;
     }
 
     private void updateMembership(User user, CampaignMessage thisMessage, CampaignMessage parentMessage) {

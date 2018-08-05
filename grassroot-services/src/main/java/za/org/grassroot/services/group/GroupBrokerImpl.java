@@ -435,14 +435,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             throw new GroupSizeLimitExceededException();
         }
 
-        Set<Membership> memberships = toGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupUid);
+        final String fromGroupName = fromGroup.getName();
+        Set<Membership> memberships = toGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupName);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         Set<String> userUids = new HashSet<>();
         for (User u  : userSet) {
             userUids.add(u.getUid());
-            GroupLog groupLog = new GroupLog(toGroup, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, null);
+            GroupLog groupLog = new GroupLog(toGroup, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, fromGroupUid);
             bundle.addLog(groupLog);
             notifyNewMembersOfUpcomingMeetings(bundle, u, toGroup, groupLog);
         }
