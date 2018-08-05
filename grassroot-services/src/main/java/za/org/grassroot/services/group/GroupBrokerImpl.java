@@ -443,7 +443,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<String> userUids = new HashSet<>();
         for (User u  : userSet) {
             userUids.add(u.getUid());
-            GroupLog groupLog = new GroupLog(toGroup, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, fromGroupName);
+            GroupLog groupLog = new GroupLog(toGroup, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, fromGroupUid);
             bundle.addLog(groupLog);
             notifyNewMembersOfUpcomingMeetings(bundle, u, toGroup, groupLog);
         }
