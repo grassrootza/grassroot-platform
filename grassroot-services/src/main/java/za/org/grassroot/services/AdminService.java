@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 
 import java.util.List;
@@ -37,5 +38,7 @@ public interface AdminService {
     long sendBatchOfAndroidLinks(String adminUserUid, int batchSize);
 
     void populateGraphUserAnnotations();
+
+    int freeUpInactiveJoinTokens();
 
 }

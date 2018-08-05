@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -13,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.authentication.JwtService;
 
+import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +45,12 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         this.mediaFileBroker = mediaFileBroker;
     }
 
+    @PostConstruct
+    public void init() {
+        log.info("Facebook Lambda: {}", facebookLambdaUrl);
+        log.info("Twitter Lambda: {}", twitterLambdaUrl);
+    }
+
     private UriComponentsBuilder fbBaseUri(String path) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(facebookLambdaUrl);
         builder = builder.pathSegment(path);
@@ -53,10 +61,6 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(twitterLambdaUrl);
         builder = builder.pathSegment(path);
         return builder;
-    }
-
-    private HttpHeaders jwtHeaders() {
-        return jwtService.createHeadersForLambdaCall();
     }
 
     private RequestEntity stdRequestEntity(URI uri, HttpMethod method) {
@@ -71,7 +75,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             ResponseEntity<FacebookAccount[]> userPages = restTemplate.exchange(stdRequestEntity(getPagesUri, HttpMethod.GET), FacebookAccount[].class);
             log.info("got these pages back: {}", Arrays.toString(userPages.getBody()));
             return userPages.getBody() != null && userPages.getBody().length > 0 ? Arrays.asList(userPages.getBody()) : new ArrayList<>();
-        } catch (ResourceAccessException e) {
+        } catch (ResourceAccessException|HttpClientErrorException e) {
             log.error("can't access FB lambda");
             return new ArrayList<>();
         }
@@ -185,8 +189,10 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     public boolean removeIntegration(String userUid, String providerId) {
         try {
             if ("facebook".equals(providerId)) {
-                final URI uri = twBaseUri("facebook/remove/{userUid}").buildAndExpand(userUid).toUri();
-                restTemplate.getForEntity(uri, String.class);
+                final URI uri = fbBaseUri("facebook/delete/{userUid}").buildAndExpand(userUid).toUri();
+                log.info("Initiating remove FB call, URI = {}", uri);
+                restTemplate.exchange(stdRequestEntity(uri, HttpMethod.POST), String.class);
+                log.info("Successfully removed FB entry");
                 return true;
             } else if ("twitter".equals(providerId)) {
                 final URI uri = twBaseUri("twitter/remove/{userUid}").buildAndExpand(userUid).toUri();
@@ -202,7 +208,8 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     private String getRedirectUrl(URI uri) {
         try {
-            ResponseEntity<RedirectView> view = restTemplate.exchange(stdRequestEntity(uri, HttpMethod.GET), RedirectView.class);
+            log.info("getting redirect, calling uri : {}", uri);
+            ResponseEntity<RedirectView> view = restTemplate.exchange(stdRequestEntity(uri, HttpMethod.POST), RedirectView.class);
             log.info("and returned view with headers = {} and url = {}", view.getHeaders(), view.getHeaders().get("Location"));
             return view.getHeaders().get("Location").get(0);
         } catch (RestClientException e) {
