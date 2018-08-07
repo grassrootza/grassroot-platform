@@ -41,10 +41,7 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
@@ -81,6 +78,7 @@ public class CampaignManagerController extends BaseRestController {
 
     @PostConstruct
     public void init() {
+        log.info("Setting up campaign caches");
         userCampaignsCache = new Cache(CAMPAIGN_CACHE_CONFIG.clone().name("user_campaigns"));
         cacheManager.addCache(userCampaignsCache);
         groupCampaignsCache = new Cache(CAMPAIGN_CACHE_CONFIG.clone().name("group_campaigns"));
@@ -107,14 +105,14 @@ public class CampaignManagerController extends BaseRestController {
     @RequestMapping(value = "/list/group", method = RequestMethod.GET)
     @ApiOperation(value = "List  campaigns linked to group", notes = "Lists the campaigns linked to specific group")
     public ResponseEntity<List<CampaignViewDTO>> fetchCampaignsForGroup(String groupUid) {
-        List<CampaignViewDTO> campaigns = checkForGroupCampaignsCache(groupUid);
-        if (campaigns != null) {
-            return ResponseEntity.ok(campaigns);
-        }
-        campaigns = campaignBroker.getCampaignsCreatedLinkedToGroup(groupUid).stream()
-                .map(CampaignViewDTO::new).collect(Collectors.toList());
-        cacheGroupCampaigns(groupUid, campaigns);
-        return ResponseEntity.ok(campaigns);
+        return checkForGroupCampaignsCache(groupUid)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> {
+                    List<CampaignViewDTO> campaigns = campaignBroker.getCampaignsCreatedLinkedToGroup(groupUid).stream()
+                            .map(CampaignViewDTO::new).collect(Collectors.toList());
+                    cacheGroupCampaigns(groupUid, campaigns);
+                    return ResponseEntity.ok(campaigns);
+                });
     }
 
     @RequestMapping(value = "/fetch/{campaignUid}", method = RequestMethod.GET)
@@ -365,9 +363,12 @@ public class CampaignManagerController extends BaseRestController {
         userCampaignsCache.put(new Element(userUid, campaigns));
     }
 
-    private List<CampaignViewDTO> checkForGroupCampaignsCache(String groupUid) {
-        return !groupCampaignsCache.isKeyInCache(groupUid) ? null :
-                (List<CampaignViewDTO>) groupCampaignsCache.get(groupUid).getObjectValue();
+    private Optional<List<CampaignViewDTO>> checkForGroupCampaignsCache(String groupUid) {
+        if (groupCampaignsCache == null)
+            return Optional.empty();
+
+        Element item = groupCampaignsCache.get(groupUid);
+        return item == null ? Optional.empty() : Optional.of((List<CampaignViewDTO>) groupCampaignsCache.get(groupUid).getObjectValue());
     }
 
     private void cacheGroupCampaigns(String groupUid, List<CampaignViewDTO> campaigns) {

@@ -5,10 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.*;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.MediaFileBroker;
@@ -75,8 +72,12 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             ResponseEntity<FacebookAccount[]> userPages = restTemplate.exchange(stdRequestEntity(getPagesUri, HttpMethod.GET), FacebookAccount[].class);
             log.info("got these pages back: {}", Arrays.toString(userPages.getBody()));
             return userPages.getBody() != null && userPages.getBody().length > 0 ? Arrays.asList(userPages.getBody()) : new ArrayList<>();
-        } catch (ResourceAccessException|HttpClientErrorException e) {
-            log.error("can't access FB lambda");
+        } catch (HttpClientErrorException|HttpServerErrorException e) {
+            log.error("Can't access FB lambda, error on server: ", e.getMessage());
+            log.error("Error occurred calling: {}", getPagesUri);
+            return new ArrayList<>();
+        } catch (ResourceAccessException e) {
+            log.error("Resource access exception thrown getting FB pages: ", e);
             return new ArrayList<>();
         }
     }
