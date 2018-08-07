@@ -187,8 +187,7 @@ public class GraphBrokerImpl implements GraphBroker {
             properties = new HashMap<>();
             properties.put(IncomingAnnotation.language, group.getDefaultLanguage());
             properties.put(IncomingAnnotation.description, group.getDescription());
-            tags = (group.getTags() == null || group.getTags().length == 0) ?
-                    null : new HashSet<>(Arrays.asList(group.getTags()));
+            tags = new HashSet<>(group.getTagList());
         }
 
         Actor actor = new Actor(ActorType.GROUP, groupUid);
@@ -224,6 +223,7 @@ public class GraphBrokerImpl implements GraphBroker {
 
         if (setAllAnnotations) {
             properties = new HashMap<>();
+            properties.put(IncomingAnnotation.name, task.getName());
             properties.put(IncomingAnnotation.description, task.getDescription());
             tags = new HashSet<>(task.getTagList());
         }

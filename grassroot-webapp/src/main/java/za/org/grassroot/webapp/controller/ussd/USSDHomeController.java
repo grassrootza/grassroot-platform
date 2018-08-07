@@ -114,9 +114,13 @@ public class USSDHomeController extends USSDBaseController {
 
     @PostConstruct
     public void init() {
-        log.info("Initiating USSD, setting geo apis");
-        geoApiSuffixes = locationInfoBroker.getAvailableSuffixes();
-        log.info("Set geo api suffixes: {}", geoApiSuffixes);
+        if (locationInfoBroker != null) {
+            log.info("Initiating USSD, setting geo apis");
+            geoApiSuffixes = locationInfoBroker.getAvailableSuffixes();
+            log.info("Set geo api suffixes: {}", geoApiSuffixes);
+        } else {
+            log.info("Geo APIs disabled, not setting");
+        }
     }
 
     @RequestMapping(value = homePath + startMenu)
