@@ -25,6 +25,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
@@ -52,6 +53,9 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
 
     @Mock
     private LiveWireAlertBroker liveWireAlertBrokerMock;
+
+    @Mock
+    private JwtService jwtServiceMock;
 
     private String path = "/v2/api/location";
     private String uidParameter = "userUid";
@@ -89,6 +93,8 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         List<ObjectLocation> objectLocationList = new ArrayList<>();
         objectLocationList.add(objectLocation);
 
+        when(jwtServiceMock.getUserIdFromJwtToken(anyString())).thenReturn(testUser.getUid());
+
         when(userManagementServiceMock.load(testUser.getUid())).thenReturn(testUser);
 
         when(geoLocationBrokerMock
@@ -104,7 +110,8 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                 .thenReturn(objectLocationList);
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                .get(path + "/all/{userUid}",testUser.getUid())
+                .get(path + "/all")
+                .header("Authorization", "Bearer somethingorother")
                 .param("longitude",""+testLocation.getLongitude())
                 .param("latitude",""+testLocation.getLatitude())
                 .param("radiusMetres",""+ testRadiusMetres)
@@ -135,6 +142,8 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         List<ObjectLocation> objectLocations = new ArrayList<>();
         objectLocations.add(objectLocation);
 
+        when(jwtServiceMock.getUserIdFromJwtToken(anyString())).thenReturn(testUser.getUid());
+
         when(geoLocationBrokerMock
                 .fetchGroupsNearby(testUser.getUid(),null,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC))
                 .thenThrow(new InvalidParameterException("Invalid location parameter"));
@@ -148,7 +157,8 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                 .thenReturn(objectLocations);
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                .get(path + "/all/groups/{userUid}",testUser.getUid())
+                .get(path + "/all/groups")
+                .header("Authorization", "Bearer somethingorother")
                 .param("longitude",""+testLocation.getLongitude())
                 .param("latitude",""+testLocation.getLatitude())
                 .param("radiusMetres",""+ testRadiusMetres)
@@ -183,6 +193,8 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         List<LiveWireAlert> liveWireAlerts = new ArrayList<>();
         liveWireAlerts.add(liveWireAlert);
 
+        when(jwtServiceMock.getUserIdFromJwtToken(anyString())).thenReturn(testUser.getUid());
+
         when(liveWireAlertBrokerMock
                 .fetchAlertsNearUser(testUser.getUid(),null,
                         testRadiusMetres,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid location parameter"));
@@ -196,10 +208,9 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                         testRadiusMetres,GeographicSearchType.PUBLIC)).thenReturn(liveWireAlerts);
 
 
-
-
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                .get(path + "/all/alerts/{userUid}",testUser.getUid())
+                .get(path + "/all/alerts")
+                .header("Authorization", "Bearer somethingorother")
                 .param("longitude",""+testLocation.getLongitude())
                 .param("latitude",""+testLocation.getLatitude())
                 .param("radiusMetres",""+ testRadiusMetres)

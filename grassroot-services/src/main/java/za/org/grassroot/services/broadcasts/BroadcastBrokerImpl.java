@@ -602,7 +602,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         List<Membership> membersToReceive;
 
-        log.info("province restriction? : ", bc.getNoProvinceRestriction());
+        log.info("Generating group broadcast, join date condition {}, join date {}", joinDateCondition, joinDate);
+
         if (bc.hasFilter()) {
             membersToReceive = groupFetchBroker.filterGroupMembers(
                     bc.getCreatedByUser(), group.getUid(),
@@ -616,7 +617,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             membersToReceive = membershipRepository.findByGroupUid(group.getUid());
         }
 
-        log.info("finished fetching members by topic, province, etc., found {} members", membersToReceive.size());
+        log.info("finished fetching members by topic, province, join date, etc., found {} members", membersToReceive.size());
 
         if (bc.hasEmail()) {
             Set<User> emailUsers = membersToReceive.stream().map(Membership::getUser)
