@@ -5,6 +5,7 @@ create table movement (
   created_by_user bigint not null,
   name text not null,
   description text,
+  version int default 0,
   primary key (id),
   unique (uid)
 );

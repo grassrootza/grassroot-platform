@@ -18,6 +18,7 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
 @Api("/v2/api/movement") @Slf4j
@@ -35,13 +36,13 @@ public class MovementFetchController extends BaseRestController {
     @RequestMapping(value = "/fetch", method = RequestMethod.GET)
     public ResponseEntity fetchUserMovements(HttpServletRequest request) {
         List<Movement> movementList = movementBroker.loadUserMovements(getUserIdFromRequest(request));
-        return ResponseEntity.ok(movementList);
+        return ResponseEntity.ok(movementList.stream().map(MovementWrapper::new).collect(Collectors.toList()));
     }
 
     @RequestMapping(value = "/fetch/{movementUid}", method = RequestMethod.GET)
     public ResponseEntity fetchDetailsOnMovement(HttpServletRequest request,
                                                  @PathVariable String movementUid) {
-        return ResponseEntity.ok(movementBroker.load(movementUid));
+        return ResponseEntity.ok(new MovementWrapper(movementBroker.load(movementUid)));
     }
 
 }

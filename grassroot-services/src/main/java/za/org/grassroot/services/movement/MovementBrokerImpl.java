@@ -12,6 +12,7 @@ import za.org.grassroot.core.repository.MovementRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.graph.GraphBroker;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -44,7 +45,8 @@ public class MovementBrokerImpl implements MovementBroker {
     @Override
     @Transactional(readOnly = true)
     public List<Movement> loadUserMovements(String userUid) {
-        return null;
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        return movementRepository.findByOrganizers(user);
     }
 
     @Override
