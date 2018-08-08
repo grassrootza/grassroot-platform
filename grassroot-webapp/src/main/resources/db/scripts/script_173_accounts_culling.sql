@@ -1,4 +1,4 @@
-drop table account_billing_record;
+drop table if exists account_billing_record;
 drop table paid_group;
 drop table acc_sponsor_request;
 

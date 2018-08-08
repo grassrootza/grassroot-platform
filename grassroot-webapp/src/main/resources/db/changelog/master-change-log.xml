@@ -176,5 +176,6 @@
     <include file="change_170.xml" relativeToChangelogFile="true"/>
     <include file="change_171.xml" relativeToChangelogFile="true"/>
     <include file="change_172.xml" relativeToChangelogFile="true"/>
+    <include file="change_173.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
