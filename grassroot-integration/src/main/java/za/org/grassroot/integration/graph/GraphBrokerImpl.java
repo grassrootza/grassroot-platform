@@ -406,7 +406,7 @@ public class GraphBrokerImpl implements GraphBroker {
     }
 
     private Map<String, String> normalize(Map<String, String> map) {
-        return map.entrySet().stream()
+        return map == null ? new HashMap<>() : map.entrySet().stream()
                 .filter(entry -> !StringUtils.isEmpty(entry.getValue()))
                 .collect(Collectors.toMap(entry -> entry.getKey().toLowerCase().trim(),
                         entry -> entry.getValue().toLowerCase().trim()));
