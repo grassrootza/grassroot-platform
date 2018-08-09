@@ -63,8 +63,8 @@ public class EventCreateController extends BaseRestController{
                                                      @RequestParam long dateTimeEpochMillis,
                                                      @RequestParam(required = false) String description,
                                                      @RequestParam(required = false) boolean publicMeeting,
-                                                     @RequestParam(required = false) Long userLat,
-                                                     @RequestParam(required = false) Long userLong,
+                                                     @RequestParam(required = false) Double userLat,
+                                                     @RequestParam(required = false) Double userLong,
                                                      @RequestParam(required = false)
                                                      @ApiParam(value = "UIDs of assigned members, if left blank all " +
                                                              "members of the parent are assigned") Set<String> assignedMemberUids,
