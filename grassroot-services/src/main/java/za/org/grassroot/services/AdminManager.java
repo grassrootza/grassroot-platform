@@ -47,6 +47,7 @@ public class AdminManager implements AdminService {
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final RoleRepository roleRepository;
+    private final MembershipRepository membershipRepository;
     private final GroupBroker groupBroker;
     private final GroupLogRepository groupLogRepository;
     private final UserLogRepository userLogRepository;
@@ -56,10 +57,11 @@ public class AdminManager implements AdminService {
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
+    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, MembershipRepository membershipRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.roleRepository = roleRepository;
+        this.membershipRepository = membershipRepository;
         this.groupBroker = groupBroker;
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
@@ -232,6 +234,19 @@ public class AdminManager implements AdminService {
     public void populateGraphUserAnnotations() {
         if (graphBroker != null) {
             Specification<User> spec = UserSpecifications.hasInitiatedSession().and(UserSpecifications.isEnabled());
+            userRepository.findAll(spec).forEach(user -> graphBroker.annotateUser(user.getUid(), null, null, true));
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void repopulateMemberUserAnnotations() {
+        // this is ultra heavy but we will call it exactly once
+        if (graphBroker != null) {
+            List<Membership> memberships = membershipRepository.findByGroupActiveTrue();
+            Set<Long> membershipIds = memberships.stream().map(m -> m.getUser().getId()).collect(Collectors.toSet());
+            Specification<User> spec = (root, query, cb) -> cb.and(cb.isFalse(root.get(User_.hasInitiatedSession)),
+                    root.get(User_.id).in(membershipIds));
             userRepository.findAll(spec).forEach(user -> graphBroker.annotateUser(user.getUid(), null, null, true));
         }
     }

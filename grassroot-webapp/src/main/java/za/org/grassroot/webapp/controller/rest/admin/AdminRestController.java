@@ -182,10 +182,10 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok(this.adminService.freeUpInactiveJoinTokens());
     }
 
-    @RequestMapping(value = "/graph/transfer/annotations/users", method = RequestMethod.GET)
-    public ResponseEntity initiateUserAnnotationTransfer(HttpServletRequest request) {
-        log.info("seeding queue with user annotations");
-        adminService.populateGraphUserAnnotations();
+    @RequestMapping(value = "/graph/transfer/annotations/members", method = RequestMethod.GET)
+    public ResponseEntity redoMemberAnnotationTransfer() {
+        log.info("Reseeding some user annotations");
+        adminService.repopulateMemberUserAnnotations();
         return ResponseEntity.ok().build();
     }
 

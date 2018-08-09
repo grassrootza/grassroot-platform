@@ -62,7 +62,12 @@ public class MovementModifyController extends BaseRestController {
                                               @PathVariable String movementUid,
                                               @PathVariable JpaEntityType entityType,
                                               @RequestParam String entityUid) {
-        return ResponseEntity.ok().build();
+        if (JpaEntityType.GROUP.equals(entityType)) {
+            movementBroker.addGroup(getUserIdFromRequest(request), movementUid, entityUid);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @RequestMapping(value = "/remove/member/{movementUid}", method = RequestMethod.POST)
