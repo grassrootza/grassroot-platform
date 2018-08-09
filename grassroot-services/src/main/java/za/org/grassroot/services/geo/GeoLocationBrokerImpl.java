@@ -20,9 +20,9 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.location.UssdLocationServicesBroker;
-import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.graph.dto.IncomingAnnotation;
+import za.org.grassroot.integration.graph.GraphBroker;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -460,26 +460,28 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 		GeoLocation searchCentre = geoLocation == null ? fetchBestGuessUserLocation(user.getUid()) : geoLocation;
 		if (searchCentre == null) {
+			logger.info("No geo location, exiting entity search");
 			// we can't find anything, so just return blank (leave to client to work out best way to get location)
 			// should probably throw an exception here in time, but for the moment (mid clean up) it's somewhat dangerous
 			return new ArrayList<>();
 		}
 
-		final String usersOwnGroups = "m.ancestorGroup IN (SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
-		final String publicGroupsNotUser = "m.isPublic = true AND m.ancestorGroup NOT IN (SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
+		final String usersOwnGroups = "m.ancestorGroup IN (SELECT mm.group FROM Membership mm WHERE mm.user = :user) AND ";
+		final String publicGroupsNotUser = "m.isPublic = true AND m.ancestorGroup NOT IN (SELECT mm.group FROM Membership mm WHERE mm.user = :user) AND ";
 
 		final String groupRestriction = GeographicSearchType.PUBLIC.equals(searchType) ? publicGroupsNotUser :
 				GeographicSearchType.PRIVATE.equals(searchType) ? usersOwnGroups :
-						"((" + usersOwnGroups +") OR (" + publicGroupsNotUser + "))";
+						" ";
+
+		logger.info("Group restrictions: {}", groupRestriction);
 
 		String strQuery =
 				"SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(m, l) " +
 						"FROM MeetingLocation l INNER JOIN l.meeting m " +
-						"WHERE " + groupRestriction + " AND m.eventStartDateTime >= :present AND "
+						"WHERE " + groupRestriction + " m.eventStartDateTime >= :present AND "
 						+ GeoLocationUtils.locationFilterSuffix("l.location");
 
-		logger.debug("query = {}", strQuery);
-		logger.info("we have a search location, it looks like: {}", searchCentre);
+		logger.info("we have a search location, it looks like: {}, and query: {}", searchCentre, strQuery);
 
 		TypedQuery<ObjectLocation> query = entityManager.createQuery(strQuery,ObjectLocation.class)
 				.setParameter("user", user)

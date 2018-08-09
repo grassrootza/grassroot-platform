@@ -76,21 +76,25 @@ public class AroundMeRestController extends BaseRestController {
                                                                       @RequestParam(required = false) String filterTerm) {
         GeoLocation location = new GeoLocation(latitude,longitude);
         String userUid = getUserIdFromRequest(request);
-        log.info("user uid: {}", userUid);
         User user = getUserFromRequest(request);
-//        String userUid = user.getUid();
 
         Set<AroundMeDTO> objectLocationSet = new HashSet<>();
 
         GeographicSearchType type = searchType == null ? GeographicSearchType.PUBLIC : searchType;
+        log.info("Inside around me controller, search type: {}, location: {}", searchType, location);
+
         if (includeGroups != null && includeGroups) {
             objectLocationSet.addAll(geoLocationBroker
                     .fetchGroupsNearby(userUid, location, radiusMetres, filterTerm, type)
                     .stream().map(gl -> convertGroupLocation(gl, user)).collect(Collectors.toList())); //Adding Groups near user
         }
+        log.info("After hunting groups, have {} entries", objectLocationSet.size());
+
         objectLocationSet.addAll(geoLocationBroker
                 .fetchMeetingLocationsNearUser(user, location, radiusMetres, type, null)
                 .stream().map(ml -> convertMeetingLocation(ml, user)).collect(Collectors.toList())); // Adding Meetings near user
+        log.info("And now after hunting meetings, have {} entries", objectLocationSet.size());
+
         objectLocationSet.addAll(liveWireAlertBroker.fetchAlertsNearUser(userUid, location, radiusMetres, type)
                 .stream().map(al -> convertLiveWireAlert(al, user)).collect(Collectors.toList()));
 
