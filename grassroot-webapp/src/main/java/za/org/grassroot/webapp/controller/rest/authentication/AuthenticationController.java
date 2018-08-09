@@ -12,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -31,7 +30,6 @@ import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.user.UserRegPossibility;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
-import za.org.grassroot.webapp.controller.rest.exception.InterfaceNotOpenException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.AuthorizationResponseDTO;
 import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
@@ -64,13 +62,6 @@ public class AuthenticationController {
         this.userService = userService;
         this.userLogger = userLogger;
         this.environment = environment;
-    }
-
-    private void checkUserHasAccess(String phoneOrEmail, UserInterfaceType interfaceType) {
-        if (!environment.acceptsProfiles("localpg") && alphaInterfaces.contains(interfaceType) &&
-                !userService.doesUserHaveStandardRole(phoneOrEmail, BaseRoles.ROLE_ALPHA_TESTER)) {
-            throw new InterfaceNotOpenException();
-        }
     }
 
     private User findExistingUser(String username) {
@@ -252,7 +243,6 @@ public class AuthenticationController {
         try {
             final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             passwordTokenService.validateOtp(msisdn, otp);
-            checkUserHasAccess(msisdn, interfaceType == null ? UserInterfaceType.ANDROID_2 : interfaceType);
 
             // get the user object
             User user = userService.findByInputNumber(msisdn);
@@ -288,8 +278,6 @@ public class AuthenticationController {
             // get the user object, with no user throwing exception
             User user = findExistingUser(username);
             passwordTokenService.validatePwdPhoneOrEmail(username, password);
-
-            checkUserHasAccess(username, interfaceType == null ? UserInterfaceType.WEB_2 : interfaceType);
 
             // Generate a token for the user (for the moment assuming it is Android client - Angular uses same params)
             CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.WEB_ANDROID_CLIENT, user);
