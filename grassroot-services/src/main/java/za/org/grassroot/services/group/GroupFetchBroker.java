@@ -9,8 +9,8 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.JoinDateCondition;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.enums.Province;
 
 import java.time.Instant;
@@ -37,7 +37,7 @@ public interface GroupFetchBroker {
 
     List<GroupWebDTO> fetchGroupWebInfo(String userUid);
 
-    Page<MembershipFullDTO> fetchGroupMembers(User user, String groupUid, Pageable pageable);
+    Page<Membership> fetchGroupMembers(User user, String groupUid, Pageable pageable);
 
     MembershipFullDTO fetchGroupMember(String userUid, String groupUid, String memberUid);
 

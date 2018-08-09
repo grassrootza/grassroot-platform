@@ -12,9 +12,9 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.*;
-import za.org.grassroot.core.dto.MembershipDTO;
-import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.dto.membership.MembershipDTO;
+import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.*;
@@ -269,7 +269,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     }
 
     @Override
-    public Page<MembershipFullDTO> fetchGroupMembers(User user, String groupUid, Pageable pageable) {
+    public Page<Membership> fetchGroupMembers(User user, String groupUid, Pageable pageable) {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
         try {
@@ -281,8 +281,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
-        Page<Membership> members = membershipRepository.findByGroupUid(group.getUid(), pageable);
-        return members.map(MembershipFullDTO::new);
+        return membershipRepository.findByGroupUid(group.getUid(), pageable);
     }
 
     @Override

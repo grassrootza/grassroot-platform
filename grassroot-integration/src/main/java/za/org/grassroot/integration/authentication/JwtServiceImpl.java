@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.integration.PublicCredentials;
@@ -73,12 +74,19 @@ public class JwtServiceImpl implements JwtService {
                 .compact();
     }
 
+    @Override
+    public HttpHeaders createHeadersForLambdaCall() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + createJwt(CreateJwtTokenRequest.makeSystemToken()));
+        return headers;
+    }
+
     private long convertTypeToExpiryMillis(JwtType jwtType) {
         switch (jwtType) {
             case WEB_ANDROID_CLIENT:
                 return Duration.ofDays(7L).toMillis();
             case GRASSROOT_MICROSERVICE:
-                return Duration.ofSeconds(2).toMillis(); // occasional glitches mean 2 secs is a better trade off here at present
+                return Duration.ofSeconds(3).toMillis(); // occasional glitches mean 3 secs is a better trade off here at present
             case API_CLIENT:
                 return Duration.ofDays(7L).toMillis(); // going to convert these to long lived as soon as spring sec done
             default:
@@ -93,7 +101,7 @@ public class JwtServiceImpl implements JwtService {
             return true;
         }
         catch (ExpiredJwtException e) {
-            logger.error("Token validation failed. The token is expired.", e);
+            logger.error("Token validation failed. The token is expired. Exception: {}", e.getMessage());
             return false;
         }
         catch (Exception e) {

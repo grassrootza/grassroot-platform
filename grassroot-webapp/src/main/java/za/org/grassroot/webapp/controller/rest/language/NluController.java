@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,9 +20,8 @@ import java.time.ZoneOffset;
 
 @Slf4j
 @RestController @Grassroot2RestController
-@Api("/v2/api/language/parse")
-@RequestMapping(value = "/v2/api/language/parse")
-//@PreAuthorize("hasRole('ROLE_FULL_USER')")
+@Api("/v2/api/language/parse") @RequestMapping(value = "/v2/api/language/parse")
+@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class NluController {
 
     private final LearningService learningService;
@@ -44,7 +44,9 @@ public class NluController {
     @ApiOperation(value = "Parse a string for intents and entities")
     public ResponseEntity<NluParseResult> parseFreeText(@RequestParam String text,
                                                         @RequestParam(required = false) String conversationUid) {
-        return ResponseEntity.ok(nluBroker.parseText(text, conversationUid));
+        NluParseResult result = nluBroker.parseText(text, conversationUid);
+        log.info("Result of NLU: {}", result);
+        return ResponseEntity.ok(result);
     }
 
     @RequestMapping(value = "/speech", method = RequestMethod.POST)

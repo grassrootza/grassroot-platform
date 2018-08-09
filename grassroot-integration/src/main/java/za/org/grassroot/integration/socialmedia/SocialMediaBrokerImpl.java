@@ -5,15 +5,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.*;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.MediaFileBroker;
-import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 
+import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,6 +42,12 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         this.mediaFileBroker = mediaFileBroker;
     }
 
+    @PostConstruct
+    public void init() {
+        log.info("Facebook Lambda: {}", facebookLambdaUrl);
+        log.info("Twitter Lambda: {}", twitterLambdaUrl);
+    }
+
     private UriComponentsBuilder fbBaseUri(String path) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(facebookLambdaUrl);
         builder = builder.pathSegment(path);
@@ -56,10 +60,8 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         return builder;
     }
 
-    private HttpHeaders jwtHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + jwtService.createJwt(CreateJwtTokenRequest.makeSystemToken()));
-        return headers;
+    private RequestEntity stdRequestEntity(URI uri, HttpMethod method) {
+        return new RequestEntity(jwtService.createHeadersForLambdaCall(), method, uri);
     }
 
     @Override
@@ -67,11 +69,15 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         URI getPagesUri = fbBaseUri("/facebook/pages/{userUid}").buildAndExpand(userUid).toUri();
         log.debug("constructed get pages URI: {}", getPagesUri);
         try {
-            ResponseEntity<FacebookAccount[]> userPages = restTemplate.getForEntity(getPagesUri, FacebookAccount[].class);
+            ResponseEntity<FacebookAccount[]> userPages = restTemplate.exchange(stdRequestEntity(getPagesUri, HttpMethod.GET), FacebookAccount[].class);
             log.info("got these pages back: {}", Arrays.toString(userPages.getBody()));
             return userPages.getBody() != null && userPages.getBody().length > 0 ? Arrays.asList(userPages.getBody()) : new ArrayList<>();
+        } catch (HttpClientErrorException|HttpServerErrorException e) {
+            log.error("Can't access FB lambda, error on server: ", e.getMessage());
+            log.error("Error occurred calling: {}", getPagesUri);
+            return new ArrayList<>();
         } catch (ResourceAccessException e) {
-            log.error("can't access FB lambda");
+            log.error("Resource access exception thrown getting FB pages: ", e);
             return new ArrayList<>();
         }
     }
@@ -80,7 +86,6 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     public String initiateFacebookConnection(String userUid) {
         final URI uri = fbBaseUri("facebook/connect/request/{userUid}")
                 .buildAndExpand(userUid).toUri();
-        log.info("okay trying this out, URI = {}", uri.toString());
         return getRedirectUrl(uri);
     }
 
@@ -88,7 +93,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     public String initiateTwitterConnection(String userUid) {
         final URI uri = twBaseUri("twitter/connect/request/{userUid}").buildAndExpand(userUid).toUri();
         log.info("initiating twitter lambda, url: {}", uri);
-        ResponseEntity<String> parameters = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity(jwtHeaders()), String.class);
+        ResponseEntity<String> parameters = restTemplate.exchange(stdRequestEntity(uri, HttpMethod.GET), String.class);
         log.info("okay got back params: {}", parameters.getBody());
         return "https://api.twitter.com/oauth/authorize?" + parameters.getBody();
     }
@@ -100,7 +105,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
         log.info("completing FB connection, URI = {}", uri.toString());
 
-        ResponseEntity<String> connectResponse = restTemplate.getForEntity(uri, String.class);
+        ResponseEntity<String> connectResponse = restTemplate.exchange(stdRequestEntity(uri, HttpMethod.GET), String.class);
         return connectResponse.getStatusCode() == HttpStatus.CREATED ? getFacebookPages(userUid) : new ArrayList<>();
     }
 
@@ -110,7 +115,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
                 .queryParam("oauth_token", oauthToken)
                 .queryParam("oauth_verifier", oauthVerifier)
                 .buildAndExpand(userUid).toUri();
-        ResponseEntity<TwitterAccount> account = restTemplate.getForEntity(uri, TwitterAccount.class);
+        ResponseEntity<TwitterAccount> account = restTemplate.exchange(stdRequestEntity(uri, HttpMethod.GET), TwitterAccount.class);
         return account.getBody();
     }
 
@@ -150,8 +155,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     public TwitterAccount isTwitterAccountConnected(String userUid) {
         try {
             final URI uri = twBaseUri("twitter/status/{userUid}").buildAndExpand(userUid).toUri();
-            ResponseEntity<TwitterAccount> twAccount = restTemplate.exchange(uri, HttpMethod.GET,
-                    new HttpEntity<>(jwtHeaders()), TwitterAccount.class);
+            ResponseEntity<TwitterAccount> twAccount = restTemplate.exchange(stdRequestEntity(uri, HttpMethod.GET), TwitterAccount.class);
             log.info("got twitter account: ", twAccount);
             return twAccount.getBody();
         } catch (RestClientException e) {
@@ -173,10 +177,8 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
         final URI uri = uriBuilder.buildAndExpand(post.getPostingUserUid()).toUri();
 
-        HttpEntity entity = new HttpEntity<>(jwtHeaders());
-
         try {
-            ResponseEntity<GenericPostResponse> response = restTemplate.exchange(uri, HttpMethod.POST, entity, GenericPostResponse.class);
+            ResponseEntity<GenericPostResponse> response = restTemplate.exchange(stdRequestEntity(uri, HttpMethod.POST), GenericPostResponse.class);
             return handleResponse(response, "Twitter");
         } catch (RestClientException e) {
             log.error("Error calling Twitter post!", e);
@@ -188,8 +190,10 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     public boolean removeIntegration(String userUid, String providerId) {
         try {
             if ("facebook".equals(providerId)) {
-                final URI uri = twBaseUri("facebook/remove/{userUid}").buildAndExpand(userUid).toUri();
-                restTemplate.getForEntity(uri, String.class);
+                final URI uri = fbBaseUri("facebook/delete/{userUid}").buildAndExpand(userUid).toUri();
+                log.info("Initiating remove FB call, URI = {}", uri);
+                restTemplate.exchange(stdRequestEntity(uri, HttpMethod.POST), String.class);
+                log.info("Successfully removed FB entry");
                 return true;
             } else if ("twitter".equals(providerId)) {
                 final URI uri = twBaseUri("twitter/remove/{userUid}").buildAndExpand(userUid).toUri();
@@ -205,8 +209,8 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     private String getRedirectUrl(URI uri) {
         try {
-            ResponseEntity<RedirectView> view = restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(jwtHeaders()),
-                    RedirectView.class);
+            log.info("getting redirect, calling uri : {}", uri);
+            ResponseEntity<RedirectView> view = restTemplate.exchange(stdRequestEntity(uri, HttpMethod.POST), RedirectView.class);
             log.info("and returned view with headers = {} and url = {}", view.getHeaders(), view.getHeaders().get("Location"));
             return view.getHeaders().get("Location").get(0);
         } catch (RestClientException e) {
