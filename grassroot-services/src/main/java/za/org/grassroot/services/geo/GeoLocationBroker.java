@@ -19,8 +19,6 @@ public interface GeoLocationBroker {
 
 	void logUserLocation(String userUid, double latitude, double longitude, Instant time, UserInterfaceType interfaceType);
 
-	String describeUserLocation(String userUid);
-
 	// means user has given us permission to log their location, through some action, so record it, and update entity
 	void logUserUssdPermission(String userUid, String entityToUpdateUid, JpaEntityType entityType, boolean singleTrackPermission);
 
@@ -47,8 +45,6 @@ public interface GeoLocationBroker {
 	List<User> fetchUsersWithRecordedAverageLocations(LocalDate localDate);
 
 	GroupLocation fetchGroupLocationWithScoreAbove(String groupUid, LocalDate localDate, float score);
-
-	List<GroupLocation> fetchGroupLocationsWithScoreAbove(Set<Group> groups, LocalDate localDate, float score);
 
 	List<Group> fetchGroupsWithRecordedAverageLocations();
 

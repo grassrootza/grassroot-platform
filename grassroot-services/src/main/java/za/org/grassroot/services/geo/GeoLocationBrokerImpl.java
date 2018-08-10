@@ -50,14 +50,14 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	private final GroupLocationRepository groupLocationRepository;
 	private final EventRepository eventRepository;
 	private final EventLogRepository eventLogRepository;
-	private final MeetingLocationRepository meetingLocationRepository;
+	private final TaskLocationRepository taskLocationRepository;
 	private final EntityManager entityManager;
 
 	private UssdLocationServicesBroker ussdLocationServicesBroker;
 	private GraphBroker graphBroker;
 
     @Autowired
-    public GeoLocationBrokerImpl(UserLocationLogRepository userLocationLogRepository, PreviousPeriodUserLocationRepository previousPeriodUserLocationRepository, UserRepository userRepository, GroupRepository groupRepository, GroupLocationRepository groupLocationRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, MeetingLocationRepository meetingLocationRepository, EntityManager entityManager) {
+    public GeoLocationBrokerImpl(UserLocationLogRepository userLocationLogRepository, PreviousPeriodUserLocationRepository previousPeriodUserLocationRepository, UserRepository userRepository, GroupRepository groupRepository, GroupLocationRepository groupLocationRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TaskLocationRepository taskLocationRepository, EntityManager entityManager) {
         this.userLocationLogRepository = userLocationLogRepository;
         this.previousPeriodUserLocationRepository = previousPeriodUserLocationRepository;
         this.userRepository = userRepository;
@@ -65,7 +65,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
         this.groupLocationRepository = groupLocationRepository;
         this.eventRepository = eventRepository;
         this.eventLogRepository = eventLogRepository;
-        this.meetingLocationRepository = meetingLocationRepository;
+        this.taskLocationRepository = taskLocationRepository;
         this.entityManager = entityManager;
     }
 
@@ -93,26 +93,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		userLocationLogRepository.save(userLocationLog);
 	}
 
-	/*
-	Logic sequence, for the moment (really need to overhaul most of this):
-	* (1) First, look for an address of the user, via safety broker, that has a location
-	* (2) If not, look for a stored / average user location
-	* (3) If not that, look for a group / event with a stored user location
-	* On each of the above, look for an address / address log in the vicinity, and return it
-	* Otherwise, call the geolocator, then store the address so we don't need it again in future
-	 */
-    @Override
-	@Transactional(readOnly = true)
-    public String describeUserLocation(String userUid) {
-
-		PreviousPeriodUserLocation avgLocation = fetchUserLocation(userUid);
-		if (avgLocation != null) {
-
-		}
-		return null;
-    }
-
-    @Async
+	@Async
     @Override
 	@Transactional
     public void logUserUssdPermission(String userUid, String entityToUpdateUid,
@@ -263,7 +244,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		}
 
 		if (meetingLocation != null) {
-			meetingLocationRepository.save(meetingLocation);
+			taskLocationRepository.save(meetingLocation);
 		}
     }
 
@@ -275,7 +256,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		if (location != null) {
 			TaskLocation mtgLocation = new TaskLocation(meeting, location, (float) 1.0, EventType.MEETING,
 					convertFromInterface(coordSourceInterface));
-			meetingLocationRepository.save(mtgLocation);
+			taskLocationRepository.save(mtgLocation);
 		} else {
 			LocalDate inLastMonth = LocalDate.now().minusMonths(1L);
 			Group ancestor = meeting.getAncestorGroup();
@@ -361,11 +342,6 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		} else {
 			return groupLocationRepository.findOneByGroupAndLocalDate(group, mostRecentMatchingDate);
 		}
-	}
-
-	@Override
-	public List<GroupLocation> fetchGroupLocationsWithScoreAbove(Set<Group> groups, LocalDate localDate, float score) {
-		return groupLocationRepository.findByGroupInAndLocalDateAndScoreGreaterThan(groups, localDate, score);
 	}
 
 
@@ -471,7 +447,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 		String strQuery =
 				"SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(m, l) " +
-						"FROM MeetingLocation l INNER JOIN l.meeting m " +
+						"FROM TaskLocation l INNER JOIN l.meeting m " +
 						"WHERE " + groupRestriction + " m.eventStartDateTime >= :present AND "
 						+ GeoLocationUtils.locationFilterSuffix("l.location");
 
