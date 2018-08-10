@@ -171,9 +171,10 @@ public class EventBrokerImpl implements EventBroker {
 			applicationEventPublisher.publishEvent(addToGraph(meeting));
 		}
 
-		log.info("also recording a meeting location, if appropriate options set, etc");
+		log.info("also recording a meeting location, if appropriate options set, etc. Do we have one? : {}", helper.hasPreciseLocation());
 		if (helper.hasPreciseLocation() && applicationEventPublisher != null) {
-			applicationEventPublisher.publishEvent(addEventLocation(meeting.getUid(), helper.getUserLocation(), null));
+			log.info("We have locations, recording it: {}", helper.getUserLocation());
+			applicationEventPublisher.publishEvent(addEventLocation(meeting.getUid(), helper.getUserLocation(), channel));
 		}
 
 		return meeting;

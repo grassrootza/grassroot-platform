@@ -13,10 +13,15 @@ public enum LocationSource {
     UNKNOWN; // just in case corrupted call etc
 
     public static LocationSource convertFromInterface(UserInterfaceType type) {
+        if (type == null)
+            return UNKNOWN;
+
         switch (type) {
             case WEB:
-                return LocationSource.LOGGED_PRECISE;
             case ANDROID:
+            case ANDROID_2:
+            case WEB_2:
+            case REST_GENERIC:
                 return LocationSource.LOGGED_PRECISE;
             case USSD:
                 return LocationSource.LOGGED_APPROX;

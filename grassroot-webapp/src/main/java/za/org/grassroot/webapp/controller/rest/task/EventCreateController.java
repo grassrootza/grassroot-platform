@@ -90,6 +90,7 @@ public class EventCreateController extends BaseRestController{
         }
 
         if (userLat != null && userLong != null) {
+            log.info("We have a user lat and long, set location");
             helper = helper.userLocation(new GeoLocation(userLat, userLong));
         }
 
@@ -105,7 +106,7 @@ public class EventCreateController extends BaseRestController{
             helper = helper.importance(meetingImportance);
         }
 
-        log.info("Helper={}",helper);
+        log.info("Helper={}", helper);
 
         try {
             Meeting createdMeeting = eventBroker.createMeeting(helper, UserInterfaceType.REST_GENERIC);
