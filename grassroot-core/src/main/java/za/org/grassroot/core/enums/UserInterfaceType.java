@@ -9,8 +9,10 @@ public enum UserInterfaceType {
     WEB("web"),
     ANDROID("android"),
     INCOMING_SMS("incoming sms"),
+
     WEB_2("rebuilt_frontend"),
     ANDROID_2("second android"),
+    REST_GENERIC("generic REST"),
 
     FACEBOOK("facebook"),
     TWITTER("twitter"),

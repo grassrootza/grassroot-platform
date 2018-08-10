@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.Vote;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
@@ -71,7 +72,7 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
 
         when(jwtServiceMock.getUserIdFromJwtToken("testing")).thenReturn(sessionTestUser.getUid());
         when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
-        when(eventBrokerMock.createMeeting(helper)).thenReturn(dummyMeeting);
+        when(eventBrokerMock.createMeeting(helper, UserInterfaceType.REST_GENERIC)).thenReturn(dummyMeeting);
         mockMvc.perform(post(path + "/meeting/{parentType}/{parentUid}",
                 JpaEntityType.GROUP,
                 dummyGroup.getUid())
@@ -81,6 +82,6 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
                 .param("dateTimeEpochMillis", "" + testDateTimeEpochMillis)
         ).andExpect(status().is2xxSuccessful());
 
-        verify(eventBrokerMock,times(1)).createMeeting(helper);
+        verify(eventBrokerMock,times(1)).createMeeting(helper, UserInterfaceType.REST_GENERIC);
     }
 }

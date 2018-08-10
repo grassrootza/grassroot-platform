@@ -243,18 +243,18 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		List<EventLog> logsWithLocation = eventLogRepository.findAll(Specification.where(EventLogSpecifications.forEvent(event))
 				.and(EventLogSpecifications.hasLocation()));
 
-		MeetingLocation meetingLocation;
+		TaskLocation meetingLocation;
 		if (!logsWithLocation.isEmpty()) {
 			CenterCalculationResult center = calculateCenter(logsWithLocation);
 			float score = (float) 1.0; // since a related log with a GPS is best possible, but may return to this
-			meetingLocation = new MeetingLocation((Meeting) event, center.getCenter(), score,
+			meetingLocation = new TaskLocation((Meeting) event, center.getCenter(), score,
 					EventType.MEETING, LocationSource.LOGGED_MULTIPLE);
 		} else {
 			Group parent = event.getParent().getThisOrAncestorGroup();
 			GroupLocation parentLocation = fetchGroupLocationWithScoreAbove(parent.getUid(),
 					localDate, 0);
 			if (parentLocation != null) {
-				meetingLocation = new MeetingLocation((Meeting) event, parentLocation.getLocation(),
+				meetingLocation = new TaskLocation((Meeting) event, parentLocation.getLocation(),
 						parentLocation.getScore(), EventType.MEETING, LocationSource.CALCULATED);
 			} else {
 				logger.debug("No event logs or group with location data for meeting");
@@ -273,7 +273,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		Meeting meeting = (Meeting) eventRepository.findOneByUid(eventUid);
 		logger.info("Calculating a meeting location ...");
 		if (location != null) {
-			MeetingLocation mtgLocation = new MeetingLocation(meeting, location, (float) 1.0, EventType.MEETING,
+			TaskLocation mtgLocation = new TaskLocation(meeting, location, (float) 1.0, EventType.MEETING,
 					convertFromInterface(coordSourceInterface));
 			meetingLocationRepository.save(mtgLocation);
 		} else {
@@ -285,11 +285,6 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 			}
 			calculateMeetingLocationScheduled(eventUid, LocalDate.now());
 		}
-    }
-
-    @Override
-    public void calculateTodoLocationScheduled(String todoUid, LocalDate localDate) {
-
     }
 
 	@Override

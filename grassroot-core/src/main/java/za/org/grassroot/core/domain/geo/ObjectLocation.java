@@ -79,7 +79,7 @@ public class ObjectLocation {
         this.groupTasks = groupTasks;
     }
 
-    public ObjectLocation (Meeting meeting, MeetingLocation meetingLocation) {
+    public ObjectLocation (Meeting meeting, TaskLocation meetingLocation) {
         this(meeting.getUid(),
                 meeting.getName(), meetingLocation.getLocation().getLatitude(),
                 meetingLocation.getLocation().getLongitude(), meetingLocation.getScore(),

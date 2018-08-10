@@ -1,7 +1,6 @@
 package za.org.grassroot.services.task;
 
 import org.springframework.data.domain.Page;
-import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.group.Group;
@@ -44,7 +43,7 @@ public interface EventBroker {
      * assignMemberUids The UIDs of the assigned members. If an empty set, then all members in the parent entity will be assigned.
      * importance The meeting importance
 	 */
-	Meeting createMeeting(MeetingBuilderHelper helper);
+	Meeting createMeeting(MeetingBuilderHelper helper, UserInterfaceType channel);
 
 	// for commonly updated fields (in particular, the only fields that can be changed via USSD) -- returns true if field actually changed ...
 	boolean updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation);

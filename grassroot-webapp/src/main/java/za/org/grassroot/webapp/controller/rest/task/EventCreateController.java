@@ -18,6 +18,7 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.EventSpecialForm;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -107,7 +108,7 @@ public class EventCreateController extends BaseRestController{
         log.info("Helper={}",helper);
 
         try {
-            Meeting createdMeeting = eventBroker.createMeeting(helper);
+            Meeting createdMeeting = eventBroker.createMeeting(helper, UserInterfaceType.REST_GENERIC);
             return ResponseEntity.ok(new TaskFullDTO(createdMeeting, userService.load(userUid),
                     createdMeeting.getCreatedDateTime(), null));
         } catch (AccessDeniedException e) {

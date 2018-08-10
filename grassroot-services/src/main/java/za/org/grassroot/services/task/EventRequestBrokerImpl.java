@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventRequestRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -223,7 +224,7 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 					.reminderType(meetingRequest.getReminderType())
 					.customReminderMinutes(meetingRequest.getCustomReminderMinutes())
 					.description(meetingRequest.getDescription())
-					.assignedMemberUids(assignedMemberUids)).getUid();
+					.assignedMemberUids(assignedMemberUids), UserInterfaceType.USSD).getUid();
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
 			VoteContainer parent = voteRequest.getParent();

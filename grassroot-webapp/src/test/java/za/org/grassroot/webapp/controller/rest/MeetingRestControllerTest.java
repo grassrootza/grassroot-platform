@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.webapp.controller.android1.MeetingRestController;
 
@@ -64,7 +65,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         logger.debug("meetingHelperTest: {}", helper);
-        when(eventBrokerMock.createMeeting(helper)).thenReturn(meetingEvent);
+        when(eventBrokerMock.createMeeting(helper, UserInterfaceType.ANDROID)).thenReturn(meetingEvent);
 
         mockMvc.perform(post(path + "/create/{phoneNumber}/{code}/{parentUid}", testUserPhone, testUserCode, testGroup.getUid())
                                 .param("title", testEventTitle)
@@ -75,7 +76,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().is2xxSuccessful());
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(eventBrokerMock).createMeeting(helper);
+        verify(eventBrokerMock).createMeeting(helper, UserInterfaceType.ANDROID);
     }
 
     @Test

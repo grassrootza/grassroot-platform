@@ -1,20 +1,30 @@
 package za.org.grassroot.core.domain.geo;
 
-import za.org.grassroot.core.domain.UidIdentifiable;
+import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.LocationSource;
-import za.org.grassroot.core.enums.TaskType;
 
-import javax.persistence.Column;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import javax.persistence.*;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
- * Created by luke on 2017/04/11.
+ * Created by luke on 2017/03/28.
+ * todo: create task Location and then inheritance (use multi table as these could get very long)
  */
-// @Entity
-// @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-public abstract class TaskLocation<P extends UidIdentifiable> {
+@Entity
+@Table(name = "meeting_location",
+        uniqueConstraints = @UniqueConstraint(name = "uk_meeting_location_event_date", columnNames = {"event_id", "calculated_time"}))
+public class TaskLocation {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "event_id", nullable = false, updatable = false, foreignKey = @ForeignKey(name = "fk_event_location_event"))
+    private Meeting meeting;
 
     @Column(name = "calculated_time", nullable = false)
     private Instant calculatedDateTime;
@@ -26,10 +36,70 @@ public abstract class TaskLocation<P extends UidIdentifiable> {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type", length = 50, nullable = false)
-    private TaskType taskType;
+    private EventType eventType;
 
-    @Column(name = "source", nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(name = "source", length = 50, nullable = false)
     private LocationSource source;
 
+    private TaskLocation() {
+        // for JPA
+    }
+
+    public TaskLocation(Meeting meeting, GeoLocation location, float score, EventType eventType, LocationSource source) {
+        Objects.requireNonNull(meeting);
+        Objects.requireNonNull(location);
+        Objects.requireNonNull(eventType);
+
+        this.meeting = meeting;
+        this.calculatedDateTime = Instant.now();
+        this.location = location;
+        this.score = score;
+        this.eventType = eventType;
+        this.source = source;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Meeting getMeeting() {
+        return meeting;
+    }
+
+    public Instant getCalculatedDateTime() {
+        return calculatedDateTime;
+    }
+
+    public GeoLocation getLocation() {
+        return location;
+    }
+
+    public float getScore() {
+        return score;
+    }
+
+    public EventType getEventType() {
+        return eventType;
+    }
+
+    public LocationSource getSource() { return source; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TaskLocation that = (TaskLocation) o;
+
+        if (!meeting.equals(that.meeting)) return false;
+        return calculatedDateTime.equals(that.calculatedDateTime);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = meeting.hashCode();
+        result = 31 * result + calculatedDateTime.hashCode();
+        return result;
+    }
 }

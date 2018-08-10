@@ -36,8 +36,6 @@ public interface GeoLocationBroker {
 	// used for a meeting that has just been called
 	void calculateMeetingLocationInstant(String eventUid, GeoLocation location, UserInterfaceType coordSourceInterface);
 
-	void calculateTodoLocationScheduled(String todoUid, LocalDate localDate);
-
 	void calculateTodoLocationInstant(String todoUid, GeoLocation location, UserInterfaceType coordSourceInterface);
 
 	CenterCalculationResult calculateCenter(Set<String> userUids, LocalDate date);
