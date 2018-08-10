@@ -57,7 +57,7 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
     @Override
     public void sendSMS(String message, String userUid, boolean userRequested) {
         asyncWebClient.post()
-                .uri("/notification/push/system/{userUid}?message={message}&userRequested={userRequested",
+                .uri("/notification/push/system/{userUid}?message={message}&userRequested={userRequested}",
                         userUid, message, userRequested)
                 .header(AUTH_HEADER, jwtHeader())
                 .retrieve()

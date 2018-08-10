@@ -470,8 +470,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		final String publicGroupsNotUser = "m.isPublic = true AND m.ancestorGroup NOT IN (SELECT mm.group FROM Membership mm WHERE mm.user = :user) AND ";
 
 		final String groupRestriction = GeographicSearchType.PUBLIC.equals(searchType) ? publicGroupsNotUser :
-				GeographicSearchType.PRIVATE.equals(searchType) ? usersOwnGroups :
-						" ";
+				GeographicSearchType.PRIVATE.equals(searchType) ? usersOwnGroups : "";
 
 		logger.info("Group restrictions: {}", groupRestriction);
 
@@ -484,8 +483,12 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		logger.info("we have a search location, it looks like: {}, and query: {}", searchCentre, strQuery);
 
 		TypedQuery<ObjectLocation> query = entityManager.createQuery(strQuery,ObjectLocation.class)
-				.setParameter("user", user)
 				.setParameter("present", Instant.now());
+
+		if (!GeographicSearchType.BOTH.equals(searchType)) {
+			query.setParameter("user", user);
+		}
+
 		GeoLocationUtils.addLocationParamsToQuery(query, geoLocation, radiusInMetres);
 
 		return query.getResultList();
