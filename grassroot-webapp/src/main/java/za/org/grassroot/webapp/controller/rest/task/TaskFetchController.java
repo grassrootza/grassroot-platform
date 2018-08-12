@@ -76,18 +76,13 @@ public class TaskFetchController extends BaseRestController {
         return ResponseEntity.ok(taskBroker.findNewlyChangedTasks(getUserIdFromRequest(request), knownTasks));
     }
 
-    @RequestMapping(value = "/updated/group/{userUid}/{groupUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/updated/group/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Updated tasks for group", notes = "Fetches all the tasks on this group updated since the " +
             "timestampts in the map")
-    public ResponseEntity<List<TaskMinimalDTO>> fetchGroupUpdatedTasks(@PathVariable String userUid,
-                                                                       @PathVariable String groupUid,
+    public ResponseEntity<List<TaskMinimalDTO>> fetchGroupUpdatedTasks(@PathVariable String groupUid,
                                                                        @RequestBody Map<String, Long> knownTasks,
                                                                        HttpServletRequest request) {
-        String loggedInUserUid = getUserIdFromRequest(request);
-        if (userUid.equals(loggedInUserUid))
-            return ResponseEntity.ok(taskBroker.fetchNewlyChangedTasksForGroup(userUid, groupUid, knownTasks));
-        else
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
+        return ResponseEntity.ok(taskBroker.fetchNewlyChangedTasksForGroup(getUserIdFromRequest(request), groupUid, knownTasks));
     }
 
     @RequestMapping(value = "/specified", method = RequestMethod.POST)
