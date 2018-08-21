@@ -53,6 +53,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookToDownload;
+
 @RestController
 @Grassroot2RestController
 @Slf4j @Api("/v2/api/group/fetch")
@@ -144,14 +146,17 @@ public class GroupFetchController extends BaseRestController {
     }
 
     /**
-     * Sends back a minimal set of information about the groups: names, size, last activity times
-     * @param groupUids
-     * @return
+     * Sends back a small set of information about the groups: names, size, last activity times
      */
-    @RequestMapping(value = "/info", method = RequestMethod.GET)
+    @RequestMapping(value = "/info", method = RequestMethod.POST)
     public ResponseEntity<Set<GroupMinimalDTO>> fetchGroupInfo(HttpServletRequest request,
                                                                @RequestParam(required = false) Set<String> groupUids) {
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupMinimalInfo(getUserIdFromRequest(request), groupUids));
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupNamesUidsOnly(getUserIdFromRequest(request), groupUids));
+    }
+
+    @RequestMapping(value = "/minimal", method = RequestMethod.GET)
+    public ResponseEntity<List<GroupRefDTO>> fetchMinimalGroupLIst(HttpServletRequest request) {
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupNamesUidsOnly(getUserIdFromRequest(request)));
     }
 
     @RequestMapping(value = "/full", method = RequestMethod.GET)
@@ -214,7 +219,7 @@ public class GroupFetchController extends BaseRestController {
         return response;
     }
 
-    @RequestMapping(value = "/members/filter/download/{groupUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/members/filter/download/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<byte[]> downloadFilteredGroupMembers(@PathVariable String groupUid,
                                                                @RequestParam List<String> filteredMemberUids,
                                                                HttpServletRequest request) {
@@ -259,25 +264,6 @@ public class GroupFetchController extends BaseRestController {
         String fileName = "group_members.xlsx";
         XSSFWorkbook xls = memberDataExportBroker.exportGroup(groupUid, userUid);
         return convertWorkbookToDownload(fileName, xls);
-    }
-
-    private ResponseEntity<byte[]> convertWorkbookToDownload(String fileName, XSSFWorkbook xls) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
-            headers.add("Cache-Control", "no-cache");
-            headers.add("Pragma", "no-cache");
-            headers.add("Expires", "0");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            xls.write(baos);
-            return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
-        } catch (IOException e) {
-            logger.error("IO Exception generating spreadsheet!", e);
-            throw new FileCreationException();
-        } catch (AccessDeniedException e) {
-            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        }
     }
 
     @ExceptionHandler(value = FileCreationException.class)

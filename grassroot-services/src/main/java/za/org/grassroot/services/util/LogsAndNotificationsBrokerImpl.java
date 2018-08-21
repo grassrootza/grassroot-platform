@@ -106,7 +106,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 			saveLog(actionLog);
 			checkForGroupLogUpdate(actionLog, groupsToUpdateLogTimestamp);
 			checkForTaskUpdate(actionLog, groupsToUpdateTaskTimestamp);
-			log.info("saving log, check thread ...");
+			log.debug("saving log, check thread ...");
 		}
 
 		Set<Notification> notifications = bundle.getNotifications();
@@ -239,7 +239,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	private void updateCacheSingle(ActionLog actionLog) {
         PublicActivityType activityType = null;
 
-        log.info("checking for public action type, log = {}", actionLog);
+        log.debug("checking for public action type, log = {}", actionLog);
         switch (actionLog.getActionLogType()) {
             case GROUP_LOG:
                 GroupLogType logType = ((GroupLog) actionLog).getGroupLogType();

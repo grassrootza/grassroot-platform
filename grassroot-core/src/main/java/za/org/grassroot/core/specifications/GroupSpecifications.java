@@ -31,10 +31,14 @@ public final class GroupSpecifications {
     }
 
     public static Specification<Group> userIsMemberAndCanSeeMembers(User user) {
+        return userIsMemberAndHasPermission(user, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+    }
+
+    public static Specification<Group> userIsMemberAndHasPermission(User user, Permission permission) {
         return (root, query, cb) -> {
             Join<Group, Membership> members = root.join(Group_.memberships);
             Predicate isMember = cb.equal(members.get(Membership_.user), user);
-            Predicate canSeeMembers = cb.isMember(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, members.get(Membership_.role).get(Role_.permissions));
+            Predicate canSeeMembers = cb.isMember(permission, members.get(Membership_.role).get(Role_.permissions));
             return cb.and(isMember, canSeeMembers);
         };
     }

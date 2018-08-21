@@ -100,7 +100,9 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
                 fileToReturn = generateImage(pd);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("IO execption getting flyer: {}", e.getMessage());
+        } catch (UnsupportedOperationException e) {
+            logger.error("Unsupported operation: {}", e.getMessage());
         } finally {
             if (pdfDocument != null && !pdfDocument.isClosed()) {
                 pdfDocument.close();

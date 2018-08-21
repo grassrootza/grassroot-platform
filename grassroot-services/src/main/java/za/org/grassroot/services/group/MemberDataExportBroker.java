@@ -16,6 +16,8 @@ public interface MemberDataExportBroker {
 
     XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupUidsToExport);
 
+    XSSFWorkbook exportCampaignJoinedData(String campaignUid, String userUid);
+
     XSSFWorkbook exportTodoData(String userUid, String todoUid);
 
     void emailTodoResponses(String userUid, String todoUid, String emailAddress);

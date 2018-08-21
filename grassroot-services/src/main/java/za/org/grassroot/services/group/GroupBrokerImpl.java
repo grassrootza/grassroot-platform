@@ -436,7 +436,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         final String fromGroupName = fromGroup.getName();
-        Set<Membership> memberships = toGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupName);
+        Set<Membership> addedMembers = toGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupName);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
@@ -448,13 +448,18 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             notifyNewMembersOfUpcomingMeetings(bundle, u, toGroup, groupLog);
         }
 
+        Set<Membership> allMembers = new HashSet<>(membershipRepository.findByGroupAndUserIn(toGroup, userSet)); // so topics etc affect all, even ones already in
+
+        logger.info("Copying members into other group, keep topics? : {}", keepTopics);
         if (keepTopics) {
-            transferTopics(fromGroupUid, userUids, memberships);
+            transferTopics(fromGroupUid, userUids, allMembers);
         }
 
+        logger.info("Copying members, adding topic? : {}", addTopic);
         if (!StringUtils.isEmpty(addTopic)) {
             Set<String> topic = Collections.singleton(addTopic);
-            memberships.forEach(m -> m.addTopics(topic));
+            allMembers.forEach(m -> m.addTopics(topic));
+//            membershipRepository.saveAll(memberships);
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);

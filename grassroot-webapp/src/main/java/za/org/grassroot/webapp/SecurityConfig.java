@@ -27,6 +27,7 @@ public class SecurityConfig {
             "/v2/api/news/**",
             "/v2/api/activity/**",
             "/v2/api/donate/**",
+            "/v2/api/payment/**",
             "/v2/api/image/**",
             "/v2/api/group/search",
             "/v2/api/group/fetch/flyer",
