@@ -114,7 +114,7 @@ public class MeetingRestController {
             }
 
             log.debug("meetingHelper: {}", helper);
-            Meeting meeting = eventBroker.createMeeting(helper);
+            Meeting meeting = eventBroker.createMeeting(helper, UserInterfaceType.ANDROID);
             TaskDTO createdMeeting = taskBroker.load(user.getUid(), meeting.getUid(), TaskType.MEETING);
             return RestUtil.okayResponseWithData(RestMessage.MEETING_CREATED, Collections.singletonList(createdMeeting));
         } catch (EventStartTimeNotInFutureException e) {

@@ -243,6 +243,7 @@ public class AdminManager implements AdminService {
     public void repopulateMemberUserAnnotations() {
         // this is ultra heavy but we will call it exactly once
         if (graphBroker != null) {
+            logger.info("Reseeding queue with annotations ...");
             List<Membership> memberships = membershipRepository.findByGroupActiveTrue();
             Set<Long> membershipIds = memberships.stream().map(m -> m.getUser().getId()).collect(Collectors.toSet());
             Specification<User> spec = (root, query, cb) -> cb.and(cb.isFalse(root.get(User_.hasInitiatedSession)),

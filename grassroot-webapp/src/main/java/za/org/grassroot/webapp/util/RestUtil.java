@@ -1,8 +1,15 @@
 package za.org.grassroot.webapp.util;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.webapp.controller.rest.exception.FileCreationException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.wrappers.GenericResponseWrapper;
@@ -10,12 +17,15 @@ import za.org.grassroot.webapp.model.rest.wrappers.PermissionLackingWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.http.HttpStatus.*;
 
+@Slf4j
 public class RestUtil {
 
     private final static Set<Permission> homeScreenPermissions = Stream.of(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
@@ -25,6 +35,25 @@ public class RestUtil {
                                                                    Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
                                                                    Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
                                                                    Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER).collect(Collectors.toSet());
+
+    public static ResponseEntity<byte[]> convertWorkbookToDownload(String fileName, XSSFWorkbook xls) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+            headers.add("Cache-Control", "no-cache");
+            headers.add("Pragma", "no-cache");
+            headers.add("Expires", "0");
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            xls.write(baos);
+            return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
+        } catch (IOException e) {
+            log.error("IO Exception generating spreadsheet!", e);
+            throw new FileCreationException();
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+    }
 
     public static Set<Permission> filterPermissions(Set<Permission> permissions){
         return permissions.stream().filter(homeScreenPermissions::contains)

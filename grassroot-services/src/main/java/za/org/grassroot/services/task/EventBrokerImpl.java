@@ -135,7 +135,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public Meeting createMeeting(MeetingBuilderHelper helper) {
+	public Meeting createMeeting(MeetingBuilderHelper helper, UserInterfaceType channel) {
 		helper.validateMeetingFields();
 
 		User user = userService.load(helper.getUserUid());
@@ -171,6 +171,12 @@ public class EventBrokerImpl implements EventBroker {
 			applicationEventPublisher.publishEvent(addToGraph(meeting));
 		}
 
+		log.info("also recording a meeting location, if appropriate options set, etc. Do we have one? : {}", helper.hasPreciseLocation());
+		if (helper.hasPreciseLocation() && applicationEventPublisher != null) {
+			log.info("We have locations, recording it: {}", helper.getUserLocation());
+			applicationEventPublisher.publishEvent(addEventLocation(meeting.getUid(), helper.getUserLocation(), channel));
+		}
+
 		return meeting;
 	}
 
@@ -179,6 +185,12 @@ public class EventBrokerImpl implements EventBroker {
 			List<String> assignedUids = meeting.getMembers().stream().map(User::getUid).collect(Collectors.toList());
 			graphBroker.addTaskToGraph(meeting.getUid(), meeting.getTaskType(), assignedUids);
 			graphBroker.annotateTask(meeting.getUid(), meeting.getTaskType(), null, null, true);
+		};
+	}
+
+	private AfterTxCommitTask addEventLocation(String eventUid, GeoLocation location, UserInterfaceType sourceInterface) {
+		return () -> {
+			geoLocationBroker.calculateMeetingLocationInstant(eventUid, location, sourceInterface);
 		};
 	}
 

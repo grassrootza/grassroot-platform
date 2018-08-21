@@ -3,19 +3,22 @@ package za.org.grassroot.webapp.controller.rest.campaign;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.campaign.CampaignActivityStatsRequest;
 import za.org.grassroot.services.campaign.CampaignStatsBroker;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -26,11 +29,13 @@ import java.util.Map;
 public class CampaignStatsController extends BaseRestController {
 
     private final CampaignStatsBroker campaignStatsBroker;
+    private final MemberDataExportBroker memberDataExportBroker;
 
     @Autowired
-    public CampaignStatsController(JwtService jwtService, UserManagementService userManagementService, CampaignStatsBroker campaignStatsBroker) {
+    public CampaignStatsController(JwtService jwtService, UserManagementService userManagementService, CampaignStatsBroker campaignStatsBroker, MemberDataExportBroker memberDataExportBroker) {
         super(jwtService, userManagementService);
         this.campaignStatsBroker = campaignStatsBroker;
+        this.memberDataExportBroker = memberDataExportBroker;
     }
 
     @RequestMapping(value = "/member-growth", method = RequestMethod.GET)
@@ -69,4 +74,12 @@ public class CampaignStatsController extends BaseRestController {
         return campaignStatsBroker.getCampaignActivityCounts(campaignUid, statsRequest);
     }
 
+    @RequestMapping(value = "/download", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> exportCampaign(@RequestParam String campaignUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        String fileName = "campaign_results.xlsx";
+        XSSFWorkbook xls = memberDataExportBroker.exportCampaignJoinedData(campaignUid, userUid);
+        return RestUtil.convertWorkbookToDownload(fileName, xls);
+    }
 }
+

@@ -45,7 +45,7 @@ public class MeetingBuilderHelper {
     @Getter private String taskImageKey;
 
     private boolean isPublic = false;
-    private GeoLocation userLocation;
+    @Getter private GeoLocation userLocation;
 
     public MeetingBuilderHelper name(String name) {
         this.name = name;
@@ -160,6 +160,10 @@ public class MeetingBuilderHelper {
         }
     }
 
+    public boolean hasPreciseLocation() {
+        return userLocation != null;
+    }
+
     public MeetingBuilder convertToBuilder(User user, MeetingContainer parent) {
         logger.debug("meeting helper, reminder type = {}", reminderType);
         MeetingBuilder meetingBuilder = new MeetingBuilder()
@@ -242,6 +246,7 @@ public class MeetingBuilderHelper {
                 ", importance=" + importance +
                 ", assignedMemberUids=" + assignedMemberUids +
                 ", taskImageKey='" + taskImageKey + '\'' +
+                ", userLocation=" + userLocation +
                 '}';
     }
 }

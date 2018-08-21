@@ -3,12 +3,15 @@ package za.org.grassroot.services.group;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.xssf.usermodel.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.NotificationSendError;
@@ -21,6 +24,7 @@ import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.campaign.CampaignStatsBroker;
 import za.org.grassroot.services.task.TodoBroker;
 
 import java.io.File;
@@ -47,6 +51,9 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
     private final MessagingServiceBroker messageBroker;
 
+    private CampaignStatsBroker campaignStatsBroker;
+
+    @Autowired
     public MemberDataExportBrokerImpl(UserRepository userRepository, MembershipRepository membershipRepository, GroupBroker groupBroker, TodoBroker todoBroker,
                                       PermissionBroker permissionBroker, MessagingServiceBroker messageBroker) {
         this.userRepository = userRepository;
@@ -55,6 +62,11 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         this.todoBroker = todoBroker;
         this.permissionBroker = permissionBroker;
         this.messageBroker = messageBroker;
+    }
+
+    @Autowired
+    public void setCampaignStatsBroker(CampaignStatsBroker campaignStatsBroker) {
+        this.campaignStatsBroker = campaignStatsBroker;
     }
 
     @Override
@@ -163,6 +175,43 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
             rowIndex++;
         }
 
+
+        return workbook;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public XSSFWorkbook exportCampaignJoinedData(String campaignUid, String userUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        List<CampaignLog> campaignLogs = campaignStatsBroker.getCampaignJoinedAndBetter(Objects.requireNonNull(campaignUid));
+
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Campaign engagement");
+
+        generateHeader(workbook, sheet, new String[]{"Name", "Phone number", "Email", "Province", "Most advanced action"},
+                new int[]{7000, 5000, 7000, 7000, 7000});
+
+        //table content stuff
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+
+        //we are starting from 1 because row number 0 is header
+        int rowIndex = 1;
+
+        for (CampaignLog log : campaignLogs) {
+            User rowUser = log.getUser();
+            addRow(sheet, rowIndex, new String[]{
+                    rowUser.getName(),
+                    rowUser.getPhoneNumber(),
+                    rowUser.getEmailAddress(),
+                    Province.CANONICAL_NAMES_ZA.getOrDefault(rowUser.getProvince(), "Unknown"),
+                    log.getCampaignLogType().name()});
+            rowIndex++;
+        }
 
         return workbook;
     }

@@ -109,7 +109,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Set<GroupMinimalDTO> fetchGroupMinimalInfo(String userUid, Set<String> groupUids) {
+    public Set<GroupMinimalDTO> fetchGroupNamesUidsOnly(String userUid, Set<String> groupUids) {
         if (groupUids == null || groupUids.isEmpty()) {
             return new HashSet<>();
         }
@@ -266,6 +266,15 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         return dtos.stream()
                 .sorted(Comparator.comparing(GroupMinimalDTO::getLastTaskOrChangeTime, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupRefDTO> fetchGroupNamesUidsOnly(String userUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        // note: for present, since this is minimal, not even getting member count
+        return groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user).stream()
+                .map(group -> new GroupRefDTO(group.getUid(), group.getName(), 0)).collect(Collectors.toList());
     }
 
     @Override

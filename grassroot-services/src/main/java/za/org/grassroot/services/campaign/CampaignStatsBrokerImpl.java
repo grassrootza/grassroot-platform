@@ -64,6 +64,14 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
 
     private static final Specification<CampaignLog> isEngagementLog = (root, query, cb) -> root.get("campaignLogType").in(ENGAGEMENT_LOG_TYPES);
 
+    private static final List<CampaignLogType> SIGNED_OR_BETTER_LOG_TYPES = Arrays.asList(
+            CampaignLogType.CAMPAIGN_PETITION_SIGNED,
+            CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,
+            CampaignLogType.CAMPAIGN_SHARED
+    );
+
+    private static final Specification<CampaignLog> isSignedOrBetterLog = (root, query, cb) -> root.get("campaignLogType").in(SIGNED_OR_BETTER_LOG_TYPES);
+
     private static Specification<CampaignLog> forCampaign(Campaign campaign) {
         return (root, query, cb) -> cb.equal(root.get("campaign"), campaign);
     }
@@ -172,7 +180,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         List<CampaignLog> allEngagementLogs = campaignLogRepository.findAll(engagementLogsForCampaign(campaign));
         allEngagementLogs.sort(Comparator.comparingInt(log -> ENGAGEMENT_LOG_TYPES.indexOf(log.getCampaignLogType())));
 
-        // step 2: divide into a map, for each user, of their latest engagement status
+        // step 2: divide into a map, for each user, of their latest engagement status (hence sorting above imporant)
         Map<Long, CampaignLogType> lastStageMap = new LinkedHashMap<>();
         allEngagementLogs.forEach(log -> lastStageMap.put(log.getUser().getId(), log.getCampaignLogType()));
         log.info("latest stage map: {}", lastStageMap);
@@ -185,6 +193,23 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         cache.put(new Element(cacheKey, result));
         return result;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CampaignLog> getCampaignJoinedAndBetter(String campaignUid) {
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+
+        // step 1: get all engagement logs and sort them in ascending order of degree of engagement
+        List<CampaignLog> allEngagementLogs = campaignLogRepository.findAll(Specification.where(forCampaign(campaign)).and(isSignedOrBetterLog));
+        allEngagementLogs.sort(Comparator.comparingInt(log -> SIGNED_OR_BETTER_LOG_TYPES.indexOf(log.getCampaignLogType())));
+
+        Map<Long, CampaignLog> lastStageMap = new LinkedHashMap<>();
+        allEngagementLogs.forEach(log -> lastStageMap.put(log.getUser().getId(), log));
+        log.info("latest stage map: {}", lastStageMap);
+
+        return new ArrayList<>(lastStageMap.values());
+    }
+
 
     @Override
     @Transactional(readOnly = true)

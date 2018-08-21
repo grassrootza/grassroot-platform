@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.MeetingLocation;
+import za.org.grassroot.core.domain.geo.TaskLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Meeting;
@@ -118,7 +118,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
         Meeting testMeeting = new MeetingBuilder().setName("test meeting")
                 .setStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS))
                 .setUser(testUser).setParent(testGroup).setEventLocation("place").createMeeting();
-        MeetingLocation meetingLocation = new MeetingLocation(testMeeting,testLocation,0,
+        TaskLocation meetingLocation = new TaskLocation(testMeeting,testLocation,0,
                 EventType.MEETING, LocationSource.LOGGED_APPROX);
 
         ObjectLocation objectLocation = new ObjectLocation(testMeeting, meetingLocation);

@@ -24,7 +24,7 @@ public interface GroupFetchBroker {
 
     Set<GroupTimeChangedDTO> findNewlyChangedGroups(String userUid, Map<String, Long> excludedGroupsByTimeChanged);
 
-    Set<GroupMinimalDTO> fetchGroupMinimalInfo(String userUid, Set<String> groupUids);
+    Set<GroupMinimalDTO> fetchGroupNamesUidsOnly(String userUid, Set<String> groupUids);
 
     GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid,
                                     boolean includeAllMembers,
@@ -36,6 +36,8 @@ public interface GroupFetchBroker {
     List<MembershipRecordDTO> fetchRecentMembershipChanges(String userUid, String groupUid, Instant fromDate);
 
     List<GroupWebDTO> fetchGroupWebInfo(String userUid);
+
+    List<GroupRefDTO> fetchGroupNamesUidsOnly(String userUid);
 
     Page<Membership> fetchGroupMembers(User user, String groupUid, Pageable pageable);
 
