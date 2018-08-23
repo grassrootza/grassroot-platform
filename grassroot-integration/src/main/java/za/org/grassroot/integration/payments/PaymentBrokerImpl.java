@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.payments.peachp.PaymentCopyPayResponse;
 
+import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.util.Objects;
 
@@ -40,6 +41,11 @@ public class PaymentBrokerImpl implements PaymentBroker {
     private String channelId;
     @Value("${grassroot.payments.values.channelId3d:testChannel2}")
     private String entityId;
+
+    @PostConstruct
+    public void init() {
+        logger.info("Initiated payment broker, URL: {}", paymentUrl);
+    }
 
     @Autowired
     public PaymentBrokerImpl(RestTemplate restTemplate) {

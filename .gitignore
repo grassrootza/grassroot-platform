@@ -88,3 +88,6 @@ classes/
 # Include the Gradle Wrapper
 !gradle-wrapper.jar
 !gradlew
+
+# Some config files
+config/

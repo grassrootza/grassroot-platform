@@ -150,7 +150,7 @@ public class GroupFetchController extends BaseRestController {
      */
     @RequestMapping(value = "/info", method = RequestMethod.POST)
     public ResponseEntity<Set<GroupMinimalDTO>> fetchGroupInfo(HttpServletRequest request,
-                                                               @RequestParam(required = false) Set<String> groupUids) {
+                                                               @RequestBody(required = false) Set<String> groupUids) {
         return ResponseEntity.ok(groupFetchBroker.fetchGroupNamesUidsOnly(getUserIdFromRequest(request), groupUids));
     }
 
@@ -221,7 +221,7 @@ public class GroupFetchController extends BaseRestController {
 
     @RequestMapping(value = "/members/filter/download/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<byte[]> downloadFilteredGroupMembers(@PathVariable String groupUid,
-                                                               @RequestParam List<String> filteredMemberUids,
+                                                               @RequestBody List<String> filteredMemberUids,
                                                                HttpServletRequest request) {
         log.info("filtering & downloading, member UIDs = {}", filteredMemberUids);
         String fileName = "filtered_members.xls";
