@@ -15,6 +15,7 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.webapp.controller.ussd.group.USSDGroupController;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

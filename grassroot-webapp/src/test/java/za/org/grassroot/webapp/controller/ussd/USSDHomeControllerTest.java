@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.task.VoteBroker;
+import za.org.grassroot.webapp.controller.ussd.group.USSDGroupController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 
 import java.time.Instant;
