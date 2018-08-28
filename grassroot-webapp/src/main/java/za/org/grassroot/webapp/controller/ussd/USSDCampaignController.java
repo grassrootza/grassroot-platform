@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +37,9 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController @Slf4j
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 public class USSDCampaignController extends USSDBaseController {
+
+    @Value("${grassroot.campaigns.redirect.main:false}") // controls whether to direct people who sign campaign into general GR capabalities
+    private boolean redirectCampaignCompletionToMain;
 
     private static final String campaignMenus = "campaign/";
     private static final String campaignUrl = homePath + campaignMenus;
@@ -278,7 +282,11 @@ public class USSDCampaignController extends USSDBaseController {
         log.info("found a campaign message? : {}", campaignMessage);
         USSDMenu menu = !campaignMessage.isEmpty() ? buildCampaignUSSDMenu(campaignMessage.get(0)) :
                 new USSDMenu(getMessage("campaign.exit_positive.generic", locale.getLanguage()));
-        menu.addMenuOptions(optionsHomeExit(user, false));
+        if (redirectCampaignCompletionToMain) {
+            menu.addMenuOptions(optionsHomeExit(user, false));
+        } else {
+            menu.setFreeText(false);
+        }
         return menu;
     }
 

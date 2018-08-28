@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.ussd.group.USSDGroupController;
+import za.org.grassroot.webapp.controller.ussd.group.USSDGroupJoinController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 
 import java.time.Instant;
@@ -46,6 +47,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     // these should be tested in their own controllers, home's role is just to direct
     @Mock private USSDLiveWireController liveWireControllerMock;
     @Mock private USSDGroupController groupControllerMock;
+    @Mock private USSDGroupJoinController groupJoinControllerMock;
     @Mock private USSDMeetingController meetingControllerMock;
 
     @InjectMocks
@@ -138,7 +140,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         // todo : write a test in group controller too
         when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
-        when(groupControllerMock.lookForJoinCode(testUser, "111")).thenReturn(new USSDMenu("Found the code"));
+        when(groupJoinControllerMock.lookForJoinCode(testUser, "111")).thenReturn(new USSDMenu("Found the code"));
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests).param("request", "*134*1994*111#"))
                 .andExpect(status().isOk());

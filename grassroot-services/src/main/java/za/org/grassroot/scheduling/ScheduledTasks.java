@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Todo;
@@ -15,24 +16,24 @@ import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.VoteBroker;
 
+import javax.persistence.criteria.Join;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by aakilomar on 10/5/15.
- * todo : clean up dependency mess in here
  */
 @Component
 public class ScheduledTasks {
@@ -42,14 +43,17 @@ public class ScheduledTasks {
     @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
     private double COMPLETION_PERCENTAGE_BOUNDARY;
 
+    @Value("${grassroot.todos.reminders.send:false}")
+    private boolean sendTodoReminders;
+
+    @Value("${grassroot.events.reminders.unpaid.send:false}")
+    private boolean sendUnpaidEventReminders;
+
     @Autowired
     private EventBroker eventBroker;
 
     @Autowired
     private VoteBroker voteBroker;
-
-    @Autowired
-    private GroupBroker groupBroker;
 
     @Autowired
     private TodoBroker todoBroker;
@@ -74,7 +78,9 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
-        List<Event> events = eventRepository.findEventsForReminders(Instant.now());
+        List<Event> events = eventRepository.findEventsForReminders(Instant.now())
+                .stream().filter(event -> sendUnpaidEventReminders || event.getAncestorGroup().isPaidFor()).collect(Collectors.toList());
+
         logger.debug("Sending scheduled reminders for {} event(s)", events.size());
 
         for (Event event : events) {
@@ -111,10 +117,17 @@ public class ScheduledTasks {
         Instant start = convertToSystemTime(LocalDateTime.of(yesterday, LocalTime.MIN), getSAST());
         Instant end = convertToSystemTime(LocalDateTime.of(yesterday, LocalTime.MAX), getSAST());
 
-        List<Meeting> meetings = meetingRepository.findByEventStartDateTimeBetweenAndCanceledFalseAndRsvpRequiredTrue(start, end);
+        Specification<Event> mtgCharacteristics = (root, query, cb) -> cb.and(cb.isFalse(root.get("canceled")),
+                cb.isTrue(root.get("rsvpRequired")), cb.between(root.get("eventStartDateTime"), start, end));
+        Specification<Event> ancestorGroupPaidFor = (root, query, cb) -> {
+            Join<Meeting, Group> groupJoin = root.join("ancestorGroup");
+            return cb.isTrue(groupJoin.get("paidFor"));
+        };
+
+        List<Event> meetings = meetingRepository.findAll(mtgCharacteristics.and(ancestorGroupPaidFor));
         logger.info("Sending out meeting thank you for {} meetings", meetings.size());
 
-        for (Meeting meeting : meetings) {
+        for (Event meeting : meetings) {
             try {
                 eventBroker.sendMeetingAcknowledgements(meeting.getUid());
             } catch (Exception ex) {
@@ -128,7 +141,9 @@ public class ScheduledTasks {
         // since the scheduled job runs once an hour, check for meetings created two days ago, in an hour interval
         Instant start = Instant.now().minus(48, ChronoUnit.HOURS);
 		Instant end = start.minus(1, ChronoUnit.HOURS);
-        List<Meeting> meetings = meetingRepository.meetingsForResponseTotals(Instant.now(), start, end);
+
+        List<Meeting> meetings = meetingRepository.meetingsForResponseTotals(Instant.now(), start, end)
+                .stream().filter(meeting -> meeting.getAncestorGroup().isPaidFor()).collect(Collectors.toList());
 
 		logger.info("Sending out RSVP totals for {} meetings", meetings.size());
         for (Meeting meeting : meetings) {
@@ -142,25 +157,16 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-        List<Todo> todos = todoRepository.findAll(Specification.where(TodoSpecifications.notCancelled())
-                .and(TodoSpecifications.remindersLeftToSend())
-                .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
-                .and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)))
-                .and(TodoSpecifications.todoNotConfirmedByCreator()));
+        if (sendTodoReminders) {
+            List<Todo> todos = todoRepository.findAll(Specification.where(TodoSpecifications.notCancelled())
+                    .and(TodoSpecifications.remindersLeftToSend())
+                    .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
+                    .and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)))
+                    .and(TodoSpecifications.todoNotConfirmedByCreator()));
 
-        logger.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);
-        for (Todo todo : todos) {
-            try {
-                todoBroker.sendScheduledReminder(todo.getUid());
-            } catch (Throwable th) {
-                logger.error("Error while sending reminder for todo " + todo + ": " + th.getMessage(), th);
-            }
+            logger.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);
+            todos.forEach(todo -> todoBroker.sendScheduledReminder(todo.getUid()));
         }
     }
-
-
-    @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
-    public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),
-                                                                                         Instant.now());}
 
 }

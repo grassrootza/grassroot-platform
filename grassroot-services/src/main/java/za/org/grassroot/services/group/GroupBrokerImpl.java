@@ -676,43 +676,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
     }
 
-    // todo : make this actually generate and send notifications
-    @Override
-    @Transactional(readOnly = true)
-    public void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd) {
-        logger.info("Checking whether we need to notify any organizers of join code use ...");
-        List<Group> groupsWhereJoinCodeUsed = groupRepository.findGroupsWhereJoinCodeUsedBetween(periodStart, periodEnd);
-        logger.info("What the repository returned: {}", groupsWhereJoinCodeUsed != null ? groupsWhereJoinCodeUsed.size() : "null");
-        // what follows is somewhat expensive, but is fortunately going to be called quite rarely
-        if (groupsWhereJoinCodeUsed != null && !groupsWhereJoinCodeUsed.isEmpty()) {
-            logger.info("People joined groups today via a join code! Processing for {} groups", groupsWhereJoinCodeUsed.size());
-            for (Group group : groupsWhereJoinCodeUsed) {
-                List<String> joinedUserDescriptions;
-                List<GroupLog> groupLogs = groupLogRepository.findByGroupAndGroupLogTypeAndCreatedDateTimeBetween(group,
-                        GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
-                        periodStart, periodEnd);
-
-                Set<User> organizers = group.getMemberships().stream() // consider adding a getOrganizers method to group
-                        .filter(m -> m.getRole().getName().equals(BaseRoles.ROLE_GROUP_ORGANIZER))
-                        .map(Membership::getUser).collect(Collectors.toSet());
-
-                if (groupLogs.size() < 4) { // create explicit list of phone numbers / display names to send to people
-                    joinedUserDescriptions = new ArrayList<>();
-                    groupLogs.forEach(log -> userRepository.findById(log.getUser().getId())
-                            .ifPresent(user -> joinedUserDescriptions.add(user.getName())));
-                } else {
-                    joinedUserDescriptions = null;
-                }
-
-                for (User user : organizers) {
-                    String message = messageAssemblingService.
-                            createGroupJoinCodeUseMessage(user, group.getGroupName(), groupLogs.size(), joinedUserDescriptions);
-                    logger.info("Will send {} this message: {}", user.nameToDisplay(), message);
-                }
-            }
-        }
-    }
-
 
     @Override
     @Transactional
