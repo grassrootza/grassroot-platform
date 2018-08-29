@@ -16,6 +16,7 @@ import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.ussd.group.USSDGroupController;
+import za.org.grassroot.webapp.controller.ussd.group.USSDGroupMgmtController;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -53,16 +54,22 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @InjectMocks
     private USSDGroupController ussdGroupController;
 
+    @InjectMocks
+    private USSDGroupMgmtController ussdGroupMgmtController;
+
     @Before
     public void setUp() {
 
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdGroupController)
+        mockMvc = MockMvcBuilders.standaloneSetup(ussdGroupController, ussdGroupMgmtController)
                 .setHandlerExceptionResolvers(exceptionResolver())
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
+
         wireUpMessageSourceAndGroupUtil(ussdGroupController);
         ussdGroupController.setUssdGroupUtil(ussdGroupUtil);
+
+        wireUpMessageSourceAndGroupUtil(ussdGroupMgmtController);
 
         testUser = new User(testUserPhone, null, null);
         testGroup = new Group("test group", testUser);
