@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.GrassrootEmail;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
@@ -244,12 +245,21 @@ public class AccountUserController extends BaseRestController {
         return ResponseEntity.ok(groupUidsAndNames);
     }
 
+    // note: necessary because std group fetch methods include checks for group membership, but account admin might not
+    // be part of the group
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/fetch/group/info", method = RequestMethod.GET)
+    public ResponseEntity<GroupRefDTO> getAccountGroupInfo(@RequestParam String groupUid, HttpServletRequest request) {
+        return ResponseEntity.ok(accountBroker.fetchGroupAccountInfo(getUserIdFromRequest(request), groupUid));
+    }
+
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/fetch/group/notification_count", method = RequestMethod.GET)
-    public ResponseEntity<Long> getGroupNotificationCount(@RequestParam String accountUid,
+    public ResponseEntity<Long> getGroupNotificationCount(@RequestParam(required = false) String accountUid,
                                                           @RequestParam String groupUid,
                                                           HttpServletRequest request) {
-        Account account = accountBroker.loadAccount(accountUid);
+        Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid)
+                : accountBroker.loadDefaultAccountForUser(getUserIdFromRequest(request));
         long startTime = System.currentTimeMillis();
         long groupCount = accountBroker.countChargedNotificationsForGroup(accountUid, groupUid,
                 account.getLastBillingDate(), Instant.now());

@@ -5,10 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -68,6 +65,22 @@ public class USSDGeoApiController extends USSDBaseController {
         availableLocales.forEach(l -> menu.addMenuOption(REL_PATH + subsequentUrl + l.toString(),
                 messageAssembler.getMessage("language." + l.toString(), user)));
         return menu;
+    }
+
+    // for mapping USSD code directly to this
+    @RequestMapping(value = "/opening/{dataSet}", method = RequestMethod.GET)
+    public Request openingMenu(@PathVariable String dataSet, @RequestParam(value = phoneNumber) String inputNumber,
+                               @RequestParam(required = false) Boolean forceOpening) throws URISyntaxException {
+        User user = userManager.loadOrCreateUser(inputNumber);
+        if (!forceOpening && cacheManager.fetchUssdMenuForUser(inputNumber) != null) {
+            String returnUrl = cacheManager.fetchUssdMenuForUser(inputNumber);
+            USSDMenu promptMenu = new USSDMenu(getMessage("home.start.prompt-interrupted", user));
+            promptMenu.addMenuOption(returnUrl, getMessage("home.start.interrupted.resume", user));
+            promptMenu.addMenuOption("geo/opening/" + dataSet + "?forceOpening=true", getMessage("home.start.interrupted.start", user));
+            return menuBuilder(promptMenu);
+        } else {
+            return menuBuilder(openingMenu(user, dataSet));
+        }
     }
 
     USSDMenu openingMenu(final User user, final String dataSetLabel) {

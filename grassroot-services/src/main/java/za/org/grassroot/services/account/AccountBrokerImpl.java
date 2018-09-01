@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.Account_;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -349,6 +351,7 @@ public class AccountBrokerImpl implements AccountBroker {
                 .description(administrator.getUid()).build());
     }
 
+    @Async
     @Override
     @Transactional
     public void addGroupsToAccount(String accountUid, Set<String> groupUids, String userUid) {
@@ -360,8 +363,7 @@ public class AccountBrokerImpl implements AccountBroker {
         User user = userRepository.findOneByUid(userUid);
         validateAdmin(user, account);
 
-        List<Group> groups = groupRepository
-                .findAll(Specification.where(GroupSpecifications.uidIn(groupUids)));
+        List<Group> groups = groupRepository.findAll(Specification.where(GroupSpecifications.uidIn(groupUids)));
         log.info("number of groups matching list: {}", groups.size());
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -373,6 +375,7 @@ public class AccountBrokerImpl implements AccountBroker {
                     group.setPaidFor(true);
 
                     log.info("Added group {} to account {}", group.getName(), account.getName());
+                    groupRepository.saveAndFlush(group);
 
                     bundle.addLog(new AccountLog.Builder(account)
                             .user(user)
@@ -457,6 +460,18 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GroupRefDTO fetchGroupAccountInfo(String userUid, String groupUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Group group = groupRepository.findOneByUid(Objects.requireNonNull(groupUid));
+
+        if (group.getAccount() == null || !user.getAccountsAdministered().contains(group.getAccount()))
+            throw new IllegalArgumentException("Error! Group is not on user's account");
+
+        return new GroupRefDTO(group.getUid(), group.getName(), group.getMembers().size());
     }
 
     @Override
@@ -632,6 +647,7 @@ public class AccountBrokerImpl implements AccountBroker {
                 .dataSetLabel(dataSetLabel)
                 .description(locationInfoBroker.getDescriptionForDataSet(dataSetLabel))
                 .usersCount(countUsersForDataSets(Collections.singleton(dataSetLabel), start, end))
+                .usersHistoryCount(countUsersForDataSets(Collections.singleton(dataSetLabel), DateTimeUtil.getEarliestInstant(), Instant.now()))
                 .userSessionCount(countSessionsForDatasets(Collections.singleton(dataSetLabel), start, end))
                 .notificationsCount(countNotificationsForDataSet(dataSetLabel, start, end))
                 .start(start).end(end).build();
@@ -641,7 +657,8 @@ public class AccountBrokerImpl implements AccountBroker {
         final String accountLogOnlyQueryText = countQueryOpening() +
                 "n.accountLog in (select al from AccountLog al where al.description like :dataSetStart)";
         TypedQuery<Long> countNonGroupsQuery = entityManager.createQuery(accountLogOnlyQueryText, Long.class)
-                .setParameter("start", start).setParameter("end", end).setParameter("dataSetStart", dataSetLabel + "%");
+                .setParameter("start", start).setParameter("end", end)
+                .setParameter("dataSetStart", dataSetLabel + "%");
         long dataSetNotifications = countNonGroupsQuery.getSingleResult();
         log.info("Counted {} notifications for the dataset {}", dataSetNotifications, dataSetLabel);
 

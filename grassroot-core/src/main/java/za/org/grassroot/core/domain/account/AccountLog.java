@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain.account;
 
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
@@ -111,7 +112,7 @@ public class AccountLog implements ActionLog {
         }
 
         public Builder description(String description) {
-            this.description = description != null ? description.substring(Math.min(255, description.length())) : null;
+            this.description = StringUtils.truncate(description, 255);
             return this;
         }
 

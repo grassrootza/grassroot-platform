@@ -178,7 +178,7 @@ public class USSDGroupController extends USSDBaseController {
             } else {
                 MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                 createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
-                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, false);
+                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, true);
             }
 
             cacheManager.putUssdMenuForUser(inputNumber, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));

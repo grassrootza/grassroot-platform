@@ -14,6 +14,7 @@ public class DataSetInfo {
     private String dataSetLabel;
     private String description;
     private long usersCount;
+    private long usersHistoryCount;
     private long userSessionCount;
     private long notificationsCount;
     private Instant start;

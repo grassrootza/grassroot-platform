@@ -161,8 +161,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             parent = groupRepository.findOneByUid(parentGroupUid);
         }
 
-        logger.info("Creating new group: name={}, description={}, membershipInfos={}, groupPermissionTemplate={},  parent={}, user={}, openJoinToken=",
-                name, description, membershipInfos, groupPermissionTemplate, parent, user, openJoinToken);
+        logger.info("Creating new group: name={}, add to account={}, description={}, membershipInfos={}, groupPermissionTemplate={},  parent={}, user={}, openJoinToken=",
+                name, addToAccountIfPresent, description, membershipInfos, groupPermissionTemplate, parent, user, openJoinToken);
 
         Group group = new Group(name, user);
         // last: set some advanced features, with defaults in case null passed
@@ -199,6 +199,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         if (addToAccountIfPresent && user.getPrimaryAccount() != null) {
+            logger.info("Adding group to account {}", user.getPrimaryAccount());
             addToAccountAfterCommit(user, group);
         }
 
