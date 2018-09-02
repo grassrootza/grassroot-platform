@@ -23,6 +23,7 @@ import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignTextBroker;
+import za.org.grassroot.webapp.controller.ussd.group.USSDGroupJoinController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -34,8 +35,6 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
@@ -51,7 +50,7 @@ public class USSDHomeController extends USSDBaseController {
     // since this controller in effect routes responses, needs access to the other primary ones
     // setters are for testing (since we need this controller in the tests of the handler)
     private final USSDLiveWireController liveWireController;
-    private final USSDGroupController groupController;
+    private final USSDGroupJoinController groupJoinController;
     @Setter(AccessLevel.PACKAGE) private USSDVoteController voteController;
     @Setter(AccessLevel.PACKAGE) private USSDMeetingController meetingController;
     private final USSDTodoController todoController;
@@ -86,10 +85,10 @@ public class USSDHomeController extends USSDBaseController {
     private Map<String, String> geoApiSuffixes;
 
     @Autowired
-    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupController groupController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
+    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupJoinController groupJoinController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
         this.userResponseBroker = userResponseBroker;
         this.liveWireController = liveWireController;
-        this.groupController = groupController;
+        this.groupJoinController = groupJoinController;
         this.voteController = voteController;
         this.meetingController = meetingController;
         this.todoController = todoController;
@@ -226,7 +225,7 @@ public class USSDHomeController extends USSDBaseController {
             returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
             sendWelcomeIfNew = false;
         } else {
-            returnMenu = groupController.lookForJoinCode(user, trailingDigits);
+            returnMenu = groupJoinController.lookForJoinCode(user, trailingDigits);
             boolean groupJoin = returnMenu != null;
             if (!groupJoin) {
                 log.info("checking if campaign: {}", trailingDigits);

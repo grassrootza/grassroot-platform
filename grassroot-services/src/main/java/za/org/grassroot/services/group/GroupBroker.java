@@ -70,8 +70,6 @@ public interface GroupBroker {
 
     void setMemberJoinTopics(String userUid, String groupUid, String memberUid, List<String> joinTopics);
 
-    void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
-
     void asyncAddMemberships(String initiatorUid, String groupUid, Set<MembershipInfo> membershipInfos,
                              GroupJoinMethod joinMethod, String joinMethodDescriptor,
                              boolean duringGroupCreation, boolean createWelcomeNotifications);

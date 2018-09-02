@@ -137,7 +137,6 @@ public class GroupFetchController extends BaseRestController {
      * Note: does not include / check for a more recent task time (on grounds if client wants to / needs to know that, there
      * are other methods and/or it can store or fetch the tasks itself)
      * @param existingGroups The groups that already exist on the client, with the epochMilli time they were last updated
-     * @return
      */
     @RequestMapping(value = "/updated", method = RequestMethod.POST)
     public ResponseEntity<Set<GroupTimeChangedDTO>> fetchUpdatedGroups(HttpServletRequest request, @RequestBody Map<String, Long> existingGroups) {

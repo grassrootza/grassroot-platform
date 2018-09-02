@@ -3,6 +3,7 @@ package za.org.grassroot.services.account;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
 
 import java.time.Instant;
 import java.util.List;
@@ -46,6 +47,8 @@ public interface AccountBroker {
     Set<Group> fetchGroupsUserCanAddToAccount(String accountUid, String userUid);
 
     void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
+
+    GroupRefDTO fetchGroupAccountInfo(String userUid, String groupUid);
 
     void renameAccount(String adminUid, String accountUid, String accountName);
 

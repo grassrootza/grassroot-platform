@@ -21,6 +21,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.exception.SeloApiCallFailure;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.TodoDeadlineNotInFutureException;
 import za.org.grassroot.services.exception.TodoTypeMismatchException;
 import za.org.grassroot.services.group.MemberDataExportBroker;
@@ -56,6 +57,8 @@ public class USSDTodoController extends USSDBaseController {
     private final LearningService learningService;
 
     private USSDMessageAssembler messageAssembler;
+    private AccountFeaturesBroker accountFeaturesBroker;
+
     @Setter(AccessLevel.PACKAGE) private USSDGroupUtil groupUtil;
 
     @Autowired
@@ -72,6 +75,12 @@ public class USSDTodoController extends USSDBaseController {
         log.info("message assembler? : {}", messageAssembler.toString());
         this.messageAssembler = messageAssembler;
         super.setMessageAssembler(messageAssembler); // else get nulls ... need to fix this properly soon
+    }
+
+    // may make this optional in future
+    @Autowired(required = false)
+    public void setAccountFeaturesBroker(AccountFeaturesBroker accountFeaturesBroker) {
+        this.accountFeaturesBroker = accountFeaturesBroker;
     }
 
     public USSDMenu respondToTodo(User user, EntityForUserResponse entity) {
@@ -214,6 +223,9 @@ public class USSDTodoController extends USSDBaseController {
                                  @RequestParam(required = false) Boolean revising) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, saveRequestUrl("/create/subject", storedUid, null));
         if (!StringUtils.isEmpty(groupUid)) {
+            int todosLeft = accountFeaturesBroker.numberTodosLeftForGroup(groupUid);
+            if (todosLeft < 0)
+                return menuBuilder(outOfTodosMenu(user));
             todoRequestBroker.updateGroup(user.getUid(), storedUid, groupUid);
         }
         TodoRequest todoRequest = todoRequestBroker.load(storedUid);
@@ -222,6 +234,13 @@ public class USSDTodoController extends USSDBaseController {
         return menuBuilder(new USSDMenu(prompt, revising == null || !revising
                 ? REL_PATH + "/create/deadline?storedUid=" + storedUid
                 : REL_PATH + "/create/confirm?field=subject&storedUid=" + storedUid));
+    }
+
+    private USSDMenu outOfTodosMenu(User user) {
+        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.limit.prompt", user));
+        menu.addMenuOption(REL_PATH + "/create", messageAssembler.getMessage("todo.limit.options.back", user));
+        menu.addMenuOptions(optionsHomeExit(user, true));
+        return menu;
     }
 
     @RequestMapping(value = FULL_PATH + "/create/deadline", method = RequestMethod.GET)
@@ -280,10 +299,6 @@ public class USSDTodoController extends USSDBaseController {
         }
 
         TodoRequest request = todoRequestBroker.load(storedUid);
-
-        log.info("User={},todo request={}",user,request);
-
-        log.info("todo request reloaded = {}", request);
 
         String formattedDueDate = dateTimeFormat.format(convertToUserTimeZone(request.getActionByDate(), getSAST()));
 

@@ -360,7 +360,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             AccountLog accountLog = new AccountLog.Builder(accounts.get(0))
                     .user(user)
                     .accountLogType(AccountLogType.GEO_API_MESSAGE_SENT)
-                    .description(description).build();
+                    .description(description)
+                    .build();
             accountLogRepository.saveAndFlush(accountLog);
             Set<Notification> messages = notificationsFromRecords(dataSet, records, user, accountLog, 160);
             log.info("generated messages to send out, in total {} messages", messages.size());

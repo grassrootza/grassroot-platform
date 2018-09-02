@@ -15,6 +15,8 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.webapp.controller.ussd.group.USSDGroupController;
+import za.org.grassroot.webapp.controller.ussd.group.USSDGroupMgmtController;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -52,16 +54,22 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @InjectMocks
     private USSDGroupController ussdGroupController;
 
+    @InjectMocks
+    private USSDGroupMgmtController ussdGroupMgmtController;
+
     @Before
     public void setUp() {
 
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdGroupController)
+        mockMvc = MockMvcBuilders.standaloneSetup(ussdGroupController, ussdGroupMgmtController)
                 .setHandlerExceptionResolvers(exceptionResolver())
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
+
         wireUpMessageSourceAndGroupUtil(ussdGroupController);
         ussdGroupController.setUssdGroupUtil(ussdGroupUtil);
+
+        wireUpMessageSourceAndGroupUtil(ussdGroupMgmtController);
 
         testUser = new User(testUserPhone, null, null);
         testGroup = new Group("test group", testUser);
@@ -399,14 +407,16 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         String nameToPass = "test testGroup";
         String urlToSave = saveGroupMenuWithInput("create-do", testGroup.getUid(), nameToPass, false);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupBrokerMock.create(testUser.getUid(), nameToPass, null, organizer(testUser), template, null, null, true, false, false)).thenReturn(testGroup);
+        when(groupBrokerMock.create(testUser.getUid(), nameToPass, null, organizer(testUser), template,
+                null, null, true, false, true)).thenReturn(testGroup);
 
         mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param("request", nameToPass)).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).create(testUser.getUid(), nameToPass, null, testMembers, template, null, null, true, false, false);
+        verify(groupBrokerMock, times(1)).create(testUser.getUid(), nameToPass, null, testMembers, template,
+                null, null, true, false, true);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
     }
