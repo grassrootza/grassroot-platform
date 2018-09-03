@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.android1;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,11 +38,11 @@ import java.util.stream.Collectors;
 /**
  * Created by luke on 2016/09/29.
  */
-@RestController
+@RestController @Slf4j
 @RequestMapping(value = "/api/group", produces = MediaType.APPLICATION_JSON_VALUE)
 public class GroupQueryRestController extends GroupAbstractRestController {
 
-    private static final Logger log = LoggerFactory.getLogger(GroupQueryRestController.class);
+    private static final int MAX_GROUPS_TO_SEND = 50;
 
     @Value("${grassroot.ussd.dialcode:'*134*1994*'}")
     private String ussdDialCode;
@@ -66,6 +67,7 @@ public class GroupQueryRestController extends GroupAbstractRestController {
         Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
         ChangedSinceData<Group> changedSinceData = groupQueryBroker.getActiveGroups(user, changedSince);
         List<GroupResponseWrapper> groupWrappers = changedSinceData.getAddedAndUpdated().stream()
+                .limit(MAX_GROUPS_TO_SEND)
                 .map(group -> createGroupWrapper(group, user))
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());

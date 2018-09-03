@@ -72,7 +72,8 @@ public class USSDGeoApiController extends USSDBaseController {
     public Request openingMenu(@PathVariable String dataSet, @RequestParam(value = phoneNumber) String inputNumber,
                                @RequestParam(required = false) Boolean forceOpening) throws URISyntaxException {
         User user = userManager.loadOrCreateUser(inputNumber);
-        if (!forceOpening && cacheManager.fetchUssdMenuForUser(inputNumber) != null) {
+        boolean possiblyInterrupted = forceOpening == null || !forceOpening;
+        if (possiblyInterrupted && cacheManager.fetchUssdMenuForUser(inputNumber) != null) {
             String returnUrl = cacheManager.fetchUssdMenuForUser(inputNumber);
             USSDMenu promptMenu = new USSDMenu(getMessage("home.start.prompt-interrupted", user));
             promptMenu.addMenuOption(returnUrl, getMessage("home.start.interrupted.resume", user));

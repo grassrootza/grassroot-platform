@@ -444,7 +444,10 @@ public class AccountBrokerImpl implements AccountBroker {
             }
 
             account.removePaidGroup(group);
+
+            // have to do double side else unpredictable
             group.setPaidFor(false);
+            group.setAccount(null);
 
             bundle.addLog(new AccountLog.Builder(account)
                     .user(user)

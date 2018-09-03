@@ -51,7 +51,7 @@ public class CreateJwtTokenRequest {
         }
     }
 
-    // strictly for microservice
+    // strictly for microservices
     public static CreateJwtTokenRequest makeSystemToken() {
         CreateJwtTokenRequest request = new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE);
         request.claims.put(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_SYSTEM_CALL);

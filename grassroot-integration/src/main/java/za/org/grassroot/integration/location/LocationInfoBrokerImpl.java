@@ -91,7 +91,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     public void init() {
         log.info("GeoAPI integration is active, setting up URLs, tables");
 
-        useDynamoDirect = environment.getProperty("grassroot.geo.dynamodb.direct", Boolean.class, false);
+        useDynamoDirect = environment.getProperty("grassroot.geo.dynamodb.direct", Boolean.class, true);
         geoApiHost = environment.getProperty("grassroot.geo.apis.host", "localhost");
         geoApiPort = environment.getProperty("grassroot.geo.apis.port", Integer.class, 80);
 
@@ -198,6 +198,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     @Override
     public Map<String, String> getAvailableSuffixes() {
+        log.info("Fetching available suffixes for Geo APIs");
         try {
             ScanResult result = dynamoDBClient.scan(new ScanRequest().withTableName("geo_apis"));
             if (result == null || result.getItems() == null)
@@ -209,6 +210,9 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                     .collect(Collectors.toMap(item -> item.get("suffix").getS(), item -> item.get("data_set_label").getS()));
         } catch (AmazonServiceException e) {
             log.error("Error fetching GEO apis from table");
+            return new HashMap<>();
+        } catch (NullPointerException e) {
+            log.error("Null pointer in geo set up: ", e);
             return new HashMap<>();
         }
     }

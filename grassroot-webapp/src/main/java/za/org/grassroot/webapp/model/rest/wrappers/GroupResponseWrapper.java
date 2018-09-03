@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
+    private static final int MAX_NUMBER_MEMBERS_SEND = 300;
+
     private final String groupUid;
     private final String groupName;
     private final String groupCreator;
@@ -81,7 +83,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         }
 
         if (permissions.contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
-            this.members = group.getMemberships().stream()
+            this.members = group.getMemberships()
+                    .stream().limit(MAX_NUMBER_MEMBERS_SEND)
                     .map(membership -> new MembershipResponseWrapper(group, membership.getUser(), membership.getRole(), false))
                     .collect(Collectors.toList());
         }
@@ -94,7 +97,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.lastChangeType = GroupChangeType.getChangeType(event);
         this.lastChangeDescription = event.getName();
         this.dateTime = event.getEventDateTimeAtSAST();
-        this.lastMajorChangeMillis = event.getCreatedDateTime().toEpochMilli();
+        this.lastMajorChangeMillis = group.getLatestChangeOrTaskTime().toEpochMilli();
     }
 
     public GroupResponseWrapper(Group group, GroupLog groupLog, Role role, boolean hasTasks){

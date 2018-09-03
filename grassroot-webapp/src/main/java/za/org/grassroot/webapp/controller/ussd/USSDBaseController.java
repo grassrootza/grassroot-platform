@@ -45,7 +45,6 @@ public class USSDBaseController {
     @Autowired
     protected AsyncUserLogger userLogger;
 
-    @Autowired
     protected CacheUtilService cacheManager;
 
     protected USSDMessageAssembler messageAssembler;
@@ -65,8 +64,7 @@ public class USSDBaseController {
             todoMenus = "todo/",
             safetyMenus = "safety/",
             moreMenus = "more/",
-            U404= "error",
-            homeMore = "/more/";
+            U404= "error";
     // referencing these from the Util class so can be common across tests etc, but stating here so not cumbersome in sub-classes
     protected static final String
             phoneNumber = USSDUrlUtil.phoneNumber,
@@ -117,12 +115,9 @@ public class USSDBaseController {
             //new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
                     collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
-    private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
-            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, MORE);
+    private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, MORE);
 
-    /*
-    Field setters
-     */
+    /* Field setters */
 
     @Autowired
     protected void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) {
@@ -132,6 +127,11 @@ public class USSDBaseController {
     @Autowired
     protected void setMessageAssembler(USSDMessageAssembler messageAssembler) {
         this.messageAssembler = messageAssembler;
+    }
+
+    @Autowired
+    public void setCacheManager(CacheUtilService cacheUtilService) {
+        this.cacheManager = cacheUtilService;
     }
 
     /*

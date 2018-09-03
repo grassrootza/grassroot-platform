@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -18,7 +19,9 @@ import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.authentication.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.exception.NoSuchUserException;
@@ -30,9 +33,7 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 
 
@@ -48,7 +49,7 @@ public class AdminRestController extends BaseRestController{
     private final PasswordTokenService passwordTokenService;
     private final GroupRepository groupRepository;
     private final GroupBroker groupBroker;
-
+    private final JwtService jwtService;
 
     public AdminRestController(UserManagementService userManagementService,
                                JwtService jwtService,
@@ -64,6 +65,7 @@ public class AdminRestController extends BaseRestController{
         this.passwordTokenService = passwordTokenService;
         this.groupRepository = groupRepository;
         this.groupBroker = groupBroker;
+        this.jwtService = jwtService;
     }
 
     @RequestMapping(value = "/user/load",method = RequestMethod.GET)
@@ -182,11 +184,13 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok(this.adminService.freeUpInactiveJoinTokens());
     }
 
-    @RequestMapping(value = "/graph/transfer/annotations/members", method = RequestMethod.GET)
-    public ResponseEntity redoMemberAnnotationTransfer() {
-        log.info("Reseeding some user annotations");
-        adminService.repopulateMemberUserAnnotations();
-        return ResponseEntity.ok().build();
+    @RequestMapping(value = "/token/system/generate", method = RequestMethod.POST)
+    public ResponseEntity<String> createApiToken() {
+        CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.API_CLIENT);
+        Map<String, Object> claims = tokenRequest.getClaims();
+        claims.put(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_SYSTEM_CALL);
+        tokenRequest.setClaims(claims);
+        return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }
 
 }

@@ -28,8 +28,12 @@ public class JwtServiceImpl implements JwtService {
     private static final Logger logger = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     private String keyIdentifier;
+
     @Value("${grassroot.jwt.token-expiry-grace-period.inMilliseconds:1209600000}")
     private Long jwtTokenExpiryGracePeriodInMilliseconds;
+
+    @Value("${grassroot.jwt.api-key-expiry.inDays:30}")
+    private Long jwtApiKeyExpiryDays;
 
     private final Environment environment;
     private final KeyPairProvider keyPairProvider;
@@ -88,7 +92,7 @@ public class JwtServiceImpl implements JwtService {
             case GRASSROOT_MICROSERVICE:
                 return Duration.ofSeconds(3).toMillis(); // occasional glitches mean 3 secs is a better trade off here at present
             case API_CLIENT:
-                return Duration.ofDays(7L).toMillis(); // going to convert these to long lived as soon as spring sec done
+                return Duration.ofDays(jwtApiKeyExpiryDays).toMillis(); // now long lived
             default:
                 return 1L;
         }
