@@ -3,8 +3,6 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +13,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
-import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 
 import javax.persistence.EntityManager;
@@ -237,14 +234,17 @@ public class PermissionBrokerImpl implements PermissionBroker {
     public void validateSystemRole(User user, String roleName) {
         log.info("attempting to validate system role, with name: " + roleName);
         List<Role> systemRoles = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD);
+        log.info("system role for name: {}, found: {}", roleName, systemRoles);
         if (systemRoles == null || systemRoles.isEmpty()) {
             throw new UnsupportedOperationException("Error! Attempt to check invalid role");
         }
+        log.info("user system roles: {}", user.getStandardRoles());
         for (Role role : systemRoles) {
             if (!user.getStandardRoles().contains(role)) {
                 throw new AccessDeniedException("Error! User " + user.getDisplayName() + " does not have the role " + roleName);
             }
         }
+        log.info("user has requisite role, returning");
     }
 
     @Override

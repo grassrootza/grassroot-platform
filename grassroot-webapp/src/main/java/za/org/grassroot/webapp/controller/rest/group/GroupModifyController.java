@@ -410,6 +410,21 @@ public class GroupModifyController extends GroupBaseController {
         return ResponseEntity.ok(groupBroker.updateViewPriority(userUid, groupUid, GroupViewPriority.HIDDEN));
     }
 
+    @RequestMapping(value = "/unhide/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Sets group visibility back to normal")
+    public ResponseEntity<Boolean> unhideGroupForMember(@PathVariable String groupUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        return ResponseEntity.ok(groupBroker.updateViewPriority(userUid, groupUid, GroupViewPriority.NORMAL));
+    }
+
+    @RequestMapping(value = "/deactivate/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Deactivates a group, if less than 5 members or younger than a month", notes = "Only group creator can call")
+    public ResponseEntity<Boolean> deactivateGroup(@PathVariable String groupUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        groupBroker.deactivate(userUid, groupUid, true);
+        return ResponseEntity.ok(true);
+    }
+
     @RequestMapping(value = "/leave/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Unsubscribes a user from the group", notes = "User completely leaves the given group" +
             " (note, user cannot leave if they are only organizer)")

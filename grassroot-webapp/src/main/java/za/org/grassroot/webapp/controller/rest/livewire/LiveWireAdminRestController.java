@@ -148,23 +148,17 @@ public class LiveWireAdminRestController extends BaseRestController {
 
     @GetMapping(value = "/subscribers")
     public ResponseEntity<List<DataSubscriberDTO>> getSubscribers(HttpServletRequest request){
-        if(liveWireAlertBroker.canUserRelease(getUserIdFromRequest(request))){
-            List<DataSubscriberDTO> dataSubscriberDTOS = dataSubscriberBroker.listPublicSubscribers().stream()
-                    .map(DataSubscriberDTO::new).collect(Collectors.toList());
-            return ResponseEntity.ok(dataSubscriberDTOS);
-        } else {
-            return ResponseEntity.ok(new ArrayList<>());
-        }
+        List<DataSubscriberDTO> dataSubscriberDTOS = dataSubscriberBroker.listPublicSubscribers().stream()
+                .map(DataSubscriberDTO::new).collect(Collectors.toList());
+        return ResponseEntity.ok(dataSubscriberDTOS);
     }
 
     @PostMapping(value = "/release")
     public ResponseEntity<LiveWireAlertDTO> releaseAlert(@RequestParam String alertUid,
                                                          @RequestParam List<String> publicLists,
                                                          HttpServletRequest request){
-        log.info("Data subscriber list.....{}",publicLists);
         liveWireAlertBroker.reviewAlert(getUserIdFromRequest(request), alertUid, null, true, publicLists);
         LiveWireAlert alert = liveWireAlertBroker.load(alertUid);
-        log.info("alert lists? : {}", alert.getPublicListsUids());
         liveWireSendingBroker.sendLiveWireAlerts(Collections.singleton(alertUid));
         return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid)));
     }

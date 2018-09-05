@@ -25,11 +25,13 @@ import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.DataSetInfo;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.AccountWrapper;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -51,6 +53,7 @@ public class AccountUserController extends BaseRestController {
 
     private BillingServiceBroker billingServiceBroker;
     private MessagingServiceBroker messagingServiceBroker;
+    private MemberDataExportBroker memberDataExportBroker;
 
     @Autowired
     public AccountUserController(JwtService jwtService, UserManagementService userManagementService, AccountBroker accountBroker) {
@@ -68,6 +71,11 @@ public class AccountUserController extends BaseRestController {
     @Autowired(required = false)
     public void setMessagingServiceBroker(MessagingServiceBroker messagingServiceBroker) {
         this.messagingServiceBroker = messagingServiceBroker;
+    }
+
+    @Autowired
+    public void setMemberDataExportBroker(MemberDataExportBroker memberDataExportBroker) {
+        this.memberDataExportBroker = memberDataExportBroker;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
@@ -265,6 +273,16 @@ public class AccountUserController extends BaseRestController {
                 account.getLastBillingDate(), Instant.now());
         log.info("Counted {} messages, took {} msecs", groupCount, System.currentTimeMillis() - startTime);
         return ResponseEntity.ok(groupCount);
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/fetch/group/download", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> downloadAccountRecord(@RequestParam(required = false) String accountUid,
+                                                        HttpServletRequest request) {
+        Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid)
+                : accountBroker.loadDefaultAccountForUser(getUserIdFromRequest(request));
+        return RestUtil.convertWorkbookToDownload(account.getName() + ".xlsx",
+                memberDataExportBroker.exportAccountActivityReport(accountUid, account.getLastBillingDate(), Instant.now()));
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")

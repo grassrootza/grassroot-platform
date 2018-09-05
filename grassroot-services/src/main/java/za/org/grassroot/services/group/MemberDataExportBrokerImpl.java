@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -22,14 +22,17 @@ import za.org.grassroot.core.dto.group.GroupLogDTO;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.campaign.CampaignStatsBroker;
 import za.org.grassroot.services.task.TodoBroker;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -52,6 +55,7 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     private final MessagingServiceBroker messageBroker;
 
     private CampaignStatsBroker campaignStatsBroker;
+    private AccountBroker accountBroker;
 
     @Autowired
     public MemberDataExportBrokerImpl(UserRepository userRepository, MembershipRepository membershipRepository, GroupBroker groupBroker, TodoBroker todoBroker,
@@ -67,6 +71,11 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     @Autowired
     public void setCampaignStatsBroker(CampaignStatsBroker campaignStatsBroker) {
         this.campaignStatsBroker = campaignStatsBroker;
+    }
+
+    @Autowired
+    public void setAccountBroker(AccountBroker accountBroker) {
+        this.accountBroker = accountBroker;
     }
 
     @Override
@@ -394,6 +403,46 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
             tableColumns[3] = n.getStatus().name();
             tableColumns[4] = STD_FORMATTER.format(n.getLastStatusChange());
             tableColumns[5] = n.getMessage();
+            addRow(sheet, rowIndex, tableColumns);
+            rowIndex++;
+        }
+
+        return workbook;
+    }
+
+    @Override
+    public XSSFWorkbook exportAccountActivityReport(String accountUid, Instant start, Instant end) {
+        Account account = accountBroker.loadAccount(accountUid);
+        List<Group> accountGroups = account.getPaidGroups().stream().sorted(Comparator.comparing(Group::getName)).collect(Collectors.toList());
+
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Account activity");
+
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+        final String startDate = formatter.format(start.atZone(DateTimeUtil.getSAST()));
+        final String endDate = formatter.format(end.atZone(DateTimeUtil.getSAST()));
+
+        generateHeader(workbook, sheet, new String[]{"Group name", "Group size",
+                        "Messages from " + startDate + " to " + endDate, "Messages all time"},
+                new int[]{7000, 5000, 7000, 7000});
+
+        // usual stuff that API makes annoyingly difficult to stick in a method
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+
+        //we are starting from 1 because row number 0 is header
+        int rowIndex = 1;
+
+        for (Group g: accountGroups) {
+            String[] tableColumns = new String[6];
+            tableColumns[0] = g.getName();
+            tableColumns[1] = "" + g.getMembers().size();
+            tableColumns[2] = "" + accountBroker.countChargedNotificationsForGroup(accountUid, g.getUid(), start, end);
+            tableColumns[3] = "" + accountBroker.countChargedNotificationsForGroup(accountUid, g.getUid(), g.getCreatedDateTime(), Instant.now());
             addRow(sheet, rowIndex, tableColumns);
             rowIndex++;
         }

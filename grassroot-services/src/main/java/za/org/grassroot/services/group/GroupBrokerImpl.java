@@ -69,7 +69,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
-    private final GroupLogRepository groupLogRepository;
     private final GroupJoinCodeRepository groupJoinCodeRepository;
     private final BroadcastRepository broadcastRepository;
 
@@ -91,14 +90,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Autowired
     public GroupBrokerImpl(GroupRepository groupRepository, Environment environment, UserRepository userRepository,
-                           MembershipRepository membershipRepository, GroupLogRepository groupLogRepository, GroupJoinCodeRepository groupJoinCodeRepository, BroadcastRepository broadcastRepository, PermissionBroker permissionBroker,
+                           MembershipRepository membershipRepository, GroupJoinCodeRepository groupJoinCodeRepository, BroadcastRepository broadcastRepository, PermissionBroker permissionBroker,
                            ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker,
                            TokenGeneratorService tokenGeneratorService, MessageAssemblingService messageAssemblingService, UrlShortener urlShortener) {
         this.groupRepository = groupRepository;
         this.environment = environment;
         this.userRepository = userRepository;
         this.membershipRepository = membershipRepository;
-        this.groupLogRepository = groupLogRepository;
         this.groupJoinCodeRepository = groupJoinCodeRepository;
         this.broadcastRepository = broadcastRepository;
         this.permissionBroker = permissionBroker;
@@ -258,11 +256,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         if (!checkIfWithinTimeWindow) {
             return isUserGroupCreator;
         } else {
-            Integer timeWindow = environment.getProperty("grassroot.groups.delete.window", Integer.class);
-            Instant deactivationTimeThreshold = group.getCreatedDateTime().plus(Duration.ofHours(timeWindow == null ? 48 : timeWindow));
-            boolean isGroupMalformed = (group.getGroupName() == null || group.getGroupName().length() < 2)
-		            && group.getMembers().size() <= 2;
-	        return isUserGroupCreator && (isGroupMalformed || Instant.now().isBefore(deactivationTimeThreshold));
+            int timeWindow = environment.getProperty("grassroot.groups.delete.window", Integer.class, 720);
+            int memberSize = environment.getProperty("grassroot.groups.delete.threshold", Integer.class, 5);
+            Instant deactivationTimeThreshold = group.getCreatedDateTime().plus(Duration.ofHours(timeWindow));
+            boolean isGroupMalformed = (group.getGroupName() == null || group.getGroupName().length() < 2);
+	        return isUserGroupCreator && (isGroupMalformed || Instant.now().isBefore(deactivationTimeThreshold) || group.getMembers().size() < memberSize);
         }
     }
 

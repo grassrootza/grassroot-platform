@@ -415,9 +415,9 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
         validateAdmin(user, account); // should never need to call this witohut admin
 
-        // for the moment, just doing it based on the most general organizer permission
-        Set<Group> userGroups = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        log.debug("User has {} groups with organizer permission", userGroups.size());
+        // expensive, but will be _very_ occassional
+        Set<Group> userGroups = permissionBroker.getActiveGroupsWithPermission(user, null);
+        log.debug("User has {} groups that they belong to", userGroups.size());
         Set<Group> userGroupsUnpaidFor = userGroups.stream().filter(group -> !group.isPaidFor()).collect(Collectors.toSet());
         log.debug("After removing paid groups, {} left", userGroupsUnpaidFor.size());
 
@@ -690,7 +690,7 @@ public class AccountBrokerImpl implements AccountBroker {
         long campaignLogCount = executeGroupsCountQuery("(n.campaignLog in (select cl from CampaignLog cl where cl.campaign.masterGroup in :groups))",
                 start, end, groups);
 
-        log.info("In {} msecs, for {} groups, counted {} from group logs, {} from event logs, {} from todo logs, {} from campaign logs",
+        log.debug("In {} msecs, for {} groups, counted {} from group logs, {} from event logs, {} from todo logs, {} from campaign logs",
                 System.currentTimeMillis() - startTime, groups.size(), groupLogCount, eventLogCount, todoLogCount, campaignLogCount);
 
         return groupLogCount + eventLogCount + todoLogCount + campaignLogCount;

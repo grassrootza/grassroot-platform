@@ -4,6 +4,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
 
+import java.time.Instant;
 import java.util.List;
 
 public interface MemberDataExportBroker {
@@ -27,4 +28,7 @@ public interface MemberDataExportBroker {
     XSSFWorkbook exportNotificationErrorReport(List<? extends Notification> notifications);
 
     XSSFWorkbook exportNotificationStdReport(List<? extends Notification> notifications);
+
+    XSSFWorkbook exportAccountActivityReport(String accountUid, Instant start, Instant end);
+
 }

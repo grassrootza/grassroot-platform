@@ -65,7 +65,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     }
 
     @Autowired(required = false)
-    public void setTemplateEngine(TemplateEngine templateEngine) {
+    public void setTemplateEngine(@Qualifier("emailTemplateEngine") TemplateEngine templateEngine) {
         this.templateEngine = templateEngine;
     }
 
@@ -196,12 +196,12 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         }
 
         ctx.setVariables(emailVars);
-        logger.info("about to generate mail, variables = {}", ctx.getVariableNames());
+        logger.info("About to generate mail, variables = {}", ctx.getVariableNames());
 
         final String textContent = templateEngine.process("text/" + template, ctx);
         final String htmlContent = templateEngine.process("html/" + template, ctx);
 
-        logger.debug("exiting email creation, html content = {}", htmlContent);
+        logger.info("Exiting email creation, html content = {}", htmlContent);
 
         return builder
                 .toAddress(emailAddress)

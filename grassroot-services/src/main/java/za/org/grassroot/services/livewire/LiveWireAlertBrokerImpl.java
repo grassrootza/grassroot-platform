@@ -362,6 +362,9 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         validateCreatingUser(user, alert);
 
         alert.setComplete(true);
+
+
+
         LogsAndNotificationsBundle bundle = alertCompleteBundle(user, alert);
 
         log.info("bundle notifications: {}", bundle.getNotifications());
@@ -480,13 +483,15 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional
     public void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send, List<String> publicListUids) {
-        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), BaseRoles.ROLE_LIVEWIRE_USER);
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
         if (!canUserRelease(userUid)) {
-            throw new AccessDeniedException("This user does not have permission to release");
+            log.info("Looks like user isn't a subscriber admin, so check for system role");
+            permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), BaseRoles.ROLE_LIVEWIRE_USER);
         }
+
+        log.info("User can release alert, proceeding ...");
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
@@ -494,7 +499,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
             alert.addTags(tags);
         }
 
-        log.debug("here are the alert tags: {}", tags);
+        log.info("LiveWire alert tagged with: {}", tags);
 
         alert.setReviewed(true);
         alert.setReviewedByUser(user);
@@ -511,7 +516,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         if (send) {
             alert.revisePublicLists(publicListUids);
             alert.setSendTime(Instant.now());
-            LiveWireAlertBrokerImpl.log.info("set public list UIDs to: {}", alert.getPublicListsUids());
+            LiveWireAlertBrokerImpl.log.info("Set public list UIDs to: {}", alert.getPublicListsUids());
             bundle.addNotification(new LiveWireAlertReleasedNotification(
                     alert.getCreatingUser(),
                     messageSource.getMessage("livewire.alert.released"),
