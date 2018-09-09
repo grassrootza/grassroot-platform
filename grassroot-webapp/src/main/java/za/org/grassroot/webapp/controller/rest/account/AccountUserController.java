@@ -281,6 +281,7 @@ public class AccountUserController extends BaseRestController {
                                                         HttpServletRequest request) {
         Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid)
                 : accountBroker.loadDefaultAccountForUser(getUserIdFromRequest(request));
+        log.info("Downloading details for groups on account {}", account.getName());
         return RestUtil.convertWorkbookToDownload(account.getName() + ".xlsx",
                 memberDataExportBroker.exportAccountActivityReport(accountUid, account.getLastBillingDate(), Instant.now()));
     }

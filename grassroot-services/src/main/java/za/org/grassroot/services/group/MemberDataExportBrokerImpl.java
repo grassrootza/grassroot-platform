@@ -423,8 +423,8 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         final String endDate = formatter.format(end.atZone(DateTimeUtil.getSAST()));
 
         generateHeader(workbook, sheet, new String[]{"Group name", "Group size",
-                        "Messages from " + startDate + " to " + endDate, "Messages all time"},
-                new int[]{7000, 5000, 7000, 7000});
+                        "Messages from " + startDate + " to " + endDate},
+                new int[]{7000, 5000, 7000});
 
         // usual stuff that API makes annoyingly difficult to stick in a method
         XSSFCellStyle contentStyle = workbook.createCellStyle();
@@ -437,15 +437,19 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         //we are starting from 1 because row number 0 is header
         int rowIndex = 1;
 
+        log.info("Counting notifications for {} groups", accountGroups.size());
+
         for (Group g: accountGroups) {
             String[] tableColumns = new String[6];
             tableColumns[0] = g.getName();
             tableColumns[1] = "" + g.getMembers().size();
             tableColumns[2] = "" + accountBroker.countChargedNotificationsForGroup(accountUid, g.getUid(), start, end);
-            tableColumns[3] = "" + accountBroker.countChargedNotificationsForGroup(accountUid, g.getUid(), g.getCreatedDateTime(), Instant.now());
+//            tableColumns[3] = "" + accountBroker.countChargedNotificationsForGroup(accountUid, g.getUid(), g.getCreatedDateTime(), Instant.now());
             addRow(sheet, rowIndex, tableColumns);
             rowIndex++;
         }
+
+        log.info("Finished assembling account sheet");
 
         return workbook;
     }
