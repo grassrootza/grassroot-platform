@@ -193,4 +193,21 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }
 
+    @RequestMapping(value = "/config/fetch", method = RequestMethod.GET)
+    public ResponseEntity<Map<String, String>> fetchConfigVars() {
+        return ResponseEntity.ok(adminService.getCurrentConfigVariables());
+    }
+
+    @RequestMapping(value = "/config/create", method = RequestMethod.POST)
+    public ResponseEntity updateConfigVar(@RequestParam String key, @RequestParam String value) {
+        adminService.updateConfigVariable(key, value);
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/config/create", method = RequestMethod.POST)
+    public ResponseEntity createConfigVar(@RequestParam String key, @RequestParam String value) {
+        adminService.createConfigVariable(key, value);
+        return ResponseEntity.ok().build();
+    }
+
 }

@@ -5,10 +5,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
@@ -37,10 +39,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.TodoSpecifications.createdDateBetween;
@@ -52,23 +51,13 @@ import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAs
 @Service @Slf4j
 public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
 
-    @Value("${grassroot.groups.size.limit:false}")
-    private boolean GROUP_SIZE_LIMITED;
+    private boolean GROUP_SIZE_LIMITED = false;
+    private int FREE_GROUP_LIMIT = 300;
+    private int FREE_TODOS_PER_MONTH = 4;
+    private int FREE_EVENTS_PER_MONTH = 4;
 
-    @Value("${grassroot.groups.size.freemax:300}")
-    private int FREE_GROUP_LIMIT;
-
-    @Value("${accounts.todos.monthly.free:4}")
-    private int FREE_TODOS_PER_MONTH;
-
-    @Value("${accounts.events.monthly.free:4}")
-    private int FREE_EVENTS_PER_MONTH;
-
-    @Value("${grassroot.events.limit.threshold:100}")
-    private int eventMonthlyLimitThreshold;
-
-    @Value("${grassroot.events.limit.started:2017-04-01}")
-    private String eventLimitStartString;
+    private int eventMonthlyLimitThreshold = 10;
+    private String eventLimitStartString = "2017-04-01";
     private Instant eventLimitStart;
 
     private static final int LARGE_EVENT_LIMIT = 99;
@@ -83,6 +72,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
     private final AccountRepository accountRepository;
     private final BroadcastRepository templateRepository;
     private final MessageAssemblingService messageAssemblingService;
+    private final ConfigRepository configRepository;
 
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ApplicationEventPublisher eventPublisher;
@@ -90,7 +80,8 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
     @Autowired
     public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                      EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
-                                     BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+                                     BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService,
+                                     LogsAndNotificationsBroker logsAndNotificationsBroker, ConfigRepository configRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -100,6 +91,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
         this.templateRepository = templateRepository;
         this.messageAssemblingService = messageAssemblingService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.configRepository = configRepository;
     }
 
     @Autowired
@@ -109,6 +101,28 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
 
     @PostConstruct
     public void init() {
+        setEventLimitStart();
+    }
+
+    // run this once per hour
+    @Scheduled(fixedRate = 60 * 60 * 1000)
+    public void updateConfig() {
+        log.info("Updating config for account limits ...");
+
+        Map<String, String> configVars = configRepository.findAll().stream()
+                .collect(Collectors.toMap(ConfigVariable::getKey, ConfigVariable::getValue));
+
+        GROUP_SIZE_LIMITED = Boolean.parseBoolean(configVars.getOrDefault("groups.size.limit", "false"));
+        FREE_GROUP_LIMIT = Integer.parseInt(configVars.getOrDefault("groups.size.freemax", "300"));
+        FREE_TODOS_PER_MONTH = Integer.parseInt(configVars.getOrDefault("todos.monthly.free", "4"));
+        FREE_EVENTS_PER_MONTH = Integer.parseInt(configVars.getOrDefault("accounts.events.monthly.free", "4"));
+        eventMonthlyLimitThreshold = Integer.parseInt(configVars.getOrDefault("events.limit.threshold", "10"));
+        eventLimitStartString = configVars.getOrDefault("grassroot.events.limit.started:2017-04-01", "2017-04-01");
+        setEventLimitStart();
+
+    }
+
+    private void setEventLimitStart() {
         LocalDate ldEventLimitStart;
         try {
             ldEventLimitStart = LocalDate.parse(eventLimitStartString, DateTimeFormatter.ISO_LOCAL_DATE);

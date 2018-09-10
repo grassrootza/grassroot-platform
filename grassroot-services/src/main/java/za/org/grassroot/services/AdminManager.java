@@ -6,12 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import sun.security.krb5.Config;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.domain.notification.SystemInfoNotification;
@@ -24,16 +24,12 @@ import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -47,35 +43,33 @@ public class AdminManager implements AdminService {
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final RoleRepository roleRepository;
-    private final MembershipRepository membershipRepository;
     private final GroupBroker groupBroker;
     private final GroupLogRepository groupLogRepository;
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
 
-    private GraphBroker graphBroker;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
+    private ConfigRepository configRepository;
 
     @Autowired
     public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, MembershipRepository membershipRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.roleRepository = roleRepository;
-        this.membershipRepository = membershipRepository;
         this.groupBroker = groupBroker;
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    @Autowired(required = false)
-    public void setGraphBroker(GraphBroker graphBroker) {
-        this.graphBroker = graphBroker;
-    }
-
     @Autowired
     public void setLogsAndNotificationsBroker(LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+    }
+
+    @Autowired
+    public void setConfigRepository(ConfigRepository configRepository) {
+        this.configRepository = configRepository;
     }
 
     /**
@@ -228,28 +222,35 @@ public class AdminManager implements AdminService {
 
     }
 
-    @Async
     @Override
-    @Transactional(readOnly = true)
-    public void populateGraphUserAnnotations() {
-        if (graphBroker != null) {
-            Specification<User> spec = UserSpecifications.hasInitiatedSession().and(UserSpecifications.isEnabled());
-            userRepository.findAll(spec).forEach(user -> graphBroker.annotateUser(user.getUid(), null, null, true));
-        }
+    @Transactional
+    public void updateConfigVariable(String key, String newValue) {
+        ConfigVariable var = configRepository.findOneByKey(key);
+        if (var == null)
+            throw new IllegalArgumentException("Error! Trying to update non-existent config var");
+        var.setValue(newValue);
+        logger.info("Updated variable, exiting");
+    }
+
+    @Override
+    @Transactional
+    public void createConfigVariable(String key, String value) {
+        ConfigVariable existing = configRepository.findOneByKey(key);
+        if (existing != null)
+            throw new IllegalArgumentException("Trying to create variable with existing key name");
+        ConfigVariable newVar = new ConfigVariable(key, value);
+        logger.info("Created new variable, exiting");
     }
 
     @Override
     @Transactional(readOnly = true)
-    public void repopulateMemberUserAnnotations() {
-        // this is ultra heavy but we will call it exactly once
-        if (graphBroker != null) {
-            logger.info("Reseeding queue with annotations ...");
-            List<Membership> memberships = membershipRepository.findByGroupActiveTrue();
-            Set<Long> membershipIds = memberships.stream().map(m -> m.getUser().getId()).collect(Collectors.toSet());
-            Specification<User> spec = (root, query, cb) -> cb.and(cb.isFalse(root.get(User_.hasInitiatedSession)),
-                    root.get(User_.id).in(membershipIds));
-            userRepository.findAll(spec).forEach(user -> graphBroker.annotateUser(user.getUid(), null, null, true));
-        }
+    public Map<String, String> getCurrentConfigVariables() {
+        List<ConfigVariable> rawVariables = configRepository.findAll();
+        logger.info("Found {} raw config variables", rawVariables.size());
+        Map<String, String> configVars = rawVariables.stream()
+                .collect(Collectors.toMap(ConfigVariable::getKey, ConfigVariable::getValue));
+        logger.info("And mapped them to: {}", configVars);
+        return configVars;
     }
 
     @Override

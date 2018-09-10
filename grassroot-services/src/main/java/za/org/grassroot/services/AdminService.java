@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by luke on 2016/02/04.
@@ -36,9 +37,14 @@ public interface AdminService {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     long sendBatchOfAndroidLinks(String adminUserUid, int batchSize);
 
-    void populateGraphUserAnnotations();
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void updateConfigVariable(String key, String newValue);
 
-    void repopulateMemberUserAnnotations();
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void createConfigVariable(String key, String newValue);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    Map<String, String> getCurrentConfigVariables();
 
     int freeUpInactiveJoinTokens();
 
