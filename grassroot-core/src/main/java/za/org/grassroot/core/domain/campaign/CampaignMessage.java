@@ -116,6 +116,10 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (ov, nv) -> ov, LinkedHashMap::new));
     }
 
+    public boolean hasMenuOptions() {
+        return nextActions != null && nextActions.length > 0;
+    }
+
     @Override
     public String[]getTags(){
         return tags;

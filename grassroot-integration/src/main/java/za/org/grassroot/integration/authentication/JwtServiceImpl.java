@@ -91,6 +91,8 @@ public class JwtServiceImpl implements JwtService {
                 return Duration.ofDays(7L).toMillis();
             case GRASSROOT_MICROSERVICE:
                 return Duration.ofSeconds(3).toMillis(); // occasional glitches mean 3 secs is a better trade off here at present
+            case MSGING_CLIENT:
+                return Duration.ofMinutes(1).toMillis();
             case API_CLIENT:
                 return Duration.ofDays(jwtApiKeyExpiryDays).toMillis(); // now long lived
             default:
