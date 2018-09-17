@@ -691,7 +691,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setHasSetOwnName(false);
         user.setContactError(false);
         user.setLiveWireContact(false);
-        user.setWhatsAppLinked(false);
+        user.setWhatsAppOptedIn(false);
 
         // step 4: remove all standard roles
         user.removeAllStdRoles();

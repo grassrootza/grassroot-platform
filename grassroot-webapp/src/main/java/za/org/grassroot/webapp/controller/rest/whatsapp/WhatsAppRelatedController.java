@@ -19,12 +19,15 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
+import za.org.grassroot.services.AnalyticalService;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,13 +37,17 @@ import java.util.stream.Collectors;
 public class WhatsAppRelatedController extends BaseController {
 
     private final JwtService jwtService;
+    private final AsyncUserLogger userLogger;
+
     private CampaignBroker campaignBroker;
     private MessageSource messageSource;
+    private AnalyticalService analyticalService;
 
     @Autowired
-    public WhatsAppRelatedController(UserManagementService userManagementService, PermissionBroker permissionBroker, JwtService jwtService) {
+    public WhatsAppRelatedController(UserManagementService userManagementService, PermissionBroker permissionBroker, JwtService jwtService, AsyncUserLogger userLogger) {
         super(userManagementService, permissionBroker);
         this.jwtService = jwtService;
+        this.userLogger = userLogger;
     }
 
     @Autowired
@@ -53,9 +60,24 @@ public class WhatsAppRelatedController extends BaseController {
         this.messageSource = messageSource;
     }
 
+    @Autowired(required = false)
+    public void setAnalyticalService(AnalyticalService analyticalService) {
+        this.analyticalService = analyticalService;
+    }
+
+    @PostConstruct
+    public void init() {
+        if (analyticalService != null) {
+            log.info("Starting up WhatsApp controller: number users opted in: {}, number users used : {}", 
+                    analyticalService.countUsersWithWhatsAppOptIn(), analyticalService.countUsersThatHaveUsedWhatsApp());
+        }
+    }
+
+    // this will get called _a lot_ during a sesion (each message to and fro), so not yet introducting a record user log in
     @RequestMapping(value = "/user/id", method = RequestMethod.POST)
     public ResponseEntity fetchUserId(String msisdn) {
         User user = userManagementService.loadOrCreate(msisdn);
+        userLogger.recordUserSession(user.getUid(), UserInterfaceType.WHATSAPP);
         return ResponseEntity.ok(user.getUid());
     }
 
@@ -66,6 +88,7 @@ public class WhatsAppRelatedController extends BaseController {
         CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.MSGING_CLIENT);
         tokenRequest.addClaim(JwtService.USER_UID_KEY, userId);
         tokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_FULL_USER);
+        userLogger.logUserLogin(userId, UserInterfaceType.WHATSAPP); // keep an eye on how often this gets called (may become redundant)
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }
 
@@ -94,6 +117,7 @@ public class WhatsAppRelatedController extends BaseController {
                                                                                @RequestParam String userId,
                                                                                @RequestBody EntityReplyFromUser userReply) {
         EntityResponseToUser response;
+        log.info("Received user response: {}", userReply);
         if (JpaEntityType.CAMPAIGN.equals(entityType)) {
             response = replyToCampaignMessage(userId, entityUid, userReply.getAuxProperties().get("PRIOR"),
                     CampaignActionType.valueOf(userReply.getMenuOptionPayload()), userReply.getUserMessage());

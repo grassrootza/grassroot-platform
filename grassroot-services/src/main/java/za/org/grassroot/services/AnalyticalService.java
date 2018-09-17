@@ -25,23 +25,20 @@ public interface AnalyticalService {
 
     int countUsersThatHaveAndroidProfile();
 
+    int countUsersThatHaveUsedWhatsApp();
+
+    int countUsersWithWhatsAppOptIn();
+
     Long countActiveGroups();
 
     int countGroupsCreatedInInterval(LocalDateTime start, LocalDateTime end);
-
-        /*
-    Methods to analyze patterns in events, including RSVP totals
-     */
 
     Long countAllEvents(EventType eventType);
 
     int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType);
 
-    /*
-    Methods to analyze to-do entries (to add masks)
-     */
-
     Long countAllTodos();
+
     Long countTodosRecordedInInterval(LocalDateTime start, LocalDateTime end);
 
     // Count safety events, put in nulls for no start/end point
