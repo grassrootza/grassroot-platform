@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
-import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +29,7 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j @RestController @Grassroot2RestController
 @RequestMapping("/v2/api/whatsapp") @Api("/v2/api/whatsapp")
@@ -98,12 +98,13 @@ public class WhatsAppRelatedController extends BaseController {
         if (campaign != null) {
             // passing null as channel because reusing USSD, for now
             CampaignMessage message = campaignBroker.getOpeningMessage(campaign.getUid(), null, null, null);
+            LinkedHashMap<String, String> menu = getMenuFromMessage(message);
             PhraseSearchResponse response = PhraseSearchResponse.builder()
                     .entityFound(true)
                     .entityType(JpaEntityType.CAMPAIGN)
                     .entityUid(campaign.getUid())
-                    .responseMessages(getResponseMessages(message))
-                    .responseMenu(getMenuFromMessage(message))
+                    .responseMessages(getResponseMessages(message, menu.values()))
+                    .responseMenu(menu)
                     .build();
             return ResponseEntity.ok(response);
         } else {
@@ -124,7 +125,7 @@ public class WhatsAppRelatedController extends BaseController {
         } else {
             response = EntityResponseToUser.cannotRespond(entityType, entityUid);
         }
-
+        log.info("Sending back to user: {}", response);
         return ResponseEntity.ok(response);
     }
 
@@ -133,6 +134,8 @@ public class WhatsAppRelatedController extends BaseController {
                                                           @RequestParam String priorMessageUid,
                                                           @RequestParam CampaignActionType action,
                                                           @RequestParam String userResponse) {
+        log.info("Getting campaign message for action type {}, user response {}, campaign ID: {}", action, userResponse, campaignUid);
+
         switch (action) {
             case JOIN_GROUP:
                 campaignBroker.addUserToCampaignMasterGroup(campaignUid, userId, UserInterfaceType.WHATSAPP);
@@ -155,37 +158,55 @@ public class WhatsAppRelatedController extends BaseController {
         if (nextMsgs == null || nextMsgs.isEmpty()) {
             nextMsgs = Collections.singletonList(campaignBroker.findCampaignMessage(campaignUid, priorMessageUid, action));
         }
+        log.info("Next campaign messages found: {}", nextMsgs);
 
         List<String> messageTexts = nextMsgs.stream().map(CampaignMessage::getMessage).collect(Collectors.toList());
-        LinkedHashMap<String, String> actionOptions = new LinkedHashMap<>();
-        nextMsgs.stream().filter(CampaignMessage::hasMenuOptions).findFirst().ifPresent(message ->
-            message.getNextMessages().forEach((key, value) -> actionOptions.put(key, key))
-        );
+        LinkedHashMap<String, String> actionOptions = nextMsgs.stream().filter(CampaignMessage::hasMenuOptions)
+                .findFirst().map(this::getMenuFromMessage).orElse(new LinkedHashMap<>());
+        messageTexts.addAll(actionOptions.values());
+
+        RequestDataType requestDataType = actionOptions.isEmpty() ? checkForNextUserInfo(userId) : RequestDataType.MENU_SELECTION;
+        log.info("request data type: {}", requestDataType);
 
         return EntityResponseToUser.builder()
                 .entityType(JpaEntityType.CAMPAIGN)
                 .entityUid(campaignUid)
+                .requestDataType(requestDataType)
                 .messages(messageTexts)
                 .menu(actionOptions)
                 .build();
     }
 
-    private List<String> getResponseMessages(CampaignMessage message) {
+    private List<String> getResponseMessages(CampaignMessage message, Collection<String> menuOptionTexts) {
         List<String> messages = new ArrayList<>();
         messages.add(message.getMessage());
-        message.getNextMessages().forEach((msgUid, action) -> messages.add(actionToMessage(action)));
+        messages.addAll(menuOptionTexts);
         return messages;
     }
 
     private LinkedHashMap<String, String> getMenuFromMessage(CampaignMessage message) {
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
-        message.getNextMessages().forEach((msgUid, action) -> map.put(action.toString(), actionToMessage(action)));
+        List<CampaignActionType> options = new ArrayList<>(message.getNextMessages().values());
+        log.info("Next menu options, should be in order: {}", options);
+        IntStream.range(0, options.size()).forEach(i ->
+            map.put(options.get(i).toString(), (i + 1) + ". " + actionToMessage(options.get(i)))
+        );
         return map;
     }
 
     private String actionToMessage(CampaignActionType action) {
         return messageSource.getMessage("ussd.campaign." + action.toString().toLowerCase(),
                 null, action.toString(), Locale.ENGLISH);
+    }
+
+    private RequestDataType checkForNextUserInfo(String userId) {
+        User user = userManagementService.load(userId);
+        if (!user.hasName())
+            return RequestDataType.USER_NAME;
+        if (user.getProvince() == null)
+            return RequestDataType.LOCATION_PROVINCE_OKAY;
+        else
+            return RequestDataType.NONE;
     }
 
 }
