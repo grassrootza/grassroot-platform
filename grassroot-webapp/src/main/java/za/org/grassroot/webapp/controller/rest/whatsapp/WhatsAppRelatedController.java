@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
@@ -119,7 +120,9 @@ public class WhatsAppRelatedController extends BaseController {
                                                                                @RequestBody EntityReplyFromUser userReply) {
         EntityResponseToUser response;
         log.info("Received user response: {}", userReply);
-        if (JpaEntityType.CAMPAIGN.equals(entityType)) {
+        if (userReply.getAuxProperties() != null && userReply.getAuxProperties().containsKey("requestDataType")) {
+            response = replyToDataRequest(userId, userReply, entityType, entityUid);
+        } else if (JpaEntityType.CAMPAIGN.equals(entityType)) {
             response = replyToCampaignMessage(userId, entityUid, userReply.getAuxProperties().get("PRIOR"),
                     CampaignActionType.valueOf(userReply.getMenuOptionPayload()), userReply.getUserMessage());
         } else {
@@ -129,11 +132,35 @@ public class WhatsAppRelatedController extends BaseController {
         return ResponseEntity.ok(response);
     }
 
-    private EntityResponseToUser replyToCampaignMessage(@RequestParam String userId,
-                                                          @RequestParam String campaignUid,
-                                                          @RequestParam String priorMessageUid,
-                                                          @RequestParam CampaignActionType action,
-                                                          @RequestParam String userResponse) {
+    private EntityResponseToUser replyToDataRequest(String userId, EntityReplyFromUser userReply, JpaEntityType entityType, String entityId) {
+        RequestDataType requestType = RequestDataType.valueOf(userReply.getAuxProperties().get("requestDataType"));
+        switch (requestType) {
+            case USER_NAME:
+                userManagementService.updateDisplayName(userId, userId, userReply.getUserMessage());
+                break;
+            case LOCATION_GPS_REQUIRED:
+                log.info("Well, we would be setting it from GPS here");
+                break;
+            case LOCATION_PROVINCE_OKAY:
+                userManagementService.updateUserProvince(userId, Province.valueOf(userReply.getUserMessage()));
+                break;
+            default:
+                log.info("Got a user response we can't do anything with. Request type: {}, user response: {}", requestType, userReply);
+                break;
+        }
+
+        RequestDataType nextRequestType = checkForNextUserInfo(userId);
+        return EntityResponseToUser.builder()
+                .entityType(entityType).entityUid(entityId)
+                .requestDataType(nextRequestType)
+                .build();
+    }
+
+    private EntityResponseToUser replyToCampaignMessage(String userId,
+                                                        String campaignUid,
+                                                        String priorMessageUid,
+                                                        CampaignActionType action,
+                                                        String userResponse) {
         log.info("Getting campaign message for action type {}, user response {}, campaign ID: {}", action, userResponse, campaignUid);
 
         switch (action) {
