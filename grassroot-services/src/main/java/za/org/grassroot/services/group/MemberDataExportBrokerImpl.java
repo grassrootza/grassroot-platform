@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ import za.org.grassroot.services.task.TodoBroker;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +43,12 @@ import java.util.stream.Collectors;
 
 @Service @Slf4j
 public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
+
+    @Value("${accounts.freeform.cost.standard:25}")
+    private int accountMessageCost;
+
+    @Value("${accounts.ussd.cost.standard:20}")
+    private int accountUssdCost;
 
     private static final DateTimeFormatter STD_FORMATTER = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
             .withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
@@ -422,9 +430,15 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         final String startDate = formatter.format(start.atZone(DateTimeUtil.getSAST()));
         final String endDate = formatter.format(end.atZone(DateTimeUtil.getSAST()));
 
-        generateHeader(workbook, sheet, new String[]{"Group name", "Group size",
-                        "Messages from " + startDate + " to " + endDate},
-                new int[]{7000, 5000, 7000});
+        final Locale enZA = new Locale.Builder().setLanguage("en").setRegion("ZA").build();
+        final NumberFormat numberFormat = NumberFormat.getCurrencyInstance(enZA);
+
+        generateHeader(workbook, sheet, new String[]{
+                        "Group name",
+                        "Group size",
+                        "Messages from " + startDate + " to " + endDate,
+                        "Message cost (ZAR)"},
+                new int[]{7000, 5000, 7000, 7000});
 
         // usual stuff that API makes annoyingly difficult to stick in a method
         XSSFCellStyle contentStyle = workbook.createCellStyle();
@@ -440,11 +454,12 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         log.info("Counting notifications for {} groups", accountGroups.size());
 
         for (Group g: accountGroups) {
+            long notificationCount = accountBroker.countChargedNotificationsForGroup(accountUid, g.getUid(), start, end);
             String[] tableColumns = new String[6];
             tableColumns[0] = g.getName();
             tableColumns[1] = "" + g.getMembers().size();
-            tableColumns[2] = "" + accountBroker.countChargedNotificationsForGroup(accountUid, g.getUid(), start, end);
-//            tableColumns[3] = "" + accountBroker.countChargedNotificationsForGroup(accountUid, g.getUid(), g.getCreatedDateTime(), Instant.now());
+            tableColumns[2] = "" + notificationCount;
+            tableColumns[3] = numberFormat.format((double) notificationCount * accountMessageCost);
             addRow(sheet, rowIndex, tableColumns);
             rowIndex++;
         }

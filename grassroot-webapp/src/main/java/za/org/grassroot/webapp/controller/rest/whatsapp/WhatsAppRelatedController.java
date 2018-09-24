@@ -37,6 +37,9 @@ import java.util.stream.IntStream;
 @PreAuthorize("hasRole('ROLE_SYSTEM_CALL')")
 public class WhatsAppRelatedController extends BaseController {
 
+    private final List<RequestDataType> USER_DATA_REQUESTS_WITH_MSGS = Arrays.asList(
+            RequestDataType.USER_NAME, RequestDataType.LOCATION_PROVINCE_OKAY, RequestDataType.LOCATION_GPS_REQUIRED, RequestDataType.NONE);
+
     private final JwtService jwtService;
     private final AsyncUserLogger userLogger;
 
@@ -135,23 +138,18 @@ public class WhatsAppRelatedController extends BaseController {
     private EntityResponseToUser replyToDataRequest(String userId, EntityReplyFromUser userReply, JpaEntityType entityType, String entityId) {
         RequestDataType requestType = RequestDataType.valueOf(userReply.getAuxProperties().get("requestDataType"));
         switch (requestType) {
-            case USER_NAME:
-                userManagementService.updateDisplayName(userId, userId, userReply.getUserMessage());
-                break;
-            case LOCATION_GPS_REQUIRED:
-                log.info("Well, we would be setting it from GPS here");
-                break;
-            case LOCATION_PROVINCE_OKAY:
-                userManagementService.updateUserProvince(userId, Province.valueOf(userReply.getUserMessage()));
-                break;
-            default:
-                log.info("Got a user response we can't do anything with. Request type: {}, user response: {}", requestType, userReply);
-                break;
+            case USER_NAME:                 userManagementService.updateDisplayName(userId, userId, userReply.getUserMessage());    break;
+            case LOCATION_GPS_REQUIRED:     log.info("Well, we would be setting it from GPS here");                                 break;
+            case LOCATION_PROVINCE_OKAY:    userManagementService.updateUserProvince(userId, Province.valueOf(userReply.getMenuOptionPayload()));     break;
+            default: log.info("Got a user response we can't do anything with. Request type: {}, user response: {}", requestType, userReply);    break;
         }
 
         RequestDataType nextRequestType = checkForNextUserInfo(userId);
+
         return EntityResponseToUser.builder()
-                .entityType(entityType).entityUid(entityId)
+                .entityType(entityType)
+                .entityUid(entityId)
+                .messages(dataRequestMessages(nextRequestType))
                 .requestDataType(nextRequestType)
                 .build();
     }
@@ -164,21 +162,11 @@ public class WhatsAppRelatedController extends BaseController {
         log.info("Getting campaign message for action type {}, user response {}, campaign ID: {}", action, userResponse, campaignUid);
 
         switch (action) {
-            case JOIN_GROUP:
-                campaignBroker.addUserToCampaignMasterGroup(campaignUid, userId, UserInterfaceType.WHATSAPP);
-                break;
-            case SIGN_PETITION:
-                campaignBroker.signPetition(campaignUid, userId, UserInterfaceType.WHATSAPP);
-                break;
-            case TAG_ME:
-                campaignBroker.setUserJoinTopic(campaignUid, userId, userResponse, UserInterfaceType.WHATSAPP);
-                break;
-            case SHARE_SEND:
-                campaignBroker.sendShareMessage(campaignUid, userId, userResponse, null, UserInterfaceType.WHATSAPP);
-                break;
-            default:
-                log.info("No action possible for incoming user action {}, just returning message", action);
-                break;
+            case JOIN_GROUP:        campaignBroker.addUserToCampaignMasterGroup(campaignUid, userId, UserInterfaceType.WHATSAPP);   break;
+            case SIGN_PETITION:     campaignBroker.signPetition(campaignUid, userId, UserInterfaceType.WHATSAPP);                   break;
+            case TAG_ME:            campaignBroker.setUserJoinTopic(campaignUid, userId, userResponse, UserInterfaceType.WHATSAPP); break;
+            case SHARE_SEND:        campaignBroker.sendShareMessage(campaignUid, userId, userResponse, null, UserInterfaceType.WHATSAPP);   break;
+            default:                log.info("No action possible for incoming user action {}, just returning message", action); break;
         }
 
         List<CampaignMessage> nextMsgs = campaignBroker.findCampaignMessage(campaignUid, action, null);
@@ -188,12 +176,14 @@ public class WhatsAppRelatedController extends BaseController {
         log.info("Next campaign messages found: {}", nextMsgs);
 
         List<String> messageTexts = nextMsgs.stream().map(CampaignMessage::getMessage).collect(Collectors.toList());
-        LinkedHashMap<String, String> actionOptions = nextMsgs.stream().filter(CampaignMessage::hasMenuOptions)
-                .findFirst().map(this::getMenuFromMessage).orElse(new LinkedHashMap<>());
+        LinkedHashMap<String, String> actionOptions = nextMsgs.stream().filter(CampaignMessage::hasMenuOptions).findFirst()
+                .map(this::getMenuFromMessage).orElse(new LinkedHashMap<>());
         messageTexts.addAll(actionOptions.values());
 
         RequestDataType requestDataType = actionOptions.isEmpty() ? checkForNextUserInfo(userId) : RequestDataType.MENU_SELECTION;
-        log.info("request data type: {}", requestDataType);
+        if (USER_DATA_REQUESTS_WITH_MSGS.contains(requestDataType)) {
+            messageTexts.addAll(dataRequestMessages(requestDataType));
+        }
 
         return EntityResponseToUser.builder()
                 .entityType(JpaEntityType.CAMPAIGN)
@@ -234,6 +224,28 @@ public class WhatsAppRelatedController extends BaseController {
             return RequestDataType.LOCATION_PROVINCE_OKAY;
         else
             return RequestDataType.NONE;
+    }
+
+    private List<String> dataRequestMessages(RequestDataType dataType) {
+        List<String> messages = new ArrayList<>();
+        switch (dataType) {
+            case USER_NAME:
+                messages.add(messageSource.getMessage("ussd.campaign.joined.name", null, Locale.ENGLISH));
+                break;
+            case LOCATION_GPS_REQUIRED:
+                messages.add(messageSource.getMessage("ussd.campaign.joined.province", null, Locale.ENGLISH));
+                break;
+            case LOCATION_PROVINCE_OKAY:
+                messages.add(messageSource.getMessage("ussd.campaign.joined.province", null, Locale.ENGLISH));
+                break;
+            case NONE:
+                messages.add(messageSource.getMessage("ussd.campaign.exit_positive.generic", null, Locale.ENGLISH));
+            default:
+                log.info("Trying to extract messages for impossible data type request: {}", dataType);
+                break;
+        }
+        log.info("Returning messages {} for data type {}", messages, dataType);
+        return messages;
     }
 
 }
