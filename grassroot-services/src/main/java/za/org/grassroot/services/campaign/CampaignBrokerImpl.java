@@ -98,10 +98,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Transactional(readOnly = true)
     public CampaignMessage getOpeningMessage(String campaignUid, Locale locale, UserInterfaceType channel, MessageVariationAssignment variation) {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-        Locale safeLocale = locale == null ? Locale.ENGLISH : locale;
+        Locale safeLocale = locale == null ? new Locale("eng") : locale;
         UserInterfaceType safeChannel = channel == null ? UserInterfaceType.USSD : channel;
         MessageVariationAssignment safeVariation = variation == null ? MessageVariationAssignment.DEFAULT: variation;
-        log.info("getting opening message, with input locale: {}, safe locale: {}", locale, safeLocale);
+        log.info("getting opening message for {}, with input locale: {}, safe locale: {}, input channel: {}, safe channel: {}, " +
+                "input variation: {}, safe variation: {}", campaign.getName(), locale, safeLocale, channel, safeChannel, variation, safeVariation);
         List<CampaignMessage> messages = campaignMessageRepository.findAll(
                 CampaignMessageSpecifications.ofTypeForCampaign(campaign, CampaignActionType.OPENING, safeLocale, safeChannel, safeVariation));
         if (messages.isEmpty()) {
@@ -130,6 +131,15 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Objects.requireNonNull(messageUid);
         Objects.requireNonNull(userUid);
         return campaignMessageRepository.findOneByUid(messageUid);
+    }
+
+    @Override
+    public CampaignMessage findCampaignMessage(String campaignUid, String priorMsgUid, CampaignActionType takenAction) {
+        CampaignMessage priorMsg = campaignMessageRepository.findOneByUid(priorMsgUid);
+        Optional<String> thisMsgUid = priorMsg.getNextMessages().entrySet().stream().filter(entry -> entry.getValue().equals(takenAction))
+                .findFirst().map(Map.Entry::getKey);
+        return thisMsgUid.map(campaignMessageRepository::findOneByUid)
+                .orElseThrow(() -> new IllegalArgumentException("Error! Prior message does not have taken action as one of its possible actions"));
     }
 
     @Override
@@ -194,6 +204,29 @@ public class CampaignBrokerImpl implements CampaignBroker {
             }
         }
         return campaignRepository.countByCampaignCodeAndEndDateTimeAfter(proposedCode, Instant.now()) > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Campaign findCampaignByJoinWord(String joinWord, String userId, UserInterfaceType channel) {
+        // first, just check for straight code (in case we use that in future)
+        Campaign campaign = getCampaignByCampaignCode(joinWord);
+        if (campaign != null) {
+            recordEngagement(campaign.getUid(), userId, channel, joinWord);
+            return campaign;
+        }
+
+        // todo: will definitely want to cache these soon
+        Map<String, String> activeWords = getActiveCampaignJoinWords();
+        final String trimmed = joinWord.trim().toLowerCase();
+        campaign = activeWords.containsKey(trimmed) ? campaignRepository.findOneByUid(activeWords.get(trimmed)) : null;
+
+        if (campaign != null) {
+            recordEngagement(campaign.getUid(), userId, channel, joinWord);
+            return campaign;
+        }
+
+        return null;
     }
 
     @Override

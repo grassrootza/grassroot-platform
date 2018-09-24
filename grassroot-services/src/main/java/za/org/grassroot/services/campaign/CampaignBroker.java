@@ -27,7 +27,9 @@ public interface CampaignBroker {
 
     CampaignMessage loadCampaignMessage(String messageUid, String userUid);
 
-    List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale);
+    CampaignMessage findCampaignMessage(String campaignUid, String priorMsgUid, CampaignActionType takenAction);
+
+    List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType takenAction, Locale locale);
 
     List<Campaign> getCampaignsManagedByUser(String userUid);
 
@@ -38,6 +40,8 @@ public interface CampaignBroker {
     Set<String> getActiveCampaignCodes();
 
     boolean isCodeTaken(String proposedCode, String campaignUid);
+
+    Campaign findCampaignByJoinWord(String joinWord, String userUid, UserInterfaceType channel);
 
     // returns all in lower case
     Map<String, String> getActiveCampaignJoinWords(); // todo : cache this

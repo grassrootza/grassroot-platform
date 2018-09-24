@@ -58,4 +58,8 @@ public class CreateJwtTokenRequest {
         return request;
     }
 
+    public void addClaim(String key, String value) {
+        claims.put(key, value);
+    }
+
 }

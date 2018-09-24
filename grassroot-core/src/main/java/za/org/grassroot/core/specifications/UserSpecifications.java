@@ -43,6 +43,10 @@ public final class UserSpecifications {
         return (root, query, cb) -> cb.equal(root.get(User_.hasWebProfile), true);
     }
 
+    public static Specification<User> hasWhatsAppOptIn() {
+        return (root, query, cb) -> cb.equal(root.get(User_.whatsAppOptedIn), true);
+    }
+
     public static Specification<User> phoneContains(String phoneNumber) {
         return (root, query, cb) -> cb.like(root.get(User_.phoneNumber), "27" + phoneNumber);
     }

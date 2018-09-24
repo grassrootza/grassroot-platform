@@ -53,16 +53,22 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     public void logUserLogin(String userUid, UserInterfaceType channel) {
         Objects.requireNonNull(userUid);
         User user = userRepository.findOneByUid(userUid);
+
+        log.info("Recording user login (should be off main thread), user ID : {}, channel : {}", userUid, channel);
+
+        // note: WhatsApp approval requires something different, so do _not_ set it here (because will be recorded based on 'within band' WhatsApp use)
         if (UserInterfaceType.WEB.equals(channel) || UserInterfaceType.WEB_2.equals(channel)) {
             user.setHasWebProfile(true);
         } else if (UserInterfaceType.ANDROID.equals(channel) || UserInterfaceType.ANDROID_2.equals(channel)) {
             user.setHasAndroidProfile(true);
         }
+
         if (!user.isHasInitiatedSession()) {
             user.setHasInitiatedSession(true);
             Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
             user.addStandardRole(fullUserRole);
         }
+
         userLogRepository.save(new UserLog(userUid, UserLogType.USER_SESSION, "", channel));
     }
 
@@ -91,6 +97,7 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(interfaceType);
         if (!cacheUtilService.checkSessionStatus(userUid, interfaceType)) {
+            log.info("New session for user, recording in logs ... should be off main thread. User ID: {}, channel: {}", userUid, interfaceType);
             cacheUtilService.setSessionOpen(userUid, interfaceType);
             userLogRepository.save(new UserLog(userUid, UserLogType.USER_SESSION, "", interfaceType));
         } else {

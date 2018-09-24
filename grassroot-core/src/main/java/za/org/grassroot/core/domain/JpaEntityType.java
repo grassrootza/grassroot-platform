@@ -6,5 +6,6 @@ public enum JpaEntityType {
 	VOTE,
 	TODO,
 	SAFETY,
-	LIVEWIRE
+	LIVEWIRE,
+	CAMPAIGN
 }
