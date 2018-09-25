@@ -18,6 +18,7 @@ public class PhraseSearchResponse {
     private String entityUid;
     private List<String> responseMessages;
     private LinkedHashMap<String, String> responseMenu; // linked hashmap to enforce ordering
+    private RequestDataType requestDataType;
 
     public static PhraseSearchResponse notFoundResponse() {
         return PhraseSearchResponse.builder().entityFound(false).build();

@@ -1739,6 +1739,20 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional(readOnly = true)
+    public Group searchForGroupByWord(String userUid, String phrase) {
+        String normalizedPhrase = phrase.toLowerCase().trim();
+        Optional<Group> groupToReturn = groupRepository.findOne(GroupSpecifications.hasJoinCode(normalizedPhrase));
+        if (groupToReturn.isPresent())
+            return groupToReturn.get();
+
+        Optional<Group> groupFromPhrase = groupJoinCodeRepository.selectGroupWithActiveCode(normalizedPhrase);
+        logger.info("For phrase {}, found optional group: {}", phrase, groupFromPhrase);
+
+        return groupFromPhrase.orElse(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Set<String> getUsedJoinWords() {
         return groupJoinCodeRepository.selectActiveJoinWords();
     }

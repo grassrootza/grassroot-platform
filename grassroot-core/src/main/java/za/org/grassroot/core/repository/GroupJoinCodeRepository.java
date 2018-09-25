@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinCode;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,7 +20,7 @@ public interface GroupJoinCodeRepository extends JpaRepository<GroupJoinCode, UU
     Set<String> selectActiveJoinCodesForGroup(Group group);
 
     @Query("select gjc.group from GroupJoinCode  gjc where gjc.active = true and lower(gjc.code) = lower(?1)")
-    Group selectGroupWithActiveCode(String code);
+    Optional<Group> selectGroupWithActiveCode(String code);
 
     // need to use the UID property in here else postgres throws casting error
     GroupJoinCode findByGroupUidAndCodeAndActiveTrue(String groupUid, String code);

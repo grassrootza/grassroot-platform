@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
@@ -23,6 +24,7 @@ import za.org.grassroot.services.AnalyticalService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -44,6 +46,7 @@ public class WhatsAppRelatedController extends BaseController {
     private final AsyncUserLogger userLogger;
 
     private CampaignBroker campaignBroker;
+    private GroupBroker groupBroker;
     private MessageSource messageSource;
     private AnalyticalService analyticalService;
 
@@ -57,6 +60,11 @@ public class WhatsAppRelatedController extends BaseController {
     @Autowired
     private void setCampaignBroker(CampaignBroker campaignBroker) {
         this.campaignBroker = campaignBroker;
+    }
+
+    @Autowired
+    public void setGroupBroker(GroupBroker groupBroker) {
+        this.groupBroker = groupBroker;
     }
 
     @Autowired
@@ -96,24 +104,43 @@ public class WhatsAppRelatedController extends BaseController {
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }
 
+
     @RequestMapping(value = "/phrase/search", method = RequestMethod.POST)
     public ResponseEntity<PhraseSearchResponse> checkIfPhraseTriggersCampaign(@RequestParam String phrase, @RequestParam String userId) {
         Campaign campaign = campaignBroker.findCampaignByJoinWord(phrase, userId, UserInterfaceType.WHATSAPP);
+        Group group = campaign != null ? null : groupBroker.searchForGroupByWord(userId, phrase);
+        log.info("Incoming phrase check, found ? : campaign: {}, group: {}", campaign != null, group != null);
+
+        PhraseSearchResponse response;
         if (campaign != null) {
             // passing null as channel because reusing USSD, for now
             CampaignMessage message = campaignBroker.getOpeningMessage(campaign.getUid(), null, null, null);
             LinkedHashMap<String, String> menu = getMenuFromMessage(message);
-            PhraseSearchResponse response = PhraseSearchResponse.builder()
+            response = PhraseSearchResponse.builder()
                     .entityFound(true)
                     .entityType(JpaEntityType.CAMPAIGN)
                     .entityUid(campaign.getUid())
                     .responseMessages(getResponseMessages(message, menu.values()))
                     .responseMenu(menu)
                     .build();
-            return ResponseEntity.ok(response);
+        } else if (group != null) {
+            RequestDataType outstandingUserInfo = checkForNextUserInfo(userId);
+            List<String> messages = new ArrayList<>();
+            messages.add(messageSource.getMessage("ussd.home.start.prompt.group.token.named",
+                    new String[] { group.getName() }, Locale.ENGLISH));
+            messages.addAll(dataRequestMessages(outstandingUserInfo));
+            log.info("Adding user to group {}, outstanding data request: {}", group.getName(), outstandingUserInfo);
+            response = PhraseSearchResponse.builder()
+                    .entityFound(true)
+                    .entityType(JpaEntityType.GROUP)
+                    .entityUid(group.getUid())
+                    .responseMessages(messages)
+                    .requestDataType(outstandingUserInfo)
+                    .build();
         } else {
-            return ResponseEntity.ok(PhraseSearchResponse.notFoundResponse());
+            response = PhraseSearchResponse.notFoundResponse();
         }
+        return ResponseEntity.ok(response);
     }
 
     @RequestMapping(value = "/entity/respond/{entityType}/{entityUid}", method = RequestMethod.POST)
