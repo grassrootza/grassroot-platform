@@ -107,40 +107,57 @@ public class WhatsAppRelatedController extends BaseController {
 
     @RequestMapping(value = "/phrase/search", method = RequestMethod.POST)
     public ResponseEntity<PhraseSearchResponse> checkIfPhraseTriggersCampaign(@RequestParam String phrase, @RequestParam String userId) {
+        User user = userManagementService.load(userId);
         Campaign campaign = campaignBroker.findCampaignByJoinWord(phrase, userId, UserInterfaceType.WHATSAPP);
         Group group = campaign != null ? null : groupBroker.searchForGroupByWord(userId, phrase);
         log.info("Incoming phrase check, found ? : campaign: {}, group: {}", campaign != null, group != null);
-
         PhraseSearchResponse response;
         if (campaign != null) {
-            // passing null as channel because reusing USSD, for now
-            CampaignMessage message = campaignBroker.getOpeningMessage(campaign.getUid(), null, null, null);
-            LinkedHashMap<String, String> menu = getMenuFromMessage(message);
-            response = PhraseSearchResponse.builder()
-                    .entityFound(true)
-                    .entityType(JpaEntityType.CAMPAIGN)
-                    .entityUid(campaign.getUid())
-                    .responseMessages(getResponseMessages(message, menu.values()))
-                    .responseMenu(menu)
-                    .build();
+            response = campaignResponse(user, campaign);
         } else if (group != null) {
-            RequestDataType outstandingUserInfo = checkForNextUserInfo(userId);
-            List<String> messages = new ArrayList<>();
-            messages.add(messageSource.getMessage("ussd.home.start.prompt.group.token.named",
-                    new String[] { group.getName() }, Locale.ENGLISH));
-            messages.addAll(dataRequestMessages(outstandingUserInfo));
-            log.info("Adding user to group {}, outstanding data request: {}", group.getName(), outstandingUserInfo);
-            response = PhraseSearchResponse.builder()
-                    .entityFound(true)
-                    .entityType(JpaEntityType.GROUP)
-                    .entityUid(group.getUid())
-                    .responseMessages(messages)
-                    .requestDataType(outstandingUserInfo)
-                    .build();
+            response = groupResponse(user, group);
         } else {
             response = PhraseSearchResponse.notFoundResponse();
         }
         return ResponseEntity.ok(response);
+    }
+
+    private PhraseSearchResponse campaignResponse(User user, Campaign campaign) {
+        // because campaign admins may mess this up and want some robustness, at little cost
+        CampaignMessage whatsAppMsg = campaignBroker.getOpeningMessage(campaign.getUid(), null, UserInterfaceType.WHATSAPP, null);
+        CampaignMessage defaultMsg = campaignBroker.getOpeningMessage(campaign.getUid(), null, null, null);
+
+        LinkedHashMap<String, String> menu = getMenuFromMessage(whatsAppMsg != null ? whatsAppMsg : defaultMsg);
+        LinkedHashMap<String, String> fallbackMenu = getMenuFromMessage(defaultMsg);
+
+        List<String> responseMsgs = getResponseMessages(whatsAppMsg != null ? whatsAppMsg : defaultMsg,
+                !menu.isEmpty() ? menu.values() : fallbackMenu.values());
+
+        campaignBroker.recordEngagement(campaign.getUid(), user.getUid(), UserInterfaceType.WHATSAPP, null);
+
+        return PhraseSearchResponse.builder()
+                .entityFound(true)
+                .entityType(JpaEntityType.CAMPAIGN)
+                .entityUid(campaign.getUid())
+                .responseMessages(responseMsgs)
+                .responseMenu(!menu.isEmpty() ? menu : fallbackMenu)
+                .build();
+    }
+
+    private PhraseSearchResponse groupResponse(User user, Group group) {
+        RequestDataType outstandingUserInfo = checkForNextUserInfo(user.getUid());
+        List<String> messages = new ArrayList<>();
+        Locale locale = user.getLocale() == null ? Locale.ENGLISH : user.getLocale();
+        messages.add(messageSource.getMessage("whatsapp.group.joined", new String[] { group.getName() }, locale));
+        messages.addAll(dataRequestMessages(outstandingUserInfo, JpaEntityType.GROUP));
+        log.info("Adding user to group {}, outstanding data request: {}", group.getName(), outstandingUserInfo);
+        return PhraseSearchResponse.builder()
+                .entityFound(true)
+                .entityType(JpaEntityType.GROUP)
+                .entityUid(group.getUid())
+                .responseMessages(messages)
+                .requestDataType(outstandingUserInfo)
+                .build();
     }
 
     @RequestMapping(value = "/entity/respond/{entityType}/{entityUid}", method = RequestMethod.POST)
@@ -176,7 +193,7 @@ public class WhatsAppRelatedController extends BaseController {
         return EntityResponseToUser.builder()
                 .entityType(entityType)
                 .entityUid(entityId)
-                .messages(dataRequestMessages(nextRequestType))
+                .messages(dataRequestMessages(nextRequestType, entityType))
                 .requestDataType(nextRequestType)
                 .build();
     }
@@ -196,7 +213,7 @@ public class WhatsAppRelatedController extends BaseController {
             default:                log.info("No action possible for incoming user action {}, just returning message", action); break;
         }
 
-        List<CampaignMessage> nextMsgs = campaignBroker.findCampaignMessage(campaignUid, action, null);
+        List<CampaignMessage> nextMsgs = campaignBroker.findCampaignMessage(campaignUid, action, null, UserInterfaceType.WHATSAPP);
         if (nextMsgs == null || nextMsgs.isEmpty()) {
             nextMsgs = Collections.singletonList(campaignBroker.findCampaignMessage(campaignUid, priorMessageUid, action));
         }
@@ -209,7 +226,7 @@ public class WhatsAppRelatedController extends BaseController {
 
         RequestDataType requestDataType = actionOptions.isEmpty() ? checkForNextUserInfo(userId) : RequestDataType.MENU_SELECTION;
         if (USER_DATA_REQUESTS_WITH_MSGS.contains(requestDataType)) {
-            messageTexts.addAll(dataRequestMessages(requestDataType));
+            messageTexts.addAll(dataRequestMessages(requestDataType, JpaEntityType.CAMPAIGN));
         }
 
         return EntityResponseToUser.builder()
@@ -253,17 +270,15 @@ public class WhatsAppRelatedController extends BaseController {
             return RequestDataType.NONE;
     }
 
-    private List<String> dataRequestMessages(RequestDataType dataType) {
+    private List<String> dataRequestMessages(RequestDataType dataType, JpaEntityType entityType) {
         List<String> messages = new ArrayList<>();
+        final String baseKey = "whatsapp.user." + entityType.toString().toLowerCase() + ".prompt.";
         switch (dataType) {
             case USER_NAME:
-                messages.add(messageSource.getMessage("ussd.campaign.joined.name", null, Locale.ENGLISH));
-                break;
-            case LOCATION_GPS_REQUIRED:
-                messages.add(messageSource.getMessage("ussd.campaign.joined.province", null, Locale.ENGLISH));
+                messages.add(messageSource.getMessage(baseKey + "name", null, Locale.ENGLISH));
                 break;
             case LOCATION_PROVINCE_OKAY:
-                messages.add(messageSource.getMessage("ussd.campaign.joined.province", null, Locale.ENGLISH));
+                messages.add(messageSource.getMessage(baseKey + "province", null, Locale.ENGLISH));
                 break;
             case NONE:
                 messages.add(messageSource.getMessage("ussd.campaign.exit_positive.generic", null, Locale.ENGLISH));

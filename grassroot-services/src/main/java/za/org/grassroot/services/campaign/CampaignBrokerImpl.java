@@ -286,7 +286,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         bundle.addLog(campaignLog);
 
         // we default to english, because even if sharing user is in another language, the person receiving might not be
-        List<CampaignMessage> messages = findCampaignMessage(campaignUid, CampaignActionType.SHARE_SEND, Locale.ENGLISH);
+        List<CampaignMessage> messages = findCampaignMessage(campaignUid, CampaignActionType.SHARE_SEND, Locale.ENGLISH, UserInterfaceType.USSD);
         final String msg = !messages.isEmpty() ? messages.get(0).getMessage() : defaultTemplate;
         final String template = msg.replace(Broadcast.NAME_FIELD_TEMPLATE, "%1$s")
                 .replace(Broadcast.ENTITY_FIELD_TEMPLATE, "%2$s")
@@ -429,19 +429,28 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    public List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale) {
+    public List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType linkedAction, Locale locale, UserInterfaceType channel) {
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
         // note: Java locale handling is horrific. 2-digit and 3-digit ISO strings generate locales that fail on equals
         // hence all of the below were failing, because we are using 3-digit (much more robust for several SA languages)
         // but almost everything passed in, constructed via Locale string constructor, was 2-digit in origin. Hence what follows.
         Locale safeLocale = locale == null ? Locale.ENGLISH : locale;
         Set<Locale> locales = campaignMessageRepository.selectLocalesForCampaign(campaign);
-        Optional<Locale> maybeContains = locales.stream()
-                .filter(lang -> lang.getISO3Language().equals(safeLocale.getISO3Language())).findAny();
+        Optional<Locale> maybeContains = locales.stream().filter(lang -> lang.getISO3Language().equals(safeLocale.getISO3Language())).findAny();
         final Locale gettingOverJavaLocaleHorror = maybeContains.orElse(safeLocale);
-        return campaignMessageRepository.findAll(
-                CampaignMessageSpecifications.ofTypeForCampaign(campaign, linkedAction, gettingOverJavaLocaleHorror)
-        );
+        List<CampaignMessage> campaignMessages = campaignMessageRepository.findAll(CampaignMessageSpecifications
+                .ofTypeForCampaign(campaign, linkedAction, gettingOverJavaLocaleHorror));
+        log.info("Prior to channel filter, have messages: {}", campaignMessages);
+        return filterForChannelOrDefault(campaignMessages, channel, UserInterfaceType.USSD);
+    }
+
+    private List<CampaignMessage> filterForChannelOrDefault(List<CampaignMessage> messages, UserInterfaceType preferredChannel, UserInterfaceType defaultChannel) {
+        List<CampaignMessage> filteredMessages = messages.stream().filter(message ->
+                preferredChannel == null || preferredChannel.equals(message.getChannel())).collect(Collectors.toList());
+        if (!filteredMessages.isEmpty())
+            return filteredMessages;
+        else
+            return filteredMessages.stream().filter(message -> defaultChannel == null || defaultChannel.equals(preferredChannel)).collect(Collectors.toList());
     }
 
     private CampaignMessage updateExistingOrCreateNew(User user, Campaign campaign, CampaignMessageDTO cm,
@@ -655,7 +664,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Transactional(readOnly = true)
     public String getMessageOfType(String campaignUid, CampaignActionType actionType, String userUid, UserInterfaceType channel) {
         final User user = userManager.load(userUid);
-        List<CampaignMessage> messages = findCampaignMessage(campaignUid, actionType, user.getLocale());
+        List<CampaignMessage> messages = findCampaignMessage(campaignUid, actionType, user.getLocale(), UserInterfaceType.USSD);
         log.info("found a message? : {}", messages);
         return messages.isEmpty() ? "" : messages.get(0).getMessage();
     }

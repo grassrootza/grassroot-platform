@@ -29,7 +29,7 @@ public interface CampaignBroker {
 
     CampaignMessage findCampaignMessage(String campaignUid, String priorMsgUid, CampaignActionType takenAction);
 
-    List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType takenAction, Locale locale);
+    List<CampaignMessage> findCampaignMessage(String campaignUid, CampaignActionType takenAction, Locale locale, UserInterfaceType channel);
 
     List<Campaign> getCampaignsManagedByUser(String userUid);
 
