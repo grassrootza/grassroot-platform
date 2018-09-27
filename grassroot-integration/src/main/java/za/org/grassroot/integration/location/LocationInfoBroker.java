@@ -1,5 +1,6 @@
 package za.org.grassroot.integration.location;
 
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.Province;
 
 import java.util.List;
@@ -39,5 +40,7 @@ public interface LocationInfoBroker {
     Set<String> getAccountUidsForDataSets(String dataSetLabel);
 
     String getDescriptionForDataSet(String dataSetLabel);
+
+    Province getProvinceFromGeoLocation(GeoLocation location);
 
 }

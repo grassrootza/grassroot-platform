@@ -12,9 +12,11 @@ import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
+import com.google.common.base.Enums;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
@@ -31,6 +33,7 @@ import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.Province;
@@ -48,8 +51,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component @Slf4j
-@ConditionalOnProperty("grassroot.geo.apis.enabled")
 public class LocationInfoBrokerImpl implements LocationInfoBroker {
+
+    @Value("${grassroot.geo.apis.enabled:false}")
+    public boolean geoApisEnabled;
 
     private static final String IZWE_LAMI_LABEL = "IZWE_LAMI_CONS";
 
@@ -89,14 +94,20 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     @PostConstruct
     public void init() {
+        placeLookupLambda = environment.getProperty("grassroot.places.lambda.url", "http://localhost:3000");
+        izweLamiLambda = environment.getProperty("grassroot.izwelami.lambda.url", "http://localhost:3001");
+
+        if (geoApisEnabled) {
+            setUpGeoApis();
+        }
+    }
+
+    private void setUpGeoApis() {
         log.info("GeoAPI integration is active, setting up URLs, tables");
 
         useDynamoDirect = environment.getProperty("grassroot.geo.dynamodb.direct", Boolean.class, true);
         geoApiHost = environment.getProperty("grassroot.geo.apis.host", "localhost");
         geoApiPort = environment.getProperty("grassroot.geo.apis.port", Integer.class, 80);
-
-        placeLookupLambda = environment.getProperty("grassroot.places.lambda.url", "http://localhost:3000");
-        izweLamiLambda = environment.getProperty("grassroot.izwelami.lambda.url", "http://localhost:3001");
 
         if (useDynamoDirect) {
             log.info("Using dynamo db directly for geo APIs ...");
@@ -337,6 +348,20 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Override
     public String getDescriptionForDataSet(String dataSetLabel) {
         return getItemForDataSet(dataSetLabel, "description").getString("description");
+    }
+
+    @Override
+    public Province getProvinceFromGeoLocation(GeoLocation location) {
+        log.info("Looking up province for location: {}", location);
+        UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl(izweLamiLambda)
+                .path("/longlat-to-province")
+                .queryParam("latitude", location.getLatitude())
+                .queryParam("longitude", location.getLongitude());
+
+        ResponseEntity<String> result = restTemplate.getForEntity(componentsBuilder.build().toUri(), String.class);
+
+        log.info("Result of province lookup: {}", result.getBody());
+        return StringUtils.isEmpty(result.getBody()) ? null : Enums.getIfPresent(Province.class, "ZA_" + result.getBody()).orNull();
     }
 
     private void assembleAndSendHealthClinics(TownLookupResult place, String targetUserUid, Set<String> accountUids) {

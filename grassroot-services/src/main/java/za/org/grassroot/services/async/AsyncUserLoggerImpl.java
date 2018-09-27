@@ -10,9 +10,13 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.RoleRepository;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.util.CacheUtilService;
@@ -36,13 +40,15 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
 
     private final UserRepository userRepository;
     private final UserLogRepository userLogRepository;
+    private final UserLocationLogRepository userLocationLogRepository;
     private final CacheUtilService cacheUtilService;
     private final RoleRepository roleRepository;
 
     @Autowired
-    public AsyncUserLoggerImpl(UserRepository userRepository, UserLogRepository userLogRepository, CacheUtilService cacheUtilService, RoleRepository roleRepository) {
+    public AsyncUserLoggerImpl(UserRepository userRepository, UserLogRepository userLogRepository, UserLocationLogRepository userLocationLogRepository, CacheUtilService cacheUtilService, RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.userLogRepository = userLogRepository;
+        this.userLocationLogRepository = userLocationLogRepository;
         this.cacheUtilService = cacheUtilService;
         this.roleRepository = roleRepository;
     }
@@ -103,6 +109,17 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         } else {
             log.info("Cache return positive ... not recording a new session");
         }
+    }
+
+    @Override
+    @Transactional
+    public void recordUserLocation(String userUid, GeoLocation location, LocationSource locationSource, UserInterfaceType channel) {
+        log.info("Recording user's location from explicit pin send");
+        UserLocationLog locationLog = new UserLocationLog(Instant.now(), userUid, location, locationSource);
+        userLocationLogRepository.save(locationLog);
+        UserLog userLog = new UserLog(userUid, UserLogType.GAVE_LOCATION_PERMISSION, "User sent location PIN", channel);
+        userLogRepository.save(userLog);
+        log.info("Completed log recording");
     }
 
     @Async
@@ -168,22 +185,19 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Transactional(readOnly = true)
     public boolean hasSkippedName(String userUid) {
         return (int) userLogRepository.count(where(forUser(userUid))
-                .and(ofType(UserLogType.USER_SKIPPED_NAME))
-                .and(hasDescription(""))) > 0;
+                .and(ofType(UserLogType.USER_SKIPPED_NAME))) > 0;
+    }
+
+    @Override
+    public boolean hasSkippedProvince(String userUid) {
+        return (int) userLogRepository.count(where(forUser(userUid))
+                .and(ofType(UserLogType.USER_SKIPPED_PROVINCE))) > 0;
     }
 
     @Override
     public boolean hasChangedLanguage(String userUid) {
         return userLogRepository.count(where(forUser(userUid))
                 .and(ofType(UserLogType.CHANGED_LANGUAGE))) > 0;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean hasSkippedNamingGroup(String userUid, String groupUid) {
-        return userLogRepository.count(where(forUser(userUid))
-                .and(ofType(UserLogType.USER_SKIPPED_NAME))
-                .and(hasDescription(groupUid))) > 0;
     }
 
     @Override

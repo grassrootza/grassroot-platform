@@ -548,9 +548,19 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean needsToRenameSelf(User user) {
-        return !user.hasName() && (!asyncUserService.hasSkippedName(user.getUid())
-                && user.getCreatedDateTime().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
+    public boolean needsToSetName(User user, boolean evenOnCreation) {
+//        log.info("User has name? : {}, has skipped: {}", user.hasName(), asyncUserService.hasSkippedName(user.getUid()));
+        return !user.hasName()
+                && !asyncUserService.hasSkippedName(user.getUid())
+                && (evenOnCreation || user.getCreatedDateTime().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean needsToSetProvince(User user, boolean evenOnCreation) {
+        return user.getProvince() == null
+                && !asyncUserService.hasSkippedProvince(user.getUid())
+                && (evenOnCreation || user.getCreatedDateTime().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
     }
 
     @Override

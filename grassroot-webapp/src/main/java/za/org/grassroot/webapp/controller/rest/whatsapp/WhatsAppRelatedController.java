@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.whatsapp;
 
+import com.google.common.base.Enums;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,12 +16,14 @@ import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
-import za.org.grassroot.services.AnalyticalService;
+import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.campaign.CampaignBroker;
@@ -29,7 +32,6 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -47,8 +49,8 @@ public class WhatsAppRelatedController extends BaseController {
 
     private CampaignBroker campaignBroker;
     private GroupBroker groupBroker;
+    private LocationInfoBroker locationInfoBroker;
     private MessageSource messageSource;
-    private AnalyticalService analyticalService;
 
     @Autowired
     public WhatsAppRelatedController(UserManagementService userManagementService, PermissionBroker permissionBroker, JwtService jwtService, AsyncUserLogger userLogger) {
@@ -68,22 +70,15 @@ public class WhatsAppRelatedController extends BaseController {
     }
 
     @Autowired
+    public void setLocationInfoBroker(LocationInfoBroker locationInfoBroker) {
+        this.locationInfoBroker = locationInfoBroker;
+    }
+
+    @Autowired
     public void setMessageSource(@Qualifier("messageSource") MessageSource messageSource) {
         this.messageSource = messageSource;
     }
 
-    @Autowired(required = false)
-    public void setAnalyticalService(AnalyticalService analyticalService) {
-        this.analyticalService = analyticalService;
-    }
-
-    @PostConstruct
-    public void init() {
-        if (analyticalService != null) {
-            log.info("Starting up WhatsApp controller: number users opted in: {}, number users used : {}", 
-                    analyticalService.countUsersWithWhatsAppOptIn(), analyticalService.countUsersThatHaveUsedWhatsApp());
-        }
-    }
 
     // this will get called _a lot_ during a sesion (each message to and fro), so not yet introducting a record user log in
     @RequestMapping(value = "/user/id", method = RequestMethod.POST)
@@ -170,8 +165,9 @@ public class WhatsAppRelatedController extends BaseController {
         if (userReply.getAuxProperties() != null && userReply.getAuxProperties().containsKey("requestDataType")) {
             response = replyToDataRequest(userId, userReply, entityType, entityUid);
         } else if (JpaEntityType.CAMPAIGN.equals(entityType)) {
-            response = replyToCampaignMessage(userId, entityUid, userReply.getAuxProperties().get("PRIOR"),
-                    CampaignActionType.valueOf(userReply.getMenuOptionPayload()), userReply.getUserMessage());
+            CampaignActionType actionType = userReply.getMenuOptionPayload() == null ? CampaignActionType.EXIT_POSITIVE
+                    : Enums.getIfPresent(CampaignActionType.class, userReply.getMenuOptionPayload()).or(CampaignActionType.EXIT_POSITIVE);
+            response = replyToCampaignMessage(userId, entityUid, userReply.getAuxProperties().get("PRIOR"), actionType, userReply.getUserMessage());
         } else {
             response = EntityResponseToUser.cannotRespond(entityType, entityUid);
         }
@@ -181,10 +177,14 @@ public class WhatsAppRelatedController extends BaseController {
 
     private EntityResponseToUser replyToDataRequest(String userId, EntityReplyFromUser userReply, JpaEntityType entityType, String entityId) {
         RequestDataType requestType = RequestDataType.valueOf(userReply.getAuxProperties().get("requestDataType"));
+        if ("<<SKIP>>".equals(userReply.getMenuOptionPayload())) {
+            return requestSkipped(userId, requestType, entityType, entityId);
+        }
+
         switch (requestType) {
             case USER_NAME:                 userManagementService.updateDisplayName(userId, userId, userReply.getUserMessage());    break;
-            case LOCATION_GPS_REQUIRED:     log.info("Well, we would be setting it from GPS here");                                 break;
-            case LOCATION_PROVINCE_OKAY:    userManagementService.updateUserProvince(userId, Province.valueOf(userReply.getMenuOptionPayload()));     break;
+            case LOCATION_GPS_REQUIRED:     handleUserLocationResponse(userId, userReply);                                          break;
+            case LOCATION_PROVINCE_OKAY:    handleUserLocationResponse(userId, userReply);                                          break;
             default: log.info("Got a user response we can't do anything with. Request type: {}, user response: {}", requestType, userReply);    break;
         }
 
@@ -196,6 +196,36 @@ public class WhatsAppRelatedController extends BaseController {
                 .messages(dataRequestMessages(nextRequestType, entityType))
                 .requestDataType(nextRequestType)
                 .build();
+    }
+
+    private EntityResponseToUser requestSkipped(String userId, RequestDataType skippedType, JpaEntityType entityType, String entityId) {
+        boolean skippingName = RequestDataType.USER_NAME.equals(skippedType);
+        UserLogType logType = skippingName ? UserLogType.USER_SKIPPED_NAME : UserLogType.USER_SKIPPED_PROVINCE;
+        userLogger.recordUserLog(userId, logType, "Skipped setting detail on WhatsApp", UserInterfaceType.WHATSAPP);
+
+        final String responseMsgKey = skippingName ? "whatsapp.user.skipped.name" : "whatsapp.user.skipped.province";
+        final RequestDataType nextRequest = skippingName ? RequestDataType.LOCATION_PROVINCE_OKAY : RequestDataType.NONE;
+
+        return EntityResponseToUser.builder()
+                .entityType(entityType)
+                .entityUid(entityId)
+                .messages(Collections.singletonList(messageSource.getMessage(responseMsgKey, null, Locale.ENGLISH)))
+                .requestDataType(nextRequest)
+                .build();
+    }
+
+    private void handleUserLocationResponse(String userId, EntityReplyFromUser userReply) {
+        log.info("Handling user's response to request for province: {}", userReply);
+        if (userReply.getLocation() != null) {
+            log.info("User sent us a PIN, so handling it");
+            Province province = locationInfoBroker.getProvinceFromGeoLocation(userReply.getLocation());
+            userManagementService.updateUserProvince(userId, province);
+            userLogger.recordUserLocation(userId, userReply.getLocation(), LocationSource.LOGGED_PRECISE, UserInterfaceType.WHATSAPP);
+        } else {
+            Province province = Enums.getIfPresent(Province.class, userReply.getMenuOptionPayload()).orNull();
+            log.info("For user reply {}, extracted {}", userReply.getMenuOptionPayload(), province);
+            userManagementService.updateUserProvince(userId, province);
+        }
     }
 
     private EntityResponseToUser replyToCampaignMessage(String userId,
@@ -225,6 +255,7 @@ public class WhatsAppRelatedController extends BaseController {
         messageTexts.addAll(actionOptions.values());
 
         RequestDataType requestDataType = actionOptions.isEmpty() ? checkForNextUserInfo(userId) : RequestDataType.MENU_SELECTION;
+        log.info("Found request data type for user: {}", requestDataType);
         if (USER_DATA_REQUESTS_WITH_MSGS.contains(requestDataType)) {
             messageTexts.addAll(dataRequestMessages(requestDataType, JpaEntityType.CAMPAIGN));
         }
@@ -240,18 +271,22 @@ public class WhatsAppRelatedController extends BaseController {
 
     private List<String> getResponseMessages(CampaignMessage message, Collection<String> menuOptionTexts) {
         List<String> messages = new ArrayList<>();
-        messages.add(message.getMessage());
-        messages.addAll(menuOptionTexts);
+        if (message != null) {
+            messages.add(message.getMessage());
+            messages.addAll(menuOptionTexts);
+        }
         return messages;
     }
 
     private LinkedHashMap<String, String> getMenuFromMessage(CampaignMessage message) {
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
-        List<CampaignActionType> options = new ArrayList<>(message.getNextMessages().values());
-        log.info("Next menu options, should be in order: {}", options);
-        IntStream.range(0, options.size()).forEach(i ->
-            map.put(options.get(i).toString(), (i + 1) + ". " + actionToMessage(options.get(i)))
-        );
+        if (message != null) {
+            List<CampaignActionType> options = new ArrayList<>(message.getNextMessages().values());
+            log.info("Next menu options, should be in order: {}", options);
+            IntStream.range(0, options.size()).forEach(i ->
+                    map.put(options.get(i).toString(), (i + 1) + ". " + actionToMessage(options.get(i)))
+            );
+        }
         return map;
     }
 
@@ -262,9 +297,10 @@ public class WhatsAppRelatedController extends BaseController {
 
     private RequestDataType checkForNextUserInfo(String userId) {
         User user = userManagementService.load(userId);
-        if (!user.hasName())
+        log.info("Does user need to set name? : {}", userManagementService.needsToSetName(user, true));
+        if (userManagementService.needsToSetName(user, true))
             return RequestDataType.USER_NAME;
-        if (user.getProvince() == null)
+        if (userManagementService.needsToSetProvince(user, true))
             return RequestDataType.LOCATION_PROVINCE_OKAY;
         else
             return RequestDataType.NONE;

@@ -1,5 +1,5 @@
 plugins {
-    id "com.jfrog.bintray" version "1.7.3"
+    id "com.jfrog.bintray" version "1.8.0"
 }
 
 apply plugin: 'maven-publish'
@@ -22,6 +22,8 @@ bintray {
     user = project.hasProperty('bintray_user') ? getProperty('bintray_user') : ''
     key = project.hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
 
+    configurations = ['archives']
+    
     pkg {
         repo = 'grassroot-platform'
         name = 'grassroot-core'
@@ -35,8 +37,8 @@ bintray {
             released  = new Date()
         }
     }
-    publish = true
-    publications = ['MyPublication']
+    // publish = true
+    // publications = ['MyPublication']
 }
 
 

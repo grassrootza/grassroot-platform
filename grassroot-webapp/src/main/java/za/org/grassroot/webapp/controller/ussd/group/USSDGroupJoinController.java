@@ -161,7 +161,7 @@ public class USSDGroupJoinController extends USSDBaseController  {
             return new USSDMenu(promptStart + " " + promptSuffix, provinceOptions(user, "group/join/profile?field=PROVINCE&province="));
         } else {
             promptSuffix = getMessage("home.start.prompt.choose", user);
-            return !userManager.needsToRenameSelf(user) ? welcomeMenu(promptStart + " " + promptSuffix, user) :
+            return !userManager.needsToSetName(user, false) ? welcomeMenu(promptStart + " " + promptSuffix, user) :
                     new USSDMenu(getMessage(HOME, USSDBaseController.startMenu, promptKey + "-rename.short", user), "rename-start");
         }
     }
