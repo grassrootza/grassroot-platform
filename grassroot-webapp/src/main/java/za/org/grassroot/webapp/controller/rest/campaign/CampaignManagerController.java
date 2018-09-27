@@ -161,6 +161,7 @@ public class CampaignManagerController extends BaseRestController {
             MembershipInfo creator = new MembershipInfo(groupCreator, groupCreator.getName(), BaseRoles.ROLE_GROUP_ORGANIZER, null);
             Group createdGroup = groupBroker.create(userUid, createCampaignRequest.getGroupName(), null, Collections.singleton(creator),
                     GroupPermissionTemplate.CLOSED_GROUP, null, null, false, false, true);
+
             masterGroupUid = createdGroup.getUid();
         }
 
@@ -183,7 +184,8 @@ public class CampaignManagerController extends BaseRestController {
     }
 
     @ExceptionHandler(CampaignCodeTakenException.class)
-    public ResponseEntity codeTaken() {
+    public ResponseEntity codeTaken(CampaignCodeTakenException e) {
+        log.error("Campaign code taken! Should not happen ... error: ", e);
         return RestUtil.errorResponse(RestMessage.CAMPAIGN_WITH_SAME_CODE_EXIST);
     }
 

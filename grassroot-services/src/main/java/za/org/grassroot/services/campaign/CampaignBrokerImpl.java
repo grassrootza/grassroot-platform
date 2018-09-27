@@ -195,6 +195,10 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Transactional(readOnly = true)
     public boolean isCodeTaken(String proposedCode, String campaignUid) {
         Objects.requireNonNull(proposedCode);
+
+        if (SYSTEM_CODES.contains(proposedCode))
+            return true;
+
         if (campaignUid != null) {
             Campaign campaign = campaignRepository.findOneByUid(campaignUid);
             log.info("well, we're looking for campaign, it has code = {}, proposed = {}, is active = {}",
