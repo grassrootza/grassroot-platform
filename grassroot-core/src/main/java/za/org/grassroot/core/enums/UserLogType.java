@@ -32,6 +32,7 @@ public enum UserLogType {
     USSD_DATE_ENTERED("user entered a date time string in USSD"),
     USSD_DATE_WRONG("user corrected a date time string"),
     USER_SKIPPED_NAME("user preferred not to set name"),
+    USER_SKIPPED_PROVINCE("user preferred not to set a province"),
 
     RECEIVED_ANDROID_BROADCAST("user sent Android link"),
     DEREGISTERED_ANDROID("user android profile deleted"),

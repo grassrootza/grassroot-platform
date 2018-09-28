@@ -23,7 +23,7 @@ public class CreateCampaignRequest implements Serializable {
     private String name;
     @ApiModelProperty(value = "campaign code", required = true)
     private String code;
-    @ApiModelProperty(value = "description of campaign", required = true)
+    @ApiModelProperty(value = "description of campaign")
     private String description;
     @ApiModelProperty(value = "start date of campaign, in epoch millis",required = true)
     private long startDateEpochMillis;
@@ -59,7 +59,6 @@ public class CreateCampaignRequest implements Serializable {
         return code;
     }
 
-    @NotBlank(message = "campaign.description.required")
     public String getDescription() {
         return description;
     }

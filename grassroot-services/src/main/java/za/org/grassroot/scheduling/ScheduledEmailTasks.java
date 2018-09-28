@@ -55,10 +55,13 @@ public class ScheduledEmailTasks {
             long initiatedYesterday = analyticalService.countUsersCreatedAndInitiatedInPeriod(yesterday, now);
             long androidTotal = analyticalService.countUsersThatHaveAndroidProfile();
             long webTotal = analyticalService.countUsersThatHaveWebProfile();
+            long whatsAppOptIn = analyticalService.countUsersWithWhatsAppOptIn();
+            long whatsAppUsed = analyticalService.countUsersThatHaveUsedWhatsApp();
 
             final String userLine = String.format("Grassroot has reached %d users, of whom %d were added yesterday. A " +
                     "total of %d users have initiated a session, of which %d were yesterday. There have been %d Android " +
-                    "users, and %d web users.%n", totalUsers, usersYesterday, totalInitiated, initiatedYesterday, androidTotal, webTotal);
+                    "users, and %d web users.%n A total of %d users have opted in to WhatsApp outbound, and %d have had a WhatsApp session",
+                    totalUsers, usersYesterday, totalInitiated, initiatedYesterday, androidTotal, webTotal, whatsAppOptIn, whatsAppUsed);
 
             long allMeetings = analyticalService.countAllEvents(EventType.MEETING);
             long allVotes = analyticalService.countAllEvents(EventType.VOTE);

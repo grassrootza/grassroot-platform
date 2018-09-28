@@ -1,9 +1,13 @@
 package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -24,6 +28,7 @@ import static za.org.grassroot.core.util.DateTimeUtil.*;
 public class AnalyticalServiceImpl implements AnalyticalService {
 
     private final UserRepository userRepository;
+    private final UserLogRepository userLogRepository;
     private final GroupRepository groupRepository;
     private final VoteRepository voteRepository;
     private final MeetingRepository meetingRepository;
@@ -32,9 +37,10 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     private final SafetyEventRepository safetyEventRepository;
 
     @Autowired
-    public AnalyticalServiceImpl(UserRepository userRepository, GroupRepository groupRepository, VoteRepository voteRepository, MeetingRepository meetingRepository,
+    public AnalyticalServiceImpl(UserRepository userRepository, UserLogRepository userLogRepository, GroupRepository groupRepository, VoteRepository voteRepository, MeetingRepository meetingRepository,
                                  TodoRepository todoRepository, GeoLocationBroker geoLocationBroker, SafetyEventRepository safetyRepository) {
         this.userRepository = userRepository;
+        this.userLogRepository = userLogRepository;
         this.groupRepository = groupRepository;
         this.voteRepository = voteRepository;
         this.meetingRepository = meetingRepository;
@@ -93,6 +99,16 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Transactional(readOnly = true)
     public int countUsersThatHaveAndroidProfile(){
         return (int) userRepository.count(hasAndroidProfile());
+    }
+
+    @Override
+    public int countUsersThatHaveUsedWhatsApp() {
+        return (int) userLogRepository.countDistinctUsersHavingLogOnChannel(UserLogType.USER_SESSION, UserInterfaceType.WHATSAPP);
+    }
+
+    @Override
+    public int countUsersWithWhatsAppOptIn() {
+        return (int) userRepository.count(hasWhatsAppOptIn());
     }
 
     @Override

@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
@@ -187,9 +189,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             bundle.addLog(joinTokenOpeningResult.getGroupLog());
         }
 
-        storeBundleAfterCommit(bundle);
-
-        logger.info("returning group now ... group has {} members", group.getMemberships().size());
 
         if (graphBroker != null) {
             graphBroker.addGroupToGraph(group.getUid(), userUid, null);
@@ -197,9 +196,27 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         if (addToAccountIfPresent && user.getPrimaryAccount() != null) {
-            logger.info("Adding group to account {}", user.getPrimaryAccount());
-            addToAccountAfterCommit(user, group);
+            Account account = user.getPrimaryAccount();
+            group.setAccount(account);
+            group.setPaidFor(true);
+
+            logger.info("Added group {} to account {}", group.getName(), account.getName());
+            // possibly not necessary, but being slightly paranoid in here
+            groupRepository.save(group);
+
+            bundle.addLog(new AccountLog.Builder(account)
+                    .user(user)
+                    .accountLogType(AccountLogType.GROUP_ADDED)
+                    .group(group)
+                    .paidGroupUid(group.getUid())
+                    .description(group.getName()).build());
+
+            bundle.addLog(new GroupLog(group, user, GroupLogType.ADDED_TO_ACCOUNT,
+                    null, null, account, "Group added to Grassroot Extra accounts"));
         }
+
+        storeBundleAfterCommit(bundle);
+        logger.info("returning group now ... group has {} members", group.getMemberships().size());
 
         return group;
     }
@@ -1735,6 +1752,20 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         } else {
             logger.error("Asked to close an already closed or non-existing join code, {}, for group {}", code, group);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Group searchForGroupByWord(String userUid, String phrase) {
+        String normalizedPhrase = phrase.toLowerCase().trim();
+        Optional<Group> groupToReturn = groupRepository.findOne(GroupSpecifications.hasJoinCode(normalizedPhrase));
+        if (groupToReturn.isPresent())
+            return groupToReturn.get();
+
+        Optional<Group> groupFromPhrase = groupJoinCodeRepository.selectGroupWithActiveCode(normalizedPhrase);
+        logger.info("For phrase {}, found optional group: {}", phrase, groupFromPhrase);
+
+        return groupFromPhrase.orElse(null);
     }
 
     @Override

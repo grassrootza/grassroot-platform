@@ -77,7 +77,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Getter @Setter private boolean hasAndroidProfile = false;
 
     @Column(name = "whatsapp")
-    @Getter @Setter private boolean whatsAppLinked = false;
+    @Getter @Setter private boolean whatsAppOptedIn = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "message_preference", nullable = false, length = 50)

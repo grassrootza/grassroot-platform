@@ -1,6 +1,8 @@
 package za.org.grassroot.services.async;
 
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 
@@ -31,6 +33,14 @@ public interface AsyncUserLogger {
      * @param interfaceType The interface used; must be non-null
      */
     void recordUserSession(String userUid, UserInterfaceType interfaceType);
+
+    /**
+     * Records where a user is; only used when explicitly asking user for location
+     * @param userUid The uid of the user
+     * @param location The location of the user
+     * @param locationSource How the location is obtained
+     */
+    void recordUserLocation(String userUid, GeoLocation location, LocationSource locationSource, UserInterfaceType channel);
 
     /**
      * Records the user accessing a USSD menu
@@ -76,15 +86,9 @@ public interface AsyncUserLogger {
      */
     boolean hasSkippedName(String userUid);
 
-    boolean hasChangedLanguage(String userUid);
+    boolean hasSkippedProvince(String userUid);
 
-    /**
-     * Check if the user has skipped over naming a group in the past, to avoid repeated asked
-     * @param userUid
-     * @param groupUid
-     * @return
-     */
-    boolean hasSkippedNamingGroup(String userUid, String groupUid);
+    boolean hasChangedLanguage(String userUid);
 
     boolean hasUsedJoinCodeRecently(String userUid);
 

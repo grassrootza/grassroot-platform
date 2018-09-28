@@ -269,7 +269,7 @@ public class USSDCampaignController extends USSDBaseController {
 
     private USSDMenu buildSharingMenu(String campaignUid, Locale locale) {
         List<CampaignMessage> campaignMessage = campaignBroker.findCampaignMessage(campaignUid,
-                CampaignActionType.SHARE_PROMPT, locale);
+                CampaignActionType.SHARE_PROMPT, locale, UserInterfaceType.USSD);
         final String prompt = !campaignMessage.isEmpty() ? campaignMessage.get(0).getMessage() :
                 getMessage("campaign.share.generic", locale.getLanguage());
         return new USSDMenu(prompt, campaignMenus + "share/do?campaignUid=" + campaignUid);
@@ -278,7 +278,7 @@ public class USSDCampaignController extends USSDBaseController {
     private USSDMenu genericPositiveExit(String campaignUid, User user, Locale locale) {
         log.info("inside generic positive exit ...");
         List<CampaignMessage> campaignMessage = campaignBroker.findCampaignMessage(campaignUid,
-                CampaignActionType.EXIT_POSITIVE, locale);
+                CampaignActionType.EXIT_POSITIVE, locale, UserInterfaceType.USSD);
         log.info("found a campaign message? : {}", campaignMessage);
         USSDMenu menu = !campaignMessage.isEmpty() ? buildCampaignUSSDMenu(campaignMessage.get(0)) :
                 new USSDMenu(getMessage("campaign.exit_positive.generic", locale.getLanguage()));

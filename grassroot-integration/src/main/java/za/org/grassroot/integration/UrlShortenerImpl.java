@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.media.MediaFunction;
 
@@ -65,8 +66,8 @@ public class UrlShortenerImpl implements UrlShortener {
                     .addParameter("longUrl", joinUrl);
             BitlyResponse response = restTemplate.getForObject(builder.build(), BitlyResponse.class);
             logger.info("URL shortened in {} msecs, response = {}", System.currentTimeMillis() - startTime, response);
-            return (String) response.data.get("url");
-        } catch (URISyntaxException e) {
+            return response != null ? (String) response.data.get("url") : null;
+        } catch (URISyntaxException|RestClientException e) {
             logger.error("Error shortening URL!", e);
             return null;
         } catch (HttpMessageNotReadableException e) {

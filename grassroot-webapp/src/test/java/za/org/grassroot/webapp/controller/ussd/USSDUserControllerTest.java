@@ -54,7 +54,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrCreateUser(testUserPhone)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(userManagementServiceMock.needsToRenameSelf(testUser)).thenReturn(true);
+        when(userManagementServiceMock.needsToSetName(testUser, false)).thenReturn(true);
 
         mockMvc.perform(get("/ussd/start").param(phoneParam, testUserPhone)).
                 andExpect(status().isOk());

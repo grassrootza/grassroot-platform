@@ -99,7 +99,9 @@ public interface UserManagementService {
     Miscellaneous methods to query various properties about a user
      */
 
-    boolean needsToRenameSelf(User sessionUser);
+    boolean needsToSetName(User user, boolean evenOnCreation);
+
+    boolean needsToSetProvince(User user, boolean evenOnCreation);
 
     boolean needToPromptForLanguage(User sessionUser, int minSessions);
 

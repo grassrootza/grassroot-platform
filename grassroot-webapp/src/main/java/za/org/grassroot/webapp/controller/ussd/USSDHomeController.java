@@ -206,7 +206,7 @@ public class USSDHomeController extends USSDBaseController {
 
     private USSDResponseTypes neededResponse(EntityForUserResponse userResponse, User user) {
         return userResponse != null ? USSDResponseTypes.fromJpaEntityType(userResponse.getJpaEntityType()) :
-                userManager.needsToRenameSelf(user) ? USSDResponseTypes.RENAME_SELF : USSDResponseTypes.NONE;
+                userManager.needsToSetName(user, false) ? USSDResponseTypes.RENAME_SELF : USSDResponseTypes.NONE;
     }
 
     private USSDMenu directBasedOnTrailingDigits(String trailingDigits, User user) {

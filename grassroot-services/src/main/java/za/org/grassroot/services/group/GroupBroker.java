@@ -13,7 +13,6 @@ import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -125,6 +124,8 @@ public interface GroupBroker {
     GroupJoinCode addJoinTag(String userUid, String groupUid, String tag, String urlToShorten);
 
     void removeJoinTag(String userUid, String groupUid, String tag);
+
+    Group searchForGroupByWord(String userUid, String phrase);
 
     Set<String> getUsedJoinWords();
 
