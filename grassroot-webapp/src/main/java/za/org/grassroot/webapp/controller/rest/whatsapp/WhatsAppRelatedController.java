@@ -245,6 +245,7 @@ public class WhatsAppRelatedController extends BaseController {
 
         List<CampaignMessage> nextMsgs = campaignBroker.findCampaignMessage(campaignUid, action, null, UserInterfaceType.WHATSAPP);
         if (nextMsgs == null || nextMsgs.isEmpty()) {
+            log.info("Could not find message from action, tracing from prior, prior uid: {}", priorMessageUid);
             nextMsgs = Collections.singletonList(campaignBroker.findCampaignMessage(campaignUid, priorMessageUid, action));
         }
         log.info("Next campaign messages found: {}", nextMsgs);

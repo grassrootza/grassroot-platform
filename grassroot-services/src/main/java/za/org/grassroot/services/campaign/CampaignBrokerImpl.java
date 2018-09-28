@@ -136,6 +136,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Override
     public CampaignMessage findCampaignMessage(String campaignUid, String priorMsgUid, CampaignActionType takenAction) {
         CampaignMessage priorMsg = campaignMessageRepository.findOneByUid(priorMsgUid);
+        log.info("prior message : {}, prior msg uid: {}, prior message next msgs: {}", priorMsg, priorMsgUid, priorMsg == null ? "null" : priorMsg.getNextMessages());
         Optional<String> thisMsgUid = priorMsg.getNextMessages().entrySet().stream().filter(entry -> entry.getValue().equals(takenAction))
                 .findFirst().map(Map.Entry::getKey);
         return thisMsgUid.map(campaignMessageRepository::findOneByUid)
@@ -451,10 +452,15 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private List<CampaignMessage> filterForChannelOrDefault(List<CampaignMessage> messages, UserInterfaceType preferredChannel, UserInterfaceType defaultChannel) {
         List<CampaignMessage> filteredMessages = messages.stream().filter(message ->
                 preferredChannel == null || preferredChannel.equals(message.getChannel())).collect(Collectors.toList());
-        if (!filteredMessages.isEmpty())
+        if (!filteredMessages.isEmpty()) {
+            log.info("Found messages for channel {}, returning: {}", preferredChannel, filteredMessages);
             return filteredMessages;
-        else
-            return filteredMessages.stream().filter(message -> defaultChannel == null || defaultChannel.equals(preferredChannel)).collect(Collectors.toList());
+        } else {
+            List<CampaignMessage> defaultMsgs = messages.stream()
+                    .filter(message -> defaultChannel == null || defaultChannel.equals(message.getChannel())).collect(Collectors.toList());
+            log.info("found for default channel {}, messages {}", defaultChannel, defaultMsgs);
+            return defaultMsgs;
+        }
     }
 
     private CampaignMessage updateExistingOrCreateNew(User user, Campaign campaign, CampaignMessageDTO cm,
