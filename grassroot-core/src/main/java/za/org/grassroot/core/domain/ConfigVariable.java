@@ -24,13 +24,13 @@ public class ConfigVariable {
     @Column(name = "created_date_time", updatable = false, nullable = false)
     private Instant creationTime;
 
-    @Column(name = "key", nullable = false, updatable = false, unique = true)
+    @Column(name = "key_col", nullable = false, updatable = false, unique = true)
     private String key;
 
     @Column(name = "update_date_time", updatable = true)
     private Instant lastUpdatedTime;
 
-    @Column(name = "value", nullable = false)
+    @Column(name = "value_col", nullable = false)
     private String value; // storing as a value so can be generic; parse on decoding
 
     public void setValue(String value) {

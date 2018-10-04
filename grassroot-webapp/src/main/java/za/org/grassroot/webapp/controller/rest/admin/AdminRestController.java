@@ -198,7 +198,7 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok(adminService.getCurrentConfigVariables());
     }
 
-    @RequestMapping(value = "/config/create", method = RequestMethod.POST)
+    @RequestMapping(value = "/config/update", method = RequestMethod.POST)
     public ResponseEntity updateConfigVar(@RequestParam String key, @RequestParam String value) {
         adminService.updateConfigVariable(key, value);
         return ResponseEntity.ok().build();

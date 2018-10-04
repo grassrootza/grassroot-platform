@@ -3,7 +3,9 @@ package za.org.grassroot.services.account;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationListener;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.events.CreateConfigVariableEvent;
+import za.org.grassroot.core.events.UpdateConfigVariableEvent;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
@@ -49,7 +53,7 @@ import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAs
  * Created by luke on 2016/10/25.
  */
 @Service @Slf4j
-public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
+public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, ApplicationListener {
 
     private boolean GROUP_SIZE_LIMITED = false;
     private int FREE_GROUP_LIMIT = 300;
@@ -112,14 +116,17 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
         Map<String, String> configVars = configRepository.findAll().stream()
                 .collect(Collectors.toMap(ConfigVariable::getKey, ConfigVariable::getValue));
 
+        log.info("Current config variables {}",configVars);
+
         GROUP_SIZE_LIMITED = Boolean.parseBoolean(configVars.getOrDefault("groups.size.limit", "false"));
         FREE_GROUP_LIMIT = Integer.parseInt(configVars.getOrDefault("groups.size.freemax", "300"));
         FREE_TODOS_PER_MONTH = Integer.parseInt(configVars.getOrDefault("todos.monthly.free", "4"));
         FREE_EVENTS_PER_MONTH = Integer.parseInt(configVars.getOrDefault("accounts.events.monthly.free", "4"));
         eventMonthlyLimitThreshold = Integer.parseInt(configVars.getOrDefault("events.limit.threshold", "10"));
-        eventLimitStartString = configVars.getOrDefault("grassroot.events.limit.started:2017-04-01", "2017-04-01");
+        eventLimitStartString = configVars.getOrDefault("grassroot.events.limit.started", "2017-04-01");
         setEventLimitStart();
 
+        log.info("Free todos per month default to ={}",FREE_TODOS_PER_MONTH);
     }
 
     private void setEventLimitStart() {
@@ -468,4 +475,17 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
         return message.substring(0, Math.min(message.length(), maxChars));
     }
 
+    @Override
+    public void onApplicationEvent(ApplicationEvent event) {
+        if(event instanceof UpdateConfigVariableEvent){
+            ConfigVariable configVariable = configRepository.findOneByKey(((UpdateConfigVariableEvent) event).getKey());
+            log.info("Config variable updated, key ={}, value ={}",configVariable.getKey(),configVariable.getValue());
+            updateConfig();
+        }
+
+        if(event instanceof CreateConfigVariableEvent) {
+            log.info("Config variable created ...........");
+            updateConfig();
+        }
+    }
 }

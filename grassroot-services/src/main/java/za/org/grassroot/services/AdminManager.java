@@ -3,6 +3,8 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -11,7 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import sun.security.krb5.Config;
+//import sun.security.krb5.Config;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.domain.notification.SystemInfoNotification;
@@ -19,6 +21,8 @@ import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.events.CreateConfigVariableEvent;
+import za.org.grassroot.core.events.UpdateConfigVariableEvent;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -36,7 +40,7 @@ import java.util.stream.Collectors;
  * Created by luke on 2016/02/04.
  */
 @Service
-public class AdminManager implements AdminService {
+public class AdminManager implements AdminService, ApplicationEventPublisherAware {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminManager.class);
 
@@ -50,6 +54,8 @@ public class AdminManager implements AdminService {
 
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ConfigRepository configRepository;
+
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
     public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, MembershipRepository membershipRepository, PasswordEncoder passwordEncoder) {
@@ -229,6 +235,9 @@ public class AdminManager implements AdminService {
         if (var == null)
             throw new IllegalArgumentException("Error! Trying to update non-existent config var");
         var.setValue(newValue);
+
+        UpdateConfigVariableEvent updateConfigVariableEvent = new UpdateConfigVariableEvent(this,var.getKey());
+        this.applicationEventPublisher.publishEvent(updateConfigVariableEvent);
         logger.info("Updated variable, exiting");
     }
 
@@ -239,6 +248,10 @@ public class AdminManager implements AdminService {
         if (existing != null)
             throw new IllegalArgumentException("Trying to create variable with existing key name");
         ConfigVariable newVar = new ConfigVariable(key, value);
+
+        CreateConfigVariableEvent createConfigVariableEvent = new CreateConfigVariableEvent(this,newVar.getKey());
+        this.applicationEventPublisher.publishEvent(createConfigVariableEvent);
+        configRepository.save(newVar);
         logger.info("Created new variable, exiting");
     }
 
@@ -284,4 +297,8 @@ public class AdminManager implements AdminService {
         }
     }
 
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
 }
