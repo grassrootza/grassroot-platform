@@ -21,12 +21,11 @@ import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.events.CreateConfigVariableEvent;
-import za.org.grassroot.core.events.UpdateConfigVariableEvent;
+import za.org.grassroot.core.events.ConfigVariableEvent;
+import za.org.grassroot.core.events.RemoveConfigVariableEvent;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -236,8 +235,9 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
             throw new IllegalArgumentException("Error! Trying to update non-existent config var");
         var.setValue(newValue);
 
-        UpdateConfigVariableEvent updateConfigVariableEvent = new UpdateConfigVariableEvent(this,var.getKey());
-        this.applicationEventPublisher.publishEvent(updateConfigVariableEvent);
+        ConfigVariableEvent configVariableEvent = new ConfigVariableEvent(this,var.getKey(),false);
+        this.applicationEventPublisher.publishEvent(configVariableEvent);
+
         logger.info("Updated variable, exiting");
     }
 
@@ -249,9 +249,11 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
             throw new IllegalArgumentException("Trying to create variable with existing key name");
         ConfigVariable newVar = new ConfigVariable(key, value);
 
-        CreateConfigVariableEvent createConfigVariableEvent = new CreateConfigVariableEvent(this,newVar.getKey());
-        this.applicationEventPublisher.publishEvent(createConfigVariableEvent);
         configRepository.save(newVar);
+
+        ConfigVariableEvent configVariableEvent = new ConfigVariableEvent(this,newVar.getKey(),true);
+        this.applicationEventPublisher.publishEvent(configVariableEvent);
+
         logger.info("Created new variable, exiting");
     }
 
@@ -264,6 +266,14 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
                 .collect(Collectors.toMap(ConfigVariable::getKey, ConfigVariable::getValue));
         logger.info("And mapped them to: {}", configVars);
         return configVars;
+    }
+
+    @Override
+    @Transactional
+    public void deleteConfigVariable(String key) {
+        configRepository.delete(configRepository.findOneByKey(key));
+        RemoveConfigVariableEvent removeConfigVariableEvent = new RemoveConfigVariableEvent(this,"DELETE IT <<<<<>>>>>");
+        this.applicationEventPublisher.publishEvent(removeConfigVariableEvent);
     }
 
     @Override

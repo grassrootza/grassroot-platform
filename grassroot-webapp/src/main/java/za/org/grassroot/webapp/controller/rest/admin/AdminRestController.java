@@ -210,4 +210,10 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok().build();
     }
 
+    @RequestMapping(value = "/config/delete",method = RequestMethod.POST)
+    public ResponseEntity deleteConfigVar(@RequestParam String key) {
+        adminService.deleteConfigVariable(key);
+        return ResponseEntity.ok().build();
+    }
+
 }

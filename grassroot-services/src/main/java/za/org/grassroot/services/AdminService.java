@@ -46,6 +46,9 @@ public interface AdminService {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     Map<String, String> getCurrentConfigVariables();
 
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void deleteConfigVariable(String key);
+
     int freeUpInactiveJoinTokens();
 
 }
