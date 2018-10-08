@@ -38,10 +38,10 @@ public interface AdminService {
     long sendBatchOfAndroidLinks(String adminUserUid, int batchSize);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void updateConfigVariable(String key, String newValue);
+    void updateConfigVariable(String key, String newValue,String description);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void createConfigVariable(String key, String newValue);
+    void createConfigVariable(String key, String newValue,String description);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     Map<String, String> getCurrentConfigVariables();

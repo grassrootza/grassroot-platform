@@ -229,11 +229,12 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
     @Override
     @Transactional
-    public void updateConfigVariable(String key, String newValue) {
+    public void updateConfigVariable(String key, String newValue,String description) {
         ConfigVariable var = configRepository.findOneByKey(key);
         if (var == null)
             throw new IllegalArgumentException("Error! Trying to update non-existent config var");
         var.setValue(newValue);
+        var.setDescription(description);
 
         ConfigVariableEvent configVariableEvent = new ConfigVariableEvent(this,var.getKey(),false);
         this.applicationEventPublisher.publishEvent(configVariableEvent);
@@ -243,11 +244,11 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
     @Override
     @Transactional
-    public void createConfigVariable(String key, String value) {
+    public void createConfigVariable(String key, String value,String description) {
         ConfigVariable existing = configRepository.findOneByKey(key);
         if (existing != null)
             throw new IllegalArgumentException("Trying to create variable with existing key name");
-        ConfigVariable newVar = new ConfigVariable(key, value);
+        ConfigVariable newVar = new ConfigVariable(key, value,description);
 
         configRepository.save(newVar);
 

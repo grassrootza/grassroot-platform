@@ -33,6 +33,9 @@ public class ConfigVariable {
     @Column(name = "value_col", nullable = false)
     private String value; // storing as a value so can be generic; parse on decoding
 
+    @Column(name = "description")
+    private String description;
+
     public void setValue(String value) {
         this.lastUpdatedTime = Instant.now();
         this.value = value;
@@ -42,11 +45,15 @@ public class ConfigVariable {
         // for JPA
     }
 
-    public ConfigVariable(String key, String value) {
+    public ConfigVariable(String key, String value,String description) {
         this.key = key;
         this.value = value;
         this.creationTime = Instant.now();
         this.lastUpdatedTime = this.creationTime;
+        this.description = description;
     }
 
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }

@@ -20,4 +20,5 @@ public class ConfigVariableEvent extends ApplicationEvent {
     public String getKey() {
         return this.key;
     }
+
 }

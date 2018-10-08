@@ -199,14 +199,18 @@ public class AdminRestController extends BaseRestController{
     }
 
     @RequestMapping(value = "/config/update", method = RequestMethod.POST)
-    public ResponseEntity updateConfigVar(@RequestParam String key, @RequestParam String value) {
-        adminService.updateConfigVariable(key, value);
+    public ResponseEntity updateConfigVar(@RequestParam String key,
+                                          @RequestParam String value,
+                                          @RequestParam String description) {
+        adminService.updateConfigVariable(key, value,description);
         return ResponseEntity.ok().build();
     }
 
     @RequestMapping(value = "/config/create", method = RequestMethod.POST)
-    public ResponseEntity createConfigVar(@RequestParam String key, @RequestParam String value) {
-        adminService.createConfigVariable(key, value);
+    public ResponseEntity createConfigVar(@RequestParam String key,
+                                          @RequestParam String value,
+                                          @RequestParam String description) {
+        adminService.createConfigVariable(key, value,description);
         return ResponseEntity.ok().build();
     }
 
