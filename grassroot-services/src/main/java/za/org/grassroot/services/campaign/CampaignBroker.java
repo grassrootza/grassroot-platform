@@ -43,6 +43,8 @@ public interface CampaignBroker {
 
     Campaign findCampaignByJoinWord(String joinWord, String userUid, UserInterfaceType channel);
 
+    List<Campaign> broadSearchForCampaign(String userId, String searchTerm);
+
     // returns all in lower case
     Map<String, String> getActiveCampaignJoinWords(); // todo : cache this
 

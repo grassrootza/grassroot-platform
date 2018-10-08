@@ -5,7 +5,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.TagHolder;
+import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Entity @Getter @Setter @Slf4j
 @Table(name = "campaign")
-public class Campaign implements TagHolder {
+public class Campaign implements UidIdentifiable, TagHolder {
 
     public static final String JOIN_TOPIC_PREFIX = "JOIN_TOPIC:";
     public static final String PUBLIC_JOIN_WORD_PREFIX = "PUBLIC_JOIN:";
@@ -206,6 +208,25 @@ public class Campaign implements TagHolder {
         return defaultLanguage == null ? Locale.ENGLISH : defaultLanguage;
     }
 
+    @Override
+    public JpaEntityType getJpaEntityType() {
+        return JpaEntityType.CAMPAIGN;
+    }
+
+    @Override
+    public boolean hasName() {
+        return true;
+    }
+
+    @Override
+    public Set<User> getMembers() {
+        return null; // could get engaged users, but can't see a use of this at present, so leave
+    }
+
+    @Override
+    public Group getThisOrAncestorGroup() {
+        return masterGroup;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -242,5 +263,4 @@ public class Campaign implements TagHolder {
         sb.append('}');
         return sb.toString();
     }
-
 }

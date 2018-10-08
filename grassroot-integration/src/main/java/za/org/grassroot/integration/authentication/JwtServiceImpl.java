@@ -32,7 +32,7 @@ public class JwtServiceImpl implements JwtService {
     @Value("${grassroot.jwt.token-expiry-grace-period.inMilliseconds:1209600000}")
     private Long jwtTokenExpiryGracePeriodInMilliseconds;
 
-    @Value("${grassroot.jwt.api-key-expiry.inDays:30}")
+    @Value("${grassroot.jwt.api-key-expiry.inDays:180}")
     private Long jwtApiKeyExpiryDays;
 
     private final Environment environment;

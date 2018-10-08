@@ -36,6 +36,7 @@ import za.org.grassroot.services.exception.GroupNotFoundException;
 import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -232,6 +233,14 @@ public class CampaignBrokerImpl implements CampaignBroker {
         }
 
         return null;
+    }
+
+    @Override
+    @Transactional
+    public List<Campaign> broadSearchForCampaign(String userId, String searchTerm) {
+        log.info("Searching for campaigns with names that look like : {}", searchTerm);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, false);
+        return campaignRepository.findCampaignsWithNamesIncluding(tsQuery);
     }
 
     @Override

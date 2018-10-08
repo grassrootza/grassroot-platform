@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
@@ -28,6 +29,7 @@ import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -35,6 +37,7 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Slf4j @RestController @Grassroot2RestController
 @RequestMapping("/v2/api/whatsapp") @Api("/v2/api/whatsapp")
@@ -49,6 +52,7 @@ public class WhatsAppRelatedController extends BaseController {
 
     private CampaignBroker campaignBroker;
     private GroupBroker groupBroker;
+    private GroupQueryBroker groupQueryBroker;
     private LocationInfoBroker locationInfoBroker;
     private MessageSource messageSource;
 
@@ -67,6 +71,11 @@ public class WhatsAppRelatedController extends BaseController {
     @Autowired
     public void setGroupBroker(GroupBroker groupBroker) {
         this.groupBroker = groupBroker;
+    }
+
+    @Autowired
+    public void setGroupQueryBroker(GroupQueryBroker groupQueryBroker) {
+        this.groupQueryBroker = groupQueryBroker;
     }
 
     @Autowired
@@ -91,7 +100,7 @@ public class WhatsAppRelatedController extends BaseController {
     // for accessing standard user APIs, but is time limited, and does not include system roles
     // so in case overall microservice token is compromised, only some features can be called
     @RequestMapping(value = "/user/token", method = RequestMethod.POST)
-    public ResponseEntity fetchRestrictedUserToken(String userId) {
+    public ResponseEntity fetchRestrictedUserToken(@RequestParam String userId) {
         CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.MSGING_CLIENT);
         tokenRequest.addClaim(JwtService.USER_UID_KEY, userId);
         tokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_FULL_USER);
@@ -99,9 +108,8 @@ public class WhatsAppRelatedController extends BaseController {
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }
 
-
     @RequestMapping(value = "/phrase/search", method = RequestMethod.POST)
-    public ResponseEntity<PhraseSearchResponse> checkIfPhraseTriggersCampaign(@RequestParam String phrase, @RequestParam String userId) {
+    public ResponseEntity<PhraseSearchResponse> checkCampaignGroupPhrase(@RequestParam String phrase, @RequestParam String userId) {
         User user = userManagementService.load(userId);
         Campaign campaign = campaignBroker.findCampaignByJoinWord(phrase, userId, UserInterfaceType.WHATSAPP);
         Group group = campaign != null ? null : groupBroker.searchForGroupByWord(userId, phrase);
@@ -112,7 +120,7 @@ public class WhatsAppRelatedController extends BaseController {
         } else if (group != null) {
             response = groupResponse(user, group);
         } else {
-            response = PhraseSearchResponse.notFoundResponse();
+            response = broadPhraseSearch(user.getUid(), phrase);
         }
         return ResponseEntity.ok(response);
     }
@@ -153,6 +161,49 @@ public class WhatsAppRelatedController extends BaseController {
                 .responseMessages(messages)
                 .requestDataType(outstandingUserInfo)
                 .build();
+    }
+
+    private PhraseSearchResponse broadPhraseSearch(String userId, String phrase) {
+        List<Group> candidateGroups = groupQueryBroker.findPublicGroups(userId, phrase, null, true);
+        List<Campaign> campaignList = campaignBroker.broadSearchForCampaign(userId, phrase);
+        log.info("found {} possible groups and {} possible campaigns for phrase '{}'", candidateGroups.size(), campaignList.size(), phrase);
+
+        if (candidateGroups.isEmpty() && campaignList.isEmpty())
+            return PhraseSearchResponse.notFoundResponse();
+
+        List<UidIdentifiable> candidateEntities = Stream.concat(campaignList.stream().map(campaign -> (UidIdentifiable) campaign),
+                candidateGroups.stream().map(group -> (UidIdentifiable) group)).collect(Collectors.toList());
+
+        List<String> messages = new ArrayList<>();
+        LinkedHashMap<JpaEntityType, String> possibleEntities = new LinkedHashMap<>();
+        LinkedHashMap<String, String> responseMenu = new LinkedHashMap<>();
+
+        IntStream.range(0, candidateEntities.size()).forEach(i -> {
+            UidIdentifiable entity = candidateEntities.get(i);
+            messages.add((i + 1) + ". " + entity.getName());
+            possibleEntities.put(entity.getJpaEntityType(), entity.getUid());
+            responseMenu.put(entity.getJpaEntityType() + "::" + entity.getUid(), entity.getName());
+        });
+
+        return PhraseSearchResponse.builder()
+                .entityFound(false)
+                .responseMessages(messages)
+                .responseMenu(responseMenu)
+                .possibleEntities(possibleEntities)
+                .build();
+    }
+
+    @RequestMapping(value = "/entity/select/{entityType}/{entityUid}", method = RequestMethod.POST)
+    public ResponseEntity<PhraseSearchResponse> selectEntityToJoin(@PathVariable JpaEntityType entityType,
+                                                                   @PathVariable String entityUid,
+                                                                   @RequestParam String userId) {
+        User user = userManagementService.load(userId);
+        if (JpaEntityType.CAMPAIGN.equals(entityType)) {
+            campaignBroker.recordEngagement(entityUid, userId, UserInterfaceType.WHATSAPP, "From search");
+            return ResponseEntity.ok(campaignResponse(user, campaignBroker.load(entityUid)));
+        } else {
+            return ResponseEntity.ok(groupResponse(user, groupBroker.load(entityUid)));
+        }
     }
 
     @RequestMapping(value = "/entity/respond/{entityType}/{entityUid}", method = RequestMethod.POST)

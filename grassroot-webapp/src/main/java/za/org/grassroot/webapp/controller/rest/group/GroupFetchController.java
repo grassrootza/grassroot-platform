@@ -98,14 +98,14 @@ public class GroupFetchController extends BaseRestController {
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     @ApiOperation("Returns a list of groups for currently logged in user")
-    public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request) {
+    public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request,
+                                                            @RequestParam(required = false) Boolean withSubgroups) {
         String userId = getUserIdFromRequest(request);
-        log.debug("fetching groups for user with ID, {}", userId);
-        if (userId != null) {
-            List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId);
-            log.info("found {} groups for user", groups.size());
-            return new ResponseEntity<>(groups, HttpStatus.OK);
-        } else return new ResponseEntity<>(new ArrayList<>(), HttpStatus.UNAUTHORIZED);
+        boolean includeSubgroups = withSubgroups != null && withSubgroups;
+        log.debug("fetching groups for user with ID, {}, include subgroups : ", userId);
+        List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId, includeSubgroups);
+        log.info("found {} groups for user", groups.size());
+        return new ResponseEntity<>(groups, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/details/{groupUid}", method = RequestMethod.GET)
