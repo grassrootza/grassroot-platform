@@ -246,8 +246,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(noRollbackFor = InvalidOtpException.class)
     public boolean updateUser(String userUid, String displayName, String phoneNumber, String emailAddress,
-                              Province province, AlertPreference alertPreference, Locale locale, String validationOtp) {
-        Objects.requireNonNull(userUid);
+                              Province province, AlertPreference alertPreference, Locale locale, String validationOtp,boolean whatsappOptIn) {
+        Objects.requireNonNull(userUid);// added whatsapp opt in field to the updateUser method
+
+        log.info("What is the value {}",whatsappOptIn);//Logging the event value of whats app subscription coming from profile form.
 
         if (StringUtils.isEmpty(phoneNumber) && StringUtils.isEmpty(emailAddress)) {
             throw new IllegalArgumentException("Error! Cannot set both phone number and email address to null");
@@ -259,6 +261,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         boolean phoneChanged = !StringUtils.isEmpty(user.getPhoneNumber()) && !user.getPhoneNumber().equals(msisdn);
         boolean emailChanged = !StringUtils.isEmpty(user.getEmailAddress()) && !user.getEmailAddress().equals(emailAddress);
         boolean otherChanged = false;
+        boolean subscribeWhatsapp = whatsappOptIn;// whatsapp subscribtion log boolean
 
         if ((phoneChanged || emailChanged) && StringUtils.isEmpty(validationOtp)) {
             return false;
@@ -322,6 +325,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
         if (otherChanged) {
             logs.add(new UserLog(userUid, UserLogType.USER_DETAILS_CHANGED, null, UserInterfaceType.UNKNOWN));
+        }
+        //Storing a log for whats app subscription after changes have been altered.
+        if(subscribeWhatsapp){
+            user.setWhatsAppOptedIn(whatsappOptIn);
+            logs.add(new UserLog(userUid,UserLogType.USER_SUBSCRIBED_WHATSAPP,"Subscribed for whats app notifications",UserInterfaceType.UNKNOWN));
         }
 
         log.info("okay, done updating, storing {} logs", logs.size());
