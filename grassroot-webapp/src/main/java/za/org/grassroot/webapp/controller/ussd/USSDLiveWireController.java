@@ -260,7 +260,7 @@ public class USSDLiveWireController extends USSDBaseController {
             return menuBuilder(menu);
         } else {
             User contactUser = StringUtils.isNullOrEmpty(contactUid) ?
-                    userManager.loadOrCreateUser(request) : userManager.load(contactUid);
+                    userManager.loadOrCreateUser(request, UserInterfaceType.USSD) : userManager.load(contactUid);
             cacheManager.putUssdMenuForUser(msisdn, menuRoot + "&contactUid=" + contactUser.getUid());
             liveWireAlertBroker.updateContactUser(sessionUser.getUid(), alertUid,
                     contactUser.getUid(), contactUser.getDisplayName());

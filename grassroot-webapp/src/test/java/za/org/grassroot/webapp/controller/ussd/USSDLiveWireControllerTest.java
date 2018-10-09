@@ -331,7 +331,7 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
                         "contact/name" + "?alertUid=" + "23" +
                         "&priorInput=" + "1" + "&revising=1");
 
-        when(userManagementServiceMock.loadOrCreateUser("2"))
+        when(userManagementServiceMock.loadOrCreateUser("2", UserInterfaceType.USSD))
                 .thenReturn(testUser);
 
         when(userManagementServiceMock.load("0872345678")).

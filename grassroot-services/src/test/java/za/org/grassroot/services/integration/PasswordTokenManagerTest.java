@@ -11,6 +11,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.ServicesTestConfig;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
@@ -54,7 +55,7 @@ public class PasswordTokenManagerTest {
 
     @Test
     public void testGenerateVerificationCode3() {
-        User user = userManagementService.loadOrCreateUser("0729177903");
+        User user = userManagementService.loadOrCreateUser("0729177903", UserInterfaceType.USSD);
         log.info("user user name : ", user.getUsername());
         VerificationTokenCode verificationTokenCode = passwordTokenService.generateShortLivedOTP(user.getUsername());
         assertThat(passwordTokenService.isShortLivedOtpValid(user.getUsername(),

@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.ServicesTestConfig;
 import za.org.grassroot.services.user.UserManagementService;
 
@@ -33,7 +34,7 @@ public class UserManagementServiceTest {
 
     @Test
     public void shouldLoadOrSave() {
-        User user = userManagementService.loadOrCreateUser("0826607135");
+        User user = userManagementService.loadOrCreateUser("0826607135", UserInterfaceType.USSD);
         Assert.assertNotEquals(Long.parseLong("0"),Long.parseLong(user.getId().toString()));
     }
 }

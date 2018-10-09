@@ -22,6 +22,7 @@ import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -105,7 +106,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
             user.setHasInitiatedSession(false);
             TaskMinimalDTO taskDetails = new TaskMinimalDTO(meeting, Instant.now());
 
-            when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber(), UserInterfaceType.USSD)).thenReturn(user);
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
             when(userResponseBrokerMock.checkForEntityForUserResponse(user.getUid(), true)).thenReturn(meeting);
             when(taskBrokerMock.fetchDescription(user.getUid(), meeting.getUid(), TaskType.MEETING)).thenReturn(taskDetails);

@@ -21,6 +21,7 @@ import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
@@ -92,7 +93,8 @@ public class WhatsAppRelatedController extends BaseController {
     // this will get called _a lot_ during a sesion (each message to and fro), so not yet introducting a record user log in
     @RequestMapping(value = "/user/id", method = RequestMethod.POST)
     public ResponseEntity fetchUserId(String msisdn) {
-        User user = userManagementService.loadOrCreate(msisdn);
+        log.info("South African number? : {}", PhoneNumberUtil.isPhoneNumberSouthAfrican(msisdn));
+        User user = userManagementService.loadOrCreateUser("+" + msisdn, UserInterfaceType.WHATSAPP);
         userLogger.recordUserSession(user.getUid(), UserInterfaceType.WHATSAPP);
         return ResponseEntity.ok(user.getUid());
     }
@@ -109,7 +111,9 @@ public class WhatsAppRelatedController extends BaseController {
     }
 
     @RequestMapping(value = "/phrase/search", method = RequestMethod.POST)
-    public ResponseEntity<PhraseSearchResponse> checkCampaignGroupPhrase(@RequestParam String phrase, @RequestParam String userId) {
+    public ResponseEntity<PhraseSearchResponse> checkCampaignGroupPhrase(@RequestParam String phrase,
+                                                                         @RequestParam String userId,
+                                                                         @RequestParam boolean broadSearch) {
         User user = userManagementService.load(userId);
         Campaign campaign = campaignBroker.findCampaignByJoinWord(phrase, userId, UserInterfaceType.WHATSAPP);
         Group group = campaign != null ? null : groupBroker.searchForGroupByWord(userId, phrase);
@@ -120,7 +124,7 @@ public class WhatsAppRelatedController extends BaseController {
         } else if (group != null) {
             response = groupResponse(user, group);
         } else {
-            response = broadPhraseSearch(user.getUid(), phrase);
+            response = broadSearch ? broadPhraseSearch(user, phrase) : PhraseSearchResponse.notFoundResponse();
         }
         return ResponseEntity.ok(response);
     }
@@ -163,9 +167,9 @@ public class WhatsAppRelatedController extends BaseController {
                 .build();
     }
 
-    private PhraseSearchResponse broadPhraseSearch(String userId, String phrase) {
-        List<Group> candidateGroups = groupQueryBroker.findPublicGroups(userId, phrase, null, true);
-        List<Campaign> campaignList = campaignBroker.broadSearchForCampaign(userId, phrase);
+    private PhraseSearchResponse broadPhraseSearch(User user, String phrase) {
+        List<Group> candidateGroups = groupQueryBroker.findPublicGroups(user.getUid(), phrase, null, true);
+        List<Campaign> campaignList = campaignBroker.broadSearchForCampaign(user.getUid(), phrase);
         log.info("found {} possible groups and {} possible campaigns for phrase '{}'", candidateGroups.size(), campaignList.size(), phrase);
 
         if (candidateGroups.isEmpty() && campaignList.isEmpty())
@@ -174,16 +178,31 @@ public class WhatsAppRelatedController extends BaseController {
         List<UidIdentifiable> candidateEntities = Stream.concat(campaignList.stream().map(campaign -> (UidIdentifiable) campaign),
                 candidateGroups.stream().map(group -> (UidIdentifiable) group)).collect(Collectors.toList());
 
+        if (candidateEntities.isEmpty())
+            return PhraseSearchResponse.notFoundResponse();
+
+        final boolean singleResult = candidateEntities.size() == 1;
         List<String> messages = new ArrayList<>();
+
+        Locale locale = user.getLocale() == null ? Locale.ENGLISH : user.getLocale();
+        final String responseKey = "whatsapp.phrase.results." + (singleResult ? "single" : "multiple");
+        final String[] fields = singleResult
+                ? new String[] { candidateEntities.get(0).getJpaEntityType().toString().toLowerCase(), candidateEntities.get(0).getName() }
+                : new String[] {};
+        messages.add(messageSource.getMessage(responseKey, fields, locale));
+
         LinkedHashMap<JpaEntityType, String> possibleEntities = new LinkedHashMap<>();
         LinkedHashMap<String, String> responseMenu = new LinkedHashMap<>();
 
-        IntStream.range(0, candidateEntities.size()).forEach(i -> {
-            UidIdentifiable entity = candidateEntities.get(i);
-            messages.add((i + 1) + ". " + entity.getName());
-            possibleEntities.put(entity.getJpaEntityType(), entity.getUid());
-            responseMenu.put(entity.getJpaEntityType() + "::" + entity.getUid(), entity.getName());
-        });
+        // only need menu if multiple entities to select, else will just process yes / no
+        if (!singleResult) {
+            IntStream.range(0, candidateEntities.size()).forEach(i -> {
+                UidIdentifiable entity = candidateEntities.get(i);
+                messages.add((i + 1) + ". " + entity.getName());
+                possibleEntities.put(entity.getJpaEntityType(), entity.getUid());
+                responseMenu.put(entity.getJpaEntityType() + "::" + entity.getUid(), entity.getName());
+            });
+        }
 
         return PhraseSearchResponse.builder()
                 .entityFound(false)

@@ -3,6 +3,7 @@ package za.org.grassroot.core.util;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.Phonenumber;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -111,7 +112,9 @@ public class PhoneNumberUtil {
         com.google.i18n.phonenumbers.PhoneNumberUtil phoneNumberUtil = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
 
         try {
+            log.info("Input number correct? : {}", inputNumber.trim());
             Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputNumber.trim(), "ZA");
+            log.info("Doe we have a phone number? : {}", phoneNumber);
             isNumberValid = (phoneNumberUtil.isValidNumber(phoneNumber) && inputNumber.length() >= 10);
         } catch (NumberParseException e) {
             isNumberValid = false;
@@ -119,6 +122,23 @@ public class PhoneNumberUtil {
 
         return isNumberValid;
 
+    }
+
+    public static boolean isPhoneNumberSouthAfrican(String inputNumber) {
+        if (StringUtils.isEmpty(inputNumber))
+            return false;
+
+        final String shapedNumber = "+" + inputNumber;
+        com.google.i18n.phonenumbers.PhoneNumberUtil phoneNumberUtil = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
+
+        try {
+            log.info("Testing whether SA: {}", inputNumber);
+            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(shapedNumber, "ZA");
+            log.info("Resulting phone number: {}", phoneNumber);
+            return phoneNumber != null && phoneNumber.getCountryCode() == 27;
+        } catch (NumberParseException e) {
+            return false;
+        }
     }
 
 

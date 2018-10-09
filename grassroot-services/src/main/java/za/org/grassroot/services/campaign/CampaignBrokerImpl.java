@@ -295,7 +295,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         }
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        User targetUser = userManager.loadOrCreateUser(sharingNumber);
+        User targetUser = userManager.loadOrCreateUser(sharingNumber, UserInterfaceType.USSD);
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_SHARED, campaign, channel, sharingNumber);
         bundle.addLog(campaignLog);
 
