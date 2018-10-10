@@ -121,6 +121,10 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         eventMonthlyLimitThreshold = Integer.parseInt(configVars.getOrDefault("events.limit.threshold", "10"));
         eventLimitStartString = configVars.getOrDefault("grassroot.events.limit.started", "2017-04-01");
         setEventLimitStart();
+
+        log.info("Above {}",numberGroupsAboveFreeLimit());
+
+        log.info("Below {}",numberGroupsBelowFreeLimit());
     }
 
     private void setEventLimitStart() {
@@ -474,5 +478,15 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         if(!event.getCreate()){
             updateConfig();
         }
+    }
+
+    @Override
+    public int numberGroupsAboveFreeLimit(){
+        return this.groupRepository.countGroupsWhereSizeAboveLimit(FREE_GROUP_LIMIT);
+    }
+
+    @Override
+    public int numberGroupsBelowFreeLimit(){
+        return this.groupRepository.countGroupsWhereSizeBelowLimit(FREE_GROUP_LIMIT);
     }
 }

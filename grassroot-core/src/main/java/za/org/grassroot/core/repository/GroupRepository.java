@@ -115,4 +115,12 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
             "(size(g.descendantEvents) + size(g.descendantTodos)) > :minSize")
     List<Group> findByTasksMoreThan(@Param(value = "minSize") int minSize);
 
+    @Query("SELECT count(*) from Group g " +
+            "where size(g.memberships) < :limit")
+    int countGroupsWhereSizeBelowLimit(@Param(value = "limit") int limit);
+
+    @Query("SELECT count(*) from Group g " +
+            "where size(g.memberships) > :limit")
+    int countGroupsWhereSizeAboveLimit(@Param(value = "limit") int limit);
+
 }
