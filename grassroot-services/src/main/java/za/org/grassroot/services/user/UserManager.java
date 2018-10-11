@@ -263,6 +263,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         boolean otherChanged = false;
         boolean subscribeWhatsapp = whatsappOptIn;// whatsapp subscribtion log boolean
 
+        user.setWhatsAppOptedIn(whatsappOptIn);
+
         if ((phoneChanged || emailChanged) && StringUtils.isEmpty(validationOtp)) {
             return false;
         }
