@@ -294,13 +294,14 @@ public class CampaignBrokerImpl implements CampaignBroker {
             return;
         }
 
+        log.info("Assembling sharing message");
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         User targetUser = userManager.loadOrCreateUser(sharingNumber, UserInterfaceType.USSD);
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_SHARED, campaign, channel, sharingNumber);
         bundle.addLog(campaignLog);
 
         // we default to english, because even if sharing user is in another language, the person receiving might not be
-        List<CampaignMessage> messages = findCampaignMessage(campaignUid, CampaignActionType.SHARE_SEND, Locale.ENGLISH, UserInterfaceType.USSD);
+        List<CampaignMessage> messages = findCampaignMessage(campaignUid, CampaignActionType.SHARE_SEND, Locale.ENGLISH, channel);
         final String msg = !messages.isEmpty() ? messages.get(0).getMessage() : defaultTemplate;
         final String template = msg.replace(Broadcast.NAME_FIELD_TEMPLATE, "%1$s")
                 .replace(Broadcast.ENTITY_FIELD_TEMPLATE, "%2$s")
@@ -317,6 +318,15 @@ public class CampaignBrokerImpl implements CampaignBroker {
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);
 
         campaign.addToOutboundSpent(campaign.getAccount().getFreeFormCost());
+    }
+
+    @Override
+    public void recordUserSentMedia(String campaignUid, String userUid, UserInterfaceType channel) {
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        User user = userManager.load(userUid);
+
+        CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_SENT_MEDIA, campaign, channel, null);
+        createAndStoreCampaignLog(campaignLog);
     }
 
     long countCampaignShares(Campaign campaign) {
@@ -676,6 +686,15 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
         Specification<CampaignLog> ofTypeSharing = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType),
                 CampaignLogType.CAMPAIGN_SHARED);
+        return logsAndNotificationsBroker.countCampaignLogs(Specification.where(forUser).and(ofTypeSharing)) > 0;
+    }
+
+    @Override
+    public boolean hasUserSentMedia(String campaignUid, String userUid) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Specification<CampaignLog> forUser = (root, query, cb) -> cb.equal(root.get(CampaignLog_.user), user);
+        Specification<CampaignLog> ofTypeSharing = (root, query, cb) -> cb.equal(root.get(CampaignLog_.campaignLogType),
+                CampaignLogType.CAMPAIGN_USER_SENT_MEDIA);
         return logsAndNotificationsBroker.countCampaignLogs(Specification.where(forUser).and(ofTypeSharing)) > 0;
     }
 

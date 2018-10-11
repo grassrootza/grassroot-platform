@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest.whatsapp;
 
 import com.google.common.base.Enums;
 import io.swagger.annotations.Api;
+import liquibase.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -46,7 +47,10 @@ import java.util.stream.Stream;
 public class WhatsAppRelatedController extends BaseController {
 
     private final List<RequestDataType> USER_DATA_REQUESTS_WITH_MSGS = Arrays.asList(
-            RequestDataType.USER_NAME, RequestDataType.LOCATION_PROVINCE_OKAY, RequestDataType.LOCATION_GPS_REQUIRED, RequestDataType.NONE);
+            RequestDataType.USER_NAME, RequestDataType.LOCATION_PROVINCE_OKAY, RequestDataType.LOCATION_GPS_REQUIRED);
+
+    private final List<CampaignActionType> NO_RESPONSE_CAMPAIGN_ACTIONS = Arrays.asList(
+            CampaignActionType.SHARE_SEND, CampaignActionType.RECORD_MEDIA);
 
     private final JwtService jwtService;
     private final AsyncUserLogger userLogger;
@@ -202,6 +206,10 @@ public class WhatsAppRelatedController extends BaseController {
                 possibleEntities.put(entity.getJpaEntityType(), entity.getUid());
                 responseMenu.put(entity.getJpaEntityType() + "::" + entity.getUid(), entity.getName());
             });
+        } else {
+            // so controller can send back on confirmation
+            UidIdentifiable likelyEntity = candidateEntities.get(0);
+            possibleEntities.put(likelyEntity.getJpaEntityType(), likelyEntity.getUid());
         }
 
         return PhraseSearchResponse.builder()
@@ -235,9 +243,9 @@ public class WhatsAppRelatedController extends BaseController {
         if (userReply.getAuxProperties() != null && userReply.getAuxProperties().containsKey("requestDataType")) {
             response = replyToDataRequest(userId, userReply, entityType, entityUid);
         } else if (JpaEntityType.CAMPAIGN.equals(entityType)) {
-            CampaignActionType actionType = userReply.getMenuOptionPayload() == null ? CampaignActionType.EXIT_POSITIVE
-                    : Enums.getIfPresent(CampaignActionType.class, userReply.getMenuOptionPayload()).or(CampaignActionType.EXIT_POSITIVE);
-            response = replyToCampaignMessage(userId, entityUid, userReply.getAuxProperties().get("PRIOR"), actionType, userReply.getUserMessage());
+            CampaignActionType actionUserWishesToTake = StringUtils.isEmpty(userReply.getMenuOptionPayload()) ? null
+                    : Enums.getIfPresent(CampaignActionType.class, userReply.getMenuOptionPayload()).orNull();
+            response = replyToCampaignMessage(userId, entityUid, userReply.getAuxProperties().get("PRIOR"), actionUserWishesToTake, userReply.getUserMessage());
         } else {
             response = EntityResponseToUser.cannotRespond(entityType, entityUid);
         }
@@ -258,12 +266,22 @@ public class WhatsAppRelatedController extends BaseController {
             default: log.info("Got a user response we can't do anything with. Request type: {}, user response: {}", requestType, userReply);    break;
         }
 
-        RequestDataType nextRequestType = checkForNextUserInfo(userId);
+        RequestDataType nextRequestType;
+        List<String> nextMessages = new ArrayList<>();
+        LinkedHashMap<String, String> nextOptions = new LinkedHashMap<>();
+
+        if (JpaEntityType.CAMPAIGN.equals(entityType)) {
+            nextRequestType = handleEndOfFlowStdRequests(userId, entityId, null, nextMessages, nextOptions);
+        } else {
+            nextRequestType = checkForNextUserInfo(userId);
+            nextMessages.addAll(dataRequestMessages(nextRequestType, entityType));
+        }
 
         return EntityResponseToUser.builder()
                 .entityType(entityType)
                 .entityUid(entityId)
-                .messages(dataRequestMessages(nextRequestType, entityType))
+                .messages(nextMessages)
+                .menu(nextOptions.isEmpty() ? null : nextOptions)
                 .requestDataType(nextRequestType)
                 .build();
     }
@@ -298,37 +316,49 @@ public class WhatsAppRelatedController extends BaseController {
         }
     }
 
+    // NB: 'action' here is what the user just did
     private EntityResponseToUser replyToCampaignMessage(String userId,
                                                         String campaignUid,
                                                         String priorMessageUid,
                                                         CampaignActionType action,
                                                         String userResponse) {
-        log.info("Getting campaign message for action type {}, user response {}, campaign ID: {}", action, userResponse, campaignUid);
+        log.info("### Initiating campaign reply sequence message for action type {}, user response {}, campaign ID: {}", action, userResponse, campaignUid);
 
+        // note: this action is what the user selected based on prior menu / prompt, i.e., JOIN_GROUP does not mean ask them if they want to join,
+        // but means they have chosen to join, and sequence is roughly as it is usually present to user
         switch (action) {
-            case JOIN_GROUP:        campaignBroker.addUserToCampaignMasterGroup(campaignUid, userId, UserInterfaceType.WHATSAPP);   break;
             case SIGN_PETITION:     campaignBroker.signPetition(campaignUid, userId, UserInterfaceType.WHATSAPP);                   break;
+            case JOIN_GROUP:        campaignBroker.addUserToCampaignMasterGroup(campaignUid, userId, UserInterfaceType.WHATSAPP);   break;
             case TAG_ME:            campaignBroker.setUserJoinTopic(campaignUid, userId, userResponse, UserInterfaceType.WHATSAPP); break;
             case SHARE_SEND:        campaignBroker.sendShareMessage(campaignUid, userId, userResponse, null, UserInterfaceType.WHATSAPP);   break;
+            case RECORD_MEDIA:      campaignBroker.recordUserSentMedia(campaignUid, userId, UserInterfaceType.WHATSAPP); break;
             default:                log.info("No action possible for incoming user action {}, just returning message", action); break;
         }
 
-        List<CampaignMessage> nextMsgs = campaignBroker.findCampaignMessage(campaignUid, action, null, UserInterfaceType.WHATSAPP);
-        if (nextMsgs == null || nextMsgs.isEmpty()) {
-            log.info("Could not find message from action, tracing from prior, prior uid: {}", priorMessageUid);
-            nextMsgs = Collections.singletonList(campaignBroker.findCampaignMessage(campaignUid, priorMessageUid, action));
+        // so this message must be set as the one for _after_ the user has decided to take the action (NB).
+        List<CampaignMessage> nextMsgs = new ArrayList<>();
+        // todo : move lower logic into else branch
+        if (!NO_RESPONSE_CAMPAIGN_ACTIONS.contains(action)) {
+            nextMsgs = campaignBroker.findCampaignMessage(campaignUid, action, null, UserInterfaceType.WHATSAPP);
+            if (nextMsgs == null || nextMsgs.isEmpty()) {
+                log.info("Could not find message from action, tracing from prior, prior uid: {}", priorMessageUid);
+                nextMsgs = Collections.singletonList(campaignBroker.findCampaignMessage(campaignUid, priorMessageUid, action));
+            }
+            log.info("Next campaign messages found: {}", nextMsgs);
         }
-        log.info("Next campaign messages found: {}", nextMsgs);
 
         List<String> messageTexts = nextMsgs.stream().map(CampaignMessage::getMessage).collect(Collectors.toList());
         LinkedHashMap<String, String> actionOptions = nextMsgs.stream().filter(CampaignMessage::hasMenuOptions).findFirst()
                 .map(this::getMenuFromMessage).orElse(new LinkedHashMap<>());
         messageTexts.addAll(actionOptions.values());
 
-        RequestDataType requestDataType = actionOptions.isEmpty() ? checkForNextUserInfo(userId) : RequestDataType.MENU_SELECTION;
-        log.info("Found request data type for user: {}", requestDataType);
-        if (USER_DATA_REQUESTS_WITH_MSGS.contains(requestDataType)) {
-            messageTexts.addAll(dataRequestMessages(requestDataType, JpaEntityType.CAMPAIGN));
+        RequestDataType requestDataType = RequestDataType.NONE;
+
+        // if we have no menu, then cycle through last questions : note, really need to make this cleaner, and also
+        // think of how to make it configurable (probably via next msg logic, but with a default skipping if user already set)
+        log.info("No menu with options left, so see what can come next");
+        if (actionOptions.isEmpty()) {
+            requestDataType = handleEndOfFlowStdRequests(userId, campaignUid, action, messageTexts, actionOptions);
         }
 
         return EntityResponseToUser.builder()
@@ -338,6 +368,65 @@ public class WhatsAppRelatedController extends BaseController {
                 .messages(messageTexts)
                 .menu(actionOptions)
                 .build();
+    }
+
+    private RequestDataType handleEndOfFlowStdRequests(String userId, String campaignUid, CampaignActionType priorAction,
+                                                       List<String> messageTexts, LinkedHashMap<String, String> actionOptions) {
+        RequestDataType requestDataType = checkForNextUserInfo(userId);
+        log.info("Request data type for user: {}", requestDataType);
+        if (USER_DATA_REQUESTS_WITH_MSGS.contains(requestDataType)) {
+            messageTexts.addAll(dataRequestMessages(requestDataType, JpaEntityType.CAMPAIGN));
+        } else {
+            log.info("End of campaign flow, nothing to ask user, check for a share or media prompty message");
+            CampaignMessage finalFlowMessage = showUserCloseOffPrompt(campaignUid, userId, priorAction);
+            log.info("Returned end-of-flow message: {}", finalFlowMessage);
+            if (finalFlowMessage != null) {
+                messageTexts.add(finalFlowMessage.getMessage());
+                CampaignActionType nextAction = getNextActionForPrompt(finalFlowMessage);
+                actionOptions.put(nextAction.toString(), ""); // since we need to know the action
+                requestDataType = RequestDataType.FREE_FORM_OR_MEDIA;
+            } else {
+                log.info("No data type to request, no final message, so close off");
+                messageTexts.addAll(dataRequestMessages(RequestDataType.NONE, JpaEntityType.CAMPAIGN));
+            }
+        }
+        return requestDataType;
+    }
+
+    private CampaignMessage showUserCloseOffPrompt(String campaignUid, String userUid, CampaignActionType priorAction) {
+        final boolean wasLastActionShare = CampaignActionType.SHARE_SEND.equals(priorAction); // since the send is async, and don't want to block to wait
+        final boolean wasLastActionMedia = CampaignActionType.RECORD_MEDIA.equals(priorAction);
+
+        CampaignMessage msg = wasLastActionShare ? null : showUserSharePrompt(campaignUid, userUid);
+        return msg != null ? msg : wasLastActionMedia ? null : showUserMediaRecordingPrompt(campaignUid, userUid);
+    }
+
+    private CampaignMessage showUserSharePrompt(String campaignUid, String userUid) {
+        Campaign campaign = campaignBroker.load(campaignUid);
+
+        if (!campaign.isOutboundTextEnabled() || campaign.outboundBudgetLeft() == 0)
+            return null;
+
+        if (campaignBroker.hasUserShared(campaignUid, userUid))
+            return null;
+
+        List<CampaignMessage> nextMsgs = campaignBroker.findCampaignMessage(campaignUid, CampaignActionType.SHARE_PROMPT, null, UserInterfaceType.WHATSAPP);
+        return (nextMsgs == null || nextMsgs.isEmpty()) ? null : nextMsgs.get(0);
+
+    }
+
+    private CampaignMessage showUserMediaRecordingPrompt(String campaignUid, String userUid) {
+        if (campaignBroker.hasUserSentMedia(campaignUid, userUid))
+            return null;
+
+        List<CampaignMessage> recordingPrompt = campaignBroker.findCampaignMessage(campaignUid, CampaignActionType.MEDIA_PROMPT, null, UserInterfaceType.WHATSAPP);
+        return (recordingPrompt == null || recordingPrompt.isEmpty()) ? null : recordingPrompt.get(0);
+    }
+
+    private CampaignActionType getNextActionForPrompt(CampaignMessage finalFlowPrompt) {
+        return CampaignActionType.MEDIA_PROMPT.equals(finalFlowPrompt.getActionType()) ? CampaignActionType.RECORD_MEDIA
+                : CampaignActionType.SHARE_PROMPT.equals(finalFlowPrompt.getActionType()) ? CampaignActionType.SHARE_SEND
+                    : CampaignActionType.EXIT_POSITIVE;
     }
 
     private List<String> getResponseMessages(CampaignMessage message, Collection<String> menuOptionTexts) {

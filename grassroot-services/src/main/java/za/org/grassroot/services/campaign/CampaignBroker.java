@@ -54,6 +54,9 @@ public interface CampaignBroker {
 
     void sendShareMessage(String campaignUid, String sharingUserUid, String sharingNumber, String defaultTemplate, UserInterfaceType channel);
 
+    // note: at present we _do not_ record the ID of the media file because (a) it is purposely external and (b) this is just tracking numbers
+    void recordUserSentMedia(String campaignUid, String userUid, UserInterfaceType channel);
+
     boolean isUserInCampaignMasterGroup(String campaignUid, String userUid);
 
     Campaign addUserToCampaignMasterGroup(String campaignUid, String userUid, UserInterfaceType channel);
@@ -65,6 +68,8 @@ public interface CampaignBroker {
     boolean hasUserEngaged(String campaignUid, String userUid);
 
     boolean hasUserShared(String campaignUid, String userUid);
+
+    boolean hasUserSentMedia(String campaignUid, String userUid);
 
     String getMessageOfType(String campaignUid, CampaignActionType actionType, String userUid, UserInterfaceType channel);
 

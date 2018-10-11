@@ -145,7 +145,7 @@ public class Campaign implements UidIdentifiable, TagHolder {
     }
 
     public long outboundBudgetLeft() {
-        return this.outboundBudget - this.outboundSpent;
+        return Math.max(this.outboundBudget - this.outboundSpent, 0);
     }
 
     @Override
