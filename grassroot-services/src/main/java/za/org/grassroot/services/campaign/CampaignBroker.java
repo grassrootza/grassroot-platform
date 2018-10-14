@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -96,5 +97,7 @@ public interface CampaignBroker {
     void endCampaign(String userUid, String campaignUid);
 
     void updateCampaignDefaultLanguage(String userUid, String campaignUid, Locale defaultLanguage);
+
+    List<MediaFileRecord> fetchInboundCampaignMediaDetails(String userUid, String campaignUid);
 
 }

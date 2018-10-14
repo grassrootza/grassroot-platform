@@ -1,6 +1,16 @@
 package za.org.grassroot.integration;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Index;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,13 +18,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.repository.MediaFileRecordRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.storage.StorageBroker;
 
-import java.util.Objects;
+import javax.annotation.PostConstruct;
+import java.time.Instant;
+import java.util.*;
 
 @Service
 public class MediaFileBrokerImpl implements MediaFileBroker {
@@ -30,12 +44,26 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     @Value("${grassroot.media.default.bucket:null}")
     private String defaultMediaBucket;
 
+    @Value("${grassroot.campaign.media.enabled:false}")
+    public boolean campaignMediaEnabled; // i.e., if we have these recorded in NoSQL table (over time will migrate all media to that pattern)
+
     private final StorageBroker storageBroker;
+    private final UserRepository userRepository;
     private final MediaFileRecordRepository recordRepository;
 
-    public MediaFileBrokerImpl(StorageBroker storageBroker, MediaFileRecordRepository recordRepository) {
+    private AmazonDynamoDB dynamoDBClient;
+
+    public MediaFileBrokerImpl(StorageBroker storageBroker, UserRepository userRepository, MediaFileRecordRepository recordRepository) {
         this.storageBroker = storageBroker;
+        this.userRepository = userRepository;
         this.recordRepository = recordRepository;
+    }
+
+    @PostConstruct
+    public void init() {
+        dynamoDBClient = AmazonDynamoDBClientBuilder.standard()
+                .withRegion(Regions.EU_WEST_1)
+                .withCredentials(new ProfileCredentialsProvider("default")).build();
     }
 
     @Override
@@ -67,7 +95,7 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
         String contentType = StringUtils.isEmpty(mimeType) ? file.getContentType() : mimeType;
         String nameToUse = StringUtils.isEmpty(fileName) ? file.getOriginalFilename() : fileName;
         if (record == null)
-            record = new MediaFileRecord(bucket, contentType, imageKey, nameToUse);
+            record = new MediaFileRecord(bucket, contentType, imageKey, nameToUse, null);
 
         boolean fileStored = false;
         try {
@@ -91,7 +119,6 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     public void deleteFile(LiveWireAlert liveWireAlert, String imageKey, MediaFunction function){
         String bucket = getBucketForFunction(Objects.requireNonNull(function));
         MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
-
         liveWireAlert.getMediaFiles().remove(record);
     }
 
@@ -112,4 +139,51 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
                 return defaultMediaBucket;
         }
     }
+
+    @Override
+    public List<MediaFileRecord> fetchInboundMediaRecordsForCampaign(String campaignUid) {
+        logger.info("Fetching campaign media records, for campaign id: {}", campaignUid);
+        DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+        Table mediaFileTable = dynamoDB.getTable("inbound_media_file_records");
+        Index timeSortedIndex = mediaFileTable.getIndex("assoc_entity_id-stored_timestamp-index");
+
+        Map<String, Object> valueMap = new HashMap<>();
+        valueMap.put(":id", campaignUid);
+
+        QuerySpec querySpec = new QuerySpec()
+                .withKeyConditionExpression("assoc_entity_id = :id")
+                .withValueMap(valueMap)
+                .withScanIndexForward(false);
+
+        try {
+            Iterator<Item> outcome = timeSortedIndex.query(querySpec).iterator();
+            List<MediaFileRecord> records = new ArrayList<>();
+            while (outcome.hasNext()) {
+                Item item = outcome.next();
+                final String submittingUserUid = item.getString("submitting_user_id");
+                logger.info("Converting media file submitted by user with uid: {}", submittingUserUid);
+                MediaFileRecord record = new MediaFileRecord(
+                        item.getString("bucket"),
+                        item.getString("media_type"),
+                        item.getString("folder") + "/" + item.getString("media_file_id"),
+                        item.getString("media_file_id"),
+                        submittingUserUid);
+
+                record.setStoredTime(Instant.ofEpochMilli(item.getLong("stored_timestamp")));
+                // when we start having large numbers of submissions this will get non-performant, so fix it then
+                if (!StringUtils.isEmpty(submittingUserUid)) {
+                    User submittingUser = userRepository.findOneByUid(submittingUserUid); // todo: watch this and use projection if gets slow
+                    record.setCreatedByUserName(submittingUser != null ? submittingUser.getName() : null);
+                }
+
+                logger.info("Converted DynamoDB record to: {}", record);
+                records.add(record);
+            }
+            return records;
+        } catch (AmazonServiceException e) {
+            logger.error("Error retrieving media files! Error: ", e);
+            return new ArrayList<>();
+        }
+    }
+
 }

@@ -323,6 +323,10 @@ public class WhatsAppJoinFlowController extends BaseController {
                                                         CampaignActionType action,
                                                         String userResponse) {
         log.info("### Initiating campaign reply sequence message for action type {}, user response {}, campaign ID: {}", action, userResponse, campaignUid);
+        if (action == null) {
+            log.error("Null action type received, curious, return empty response");
+            return EntityResponseToUser.cannotRespond(JpaEntityType.CAMPAIGN, campaignUid);
+        }
 
         // note: this action is what the user selected based on prior menu / prompt, i.e., JOIN_GROUP does not mean ask them if they want to join,
         // but means they have chosen to join, and sequence is roughly as it is usually present to user
@@ -411,6 +415,7 @@ public class WhatsAppJoinFlowController extends BaseController {
         if (!campaign.isOutboundTextEnabled() || campaign.outboundBudgetLeft() == 0)
             return null;
 
+        log.info("Checking for sharing prompt or message, has user shared? : {}", campaignBroker.hasUserShared(campaignUid, userUid));
         if (campaignBroker.hasUserShared(campaignUid, userUid))
             return null;
 
@@ -421,10 +426,11 @@ public class WhatsAppJoinFlowController extends BaseController {
 
     private CampaignMessage showUserMediaRecordingPrompt(String campaignUid, String userUid) {
         log.info("Going to ask user for media, have they sent prior? : {}", campaignBroker.hasUserSentMedia(campaignUid, userUid));
-        if (campaignBroker.hasUserSentMedia(campaignUid, userUid))
-            return null;
+//        if (campaignBroker.hasUserSentMedia(campaignUid, userUid))
+//            return null;
 
         List<CampaignMessage> recordingPrompt = campaignBroker.findCampaignMessage(campaignUid, CampaignActionType.MEDIA_PROMPT, null, UserInterfaceType.WHATSAPP);
+        log.info("Found a prompt for media or recording? : {}", recordingPrompt);
         return (recordingPrompt == null || recordingPrompt.isEmpty()) ? null : recordingPrompt.get(0);
     }
 

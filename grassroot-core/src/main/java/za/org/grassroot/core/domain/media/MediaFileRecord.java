@@ -63,11 +63,17 @@ public class MediaFileRecord implements Serializable {
     @Column(name = "file_name")
     @Setter private String fileName;
 
+    @Transient
+    @Setter private String createdByUserUid;
+
+    @Transient
+    @Setter private String createdByUserName;
+
     private MediaFileRecord() {
         // for JPA
     }
 
-    public MediaFileRecord(String bucket, String contentType, String key, String fileName) {
+    public MediaFileRecord(String bucket, String contentType, String key, String fileName, String createdByUserUid) {
         Objects.requireNonNull(bucket);
         this.uid = UIDGenerator.generateId();
         this.bucket = bucket;
@@ -76,10 +82,20 @@ public class MediaFileRecord implements Serializable {
         this.readRequests = 0;
         this.mimeType = contentType;
         this.fileName = fileName;
+        this.createdByUserUid = null;
     }
 
     public void incrementReadRequests() {
         this.readRequests++;
     }
 
+    @Override
+    public String toString() {
+        return "MediaFileRecord{" +
+                "bucket='" + bucket + '\'' +
+                ", key='" + key + '\'' +
+                ", mimeType='" + mimeType + '\'' +
+                ", createdByUserName='" + createdByUserName + '\'' +
+                '}';
+    }
 }
