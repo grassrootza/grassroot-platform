@@ -82,7 +82,7 @@ public class MediaFileRecord implements Serializable {
         this.readRequests = 0;
         this.mimeType = contentType;
         this.fileName = fileName;
-        this.createdByUserUid = null;
+        this.createdByUserUid = createdByUserUid;
     }
 
     public void incrementReadRequests() {

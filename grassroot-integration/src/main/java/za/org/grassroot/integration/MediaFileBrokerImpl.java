@@ -61,9 +61,11 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
 
     @PostConstruct
     public void init() {
-        dynamoDBClient = AmazonDynamoDBClientBuilder.standard()
-                .withRegion(Regions.EU_WEST_1)
-                .withCredentials(new ProfileCredentialsProvider("default")).build();
+        if (campaignMediaEnabled) {
+            dynamoDBClient = AmazonDynamoDBClientBuilder.standard()
+                    .withRegion(Regions.EU_WEST_1)
+                    .withCredentials(new ProfileCredentialsProvider("default")).build();
+        }
     }
 
     @Override
@@ -142,6 +144,11 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
 
     @Override
     public List<MediaFileRecord> fetchInboundMediaRecordsForCampaign(String campaignUid) {
+        if (!campaignMediaEnabled) {
+            logger.info("Campaign media not enabled, returning empty list");
+            return new ArrayList<>();
+        }
+
         logger.info("Fetching campaign media records, for campaign id: {}", campaignUid);
         DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
         Table mediaFileTable = dynamoDB.getTable("inbound_media_file_records");
