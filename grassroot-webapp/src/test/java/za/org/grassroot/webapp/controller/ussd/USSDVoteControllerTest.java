@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.domain.task.VoteRequest;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.util.USSDEventUtil;
@@ -86,7 +87,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
             testGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null); // this may be redundant
             user.setHasInitiatedSession(false);
 
-            when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber(), UserInterfaceType.USSD)).thenReturn(user);
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
             when(userResponseBrokerMock.checkForEntityForUserResponse(user.getUid(), true)).thenReturn(vote);
 

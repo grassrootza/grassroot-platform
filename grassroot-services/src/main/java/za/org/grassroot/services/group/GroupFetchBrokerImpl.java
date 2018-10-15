@@ -256,12 +256,14 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroupWebDTO> fetchGroupWebInfo(String userUid) {
-
+    public List<GroupWebDTO> fetchGroupWebInfo(String userUid, boolean includeSubgroups) {
         User user = userRepository.findOneByUid(userUid);
 
         List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user);
-        List<GroupWebDTO> dtos = groups.stream().map(gr -> new GroupWebDTO(gr, gr.getMembership(user), getSubgroups(gr))).collect(Collectors.toList());
+
+        List<GroupWebDTO> dtos = groups.stream()
+                .map(gr -> new GroupWebDTO(gr, membershipRepository.findByGroupAndUser(gr, user), includeSubgroups ? getSubgroups(gr) : Collections.emptyList()))
+                .collect(Collectors.toList());
 
         return dtos.stream()
                 .sorted(Comparator.comparing(GroupMinimalDTO::getLastTaskOrChangeTime, Comparator.reverseOrder()))

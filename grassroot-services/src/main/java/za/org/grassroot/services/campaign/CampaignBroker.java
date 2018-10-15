@@ -43,6 +43,8 @@ public interface CampaignBroker {
 
     Campaign findCampaignByJoinWord(String joinWord, String userUid, UserInterfaceType channel);
 
+    List<Campaign> broadSearchForCampaign(String userId, String searchTerm);
+
     // returns all in lower case
     Map<String, String> getActiveCampaignJoinWords(); // todo : cache this
 
@@ -51,6 +53,9 @@ public interface CampaignBroker {
     void signPetition(String campaignUid, String userUid, UserInterfaceType channel);
 
     void sendShareMessage(String campaignUid, String sharingUserUid, String sharingNumber, String defaultTemplate, UserInterfaceType channel);
+
+    // note: at present we _do not_ record the ID of the media file because (a) it is purposely external and (b) this is just tracking numbers
+    void recordUserSentMedia(String campaignUid, String userUid, UserInterfaceType channel);
 
     boolean isUserInCampaignMasterGroup(String campaignUid, String userUid);
 
@@ -63,6 +68,8 @@ public interface CampaignBroker {
     boolean hasUserEngaged(String campaignUid, String userUid);
 
     boolean hasUserShared(String campaignUid, String userUid);
+
+    boolean hasUserSentMedia(String campaignUid, String userUid);
 
     String getMessageOfType(String campaignUid, CampaignActionType actionType, String userUid, UserInterfaceType channel);
 

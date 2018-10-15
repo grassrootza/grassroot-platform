@@ -100,7 +100,7 @@ public class IncomingSMSController {
 
         log.info("Inside receiving a message on group list, received {} as message", message);
         // join word as key, uid as map
-        User user = userManager.loadOrCreateUser(phoneNumber);
+        User user = userManager.loadOrCreateUser(phoneNumber, UserInterfaceType.INCOMING_SMS);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(new UserLog(user.getUid(), UserLogType.INBOUND_JOIN_WORD, RECEIVED + message, UserInterfaceType.INCOMING_SMS));
@@ -137,7 +137,7 @@ public class IncomingSMSController {
                                            @RequestParam(value = MESSAGE_TEXT_PARAM_REPLY) String message) {
         log.info("Inside receiving newly initiated SMS, received {} as message", message);
 
-        User user = userManager.loadOrCreateUser(phoneNumber); // this may be a user we don't know
+        User user = userManager.loadOrCreateUser(phoneNumber, UserInterfaceType.INCOMING_SMS); // this may be a user we don't know
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         Map<String, String> campaignTags = campaignBroker.getActiveCampaignJoinWords();
@@ -180,7 +180,7 @@ public class IncomingSMSController {
         if (hygieneCheck != null)
             return hygieneCheck;
 
-        User user = userManager.loadOrCreateUser(phoneNumber);
+        User user = userManager.loadOrCreateUser(phoneNumber, UserInterfaceType.INCOMING_SMS);
 
         if (!campaignBroker.isUserInCampaignMasterGroup(campaignUid, user.getUid())) {
             campaignBroker.addUserToCampaignMasterGroup(campaignUid, user.getUid(), UserInterfaceType.PLEASE_CALL_ME);
@@ -208,7 +208,7 @@ public class IncomingSMSController {
         if (hygieneCheck != null)
             return hygieneCheck;
 
-        User user = userManager.loadOrCreateUser(phoneNumber);
+        User user = userManager.loadOrCreateUser(phoneNumber, UserInterfaceType.INCOMING_SMS);
         final String callback = PhoneNumberUtil.formattedNumber(toNumber);
         log.info("PCM received, responding with callback number: {}, incoming to number: {}, from: {}, msg: {}", callback, toNumber, phoneNumber, message);
 

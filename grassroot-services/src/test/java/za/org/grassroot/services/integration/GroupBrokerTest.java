@@ -12,6 +12,7 @@ import org.springframework.test.context.junit4.AbstractTransactionalJUnit4Spring
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
@@ -110,7 +111,7 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
     @Rollback
     public void shouldDeactivateGroup() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userManagementService.loadOrCreateUser(testUserBase + "1");
+        User user = userManagementService.loadOrCreateUser(testUserBase + "1", UserInterfaceType.USSD);
         Group group = groupRepository.save(new Group(testGroupBase + "1", user));
         Group group2 = groupRepository.save(new Group(testGroupBase + "2", user));
        // groupBroker.deactivate(user.getUid(), group.getUid(), true);

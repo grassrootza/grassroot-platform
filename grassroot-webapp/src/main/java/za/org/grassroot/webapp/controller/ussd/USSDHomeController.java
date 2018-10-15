@@ -136,7 +136,7 @@ public class USSDHomeController extends USSDBaseController {
             return menuBuilder(interruptedPrompt(inputNumber, null));
         }
 
-        User sessionUser = userManager.loadOrCreateUser(inputNumber);
+        User sessionUser = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
         userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
 
         USSDMenu openingMenu = trailingDigitsPresent ?
@@ -176,7 +176,7 @@ public class USSDHomeController extends USSDBaseController {
     @ResponseBody
     public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber,
                                   @RequestParam(required = false) String trailingDigits) throws URISyntaxException {
-        final User user = userManager.loadOrCreateUser(inputNumber);
+        final User user = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
         return menuBuilder(trailingDigits != null ?
                 directBasedOnTrailingDigits(trailingDigits, user) :  defaultStartMenu(user));
     }

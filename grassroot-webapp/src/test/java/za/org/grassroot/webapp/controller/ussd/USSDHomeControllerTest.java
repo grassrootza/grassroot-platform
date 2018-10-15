@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.ussd.group.USSDGroupController;
@@ -80,17 +81,17 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     public void welcomeMenuShouldWork() throws Exception {
         testUser.setHasInitiatedSession(false);
 
-        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).loadOrCreateUser(phoneForTests);
+        verify(userManagementServiceMock, times(1)).loadOrCreateUser(phoneForTests, UserInterfaceType.USSD);
     }
 
     @Test
     public void welcomeMenuAfterChoosingLanguageShouldWork() throws Exception {
         testUser.setHasInitiatedSession(true);
         testUser.setLanguageCode("zu");
-        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
     }
 
@@ -99,7 +100,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         testUser.setDisplayName("");
         testUser.setHasInitiatedSession(false);
-        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
@@ -119,7 +120,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         // switch the next thing to cache manager
         // testUser.setLastUssdMenu("/ussd/mtg/start"); // irrelevant if this is well formed or not, just testing if it asks
 
-        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
@@ -139,7 +140,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testGroup.setTokenExpiryDateTime(Instant.now().plus(7, ChronoUnit.DAYS));
 
         // todo : write a test in group controller too
-        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
         when(groupJoinControllerMock.lookForJoinCode(testUser, "111")).thenReturn(new USSDMenu("Found the code"));
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests).param("request", "*134*1994*111#"))
@@ -153,13 +154,13 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         List<Meeting> newMeeting  = Collections.singletonList(meeting);
 
-        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
         when(liveWireControllerMock.assembleLiveWireOpening(testUser, 0)).thenReturn(new USSDMenu("LiveWire Menu"));
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests).param("request", "*134*1994*411#")).
                 andExpect(status().isOk());
 
-        verify(userManagementServiceMock,times(1)).loadOrCreateUser(phoneForTests);
+        verify(userManagementServiceMock,times(1)).loadOrCreateUser(phoneForTests, UserInterfaceType.USSD);
         verify(liveWireControllerMock, times(1)).assembleLiveWireOpening(testUser, 0);
 
     }

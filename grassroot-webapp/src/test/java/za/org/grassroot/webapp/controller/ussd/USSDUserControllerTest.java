@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.UserResponseBroker;
 
 import static org.mockito.Mockito.*;
@@ -52,7 +53,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
         testUser.setHasInitiatedSession(true);
         testUser.setDisplayName("");
 
-        when(userManagementServiceMock.loadOrCreateUser(testUserPhone)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(testUserPhone, UserInterfaceType.USSD)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(userManagementServiceMock.needsToSetName(testUser, false)).thenReturn(true);
 
@@ -64,7 +65,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get("/ussd/rename-start").param(phoneParam, testUserPhone).param("request", "now it is set")).
                 andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).loadOrCreateUser(testUserPhone);
+        verify(userManagementServiceMock, times(1)).loadOrCreateUser(testUserPhone, UserInterfaceType.USSD);
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), testUser.getUid(), "now it is set");
 

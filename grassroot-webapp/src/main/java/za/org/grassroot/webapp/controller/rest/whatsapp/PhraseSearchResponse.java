@@ -19,6 +19,7 @@ public class PhraseSearchResponse {
     private List<String> responseMessages;
     private LinkedHashMap<String, String> responseMenu; // linked hashmap to enforce ordering
     private RequestDataType requestDataType;
+    private LinkedHashMap<JpaEntityType, String> possibleEntities; // used in case there are options
 
     public static PhraseSearchResponse notFoundResponse() {
         return PhraseSearchResponse.builder().entityFound(false).build();

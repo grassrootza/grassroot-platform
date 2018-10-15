@@ -35,7 +35,7 @@ public interface GroupFetchBroker {
 
     List<MembershipRecordDTO> fetchRecentMembershipChanges(String userUid, String groupUid, Instant fromDate);
 
-    List<GroupWebDTO> fetchGroupWebInfo(String userUid);
+    List<GroupWebDTO> fetchGroupWebInfo(String userUid, boolean includeSubgroups);
 
     List<GroupRefDTO> fetchGroupNamesUidsOnly(String userUid);
 

@@ -170,7 +170,6 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         sb.append(", createdBy=").append(createdByUser.getId());
         sb.append(", locale=").append(locale);
         sb.append(", channel=").append(channel);
-        sb.append(", sequence number").append(channel);
         sb.append(", variation=").append(variation.name());
         sb.append(", version=").append(version);
         sb.append('}');

@@ -92,29 +92,10 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     }
 
     @Override
-    public boolean groupExists(String groupUid) {
-        return groupRepository.findOneByUid(groupUid) != null;
-    }
-
-    @Override
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @Transactional(readOnly = true)
     public List<Group> loadAll() {
         return groupRepository.findAll();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<GroupSearchResultDTO> groupSearch(String userUid, String searchTerm, boolean searchPublic) {
-        List<GroupSearchResultDTO> results = new ArrayList<>();
-        if (!searchPublic) {
-            searchUsersGroups(userUid, searchTerm, true)
-                    .forEach(g -> results.add(new GroupSearchResultDTO(g, GroupResultType.USER_MEMBER)));
-        } else {
-            findPublicGroups(userUid, searchTerm, null, true)
-                    .forEach(g -> results.add(new GroupSearchResultDTO(g, GroupResultType.PUBLIC_BY_NAME)));
-        }
-        return results;
     }
 
 

@@ -196,7 +196,7 @@ public class USSDMeetingController extends USSDBaseController {
                                   @RequestParam(value = yesOrNoParam) String attending) throws URISyntaxException {
 
         String welcomeKey;
-        User user = userManager.loadOrCreateUser(inputNumber);
+        User user = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
 
         if ("yes".equals(attending)) {

@@ -166,7 +166,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         try {
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (!userExists)
-                asyncRecordNewUser(userToReturn.getUid(), "Web");
+                asyncRecordNewUser(userToReturn.getUid(), "Web", UserInterfaceType.WEB_2);
             asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_WEB, "User created web profile", null);
             return userToReturn;
         } catch (final Exception e) {
@@ -174,8 +174,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
     }
 
-    private void asyncRecordNewUser(final String userUid, final String logDescription) {
-        asyncUserService.recordUserLog(userUid, UserLogType.CREATED_IN_DB, logDescription, null);
+    private void asyncRecordNewUser(final String userUid, final String logDescription, UserInterfaceType channel) {
+        asyncUserService.recordUserLog(userUid, UserLogType.CREATED_IN_DB, logDescription, channel);
         if (graphBroker != null) {
             graphBroker.addUserToGraph(userUid);
             graphBroker.annotateUser(userUid, null, null, true);
@@ -230,7 +230,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         try {
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (!userExists)
-                asyncRecordNewUser(userToReturn.getUid(), "Android");
+                asyncRecordNewUser(userToReturn.getUid(), "Android", UserInterfaceType.ANDROID_2);
             asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.REGISTERED_ANDROID, "User created android profile",
                     UserInterfaceType.ANDROID);
             return userToReturn;
@@ -399,13 +399,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
      */
 
     @Override
-    public User loadOrCreateUser(String inputNumber) {
+    public User loadOrCreateUser(String inputNumber, UserInterfaceType channel) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
+        log.info("Using phone number, formatted: {}", phoneNumber);
         if (!userExist(phoneNumber)) {
             User sessionUser = new User(phoneNumber, null, null);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
-            asyncRecordNewUser(newUser.getUid(), "Created via loadOrCreateUser");
+            asyncRecordNewUser(newUser.getUid(), "Created via loadOrCreateUser", channel);
             return newUser;
         } else {
             return userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
@@ -430,7 +431,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
                 throw new IllegalArgumentException("Error! Phone or email is valid for neither format");
 
             user = userRepository.save(user);
-            asyncRecordNewUser(user.getUid(), "Created via loadOrCreate");
+            asyncRecordNewUser(user.getUid(), "Created via loadOrCreate", null);
 
             return user;
         } catch (IllegalArgumentException e) {
@@ -521,7 +522,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setDisplayName(displayName);
         user.setEmailAddress(emailAddress);
         user = userRepository.save(user);
-        asyncRecordNewUser(user.getUid(), "Created via sponsorship request");
+        asyncRecordNewUser(user.getUid(), "Created via sponsorship request", null);
         return user.getUid();
     }
 
@@ -573,6 +574,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public boolean shouldSendLanguageText(User user) {
+        final boolean isNonPhoneOrNonZA = !user.hasPhoneNumber() || PhoneNumberUtil.isPhoneNumberSouthAfrican(user.getPhoneNumber());
         if (isUserNonEnglish(user) || asyncUserService.hasChangedLanguage(user.getUid()))
             return false;
 

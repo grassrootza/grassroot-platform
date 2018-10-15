@@ -10,6 +10,8 @@ public enum  CampaignActionType {
     MORE_INFO,
     SHARE_PROMPT,
     SHARE_SEND,
+    MEDIA_PROMPT,
+    RECORD_MEDIA,
     EXIT_POSITIVE,
     EXIT_NEGATIVE;
 

@@ -18,7 +18,7 @@ public interface UserManagementService {
 
     List<User> load(Set<String> userUids);
 
-    User loadOrCreateUser(String inputNumber); // used only in USSD where there is no registration process
+    User loadOrCreateUser(String inputNumber, UserInterfaceType channel); // used only in USSD where there is no registration process
 
     User loadOrCreate(String phoneOrEmail);
 

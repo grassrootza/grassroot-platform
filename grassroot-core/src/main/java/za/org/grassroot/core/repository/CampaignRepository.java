@@ -33,4 +33,9 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long>, JpaSp
 
     @Query(value = "select c.campaignCode from Campaign c where c.endDateTime > current_timestamp")
     Set<String> fetchAllActiveCampaignCodes();
+
+    @Query(value = "select c.* from campaign c where " +
+            "(to_tsvector('english', c.name) @@ to_tsquery('english', ?1))", nativeQuery = true)
+    List<Campaign> findCampaignsWithNamesIncluding(String tsQuery);
+
 }

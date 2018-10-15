@@ -16,6 +16,8 @@ import java.util.List;
 
 public interface MembershipRepository extends JpaRepository<Membership, Long>, JpaSpecificationExecutor<Membership> {
 
+    Membership findByGroupAndUser(Group group, User user);
+
     Membership findByGroupUidAndUserUid(String groupId, String userUid);
 
     List<Membership> findByGroupAndUserUidIn(Group group, Collection<String> userUids);

@@ -6,6 +6,7 @@ public enum RequestDataType {
     LOCATION_GPS_REQUIRED,
     LOCATION_PROVINCE_OKAY,
     MENU_SELECTION,
+    FREE_FORM_OR_MEDIA,
     NONE
 
 }
