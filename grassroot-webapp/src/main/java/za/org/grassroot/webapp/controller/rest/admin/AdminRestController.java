@@ -24,6 +24,7 @@ import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AdminService;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
@@ -51,13 +52,16 @@ public class AdminRestController extends BaseRestController{
     private final GroupBroker groupBroker;
     private final JwtService jwtService;
 
+    private final AccountFeaturesBroker accountFeaturesBroker;
+
     public AdminRestController(UserManagementService userManagementService,
                                JwtService jwtService,
                                AdminService adminService,
                                GroupRepository groupRepository,
                                GroupBroker groupBroker,
                                MessagingServiceBroker messagingServiceBroker,
-                               PasswordTokenService passwordTokenService){
+                               PasswordTokenService passwordTokenService,
+                               AccountFeaturesBroker accountFeaturesBroker){
         super(jwtService,userManagementService);
         this.adminService = adminService;
         this.userManagementService = userManagementService;
@@ -66,6 +70,7 @@ public class AdminRestController extends BaseRestController{
         this.groupRepository = groupRepository;
         this.groupBroker = groupBroker;
         this.jwtService = jwtService;
+        this.accountFeaturesBroker = accountFeaturesBroker;
     }
 
     @RequestMapping(value = "/user/load",method = RequestMethod.GET)
@@ -218,6 +223,16 @@ public class AdminRestController extends BaseRestController{
     public ResponseEntity deleteConfigVar(@RequestParam String key) {
         adminService.deleteConfigVariable(key);
         return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/config/fetch/above/limit",method = RequestMethod.GET)
+    public ResponseEntity<Integer> getNumberOfGroupsAboveFreeLimit(){
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit());
+    }
+
+    @RequestMapping(value = "/config/fetch/below/limit",method = RequestMethod.GET)
+    public ResponseEntity<Integer> getNumberOfGroupsBelowFreeLimit(){
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit());
     }
 
 }

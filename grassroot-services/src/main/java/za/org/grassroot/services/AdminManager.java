@@ -21,7 +21,7 @@ import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.events.ConfigVariableEvent;
+import za.org.grassroot.core.events.AlterConfigVariableEvent;
 import za.org.grassroot.core.events.RemoveConfigVariableEvent;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.UserSpecifications;
@@ -228,7 +228,7 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     }
 
     @Override
-    @Transactional
+    //@Transactional
     public void updateConfigVariable(String key, String newValue,String description) {
         ConfigVariable var = configRepository.findOneByKey(key);
         if (var == null)
@@ -236,8 +236,10 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
         var.setValue(newValue);
         var.setDescription(description);
 
-        ConfigVariableEvent configVariableEvent = new ConfigVariableEvent(this,var.getKey(),false);
-        this.applicationEventPublisher.publishEvent(configVariableEvent);
+        configRepository.save(var);
+
+        AlterConfigVariableEvent alterConfigVariableEvent = new AlterConfigVariableEvent(this,var.getKey(),false);
+        this.applicationEventPublisher.publishEvent(alterConfigVariableEvent);
 
         logger.info("Updated variable, exiting");
     }
@@ -252,8 +254,8 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
         configRepository.save(newVar);
 
-        ConfigVariableEvent configVariableEvent = new ConfigVariableEvent(this,newVar.getKey(),true);
-        this.applicationEventPublisher.publishEvent(configVariableEvent);
+        AlterConfigVariableEvent alterConfigVariableEvent = new AlterConfigVariableEvent(this,newVar.getKey(),true);
+        this.applicationEventPublisher.publishEvent(alterConfigVariableEvent);
 
         logger.info("Created new variable, exiting");
     }
