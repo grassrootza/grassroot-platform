@@ -24,6 +24,7 @@ public class AuthorizedUserDTO {
     private String token;
     private List<String> systemRoles;
     private boolean hasAccount;
+    private boolean whatsAppOptedIn;
 
     public AuthorizedUserDTO(User user, String token) {
         this.userUid = user.getUid();
@@ -33,6 +34,7 @@ public class AuthorizedUserDTO {
         this.email = user.getEmailAddress();
         this.province = user.getProvince();
         this.hasImage = user.isHasImage();
+        this.whatsAppOptedIn = user.isWhatsAppOptedIn();
 
         Optional<Role> highestSystemRole = user.getStandardRoles().stream().max(BaseRoles.sortSystemRole);
         systemRoles = user.getStandardRoles().stream().map(Role::getName).collect(Collectors.toList());
