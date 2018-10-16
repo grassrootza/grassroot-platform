@@ -180,6 +180,7 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
 
                 record.setStoredTime(Instant.ofEpochMilli(item.getLong("stored_timestamp")));
                 record.setPreSignedUrl(storageBroker.getPresignedUrl(item.getString("bucket"), key));
+
                 // when we start having large numbers of submissions this will get non-performant, so fix it then
                 if (!StringUtils.isEmpty(submittingUserUid)) {
                     User submittingUser = userRepository.findOneByUid(submittingUserUid); // todo: watch this and use projection if gets slow
