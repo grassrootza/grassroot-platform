@@ -69,6 +69,9 @@ public class MediaFileRecord implements Serializable {
     @Transient
     @Setter private String createdByUserName;
 
+    @Transient
+    @Setter private String preSignedUrl; // for secure access
+
     private MediaFileRecord() {
         // for JPA
     }

@@ -168,15 +168,18 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
             while (outcome.hasNext()) {
                 Item item = outcome.next();
                 final String submittingUserUid = item.getString("submitting_user_id");
-                logger.info("Converting media file submitted by user with uid: {}", submittingUserUid);
+                final String key = item.getString("folder") + "/" + item.getString("media_file_id");
+                logger.info("Converting media file with key {}, submitted by user with uid: {}", key, submittingUserUid);
+
                 MediaFileRecord record = new MediaFileRecord(
                         item.getString("bucket"),
                         item.getString("media_type"),
-                        item.getString("folder") + "/" + item.getString("media_file_id"),
+                        key,
                         item.getString("media_file_id"),
                         submittingUserUid);
 
                 record.setStoredTime(Instant.ofEpochMilli(item.getLong("stored_timestamp")));
+                record.setPreSignedUrl(storageBroker.getPresignedUrl(item.getString("bucket"), key));
                 // when we start having large numbers of submissions this will get non-performant, so fix it then
                 if (!StringUtils.isEmpty(submittingUserUid)) {
                     User submittingUser = userRepository.findOneByUid(submittingUserUid); // todo: watch this and use projection if gets slow
