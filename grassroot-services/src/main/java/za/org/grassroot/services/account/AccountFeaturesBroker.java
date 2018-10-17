@@ -40,8 +40,10 @@ public interface AccountFeaturesBroker {
 
     String generateGroupWelcomeReply(String userUid, String groupUid);
 
-    int numberGroupsAboveFreeLimit();
+    int numberGroupsAboveFreeLimit(int freeLimit);
 
-    int numberGroupsBelowFreeLimit();
+    int numberGroupsBelowFreeLimit(int freeLimit);
+
+    int getFreeGroupLimit();
 
 }

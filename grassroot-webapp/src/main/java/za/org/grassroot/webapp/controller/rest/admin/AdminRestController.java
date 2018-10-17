@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -203,6 +204,11 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok(adminService.getCurrentConfigVariables());
     }
 
+    @RequestMapping(value = "/config/fetch/list",method = RequestMethod.GET)
+    public ResponseEntity<List<ConfigVariable>> getAllConfigVariables(){
+        return ResponseEntity.ok(adminService.getAllConfigVariables());
+    }
+
     @RequestMapping(value = "/config/update", method = RequestMethod.POST)
     public ResponseEntity updateConfigVar(@RequestParam String key,
                                           @RequestParam String value,
@@ -227,12 +233,14 @@ public class AdminRestController extends BaseRestController{
 
     @RequestMapping(value = "/config/fetch/above/limit",method = RequestMethod.GET)
     public ResponseEntity<Integer> getNumberOfGroupsAboveFreeLimit(){
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit());
+        int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(freeLimit));
     }
 
     @RequestMapping(value = "/config/fetch/below/limit",method = RequestMethod.GET)
     public ResponseEntity<Integer> getNumberOfGroupsBelowFreeLimit(){
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit());
+        int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(freeLimit));
     }
 
 }

@@ -273,6 +273,12 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
     @Override
     @Transactional
+    public List<ConfigVariable> getAllConfigVariables(){
+        return configRepository.findAll();
+    }
+
+    @Override
+    @Transactional
     public void deleteConfigVariable(String key) {
         configRepository.delete(configRepository.findOneByKey(key));
         RemoveConfigVariableEvent removeConfigVariableEvent = new RemoveConfigVariableEvent(this,"DELETE IT <<<<<>>>>>");

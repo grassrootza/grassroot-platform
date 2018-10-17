@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 
@@ -50,5 +51,8 @@ public interface AdminService {
     void deleteConfigVariable(String key);
 
     int freeUpInactiveJoinTokens();
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    List<ConfigVariable> getAllConfigVariables();
 
 }
