@@ -31,4 +31,6 @@ public interface MemberDataExportBroker {
 
     XSSFWorkbook exportAccountActivityReport(String accountUid, Instant start, Instant end);
 
+    XSSFWorkbook exportWhatsappOptedInUsers();
+
 }

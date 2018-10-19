@@ -94,7 +94,7 @@ public class UserController extends BaseRestController {
                     "validation = {} ,whatsappOptIn = {} ", name, phone, email, language, province, validationOtp,whatsappOptIn);
 
             boolean updateCompleted = userService.updateUser(user.getUid(), name, phone, email, province,
-                user.getAlertPreference(), user.getLocale(), validationOtp, whatsappOptIn);
+                user.getAlertPreference(), user.getLocale(), validationOtp, whatsappOptIn, UserInterfaceType.WEB_2);
 
             if (!updateCompleted) {
                 passwordService.triggerOtp(user);
