@@ -8,6 +8,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -21,4 +22,5 @@ public interface UserLogRepository extends JpaRepository<UserLog, Long>, JpaSpec
 
     void deleteAllByUserUidAndUserLogTypeIn(String userUid, List<UserLogType> userLogTypeList);
 
+    List<UserLog> findByUserUidInAndUserLogType(Collection<String> userUids, UserLogType userLogType);
 }

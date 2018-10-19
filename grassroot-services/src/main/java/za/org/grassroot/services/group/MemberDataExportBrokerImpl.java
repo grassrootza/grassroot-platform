@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Group;
@@ -21,8 +22,11 @@ import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.MembershipRepository;
+import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.UserLogSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -65,15 +69,18 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     private CampaignStatsBroker campaignStatsBroker;
     private AccountBroker accountBroker;
 
+    private final UserLogRepository userLogRepository;
+
     @Autowired
     public MemberDataExportBrokerImpl(UserRepository userRepository, MembershipRepository membershipRepository, GroupBroker groupBroker, TodoBroker todoBroker,
-                                      PermissionBroker permissionBroker, MessagingServiceBroker messageBroker) {
+                                      PermissionBroker permissionBroker, MessagingServiceBroker messageBroker,UserLogRepository userLogRepository) {
         this.userRepository = userRepository;
         this.membershipRepository = membershipRepository;
         this.groupBroker = groupBroker;
         this.todoBroker = todoBroker;
         this.permissionBroker = permissionBroker;
         this.messageBroker = messageBroker;
+        this.userLogRepository = userLogRepository;
     }
 
     @Autowired
@@ -98,6 +105,13 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         List<Membership> memberships = group.getMemberships().stream()
                 .sorted(Comparator.comparing(Membership::getDisplayName)).collect(Collectors.toList());
         return exportGroupMembers(memberships);
+    }
+
+    //Class for exporting the EXCEL file for subscribed whatsapp users.
+    @Transactional()
+    public XSSFWorkbook exportWhatsappOptedInUsers(){
+        List<User> users = userRepository.findByWhatsAppOptedInTrue();
+        return exportWhatsappOptedInUsers(users);
     }
 
     @Override
@@ -150,6 +164,21 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         return workbook;
     }
 
+    private XSSFWorkbook exportWhatsappOptedInUsers(List<User> users){
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Whatsapp users");
+        generateHeader(workbook, sheet, new String[]{"Phone number", "Date subscribed", "Channel"},
+                new int[]{7000, 10000, 7000});
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+        int rowIndex = 1;
+        addRowFromUser(users,sheet, rowIndex);
+        return workbook;
+    }
+
     @Override
     public XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupsToExportUids) {
 
@@ -191,8 +220,6 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
             addRow(sheet, rowIndex, new String[]{user.getDisplayName(), user.getPhoneNumber(), user.getEmailAddress(), groupList});
             rowIndex++;
         }
-
-
         return workbook;
     }
 
@@ -523,5 +550,26 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
                     String.join(", ", member.getAffiliations())});
             rowIndex++;
         }
+    }
+//Methods for getting user details
+//Adding users to rows and accessing the userLog to get date and interface type based on UserID
+    private void addRowFromUser(List<User> users, XSSFSheet sheet, int rowIndex){
+        for (User user:users) {
+            UserLog userLog = getUserLog(user.getUid());
+
+            addRow(sheet,rowIndex,new String[]{
+                    user.getPhoneNumber(),
+                    STD_FORMATTER.format(userLog.getCreationTime()),
+                    userLog.getUserInterface().name()
+            });
+            rowIndex++;
+        }
+    }
+//Looping through the Userlog to get the correct details based on UserUid
+    private UserLog getUserLog(String userUid){
+        List<UserLog> userLogs = userLogRepository.findByUserUidInAndUserLogType(Collections.singleton(userUid),
+                UserLogType.USER_SUBSCRIBED_WHATSAPP);
+        Collections.sort(userLogs,Comparator.comparing(UserLog::getCreationTime).reversed());
+        return userLogs.get(0);
     }
 }
