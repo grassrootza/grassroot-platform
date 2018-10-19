@@ -106,18 +106,12 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         configVariables.put("welcome.messages.on","false");
     }
 
-    // run this once per hour
-    //@Scheduled(fixedRate = 60 * 60 * 1000)
-    public void updateConfig(ConfigVariable configVariable) {
+    private void updateConfig(ConfigVariable configVariable) {
         log.info("Updating config for account limits ...");
-
-        /*Map<String, String> configVars = configRepository.findAll().stream()
-                .collect(Collectors.toMap(ConfigVariable::getKey, ConfigVariable::getValue));*/
 
         if(configVariables.containsKey(configVariable.getKey())){
             configVariables.put(configVariable.getKey(),configVariable.getValue());
         }
-
         setEventLimitStart();
     }
 
@@ -139,13 +133,13 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         }
     }
 
-    protected void createAndStoreSingleAccountLog(AccountLog accountLog) {
+    private void createAndStoreSingleAccountLog(AccountLog accountLog) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(accountLog);
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
-    protected void storeAccountLogPostCommit(AccountLog accountLog) {
+    private void storeAccountLogPostCommit(AccountLog accountLog) {
         AfterTxCommitTask task = () -> createAndStoreSingleAccountLog(accountLog);
         eventPublisher.publishEvent(task);
     }
