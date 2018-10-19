@@ -770,6 +770,16 @@ public class CampaignBrokerImpl implements CampaignBroker {
                 defaultLanguage.getLanguage()));
     }
 
+    @Override
+    public List<MediaFileRecord> fetchInboundCampaignMediaDetails(String userUid, String campaignUid) {
+        User user = userManager.load(Objects.requireNonNull(userUid));
+        Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+
+        validateUserCanModifyCampaign(user, campaign);
+
+        return mediaFileBroker.fetchInboundMediaRecordsForCampaign(campaignUid);
+    }
+
     private Campaign getCampaignByCampaignCode(String campaignCode){
         Objects.requireNonNull(campaignCode);
         return campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode, Instant.now());
@@ -786,7 +796,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         eventPublisher.publishEvent(task);
     }
 
-    public void validateUserCanModifyCampaign(User user, Campaign campaign) {
+    private void validateUserCanModifyCampaign(User user, Campaign campaign) {
         if (!campaign.getCreatedByUser().equals(user)) {
             permissionBroker.validateGroupPermission(user, campaign.getMasterGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }

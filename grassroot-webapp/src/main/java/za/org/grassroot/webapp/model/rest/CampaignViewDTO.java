@@ -105,11 +105,11 @@ public class CampaignViewDTO {
         long startTime = System.currentTimeMillis();
         this.totalEngaged = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_FOUND);
         this.totalJoined = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
-        log.debug("time to count campaign messages: {} msecs", System.currentTimeMillis() - startTime);
+        log.info("time to count campaign messages: {} msecs", System.currentTimeMillis() - startTime);
 
         if (!campaign.getCampaignMessages().isEmpty()){
             this.campaignMessages = groupCampaignMessages(campaign);
-            log.info("campaign DTO message list: {}", campaign.getCampaignMessages());
+            log.debug("campaign DTO message list: {}", campaign.getCampaignMessages());
         }
 
         if (campaign.getCampaignImage() != null) {
