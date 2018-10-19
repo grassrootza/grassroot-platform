@@ -51,7 +51,6 @@ import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAs
 @Service @Slf4j
 public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, ApplicationListener<AlterConfigVariableEvent> {
 
-    private int eventMonthlyLimitThreshold = 10;
     private Instant eventLimitStart;
 
     private static final int LARGE_EVENT_LIMIT = 99;
@@ -161,6 +160,8 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     public int numberTodosLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
 
+        int eventMonthlyLimitThreshold = (Integer) configVariables.getOrDefault("events.limit.threshold","10");
+
         boolean isSmallGroup = group.getMemberships().size() < eventMonthlyLimitThreshold;
         boolean isOnAccount = group.isPaidFor() && group.getAccount() != null && group.getAccount().isEnabled();
 
@@ -178,6 +179,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     @Transactional(readOnly = true)
     public int numberEventsLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
+        int eventMonthlyLimitThreshold = (Integer) configVariables.getOrDefault("events.limit.threshold","10");
         boolean isSmallGroup = group.getMemberships().size() < eventMonthlyLimitThreshold;
         if (isSmallGroup || group.robustIsPaidFor()) {
             return LARGE_EVENT_LIMIT;

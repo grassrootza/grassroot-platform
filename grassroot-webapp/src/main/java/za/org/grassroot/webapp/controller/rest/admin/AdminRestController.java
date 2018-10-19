@@ -6,10 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.User;
@@ -241,6 +238,16 @@ public class AdminRestController extends BaseRestController{
     public ResponseEntity<Integer> getNumberOfGroupsBelowFreeLimit(){
         int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
         return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(freeLimit));
+    }
+
+    @RequestMapping(value = "/config/fetch/below/limit/{limit}",method = RequestMethod.GET)
+    public ResponseEntity<Integer> countGroupsBelowLimit(@PathVariable int limit){
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(limit));
+    }
+
+    @RequestMapping(value = "/config/fetch/above/limit/{limit}",method = RequestMethod.GET)
+    public ResponseEntity<Integer> countGroupsAboveLimit(@PathVariable int limit){
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(limit));
     }
 
 }

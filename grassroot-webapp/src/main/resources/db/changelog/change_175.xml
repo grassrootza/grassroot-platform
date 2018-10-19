@@ -4,7 +4,7 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
-    <changeSet id="change_173" author="luke">
+    <changeSet id="change_175" author="ratsela">
         <comment>Config variable management</comment>
         <sqlFile path="db/scripts/script_175_config_variable.sql" splitStatements="false"/>
         <rollback>
