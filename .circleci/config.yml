@@ -7,7 +7,7 @@ step-library:
         command: |
           sudo apt-get update && sudo apt-get install python
           curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-          python get-pip.py
+          sudo python get-pip.py
           sudo apt-get install python-dev
           pip install awscli --upgrade --user
           pip install awsebcli --upgrade --user

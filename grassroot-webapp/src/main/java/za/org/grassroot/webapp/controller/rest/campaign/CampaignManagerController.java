@@ -133,6 +133,12 @@ public class CampaignManagerController extends BaseRestController {
         }
     }
 
+    @RequestMapping(value = "/fetch/media/{campaignUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetch the records for inbound media (which users have submitted, via WhatsApp")
+    public ResponseEntity fetchCampaignMediaList(HttpServletRequest request, @PathVariable String campaignUid) {
+        return ResponseEntity.ok(campaignBroker.fetchInboundCampaignMediaDetails(getUserIdFromRequest(request), campaignUid));
+    }
+
     @RequestMapping(value = "/create" , method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "create campaign", notes = "create a campaign using given values")
     public ResponseEntity createCampaign(@Valid @RequestBody CreateCampaignRequest createCampaignRequest,
