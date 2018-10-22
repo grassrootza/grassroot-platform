@@ -188,6 +188,13 @@ public class GroupFetchController extends BaseRestController {
         return ResponseEntity.ok(groupDtos);
     }
 
+    @RequestMapping(value = "/minimal/specified/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<GroupRefDTO> fetchMinimalDetailsOnGroup(HttpServletRequest request, @PathVariable String groupUid) {
+        // todo : may want to permissions check
+        Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
+        return ResponseEntity.ok(new GroupRefDTO(groupUid, group.getName(), group.getMemberships().size()));
+    }
+
     @RequestMapping(value = "/full", method = RequestMethod.GET)
     @ApiOperation(value = "Get full details about a group, including members (if permission to see details) and description")
     public ResponseEntity<GroupFullDTO> fetchFullGroupInfo(HttpServletRequest request, @RequestParam String groupUid) {
