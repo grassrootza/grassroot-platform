@@ -1,0 +1,1 @@
+drop table config_variable;
