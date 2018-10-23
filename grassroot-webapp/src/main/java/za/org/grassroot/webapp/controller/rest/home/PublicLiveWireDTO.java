@@ -19,6 +19,8 @@ public class PublicLiveWireDTO {
     private String description;
 
     private String contactName;
+    private String contactNumber;
+
     private LiveWireAlertType alertType;
     private String entityName;
     private int entitySize;
@@ -33,13 +35,13 @@ public class PublicLiveWireDTO {
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
         this.description = alert.getDescription();
 
-
         if (includeFullDetails) {
             this.serverUid = alert.getUid();
             this.imageKeys = alert.getMediaFiles().stream().map(MediaFileRecord::getKey).collect(Collectors.toList());
             this.contactName = alert.getContactNameNullSafe();
             this.alertType = alert.getType();
             this.tags = alert.getTagList();
+            this.contactNumber = alert.getContactNumberFormatted();
 
             if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
                 Group group = alert.getGroup();

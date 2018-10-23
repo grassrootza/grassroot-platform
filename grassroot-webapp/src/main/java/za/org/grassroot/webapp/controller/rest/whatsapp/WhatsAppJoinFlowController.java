@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 @Slf4j @RestController @Grassroot2RestController
 @RequestMapping("/v2/api/whatsapp") @Api("/v2/api/whatsapp")
 @PreAuthorize("hasRole('ROLE_SYSTEM_CALL')")
-public class WhatsAppRelatedController extends BaseController {
+public class WhatsAppJoinFlowController extends BaseController {
 
     private final List<RequestDataType> USER_DATA_REQUESTS_WITH_MSGS = Arrays.asList(
             RequestDataType.USER_NAME, RequestDataType.LOCATION_PROVINCE_OKAY, RequestDataType.LOCATION_GPS_REQUIRED);
@@ -62,7 +62,7 @@ public class WhatsAppRelatedController extends BaseController {
     private MessageSource messageSource;
 
     @Autowired
-    public WhatsAppRelatedController(UserManagementService userManagementService, PermissionBroker permissionBroker, JwtService jwtService, AsyncUserLogger userLogger) {
+    public WhatsAppJoinFlowController(UserManagementService userManagementService, PermissionBroker permissionBroker, JwtService jwtService, AsyncUserLogger userLogger) {
         super(userManagementService, permissionBroker);
         this.jwtService = jwtService;
         this.userLogger = userLogger;
@@ -323,6 +323,10 @@ public class WhatsAppRelatedController extends BaseController {
                                                         CampaignActionType action,
                                                         String userResponse) {
         log.info("### Initiating campaign reply sequence message for action type {}, user response {}, campaign ID: {}", action, userResponse, campaignUid);
+        if (action == null) {
+            log.error("Null action type received, curious, return empty response");
+            return EntityResponseToUser.cannotRespond(JpaEntityType.CAMPAIGN, campaignUid);
+        }
 
         // note: this action is what the user selected based on prior menu / prompt, i.e., JOIN_GROUP does not mean ask them if they want to join,
         // but means they have chosen to join, and sequence is roughly as it is usually present to user
@@ -397,7 +401,11 @@ public class WhatsAppRelatedController extends BaseController {
         final boolean wasLastActionShare = CampaignActionType.SHARE_SEND.equals(priorAction); // since the send is async, and don't want to block to wait
         final boolean wasLastActionMedia = CampaignActionType.RECORD_MEDIA.equals(priorAction);
 
+        log.info("Looking for close off prompt, was last action a share? {}, or media? {}", wasLastActionShare, wasLastActionMedia);
+
         CampaignMessage msg = wasLastActionShare ? null : showUserSharePrompt(campaignUid, userUid);
+        log.info("Is there a share prompt message ? {}", msg);
+
         return msg != null ? msg : wasLastActionMedia ? null : showUserMediaRecordingPrompt(campaignUid, userUid);
     }
 
@@ -407,6 +415,7 @@ public class WhatsAppRelatedController extends BaseController {
         if (!campaign.isOutboundTextEnabled() || campaign.outboundBudgetLeft() == 0)
             return null;
 
+        log.info("Checking for sharing prompt or message, has user shared? : {}", campaignBroker.hasUserShared(campaignUid, userUid));
         if (campaignBroker.hasUserShared(campaignUid, userUid))
             return null;
 
@@ -416,10 +425,12 @@ public class WhatsAppRelatedController extends BaseController {
     }
 
     private CampaignMessage showUserMediaRecordingPrompt(String campaignUid, String userUid) {
-        if (campaignBroker.hasUserSentMedia(campaignUid, userUid))
-            return null;
+        log.info("Going to ask user for media, have they sent prior? : {}", campaignBroker.hasUserSentMedia(campaignUid, userUid));
+//        if (campaignBroker.hasUserSentMedia(campaignUid, userUid))
+//            return null;
 
         List<CampaignMessage> recordingPrompt = campaignBroker.findCampaignMessage(campaignUid, CampaignActionType.MEDIA_PROMPT, null, UserInterfaceType.WHATSAPP);
+        log.info("Found a prompt for media or recording? : {}", recordingPrompt);
         return (recordingPrompt == null || recordingPrompt.isEmpty()) ? null : recordingPrompt.get(0);
     }
 

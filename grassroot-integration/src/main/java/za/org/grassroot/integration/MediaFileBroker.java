@@ -5,6 +5,8 @@ import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 
+import java.util.List;
+
 public interface MediaFileBroker {
 
     MediaFileRecord load(String uid);
@@ -18,5 +20,7 @@ public interface MediaFileBroker {
     void deleteFile(LiveWireAlert liveWireAlert, String imageKey, MediaFunction function);
 
     String getBucketForFunction(MediaFunction function);
+
+    List<MediaFileRecord> fetchInboundMediaRecordsForCampaign(String campaignUid);
 
 }

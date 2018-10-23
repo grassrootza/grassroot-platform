@@ -1,6 +1,7 @@
 package za.org.grassroot.integration.storage;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.HttpMethod;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
@@ -32,7 +33,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.sql.Date;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -237,6 +242,24 @@ public class StorageBrokerImpl implements StorageBroker {
             return null;
         }
 
+    }
+
+    @Override
+    public String getPresignedUrl(String bucket, String key) {
+        try {
+            AmazonS3 s3client = s3ClientFactory.createClient();
+            Instant expiration = Instant.now().plus(3L, ChronoUnit.HOURS);
+            logger.info("Generating presigned URL for bucket {} and key {}");
+            GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, key)
+                    .withMethod(HttpMethod.GET)
+                    .withExpiration(Date.from(expiration));
+            URL url = s3client.generatePresignedUrl(request);
+            logger.info("Generated URL: {}", url);
+            return url.toString();
+        } catch (SdkClientException e) {
+            logger.error("Error! Exception generating presigned URL: {}", e);
+            return null;
+        }
     }
 
     // todo : optimize this (see SDK JavaDocs on possible performance issues)

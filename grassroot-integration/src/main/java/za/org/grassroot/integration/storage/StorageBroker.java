@@ -31,4 +31,6 @@ public interface StorageBroker {
 
     File fetchFileFromRecord(MediaFileRecord record);
 
+    String getPresignedUrl(String bucket, String key);
+
 }
