@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -181,8 +182,10 @@ public class GroupFetchController extends BaseRestController {
     public ResponseEntity<Page<GroupRefDTO>> listUserGroupsFiltered(HttpServletRequest request,
                                                                     @RequestParam Permission requiredPermission,
                                                                     @RequestParam(required = false) String filterTerm,
-                                                                    @RequestParam(required = false) Pageable pageable) {
+                                                                    @RequestParam(required = false) Integer pageNumber) {
         String userId = getUserIdFromRequest(request);
+        log.info("Fetching minimal filtered groups for user Id : {}, with page number: {}", userId, pageNumber);
+        Pageable pageable = pageNumber == null ? null : PageRequest.of(pageNumber, 10); // might make this a parameter in future
         Page<Group> groups = groupFetchBroker.fetchGroupFiltered(userId, requiredPermission, filterTerm, pageable);
         Page<GroupRefDTO> groupDtos = groups.map(group -> new GroupRefDTO(group.getUid(), group.getName(), 0));
         return ResponseEntity.ok(groupDtos);

@@ -315,6 +315,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         // note : monitor this and if takes strain, optimize
         long startTime = System.currentTimeMillis();
 
+        log.info("Fetching minimal groups, pageable = {}", pageable);
         Pageable pageRequest = pageable == null ? PageRequest.of(0, 10) : pageable;
 
         Page<Group> groupsFomDb;
