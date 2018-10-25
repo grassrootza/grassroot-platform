@@ -60,7 +60,7 @@ public class IncomingImageFetchController {
             headers.setContentType(MediaType.parseMediaType(record.getMimeType()));
         } catch (InvalidMediaTypeException e) {
             log.info("error processing mime type, record has: {}", record.getMimeType());
-            log.error("couldn't set MIME heading ...", e);
+            log.error("couldn't set MIME heading ... {}", e.getMessage());
         }
         String filename = "image-" + mediaFileKey + "." + record.getMimeType();
         log.debug("file name : {}", filename);

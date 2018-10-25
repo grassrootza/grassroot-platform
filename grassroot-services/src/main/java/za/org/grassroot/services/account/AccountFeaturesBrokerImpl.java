@@ -149,7 +149,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         Group group = groupRepository.findOneByUid(groupUid);
         int currentMembers = group.getMemberships().size();
 
-        boolean groupSizeLimited = (boolean) configVariables.getOrDefault("groups.size.limit","false");
+        boolean groupSizeLimited = Boolean.parseBoolean((String) configVariables.getOrDefault("groups.size.limit","false"));
         int freeGroupLimit = (Integer) configVariables.getOrDefault("groups.size.freemax","300");
 
         return !groupSizeLimited || group.robustIsPaidFor() ? 99999 : Math.max(0, freeGroupLimit - currentMembers);
@@ -472,7 +472,8 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
 
     @Override
     public void onApplicationEvent(AlterConfigVariableEvent event) {
-        if(!event.isCreationEvent()){
+        log.info("Received notice of some change in config variables: ", event);
+        if (!StringUtils.isEmpty(event.getKey())) {
             ConfigVariable configVariable = configRepository.findOneByKey(event.getKey());
             updateConfig(configVariable);
         }
