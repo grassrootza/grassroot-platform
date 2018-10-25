@@ -1,5 +1,6 @@
 package za.org.grassroot.services.account;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -69,7 +70,15 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
 
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ApplicationEventPublisher eventPublisher;
-    private Map<String,Object> configVariables = new HashMap<>();
+
+    private final Map<String, String> configDefaults = ImmutableMap.of(
+            "group.size.limited", "false",
+            "group.size.freemax", "300",
+            "tasks.monthly.free", "4",
+            "tasks.limit.threshold", "10",
+            "welcome.messages.on", "false");
+
+    private Map<String, String> configVariables = new HashMap<>();
 
     @Autowired
     public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
@@ -95,23 +104,41 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
 
     @PostConstruct
     public void init() {
-        setEventLimitStart();
-        configVariables.put("groups.size.limit","false");
-        configVariables.put("groups.size.freemax","300");
-        configVariables.put("todos.monthly.free","4");
-        configVariables.put("accounts.events.monthly.free","4");
-        configVariables.put("events.limit.threshold","10");
-        configVariables.put("grassroot.events.limit.started","2017-04-01");
-        configVariables.put("welcome.messages.on","false");
+        log.info("Setting up account features, populating config variable map");
+
+        configDefaults.forEach((key, defaultValue) -> configVariables.put(key, convertKeyToValue(key, defaultValue)));
+        log.info("Populated config variable map : {}", configVariables);
+    }
+
+    private String convertKeyToValue(String key, String defaultValue) {
+        return configRepository.findOneByKey(key).map(ConfigVariable::getValue).orElse(defaultValue);
+    }
+
+    @Override
+    public void onApplicationEvent(AlterConfigVariableEvent event) {
+        log.info("Received notice of some change in config variables: ", event);
+        if (!StringUtils.isEmpty(event.getKey())) {
+            configRepository.findOneByKey(event.getKey()).ifPresent(this::updateConfig);
+        }
     }
 
     private void updateConfig(ConfigVariable configVariable) {
         log.info("Updating config for account limits ...");
 
         if(configVariables.containsKey(configVariable.getKey())){
-            configVariables.put(configVariable.getKey(),configVariable.getValue());
+            configVariables.put(configVariable.getKey(), configVariable.getValue());
         }
+
         setEventLimitStart();
+    }
+
+    private int getConfigVarIntegerSafe(String configKey, int defaultValue) {
+        try {
+            return Integer.parseInt(configVariables.getOrDefault(configKey, String.valueOf(defaultValue)));
+        } catch (NumberFormatException e) {
+            log.error("Error parsing config var: {}, error message: {}", configKey, e.getMessage());
+            return defaultValue;
+        }
     }
 
     private void setEventLimitStart() {
@@ -149,8 +176,11 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         Group group = groupRepository.findOneByUid(groupUid);
         int currentMembers = group.getMemberships().size();
 
-        boolean groupSizeLimited = Boolean.parseBoolean((String) configVariables.getOrDefault("groups.size.limit","false"));
-        int freeGroupLimit = (Integer) configVariables.getOrDefault("groups.size.freemax","300");
+        boolean groupSizeLimited = Boolean.parseBoolean(configVariables.getOrDefault("group.size.limited","false"));
+        int freeGroupLimit = getConfigVarIntegerSafe("group.size.freemax", 300);
+
+        log.info("Is group size limited? : {}, what is the free group limit? : {}, is group paid for? : {}",
+                groupSizeLimited, freeGroupLimit, group.robustIsPaidFor());
 
         return !groupSizeLimited || group.robustIsPaidFor() ? 99999 : Math.max(0, freeGroupLimit - currentMembers);
     }
@@ -160,7 +190,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     public int numberTodosLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
 
-        int eventMonthlyLimitThreshold = (Integer) configVariables.getOrDefault("events.limit.threshold","10");
+        int eventMonthlyLimitThreshold = Integer.parseInt(configVariables.getOrDefault("tasks.limit.threshold","10"), 10);
 
         boolean isSmallGroup = group.getMemberships().size() < eventMonthlyLimitThreshold;
         boolean isOnAccount = group.isPaidFor() && group.getAccount() != null && group.getAccount().isEnabled();
@@ -171,7 +201,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         int todosThisMonth = (int) todoRepository.count(Specification.where(hasGroupAsAncestor(group))
                 .and(createdDateBetween(LocalDateTime.now().withDayOfMonth(1).withHour(0).toInstant(ZoneOffset.UTC), Instant.now())));
 
-        int freeTodosPerMonth = (Integer) configVariables.getOrDefault("todos.monthly.free","4");
+        int freeTodosPerMonth = getConfigVarIntegerSafe("tasks.monthly.free",4);
         return Math.max(0, freeTodosPerMonth - todosThisMonth);
     }
 
@@ -179,18 +209,17 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     @Transactional(readOnly = true)
     public int numberEventsLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        int eventMonthlyLimitThreshold = (Integer) configVariables.getOrDefault("events.limit.threshold","10");
+        int eventMonthlyLimitThreshold = getConfigVarIntegerSafe("tasks.limit.threshold",10);
         boolean isSmallGroup = group.getMemberships().size() < eventMonthlyLimitThreshold;
         if (isSmallGroup || group.robustIsPaidFor()) {
             return LARGE_EVENT_LIMIT;
         } else {
             Instant startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-            Instant startOfCheck = startOfMonth.isAfter(eventLimitStart) ? startOfMonth : eventLimitStart;
 
             int eventsThisMonth = (int) eventRepository.count(Specification.where(EventSpecifications.hasGroupAsAncestor(group))
-                    .and(EventSpecifications.createdDateTimeBetween(startOfCheck, Instant.now())));
+                    .and(EventSpecifications.createdDateTimeBetween(startOfMonth, Instant.now())));
 
-            int freeEventsPerMonth = (Integer) configVariables.getOrDefault("accounts.events.monthly.free","4");
+            int freeEventsPerMonth = getConfigVarIntegerSafe("tasks.monthly.free",4);
             return Math.max(0, freeEventsPerMonth - eventsThisMonth);
         }
     }
@@ -471,15 +500,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     }
 
     @Override
-    public void onApplicationEvent(AlterConfigVariableEvent event) {
-        log.info("Received notice of some change in config variables: ", event);
-        if (!StringUtils.isEmpty(event.getKey())) {
-            ConfigVariable configVariable = configRepository.findOneByKey(event.getKey());
-            updateConfig(configVariable);
-        }
-    }
-
-    @Override
     public int numberGroupsAboveFreeLimit(int freeLimit){
         return this.groupRepository.countGroupsWhereSizeAboveLimit(freeLimit);
     }
@@ -490,8 +510,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     }
 
     @Override
-    public int getFreeGroupLimit(){
-        ConfigVariable cv = configRepository.findOneByKey("groups.size.freemax");
-        return Integer.parseInt(cv.getValue());
+    public int getFreeGroupLimit() {
+        return getConfigVarIntegerSafe("group.size.freemax", 300);
     }
 }

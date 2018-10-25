@@ -75,7 +75,7 @@ public class USSDGroupJoinController extends USSDBaseController  {
 
         Group group = searchResult.get();
         log.debug("adding user via join code ... {}", trailingDigits);
-        if (accountFeaturesBroker.numberMembersLeftForGroup(group.getUid()) < 0) {
+        if (accountFeaturesBroker.numberMembersLeftForGroup(group.getUid()) == 0) {
             return notifyGroupLimitReached(user, group);
         }
 

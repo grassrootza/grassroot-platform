@@ -230,9 +230,8 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     @Override
     //@Transactional
     public void updateConfigVariable(String key, String newValue,String description) {
-        ConfigVariable var = configRepository.findOneByKey(key);
-        if (var == null)
-            throw new IllegalArgumentException("Error! Trying to update non-existent config var");
+        ConfigVariable var = configRepository.findOneByKey(key)
+                .orElseThrow(() -> new IllegalArgumentException("Error! Trying to update non-existent var"));
         var.setValue(newValue);
         var.setDescription(description);
 
@@ -247,9 +246,10 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     @Override
     @Transactional
     public void createConfigVariable(String key, String value,String description) {
-        ConfigVariable existing = configRepository.findOneByKey(key);
-        if (existing != null)
+        Optional<ConfigVariable> existing = configRepository.findOneByKey(key);
+        if (existing.isPresent())
             throw new IllegalArgumentException("Trying to create variable with existing key name");
+
         ConfigVariable newVar = new ConfigVariable(key, value,description);
 
         configRepository.save(newVar);
@@ -280,9 +280,11 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     @Override
     @Transactional
     public void deleteConfigVariable(String key) {
-        configRepository.delete(configRepository.findOneByKey(key));
-        RemoveConfigVariableEvent removeConfigVariableEvent = new RemoveConfigVariableEvent(this,"DELETE IT <<<<<>>>>>");
-        this.applicationEventPublisher.publishEvent(removeConfigVariableEvent);
+        configRepository.findOneByKey(key).ifPresent(configVar -> {
+            configRepository.delete(configVar);
+            RemoveConfigVariableEvent removeConfigVariableEvent = new RemoveConfigVariableEvent(this,"DELETE IT <<<<<>>>>>");
+            this.applicationEventPublisher.publishEvent(removeConfigVariableEvent);
+        });
     }
 
     @Override
