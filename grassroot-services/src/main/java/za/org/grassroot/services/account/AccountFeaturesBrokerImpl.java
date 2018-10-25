@@ -2,13 +2,14 @@ package za.org.grassroot.services.account;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationListener;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
@@ -20,6 +21,7 @@ import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.events.AlterConfigVariableEvent;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
@@ -37,10 +39,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.TodoSpecifications.createdDateBetween;
@@ -50,25 +49,8 @@ import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAs
  * Created by luke on 2016/10/25.
  */
 @Service @Slf4j
-public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
+public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, ApplicationListener<AlterConfigVariableEvent> {
 
-    @Value("${grassroot.groups.size.limit:false}")
-    private boolean GROUP_SIZE_LIMITED;
-
-    @Value("${grassroot.groups.size.freemax:300}")
-    private int FREE_GROUP_LIMIT;
-
-    @Value("${accounts.todos.monthly.free:4}")
-    private int FREE_TODOS_PER_MONTH;
-
-    @Value("${accounts.events.monthly.free:4}")
-    private int FREE_EVENTS_PER_MONTH;
-
-    @Value("${grassroot.events.limit.threshold:100}")
-    private int eventMonthlyLimitThreshold;
-
-    @Value("${grassroot.events.limit.started:2017-04-01}")
-    private String eventLimitStartString;
     private Instant eventLimitStart;
 
     private static final int LARGE_EVENT_LIMIT = 99;
@@ -83,14 +65,17 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
     private final AccountRepository accountRepository;
     private final BroadcastRepository templateRepository;
     private final MessageAssemblingService messageAssemblingService;
+    private final ConfigRepository configRepository;
 
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ApplicationEventPublisher eventPublisher;
+    private Map<String,Object> configVariables = new HashMap<>();
 
     @Autowired
     public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                      EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
-                                     BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+                                     BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService,
+                                     LogsAndNotificationsBroker logsAndNotificationsBroker, ConfigRepository configRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -100,6 +85,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
         this.templateRepository = templateRepository;
         this.messageAssemblingService = messageAssemblingService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.configRepository = configRepository;
     }
 
     @Autowired
@@ -109,9 +95,30 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
 
     @PostConstruct
     public void init() {
+        setEventLimitStart();
+        configVariables.put("groups.size.limit","false");
+        configVariables.put("groups.size.freemax","300");
+        configVariables.put("todos.monthly.free","4");
+        configVariables.put("accounts.events.monthly.free","4");
+        configVariables.put("events.limit.threshold","10");
+        configVariables.put("grassroot.events.limit.started","2017-04-01");
+        configVariables.put("welcome.messages.on","false");
+    }
+
+    private void updateConfig(ConfigVariable configVariable) {
+        log.info("Updating config for account limits ...");
+
+        if(configVariables.containsKey(configVariable.getKey())){
+            configVariables.put(configVariable.getKey(),configVariable.getValue());
+        }
+        setEventLimitStart();
+    }
+
+    private void setEventLimitStart() {
         LocalDate ldEventLimitStart;
         try {
-            ldEventLimitStart = LocalDate.parse(eventLimitStartString, DateTimeFormatter.ISO_LOCAL_DATE);
+            String eventLimitStarting = (String) configVariables.getOrDefault("grassroot.events.limit.started","2017-04-01");
+            ldEventLimitStart = LocalDate.parse(eventLimitStarting, DateTimeFormatter.ISO_LOCAL_DATE);
         } catch (DateTimeParseException e) {
             log.error("Error parsing! {}", e);
             ldEventLimitStart = LocalDate.of(2017, 4, 1);
@@ -125,13 +132,13 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
         }
     }
 
-    protected void createAndStoreSingleAccountLog(AccountLog accountLog) {
+    private void createAndStoreSingleAccountLog(AccountLog accountLog) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(accountLog);
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
-    protected void storeAccountLogPostCommit(AccountLog accountLog) {
+    private void storeAccountLogPostCommit(AccountLog accountLog) {
         AfterTxCommitTask task = () -> createAndStoreSingleAccountLog(accountLog);
         eventPublisher.publishEvent(task);
     }
@@ -141,13 +148,19 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
     public int numberMembersLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
         int currentMembers = group.getMemberships().size();
-        return !GROUP_SIZE_LIMITED || group.robustIsPaidFor() ? 99999 : Math.max(0, FREE_GROUP_LIMIT - currentMembers);
+
+        boolean groupSizeLimited = (boolean) configVariables.getOrDefault("groups.size.limit","false");
+        int freeGroupLimit = (Integer) configVariables.getOrDefault("groups.size.freemax","300");
+
+        return !groupSizeLimited || group.robustIsPaidFor() ? 99999 : Math.max(0, freeGroupLimit - currentMembers);
     }
 
     @Override
     @Transactional(readOnly = true)
     public int numberTodosLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
+
+        int eventMonthlyLimitThreshold = (Integer) configVariables.getOrDefault("events.limit.threshold","10");
 
         boolean isSmallGroup = group.getMemberships().size() < eventMonthlyLimitThreshold;
         boolean isOnAccount = group.isPaidFor() && group.getAccount() != null && group.getAccount().isEnabled();
@@ -158,13 +171,15 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
         int todosThisMonth = (int) todoRepository.count(Specification.where(hasGroupAsAncestor(group))
                 .and(createdDateBetween(LocalDateTime.now().withDayOfMonth(1).withHour(0).toInstant(ZoneOffset.UTC), Instant.now())));
 
-        return Math.max(0, FREE_TODOS_PER_MONTH - todosThisMonth);
+        int freeTodosPerMonth = (Integer) configVariables.getOrDefault("todos.monthly.free","4");
+        return Math.max(0, freeTodosPerMonth - todosThisMonth);
     }
 
     @Override
     @Transactional(readOnly = true)
     public int numberEventsLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
+        int eventMonthlyLimitThreshold = (Integer) configVariables.getOrDefault("events.limit.threshold","10");
         boolean isSmallGroup = group.getMemberships().size() < eventMonthlyLimitThreshold;
         if (isSmallGroup || group.robustIsPaidFor()) {
             return LARGE_EVENT_LIMIT;
@@ -175,7 +190,8 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
             int eventsThisMonth = (int) eventRepository.count(Specification.where(EventSpecifications.hasGroupAsAncestor(group))
                     .and(EventSpecifications.createdDateTimeBetween(startOfCheck, Instant.now())));
 
-            return Math.max(0, FREE_EVENTS_PER_MONTH - eventsThisMonth);
+            int freeEventsPerMonth = (Integer) configVariables.getOrDefault("accounts.events.monthly.free","4");
+            return Math.max(0, freeEventsPerMonth - eventsThisMonth);
         }
     }
 
@@ -454,4 +470,27 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker {
         return message.substring(0, Math.min(message.length(), maxChars));
     }
 
+    @Override
+    public void onApplicationEvent(AlterConfigVariableEvent event) {
+        if(!event.isCreationEvent()){
+            ConfigVariable configVariable = configRepository.findOneByKey(event.getKey());
+            updateConfig(configVariable);
+        }
+    }
+
+    @Override
+    public int numberGroupsAboveFreeLimit(int freeLimit){
+        return this.groupRepository.countGroupsWhereSizeAboveLimit(freeLimit);
+    }
+
+    @Override
+    public int numberGroupsBelowFreeLimit(int freeLimit){
+        return this.groupRepository.countGroupsWhereSizeBelowLimit(freeLimit);
+    }
+
+    @Override
+    public int getFreeGroupLimit(){
+        ConfigVariable cv = configRepository.findOneByKey("groups.size.freemax");
+        return Integer.parseInt(cv.getValue());
+    }
 }
