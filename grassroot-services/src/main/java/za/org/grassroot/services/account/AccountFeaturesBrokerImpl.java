@@ -18,6 +18,7 @@ import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.broadcast.BroadcastSchedule;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
@@ -71,13 +72,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ApplicationEventPublisher eventPublisher;
 
-    private final Map<String, String> configDefaults = ImmutableMap.of(
-            "group.size.limited", "false",
-            "group.size.freemax", "300",
-            "tasks.monthly.free", "4",
-            "tasks.limit.threshold", "10",
-            "welcome.messages.on", "false");
-
+    private Map<String, String> configDefaults = new HashMap<>();
     private Map<String, String> configVariables = new HashMap<>();
 
     @Autowired
@@ -105,9 +100,15 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     @PostConstruct
     public void init() {
         log.info("Setting up account features, populating config variable map");
+        configDefaults.put("group.size.limited", "false");
+        configDefaults.put("group.joins.limited", "false");
+        configDefaults.put("group.size.freemax", "300");
+        configDefaults.put("tasks.monthly.free", "4");
+        configDefaults.put("tasks.limit.threshold", "10");
+        configDefaults.put("welcome.messages.on", "false");
 
         configDefaults.forEach((key, defaultValue) -> configVariables.put(key, convertKeyToValue(key, defaultValue)));
-        log.info("Populated config variable map : {}", configVariables);
+        log.info("Populated account features config variable map : {}", configVariables);
     }
 
     private String convertKeyToValue(String key, String defaultValue) {
@@ -172,17 +173,22 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
 
     @Override
     @Transactional(readOnly = true)
-    public int numberMembersLeftForGroup(String groupUid) {
+    public int numberMembersLeftForGroup(String groupUid, GroupJoinMethod joinMethod) {
         Group group = groupRepository.findOneByUid(groupUid);
         int currentMembers = group.getMemberships().size();
 
-        boolean groupSizeLimited = Boolean.parseBoolean(configVariables.getOrDefault("group.size.limited","false"));
-        int freeGroupLimit = getConfigVarIntegerSafe("group.size.freemax", 300);
+        final boolean groupSizeLimited = Boolean.parseBoolean(configVariables.getOrDefault("group.size.limited","false"));
+        final boolean groupJoinsLimited = Boolean.parseBoolean(configVariables.getOrDefault("group.joins.limited", "false"));
 
-        log.info("Is group size limited? : {}, what is the free group limit? : {}, is group paid for? : {}",
-                groupSizeLimited, freeGroupLimit, group.robustIsPaidFor());
+        final int freeGroupLimit = getConfigVarIntegerSafe("group.size.freemax", 300);
 
-        return !groupSizeLimited || group.robustIsPaidFor() ? 99999 : Math.max(0, freeGroupLimit - currentMembers);
+        log.info("Is group size limited? : {}, and joins? {}, and what is the free group limit? : {}, is group paid for? : {}",
+                groupSizeLimited, groupJoinsLimited, freeGroupLimit, group.robustIsPaidFor());
+
+        final boolean isGroupJoin = joinMethod != null && GroupJoinMethod.JOIN_CODE_METHODS.contains(joinMethod);
+        final boolean limitDoesNotApply = !groupSizeLimited || (isGroupJoin && !groupJoinsLimited) || group.robustIsPaidFor();
+
+        return limitDoesNotApply ? 99999 : Math.max(0, freeGroupLimit - currentMembers);
     }
 
     @Override

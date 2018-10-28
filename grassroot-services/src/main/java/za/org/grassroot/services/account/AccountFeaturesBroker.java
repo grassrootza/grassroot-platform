@@ -2,6 +2,7 @@ package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 
 import java.time.Duration;
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.Set;
  */
 public interface AccountFeaturesBroker {
 
-    int numberMembersLeftForGroup(String groupUid);
+    int numberMembersLeftForGroup(String groupUid, GroupJoinMethod joinMethod);
 
     int numberTodosLeftForGroup(String groupUid);
 
