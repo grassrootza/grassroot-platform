@@ -48,7 +48,7 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 public class ScheduledTasks implements ApplicationListener<AlterConfigVariableEvent> {
 
     private Map<String, String> configDefaults = ImmutableMap.of(
-            "tasks.reminders.unpaid.send", "true",
+            "tasks.reminders.unpaid.send", "false",
             "meetings.thankyou.unpaid.send", "false");
     private Map<String, String> configVariables = new HashMap<>();
 
@@ -94,7 +94,7 @@ public class ScheduledTasks implements ApplicationListener<AlterConfigVariableEv
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
-        final boolean sendUnpaidEventReminders = Boolean.parseBoolean(configVariables.getOrDefault("tasks.reminders.unpaid.send", "true"));
+        final boolean sendUnpaidEventReminders = Boolean.parseBoolean(configVariables.getOrDefault("tasks.reminders.unpaid.send", "false"));
         List<Event> events = eventRepository.findEventsForReminders(Instant.now())
                 .stream().filter(event -> sendUnpaidEventReminders || event.getAncestorGroup().robustIsPaidFor())
                 .collect(Collectors.toList());
@@ -178,7 +178,7 @@ public class ScheduledTasks implements ApplicationListener<AlterConfigVariableEv
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-        final boolean sendTodoReminders = Boolean.parseBoolean(configVariables.getOrDefault("tasks.reminders.unpaid.send", "true"));
+        final boolean sendTodoReminders = Boolean.parseBoolean(configVariables.getOrDefault("tasks.reminders.unpaid.send", "false"));
         if (sendTodoReminders) {
             List<Todo> todos = todoRepository.findAll(Specification.where(TodoSpecifications.notCancelled())
                     .and(TodoSpecifications.remindersLeftToSend())

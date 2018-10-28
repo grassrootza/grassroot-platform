@@ -112,9 +112,9 @@ public class PhoneNumberUtil {
         com.google.i18n.phonenumbers.PhoneNumberUtil phoneNumberUtil = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
 
         try {
-            log.info("Input number correct? : {}", inputNumber.trim());
+            log.debug("Input number correct? : {}", inputNumber.trim());
             Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputNumber.trim(), "ZA");
-            log.info("Doe we have a phone number? : {}", phoneNumber);
+            log.debug("Do we have a phone number? : {}", phoneNumber);
             isNumberValid = (phoneNumberUtil.isValidNumber(phoneNumber) && inputNumber.length() >= 10);
         } catch (NumberParseException e) {
             isNumberValid = false;
@@ -132,9 +132,9 @@ public class PhoneNumberUtil {
         com.google.i18n.phonenumbers.PhoneNumberUtil phoneNumberUtil = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
 
         try {
-            log.info("Testing whether SA: {}", inputNumber);
+            log.debug("Testing whether SA: {}", inputNumber);
             Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(shapedNumber, "ZA");
-            log.info("Resulting phone number: {}", phoneNumber);
+            log.debug("Resulting phone number: {}", phoneNumber);
             return phoneNumber != null && phoneNumber.getCountryCode() == 27;
         } catch (NumberParseException e) {
             return false;
