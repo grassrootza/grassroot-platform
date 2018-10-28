@@ -1,15 +1,17 @@
 package za.org.grassroot.webapp.controller.android1;
 
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
@@ -20,34 +22,27 @@ import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.NotificationService;
-import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.AuthWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ProfileSettingsDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.util.List;
 import java.util.Locale;
-
-import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookToDownload;
 
 /**
  * Created by paballo.
  */
 @RestController
 @Api("/api/user") @Slf4j
-@RequestMapping(value = "/v2/api/user")
-public class UserRestController extends BaseRestController {
+@RequestMapping(value = "/api/user")
+public class UserRestController {
 
     private final UserManagementService userManagementService;
     private final PasswordTokenService passwordTokenService;
@@ -56,13 +51,11 @@ public class UserRestController extends BaseRestController {
     private final NotificationService notificationService;
     private final PermissionBroker permissionBroker;
     private final Environment environment;
-    private final MemberDataExportBroker memberDataExportBroker;
 
     @Autowired
     public UserRestController(UserManagementService userManagementService, PasswordTokenService passwordTokenService,
-                              GeoLocationBroker geoLocationBroker, MessagingServiceBroker messagingServiceBroker, NotificationService notificationService,
-                              PermissionBroker permissionBroker, Environment environment, MemberDataExportBroker memberDataExportBroker, JwtService jwtService) {
-        super(jwtService, userManagementService);
+                              GeoLocationBroker geoLocationBroker, MessagingServiceBroker messagingServiceBroker,
+                              NotificationService notificationService, PermissionBroker permissionBroker, Environment environment) {
         this.userManagementService = userManagementService;
         this.passwordTokenService = passwordTokenService;
         this.geoLocationBroker = geoLocationBroker;
@@ -70,7 +63,6 @@ public class UserRestController extends BaseRestController {
         this.notificationService = notificationService;
         this.permissionBroker = permissionBroker;
         this.environment = environment;
-        this.memberDataExportBroker = memberDataExportBroker;
     }
 
     @RequestMapping(value = "/add/{phoneNumber}/{displayName}", method = RequestMethod.GET)
@@ -273,14 +265,6 @@ public class UserRestController extends BaseRestController {
         log.info("Recording a location! With longitude = {} and lattitude = {}, from path string", longitude, latitude);
         geoLocationBroker.logUserLocation(user.getUid(), latitude, longitude, Instant.now(), UserInterfaceType.ANDROID);
         return RestUtil.messageOkayResponse(RestMessage.LOCATION_RECORDED);
-    }
-    //Generating Excel file for whatsapp subscribed users
-    @RequestMapping(value = "/export/whatsapp/users", method = RequestMethod.GET)
-    @ApiOperation(value = "Download an Excel sheet of whatsapp opted in users")
-    public ResponseEntity<byte[]> exportWhatsappOptedInUsers() {
-        XSSFWorkbook xls = memberDataExportBroker.exportWhatsappOptedInUsers();
-        String fileName = "whatsappUsers.xlsx";
-        return convertWorkbookToDownload(fileName, xls);
     }
 
     private boolean ifExists(String phoneNumber) {

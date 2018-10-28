@@ -1,7 +1,10 @@
 package za.org.grassroot.webapp.controller.rest.admin;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +28,7 @@ import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
@@ -34,6 +38,8 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.function.Function;
+
+import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookToDownload;
 
 
 @RestController @Grassroot2RestController
@@ -52,6 +58,8 @@ public class AdminRestController extends BaseRestController{
 
     private final AccountFeaturesBroker accountFeaturesBroker;
 
+    private MemberDataExportBroker memberDataExportBroker;
+
     public AdminRestController(UserManagementService userManagementService,
                                JwtService jwtService,
                                AdminService adminService,
@@ -69,6 +77,11 @@ public class AdminRestController extends BaseRestController{
         this.groupBroker = groupBroker;
         this.jwtService = jwtService;
         this.accountFeaturesBroker = accountFeaturesBroker;
+    }
+
+    @Autowired(required = false) // as it depends on WhatsApp being active
+    public void setMemberDataExportBroker(MemberDataExportBroker memberDataExportBroker) {
+        this.memberDataExportBroker = memberDataExportBroker;
     }
 
     @RequestMapping(value = "/user/load",method = RequestMethod.GET)
@@ -195,6 +208,16 @@ public class AdminRestController extends BaseRestController{
         tokenRequest.setClaims(claims);
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }
+
+    //Generating Excel file for whatsapp subscribed users
+    @RequestMapping(value = "/whatsapp/export", method = RequestMethod.GET)
+    @ApiOperation(value = "Download an Excel sheet of whatsapp opted in users")
+    public ResponseEntity<byte[]> exportWhatsappOptedInUsers() {
+        XSSFWorkbook xls = memberDataExportBroker.exportWhatsappOptedInUsers();
+        String fileName = "whatsappUsers.xlsx";
+        return convertWorkbookToDownload(fileName, xls);
+    }
+
 
     @RequestMapping(value = "/config/fetch", method = RequestMethod.GET)
     public ResponseEntity<Map<String, String>> fetchConfigVars() {
