@@ -732,7 +732,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
 
         // depends how we're limiting
-        int numberMembersLeft = limitSizeCheck ? accountFeaturesBroker.numberMembersLeftForGroup(group.getUid()) : 9999;
+        int numberMembersLeft = limitSizeCheck ? accountFeaturesBroker.numberMembersLeftForGroup(group.getUid(), joinMethod) : 9999;
 
         for (MembershipInfo membershipInfo : membershipInfos) {
             if (numberMembersLeft < 0) {
@@ -1899,7 +1899,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
-        return accountFeaturesBroker.numberMembersLeftForGroup(group.getUid()) > numberOfMembersAdding;
+        return accountFeaturesBroker.numberMembersLeftForGroup(group.getUid(), null) > numberOfMembersAdding;
     }
 
 }

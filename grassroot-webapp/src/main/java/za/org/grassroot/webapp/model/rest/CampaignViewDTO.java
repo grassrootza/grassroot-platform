@@ -43,6 +43,7 @@ public class CampaignViewDTO {
 
     private long totalJoined;
     private long totalEngaged;
+    private long lastActivityEpochMilli;
 
     private String textJoinWord;
     private List<String> joinTopics;
@@ -105,7 +106,8 @@ public class CampaignViewDTO {
         long startTime = System.currentTimeMillis();
         this.totalEngaged = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_FOUND);
         this.totalJoined = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
-        log.info("time to count campaign messages: {} msecs", System.currentTimeMillis() - startTime);
+        this.lastActivityEpochMilli = campaign.getLastActivityTimeEpochMillis();
+        log.info("time to count campaign messages and get last activity time: {} msecs", System.currentTimeMillis() - startTime);
 
         if (!campaign.getCampaignMessages().isEmpty()){
             this.campaignMessages = groupCampaignMessages(campaign);

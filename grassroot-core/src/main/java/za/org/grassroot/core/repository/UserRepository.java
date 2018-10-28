@@ -26,6 +26,8 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     List<User> findByUidIn(Set<String> uids);
 
+    List<User> findByWhatsAppOptedInTrue();
+
     /*
     Used in admin pages to find users who can then be designated, modified, etc. Probably want a better search method
     than to use 'containing', but will do for now.

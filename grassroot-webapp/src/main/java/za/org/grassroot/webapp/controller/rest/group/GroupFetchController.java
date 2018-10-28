@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -17,7 +18,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
@@ -25,7 +32,13 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.JoinDateCondition;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.dto.group.GroupFullDTO;
+import za.org.grassroot.core.dto.group.GroupLogDTO;
+import za.org.grassroot.core.dto.group.GroupMinimalDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
+import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
+import za.org.grassroot.core.dto.group.GroupWebDTO;
+import za.org.grassroot.core.dto.group.MembershipRecordDTO;
 import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.dto.membership.MembershipStdDTO;
 import za.org.grassroot.core.enums.Province;
@@ -50,7 +63,13 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookToDownload;
@@ -156,6 +175,27 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/minimal", method = RequestMethod.GET)
     public ResponseEntity<List<GroupRefDTO>> fetchMinimalGroupLIst(HttpServletRequest request) {
         return ResponseEntity.ok(groupFetchBroker.fetchGroupNamesUidsOnly(getUserIdFromRequest(request)));
+    }
+
+    @RequestMapping(value = "/minimal/filtered", method = RequestMethod.GET)
+    @ApiOperation("Returns a list of groups, optionally filtered for a name, sorted by last change time, and optionally paginated, for currently logged in user")
+    public ResponseEntity<Page<GroupRefDTO>> listUserGroupsFiltered(HttpServletRequest request,
+                                                                    @RequestParam Permission requiredPermission,
+                                                                    @RequestParam(required = false) String filterTerm,
+                                                                    @RequestParam(required = false) Integer pageNumber) {
+        String userId = getUserIdFromRequest(request);
+        log.info("Fetching minimal filtered groups for user Id : {}, with page number: {}", userId, pageNumber);
+        Pageable pageable = pageNumber == null ? null : PageRequest.of(pageNumber, 10); // might make this a parameter in future
+        Page<Group> groups = groupFetchBroker.fetchGroupFiltered(userId, requiredPermission, filterTerm, pageable);
+        Page<GroupRefDTO> groupDtos = groups.map(group -> new GroupRefDTO(group.getUid(), group.getName(), 0));
+        return ResponseEntity.ok(groupDtos);
+    }
+
+    @RequestMapping(value = "/minimal/specified/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<GroupRefDTO> fetchMinimalDetailsOnGroup(HttpServletRequest request, @PathVariable String groupUid) {
+        // todo : may want to permissions check
+        Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
+        return ResponseEntity.ok(new GroupRefDTO(groupUid, group.getName(), group.getMemberships().size()));
     }
 
     @RequestMapping(value = "/full", method = RequestMethod.GET)

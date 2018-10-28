@@ -67,7 +67,7 @@ public interface UserManagementService {
     // returns true otherwise
     boolean updateUser(String userUid, String displayName, String phoneNumber,
                        String emailAddress, Province province, AlertPreference alertPreference,
-                       Locale locale, String validationOtp);
+                       Locale locale, String validationOtp,boolean whatsappOptIn, UserInterfaceType channel);
 
     void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName);
 
