@@ -18,6 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -29,6 +30,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.core.domain.Municipality;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
@@ -363,6 +365,49 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         log.info("Result of province lookup: {}", result.getBody());
         return StringUtils.isEmpty(result.getBody()) ? null : Enums.getIfPresent(Province.class, "ZA_" + result.getBody()).orNull();
     }
+
+
+    public List<Municipality> getMunicipalitiesForProvince(Province province) {
+        UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/area/");
+        String areaId;
+        //Some provinces have Municipality Demarcation Board code and others use integer MapIt area id.
+        switch (province) {
+            case ZA_GP:     areaId = "MDB:GT/children";     break;//uses Municipality Demarcation Board code
+            case ZA_LP:     areaId = "4292/children";       break;//uses MapIt area id
+            case ZA_NC:     areaId = "4295/children";       break;
+            case ZA_EC:     areaId = "4288/children";       break;
+            case ZA_KZN:    areaId = "4291/children";       break;
+            case ZA_FS:     areaId = "4289/children";       break;
+            case ZA_MP:     areaId = "4293/children";       break;
+            case ZA_NW:     areaId = "MDB:NW/children";     break;
+            case ZA_WC:     areaId = "MDB:WC/children";     break;
+            default:        areaId = "UNDEFINED";           break;
+        }
+
+        if(areaId.equals("UNDEFINED")){
+            return new ArrayList<>();
+        }
+        componentsBuilder = componentsBuilder.path(areaId);
+        log.info("Composed URI: {}", componentsBuilder.toUriString());
+
+        ParameterizedTypeReference<Map<String, Municipality>> responseType =
+                new ParameterizedTypeReference<Map<String, Municipality>>() {};
+
+        ResponseEntity<Map<String, Municipality>> result =
+                restTemplate.exchange(componentsBuilder.build().toUri(), HttpMethod.GET, null, responseType);
+
+        log.info("Received response: {}", result);
+
+        List<Municipality> municipalities = new ArrayList<>();
+        if(result.getBody() != null){
+           municipalities = new ArrayList<>(result.getBody().values());
+        }
+
+        log.info("Processed munis: {}", municipalities);
+
+        return municipalities;
+    }
+
 
     private void assembleAndSendHealthClinics(TownLookupResult place, String targetUserUid, Set<String> accountUids) {
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl(izweLamiLambda)

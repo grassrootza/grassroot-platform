@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Municipality;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
@@ -31,12 +32,14 @@ import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.JoinWordsExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.group.GroupImageBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
@@ -68,15 +71,21 @@ public class GroupModifyController extends GroupBaseController {
     private final AccountBroker accountBroker;
     private final AccountFeaturesBroker accountFeaturesBroker;
     private final GroupStatsBroker groupStatsBroker;
+    private final GeoLocationBroker geoLocationBroker;
+    private final LocationInfoBroker locationInfoBroker;
 
     public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, GroupFetchBroker groupFetchBroker,
-                                 GroupImageBroker groupImageBroker, AccountBroker accountBroker, AccountFeaturesBroker accountFeaturesBroker, GroupStatsBroker groupStatsBroker) {
+                                 GroupImageBroker groupImageBroker, AccountBroker accountBroker, AccountFeaturesBroker accountFeaturesBroker,
+                                 GroupStatsBroker groupStatsBroker,GeoLocationBroker geoLocationBroker,
+                                 LocationInfoBroker locationInfoBroker) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.groupImageBroker = groupImageBroker;
         this.accountBroker = accountBroker;
         this.accountFeaturesBroker = accountFeaturesBroker;
         this.groupStatsBroker = groupStatsBroker;
+        this.geoLocationBroker = geoLocationBroker;
+        this.locationInfoBroker = locationInfoBroker;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
@@ -526,6 +535,14 @@ public class GroupModifyController extends GroupBaseController {
                                                    HttpServletRequest request){
         groupBroker.updateMemberAlias(getUserIdFromRequest(request),groupUid,alias);
         return ResponseEntity.ok(RestMessage.MEMBER_ALIAS_CHANGED.name());
+    }
+
+    @RequestMapping(value = "/member/municipalities",method = RequestMethod.GET)
+    @ApiOperation(value = "Loads the municipalities for the provided province")
+    public  ResponseEntity<List<Municipality>> getMunicipalities(@RequestParam String province){
+        logger.info("Province recieved = {}",province);
+        Province province1 = Province.valueOf(province);
+        return ResponseEntity.ok(locationInfoBroker.getMunicipalitiesForProvince(province1));
     }
 
     private List<MembershipInfo> findInvalidMembers(Set<MembershipInfo> members) {
