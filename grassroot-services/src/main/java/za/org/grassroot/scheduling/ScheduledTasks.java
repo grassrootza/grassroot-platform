@@ -33,6 +33,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -178,17 +179,24 @@ public class ScheduledTasks implements ApplicationListener<AlterConfigVariableEv
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-        final boolean sendTodoReminders = Boolean.parseBoolean(configVariables.getOrDefault("tasks.reminders.unpaid.send", "false"));
-        if (sendTodoReminders) {
-            List<Todo> todos = todoRepository.findAll(Specification.where(TodoSpecifications.notCancelled())
-                    .and(TodoSpecifications.remindersLeftToSend())
-                    .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
-                    .and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)))
-                    .and(TodoSpecifications.todoNotConfirmedByCreator()));
+        final boolean sendUnpaidTodoReminders = Boolean.parseBoolean(configVariables.getOrDefault("tasks.reminders.unpaid.send", "false"));
 
-            log.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);
-            todos.forEach(todo -> todoBroker.sendScheduledReminder(todo.getUid()));
+        Specification<Todo> specs = TodoSpecifications.notCancelled()
+                .and(TodoSpecifications.remindersLeftToSend())
+                .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
+                .and(TodoSpecifications.actionByDateAfter(Instant.now()))
+                .and(TodoSpecifications.todoNotCompleted());
+
+        if (!sendUnpaidTodoReminders) {
+            specs = specs.and(TodoSpecifications.ancestorGroupPaidFor());
         }
+
+        log.info("How many todos would have reminders? : {}", todoRepository.count(specs));
+        log.info("And just on action date before? : {}", todoRepository.count(TodoSpecifications.actionByDateAfter(Instant.now())));
+        List<Todo> todos = new ArrayList<>(); // until confident (given costs of last time)
+
+        log.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);
+        todos.forEach(todo -> todoBroker.sendScheduledReminder(todo.getUid()));
     }
 
     @Override

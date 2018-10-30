@@ -104,6 +104,7 @@ public class LiveWireAdminRestController extends BaseRestController {
     public ResponseEntity<LiveWireAlertDTO> updateDescription(@RequestParam String alertUid,
                                                               @RequestParam String description,
                                                               HttpServletRequest request){
+        log.info("Modifying LiveWire alert description ...");
         liveWireAlertBroker.updateDescription(getUserIdFromRequest(request),alertUid,description);
         return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid)));
     }

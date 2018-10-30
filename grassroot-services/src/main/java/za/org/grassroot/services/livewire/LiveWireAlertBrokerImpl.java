@@ -305,12 +305,15 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional
     public void updateDescription(String userUid, String alertUid, String description) {
+        log.info("Updating description, userId = {}, alert Id = {}, description = {}", userUid, alertUid, description);
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
         Objects.requireNonNull(description);
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
+
+        log.info("About to validate user can do the necessary");
         validateCreatingOrReviewUser(user, alert);
 
         alert.setDescription(description);

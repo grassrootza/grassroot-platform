@@ -117,8 +117,10 @@ public class TaskPreviewController extends BaseRestController {
         final String previewMessage = trimMessageAsInRealLife(messageService.createTodoAssignedMessage(user, previewTodo));
         preview.setSmsMessage(previewMessage);
 
-        USSDMenu previewMenu = generateSampleTodoMenu(user, group, previewTodo);
-        preview.addUssdMenu(trimPromptAsInRealLife(previewMenu));
+        if (todoType != TodoType.ACTION_REQUIRED) { // since action required doesn't have a menu
+            USSDMenu previewMenu = generateSampleTodoMenu(user, group, previewTodo);
+            preview.addUssdMenu(trimPromptAsInRealLife(previewMenu));
+        }
 
         return ResponseEntity.ok(preview);
     }
