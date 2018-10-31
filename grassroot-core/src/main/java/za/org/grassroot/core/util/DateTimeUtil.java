@@ -120,7 +120,7 @@ public class DateTimeUtil {
                 return parsed;
             }
         } catch (DateTimeParseException e) {
-            log.error("Parse error, formatter: {}, error: {}", formatter, e.getMessage());
+            log.debug("Parse error, formatter: {}, error: {}", formatter, e.getMessage());
             return null;
         }
     }

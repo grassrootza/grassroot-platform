@@ -25,7 +25,7 @@ import java.util.Map;
 public class LearningManager implements LearningService {
 
     private static final String ERROR_PARSING = "ERROR_PARSING";
-    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy'T'HH:mm"); //01-11-2018T00:00
 
     private RestTemplate restTemplate;
     private Environment environment;
