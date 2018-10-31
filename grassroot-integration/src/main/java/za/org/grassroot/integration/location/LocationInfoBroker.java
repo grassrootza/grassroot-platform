@@ -1,6 +1,5 @@
 package za.org.grassroot.integration.location;
 
-import za.org.grassroot.core.domain.Municipality;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.Province;
 

@@ -30,6 +30,8 @@ import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.dto.membership.MembershipStdDTO;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.location.LocationInfoBroker;
+import za.org.grassroot.integration.location.Municipality;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;
@@ -69,6 +71,7 @@ public class GroupFetchController extends BaseRestController {
     private final MemberDataExportBroker memberDataExportBroker;
     private final MessageSourceAccessor messageSourceAccessor;
     private final GroupBroker groupBroker;
+    private final LocationInfoBroker locationInfoBroker;
 
     private final static ImmutableMap<Permission, Integer> permissionsDisplayed = ImmutableMap.<Permission, Integer>builder()
             .put(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, 1)
@@ -88,12 +91,14 @@ public class GroupFetchController extends BaseRestController {
 
     public GroupFetchController(GroupFetchBroker groupFetchBroker, JwtService jwtService,
                                 UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker,
-                                MessageSourceAccessor messageSourceAccessor, GroupBroker groupBroker) {
+                                MessageSourceAccessor messageSourceAccessor, GroupBroker groupBroker,
+                                LocationInfoBroker locationInfoBroker) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.memberDataExportBroker = memberDataExportBroker;
         this.messageSourceAccessor = messageSourceAccessor;
         this.groupBroker = groupBroker;
+        this.locationInfoBroker = locationInfoBroker;
     }
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)
@@ -391,6 +396,17 @@ public class GroupFetchController extends BaseRestController {
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
+    }
+
+    @RequestMapping(value = "/province/municipalities",method = RequestMethod.GET)
+    @ApiOperation(value = "Loads the municipalities for the provided province")
+    public  ResponseEntity<List<Municipality>> getMunicipalities(@RequestParam String province){
+        logger.info("Province recieved = {}",province);
+        if(province.equals("undefined")){
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+        Province province1 = Province.valueOf(province);
+        return ResponseEntity.ok(locationInfoBroker.getMunicipalitiesForProvince(province1));
     }
 
 }

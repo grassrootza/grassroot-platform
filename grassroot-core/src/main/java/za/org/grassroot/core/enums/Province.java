@@ -15,8 +15,7 @@ public enum Province {
     ZA_NW,
     ZA_FS,
     ZA_MP,
-    INTL,
-    undefined;
+    INTL;
 
     public static final List<Province> ZA_CANONICAL =
             Arrays.asList(ZA_GP, ZA_KZN, ZA_WC, ZA_EC, ZA_LP, ZA_MP, ZA_NW, ZA_FS, ZA_NC);
@@ -36,8 +35,7 @@ public enum Province {
             new AbstractMap.SimpleEntry<>("Mpumalanga", ZA_MP),
             new AbstractMap.SimpleEntry<>("foreign", INTL),
             new AbstractMap.SimpleEntry<>("abroad", INTL),
-            new AbstractMap.SimpleEntry<>("overseas", INTL),
-            new AbstractMap.SimpleEntry<>("undefined",undefined)
+            new AbstractMap.SimpleEntry<>("overseas", INTL)
     ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
     public static final Map<Province, String> CANONICAL_NAMES_ZA = Collections.unmodifiableMap(Stream.of(
