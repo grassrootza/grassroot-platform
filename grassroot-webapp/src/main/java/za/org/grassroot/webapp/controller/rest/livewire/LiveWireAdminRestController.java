@@ -159,7 +159,7 @@ public class LiveWireAdminRestController extends BaseRestController {
                                                          @RequestParam List<String> publicLists,
                                                          HttpServletRequest request){
         liveWireAlertBroker.reviewAlert(getUserIdFromRequest(request), alertUid, null, true, publicLists);
-        LiveWireAlert alert = liveWireAlertBroker.load(alertUid);
+//        LiveWireAlert alert = liveWireAlertBroker.load(alertUid);
         liveWireSendingBroker.sendLiveWireAlerts(Collections.singleton(alertUid));
         return ResponseEntity.ok(new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid)));
     }
