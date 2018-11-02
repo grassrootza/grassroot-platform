@@ -3,6 +3,7 @@ package za.org.grassroot.integration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
@@ -25,7 +26,8 @@ import java.util.Map;
 public class LearningManager implements LearningService {
 
     private static final String ERROR_PARSING = "ERROR_PARSING";
-    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy'T'HH:mm"); //01-11-2018T00:00
+    private static final String POLLING_STRING = "Tomorrow at 9am";
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"); //01-11-2018T00:00
 
     private RestTemplate restTemplate;
     private Environment environment;
@@ -36,6 +38,7 @@ public class LearningManager implements LearningService {
     private String dateTimeParam;
     private String relatedTermPath;
     private String relatedTermParam;
+    private boolean pollLearning;
 
     @Autowired
     public LearningManager(RestTemplate restTemplate, Environment environment) {
@@ -45,12 +48,27 @@ public class LearningManager implements LearningService {
 
     @PostConstruct
     public void init() {
-        learningHost = environment.getProperty("grassroot.learning.host", "localhost"); // default to localhost if not set
-        learningPort = environment.getProperty("grassroot.learning.port", Integer.class, 9000);
-        dateTimePath = environment.getProperty("grassroot.learning.datetime.path", "parse");
-        dateTimeParam = environment.getProperty("grassroot.learning.datetime.param", "phrase");
-        relatedTermPath = environment.getProperty("grassroot.learning.relatedterm.path", "related");
-        relatedTermParam = environment.getProperty("grassroot.learning.relatedterm.param", "term");
+        learningHost = environment.getProperty("grassroot.learning.host", "learning.grassroot.cloud"); // default to localhost if not set
+        learningPort = environment.getProperty("grassroot.learning.port", Integer.class, 80);
+        dateTimePath = environment.getProperty("grassroot.learning.datetime.path", "datetime");
+        dateTimeParam = environment.getProperty("grassroot.learning.datetime.param", "date_string");
+        relatedTermPath = environment.getProperty("grassroot.learning.relatedterm.path", "distance");
+        relatedTermParam = environment.getProperty("grassroot.learning.relatedterm.param", "text");
+        pollLearning = environment.getProperty("grassroot.learning.poll", Boolean.class, false);
+    }
+
+    @Scheduled(cron = "0 0/5 5-19 * * ?")
+    public void keepAliveParser() {
+        if (pollLearning) {
+            log.info("Keeping warm date time parser ... ");
+            try {
+                String pollingResult = restTemplate.getForObject(UriComponentsBuilder.newInstance().scheme("http").host(learningHost).port(learningPort)
+                        .path(dateTimePath).queryParam(dateTimeParam, POLLING_STRING).build().toUri(), String.class);
+                log.info("Polling date time returned: {}", pollingResult);
+            } catch (RestClientException e) {
+                log.error("Keep alive error: {}", e.getMessage());
+            }
+        }
     }
 
     @Override
@@ -69,6 +87,8 @@ public class LearningManager implements LearningService {
                     .queryParam(dateTimeParam, phrase)
                     .build()
                     .toUriString();
+
+            log.info("Attempting to parse date time with url: {}", url);
 
             long start = System.currentTimeMillis();
             String s = this.restTemplate.getForObject(url, String.class);
