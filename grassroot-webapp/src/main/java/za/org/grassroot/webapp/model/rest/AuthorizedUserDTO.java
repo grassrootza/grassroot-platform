@@ -24,6 +24,7 @@ public class AuthorizedUserDTO {
     private String token;
     private List<String> systemRoles;
     private boolean hasAccount;
+    private boolean whatsAppOptedIn;
 
     public AuthorizedUserDTO(User user, String token) {
         this.userUid = user.getUid();
@@ -43,6 +44,8 @@ public class AuthorizedUserDTO {
         this.hasAccount = user.getPrimaryAccount() != null
                 && !user.getPrimaryAccount().isClosed()
                 && user.getPrimaryAccount().isEnabled();
+
+        this.whatsAppOptedIn = user.isWhatsAppOptedIn();
     }
 
 }

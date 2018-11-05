@@ -34,13 +34,11 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.repository.AccountLogRepository;
-import za.org.grassroot.core.repository.AccountRepository;
-import za.org.grassroot.core.repository.NotificationRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.integration.authentication.JwtService;
 
 import javax.annotation.PostConstruct;
@@ -65,6 +63,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private final AccountRepository accountRepository;
     private final AccountLogRepository accountLogRepository;
     private final NotificationRepository notificationRepository;
+    private final UserLocationLogRepository userLocationLogRepository;
 
     private JwtService jwtService;
 
@@ -78,13 +77,16 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private String izweLamiLambda;
 
     @Autowired
-    public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository, AccountRepository accountRepository, AccountLogRepository accountLogRepository, NotificationRepository notificationRepository) {
+    public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository,
+                                  AccountRepository accountRepository, AccountLogRepository accountLogRepository,
+                                  NotificationRepository notificationRepository,UserLocationLogRepository userLocationLogRepository) {
         this.environment = environment;
         this.restTemplate = restTemplate;
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.accountLogRepository = accountLogRepository;
         this.notificationRepository = notificationRepository;
+        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @Autowired
@@ -364,7 +366,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         return StringUtils.isEmpty(result.getBody()) ? null : Enums.getIfPresent(Province.class, "ZA_" + result.getBody()).orNull();
     }
 
-
+    @Override
     public List<Municipality> getMunicipalitiesForProvince(Province province) {
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/area/");
         String areaId;
@@ -404,6 +406,45 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         log.info("Processed munis: {}", municipalities);
 
         return municipalities;
+    }
+
+    @Override
+    public Municipality loadMunicipalityByCoordinates(double longitude,double latitude){
+        UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/point/4326/");
+        String latLong = longitude + "," + latitude;
+
+        componentsBuilder = componentsBuilder.path(latLong)
+                .queryParam("type","MN");
+
+        log.info("Composed URI: {}", componentsBuilder.toUriString());
+
+        ParameterizedTypeReference<Map<String,Municipality>> responseType =
+                new ParameterizedTypeReference<Map<String, Municipality>>() {};
+
+        ResponseEntity<Map<String,Municipality>> result =
+                restTemplate.exchange(componentsBuilder.build().toUri(),HttpMethod.GET,null,responseType);
+
+        Municipality municipality = null;
+        if(result.getBody() != null){
+            municipality = result.getBody().entrySet().iterator().next().getValue();
+        }https://www.youtube.com/watch?v=aKW3IWrPfaU&index=2&list=PLEvPW3QeeZUxRxbArpOOYKMi-zK3SV2x3
+
+        log.info("Municipality = {}",municipality);
+
+        return municipality;
+    }
+
+    @Override
+    public  List<UserLocationLog> loadUsersWithLocationNotNUll(Set<String> userUids){
+
+        List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll()
+                .stream()
+                .filter(userLocationLog -> userLocationLog.getLocation() != null)
+                .collect(Collectors.toList());
+
+        log.info("Members that have location = {}",userLocationLogs);
+
+        return userLocationLogs;
     }
 
 

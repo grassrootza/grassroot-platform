@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.JoinDateCondition;
@@ -405,8 +406,21 @@ public class GroupFetchController extends BaseRestController {
         if(province.equals("undefined")){
             return ResponseEntity.ok(Collections.emptyList());
         }
+
+        locationInfoBroker.loadMunicipalityByCoordinates(29.151640,-25.260050);
+
         Province province1 = Province.valueOf(province);
         return ResponseEntity.ok(locationInfoBroker.getMunicipalitiesForProvince(province1));
+    }
+
+    @RequestMapping(value = "/members/location",method = RequestMethod.GET)
+    public ResponseEntity<List<UserLocationLog>> loadUsersWithLocation(@RequestParam String groupUid){
+        Group group = groupBroker.load(groupUid);
+        Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
+
+        List<UserLocationLog> userLocationLogs = locationInfoBroker.loadUsersWithLocationNotNUll(memberUids);
+
+        return ResponseEntity.ok(userLocationLogs);
     }
 
 }

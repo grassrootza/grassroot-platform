@@ -1,6 +1,7 @@
 package za.org.grassroot.integration.location;
 
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.enums.Province;
 
 import java.util.List;
@@ -44,5 +45,9 @@ public interface LocationInfoBroker {
     Province getProvinceFromGeoLocation(GeoLocation location);
 
     List<Municipality> getMunicipalitiesForProvince(Province province);
+
+    Municipality loadMunicipalityByCoordinates(double longitude,double latitude);
+
+    List<UserLocationLog> loadUsersWithLocationNotNUll(Set<String> userUids);
 
 }

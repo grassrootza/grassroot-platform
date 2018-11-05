@@ -10,9 +10,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.media.MediaFunction;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
@@ -32,6 +36,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.Collections;
 
 
@@ -45,19 +50,22 @@ public class UserController extends BaseRestController {
     private final PasswordTokenService passwordService;
     private final JwtService jwtService;
     private final AddressBroker addressBroker;
+    private final UserLocationLogRepository userLocationLogRepository;
 
     @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
     private String userProfileImagesFolder;
 
     public UserController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker,
                           UserManagementService userService, JwtService jwtService,
-                          PasswordTokenService passwordService, AddressBroker addressBroker) {
+                          PasswordTokenService passwordService, AddressBroker addressBroker,
+                          UserLocationLogRepository userLocationLogRepository) {
         super(jwtService, userService);
         this.mediaFileBroker = mediaFileBroker;
         this.userService = userService;
         this.passwordService = passwordService;
         this.jwtService = jwtService;
         this.addressBroker = addressBroker;
+        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back")
@@ -159,4 +167,16 @@ public class UserController extends BaseRestController {
         return ResponseEntity.ok(jwtService.createJwt(jwtRequest));
     }
 
+    @RequestMapping(value = "/user/location",method = RequestMethod.POST)
+    public ResponseEntity createUserLocationLog(@RequestParam double lat,
+                                                @RequestParam double lon,
+                                                HttpServletRequest request){
+        log.info("Recieved coodinates, lat = {} , long = {}",lat,lon);
+
+        String userUid = getUserIdFromRequest(request);
+        GeoLocation geoLocation = new GeoLocation(lat,lon);
+
+        userLocationLogRepository.save(new UserLocationLog(Instant.now(),userUid,geoLocation, LocationSource.LOGGED_APPROX));
+        return ResponseEntity.ok(RestMessage.LOCATION_RECORDED);
+    }
 }
