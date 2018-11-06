@@ -1,5 +1,6 @@
 package za.org.grassroot.core.util;
 
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 
@@ -27,8 +28,9 @@ public interface GrassrootTemplate {
                 .replace(DATE_FIELD_TEMPLATE, "%3$s")
                 .replace(PROVINCE_FIELD_TEMPLATE, "%4$s");
 
+        final String nameToUse = StringUtils.isEmpty(destination.getDisplayName()) ? "friend" : destination.getName();
         return String.format(formatString,
-                destination.getName(),
+                nameToUse,
                 destination.getUsername(),
                 SDF.format(LocalDateTime.now()),
                 destination.getProvince() == null ?

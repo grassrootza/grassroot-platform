@@ -1,18 +1,24 @@
 package za.org.grassroot.scheduling;
 
+import com.google.common.collect.ImmutableMap;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationListener;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.Todo_;
+import za.org.grassroot.core.events.AlterConfigVariableEvent;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -20,13 +26,17 @@ import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.VoteBroker;
 
+import javax.annotation.PostConstruct;
 import javax.persistence.criteria.Join;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
@@ -35,19 +45,19 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 /**
  * Created by aakilomar on 10/5/15.
  */
-@Component
-public class ScheduledTasks {
+@Component @Slf4j
+public class ScheduledTasks implements ApplicationListener<AlterConfigVariableEvent> {
 
-    private Logger logger = LoggerFactory.getLogger(ScheduledTasks.class);
+    private Map<String, String> configDefaults = ImmutableMap.of(
+            "tasks.reminders.unpaid.send", "false",
+            "meetings.thankyou.unpaid.send", "false");
+    private Map<String, String> configVariables = new HashMap<>();
 
     @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
     private double COMPLETION_PERCENTAGE_BOUNDARY;
 
-    @Value("${grassroot.todos.reminders.send:false}")
-    private boolean sendTodoReminders;
-
-    @Value("${grassroot.events.reminders.unpaid.send:false}")
-    private boolean sendUnpaidEventReminders;
+    @Autowired
+    private ConfigRepository configRepository;
 
     @Autowired
     private EventBroker eventBroker;
@@ -76,28 +86,37 @@ public class ScheduledTasks {
     @Autowired
     private SafetyEventRepository safetyEventRepository;
 
+    @PostConstruct
+    public void init() {
+        configDefaults.forEach((key, defaultValue) -> configVariables.put(key,
+                configRepository.findOneByKey(key).map(ConfigVariable::getValue).orElse(defaultValue)));
+        log.info("Populated scheduled task config variable map : {}", configVariables);
+    }
+
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
+        final boolean sendUnpaidEventReminders = Boolean.parseBoolean(configVariables.getOrDefault("tasks.reminders.unpaid.send", "false"));
         List<Event> events = eventRepository.findEventsForReminders(Instant.now())
-                .stream().filter(event -> sendUnpaidEventReminders || event.getAncestorGroup().isPaidFor()).collect(Collectors.toList());
+                .stream().filter(event -> sendUnpaidEventReminders || event.getAncestorGroup().robustIsPaidFor())
+                .collect(Collectors.toList());
 
-        logger.debug("Sending scheduled reminders for {} event(s)", events.size());
+        log.debug("Sending scheduled reminders for {} event(s)", events.size());
 
         for (Event event : events) {
             try {
                 eventBroker.sendScheduledReminder(event.getUid());
             } catch (Exception e) {
-                logger.error("Error while sending scheduled reminder of event " + event + ": " + e.getMessage(), e);
+                log.error("Error while sending scheduled reminder of event " + event + ": " + e.getMessage(), e);
             }
         }
 
-        logger.info("Sending scheduled reminders...done");
+        log.info("Sending scheduled reminders...done");
     }
 
     @Scheduled(fixedRate = 300000)
     public void sendSafetyReminders() {
         List<SafetyEvent> safetyEvents = safetyEventRepository.findSafetyEvents(Instant.now().minus(1, ChronoUnit.HOURS), Instant.now());
-        logger.info("Sending out safety reminders");
+        log.info("Sending out safety reminders");
         if (safetyEvents != null) {
             safetyEvents.forEach(e -> safetyEventBroker.sendReminders(e.getUid()));
         }
@@ -105,7 +124,7 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 60000) //runs every 1 minute
     public void sendUnsentVoteResults() {
-        logger.debug("Checking for unsent votes ...");
+        log.debug("Checking for unsent votes ...");
         voteRepository
                 .findUnsentVoteResults(Instant.now().minus(1, ChronoUnit.HOURS), Instant.now())
                 .forEach(vote -> voteBroker.calculateAndSendVoteResults(vote.getUid()));
@@ -124,14 +143,17 @@ public class ScheduledTasks {
             return cb.isTrue(groupJoin.get("paidFor"));
         };
 
-        List<Event> meetings = meetingRepository.findAll(mtgCharacteristics.and(ancestorGroupPaidFor));
-        logger.info("Sending out meeting thank you for {} meetings", meetings.size());
+        final boolean sendForUnpaidGroups = Boolean.parseBoolean(configVariables.getOrDefault("meetings.thankyou.unpaid.send", "false"));
+        Specification<Event> specs = sendForUnpaidGroups ? mtgCharacteristics : mtgCharacteristics.and(ancestorGroupPaidFor);
+        List<Event> meetings = meetingRepository.findAll(specs);
+
+        log.info("Sending out meeting thank you for {} meetings", meetings.size());
 
         for (Event meeting : meetings) {
             try {
                 eventBroker.sendMeetingAcknowledgements(meeting.getUid());
             } catch (Exception ex) {
-                logger.error("Error while sending acknowledgments for meeting " + meeting + ": " + ex.getMessage(), ex);
+                log.error("Error while sending acknowledgments for meeting " + meeting + ": " + ex.getMessage(), ex);
             }
         }
     }
@@ -145,28 +167,44 @@ public class ScheduledTasks {
         List<Meeting> meetings = meetingRepository.meetingsForResponseTotals(Instant.now(), start, end)
                 .stream().filter(meeting -> meeting.getAncestorGroup().isPaidFor()).collect(Collectors.toList());
 
-		logger.info("Sending out RSVP totals for {} meetings", meetings.size());
+		log.info("Sending out RSVP totals for {} meetings", meetings.size());
         for (Meeting meeting : meetings) {
             try {
                 eventBroker.sendMeetingRSVPsToDate(meeting.getUid());
             } catch (Exception e) {
-                logger.error("Error while sending responses for meeting " + meeting + ": " + e.getMessage(), e);
+                log.error("Error while sending responses for meeting " + meeting + ": " + e.getMessage(), e);
             }
         }
     }
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-        if (sendTodoReminders) {
-            List<Todo> todos = todoRepository.findAll(Specification.where(TodoSpecifications.notCancelled())
-                    .and(TodoSpecifications.remindersLeftToSend())
-                    .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
-                    .and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)))
-                    .and(TodoSpecifications.todoNotConfirmedByCreator()));
+        final boolean sendUnpaidTodoReminders = Boolean.parseBoolean(configVariables.getOrDefault("tasks.reminders.unpaid.send", "false"));
 
-            logger.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);
-            todos.forEach(todo -> todoBroker.sendScheduledReminder(todo.getUid()));
+        Specification<Todo> specs = TodoSpecifications.notCancelled()
+                .and(TodoSpecifications.remindersLeftToSend())
+                .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
+                .and(TodoSpecifications.actionByDateAfter(Instant.now()))
+                .and(TodoSpecifications.todoNotCompleted());
+
+        if (!sendUnpaidTodoReminders) {
+            specs = specs.and(TodoSpecifications.ancestorGroupPaidFor());
         }
+
+        log.info("How many todos would have reminders? : {}", todoRepository.count(specs));
+        log.info("And just on action date before? : {}", todoRepository.count(TodoSpecifications.actionByDateAfter(Instant.now())));
+        List<Todo> todos = new ArrayList<>(); // until confident (given costs of last time)
+
+        log.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);
+        todos.forEach(todo -> todoBroker.sendScheduledReminder(todo.getUid()));
     }
 
+    @Override
+    public void onApplicationEvent(AlterConfigVariableEvent event) {
+        if (!StringUtils.isEmpty(event.getKey()) && configVariables.containsKey(event.getKey())) {
+            log.info("Config variable relevant to scheduled tasks changed, updating");
+            configRepository.findOneByKey(event.getKey())
+                    .ifPresent(variable -> configVariables.put(variable.getKey(), variable.getValue()));
+        }
+    }
 }

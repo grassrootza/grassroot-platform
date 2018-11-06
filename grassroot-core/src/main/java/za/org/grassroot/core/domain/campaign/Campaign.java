@@ -197,6 +197,14 @@ public class Campaign implements UidIdentifiable, TagHolder {
                 .count();
     }
 
+    // this is possibly nasty, but we cache campaigns, so keep an eye out but should be fine
+    public long getLastActivityTimeEpochMillis() {
+        return getCampaignLogs().stream()
+                .map(CampaignLog::getCreationTime)
+                .mapToLong(Instant::toEpochMilli)
+                .max().orElse(this.createdDateTime.toEpochMilli());
+    }
+
     public void addCampaignMessages(Set<CampaignMessage> messages) {
         if (this.campaignMessages == null) {
             this.campaignMessages = new HashSet<>();

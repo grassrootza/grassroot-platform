@@ -91,6 +91,7 @@ public class UserController extends BaseRestController {
                                                              @RequestParam String language,
                                                              @RequestParam(required = false) Province province,
                                                              @RequestParam(required = false) String validationOtp,
+                                                             @RequestParam boolean whatsappOptIn,
                                                              HttpServletRequest request) {
 
         String jwtToken = getJwtTokenFromRequest(request);
@@ -98,10 +99,10 @@ public class UserController extends BaseRestController {
 
         try {
             log.info("updating user info, name = {}, phone = {}, email = {}, language = {}, province = {}, " +
-                    "validation = {}", name, phone, email, language, province, validationOtp);
+                    "validation = {} ,whatsappOptIn = {} ", name, phone, email, language, province, validationOtp,whatsappOptIn);
 
             boolean updateCompleted = userService.updateUser(user.getUid(), name, phone, email, province,
-                user.getAlertPreference(), user.getLocale(), validationOtp);
+                user.getAlertPreference(), user.getLocale(), validationOtp, whatsappOptIn, UserInterfaceType.WEB_2);
 
             if (!updateCompleted) {
                 passwordService.triggerOtp(user);
@@ -113,6 +114,7 @@ public class UserController extends BaseRestController {
             user.setEmailAddress(email);
             user.setProvince(province);
             user.setLanguageCode(language);
+            user.setWhatsAppOptedIn(whatsappOptIn);
 
             AuthorizedUserDTO response = new AuthorizedUserDTO(user, jwtToken);
             return RestUtil.okayResponseWithData(RestMessage.UPDATED, response);

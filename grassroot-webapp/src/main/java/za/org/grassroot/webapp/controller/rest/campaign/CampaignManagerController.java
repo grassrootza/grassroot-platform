@@ -95,8 +95,11 @@ public class CampaignManagerController extends BaseRestController {
         if (cachedCampaigns != null) {
             return ResponseEntity.ok(cachedCampaigns);
         } else {
-            List<CampaignViewDTO> dbCampaigns = campaignBroker.getCampaignsManagedByUser(getUserIdFromRequest(request))
-                    .stream().map(CampaignViewDTO::new).collect(Collectors.toList());
+            List<CampaignViewDTO> dbCampaigns = campaignBroker
+                    .getCampaignsManagedByUser(getUserIdFromRequest(request))
+                    .stream().map(CampaignViewDTO::new)
+                    .sorted(Comparator.comparing(CampaignViewDTO::getLastActivityEpochMilli, Comparator.reverseOrder()))
+                    .collect(Collectors.toList());
             cacheUserCampaigns(userUid, dbCampaigns);
             return ResponseEntity.ok(dbCampaigns);
         }

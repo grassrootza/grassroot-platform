@@ -2,11 +2,13 @@ package za.org.grassroot.webapp.controller.rest.home;
 
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertType;
+import za.org.grassroot.core.enums.LocationSource;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +31,9 @@ public class PublicLiveWireDTO {
 
     private List<String> tags;
 
+    private GeoLocation location;
+    private LocationSource locationSource;
+
     public PublicLiveWireDTO(LiveWireAlert alert, boolean includeFullDetails) {
 
         this.headline = alert.getHeadline();
@@ -42,6 +47,9 @@ public class PublicLiveWireDTO {
             this.alertType = alert.getType();
             this.tags = alert.getTagList();
             this.contactNumber = alert.getContactNumberFormatted();
+
+            this.location = alert.getLocation();
+            this.locationSource = alert.getLocationSource();
 
             if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
                 Group group = alert.getGroup();

@@ -4,12 +4,19 @@ package za.org.grassroot.services.group;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.JoinDateCondition;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.dto.group.GroupFullDTO;
+import za.org.grassroot.core.dto.group.GroupLogDTO;
+import za.org.grassroot.core.dto.group.GroupMinimalDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
+import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
+import za.org.grassroot.core.dto.group.GroupWebDTO;
+import za.org.grassroot.core.dto.group.MembershipRecordDTO;
 import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.enums.Province;
 
@@ -38,6 +45,8 @@ public interface GroupFetchBroker {
     List<GroupWebDTO> fetchGroupWebInfo(String userUid, boolean includeSubgroups);
 
     List<GroupRefDTO> fetchGroupNamesUidsOnly(String userUid);
+
+    Page<Group> fetchGroupFiltered(String userUid, Permission requiredPermission, String searchTerm, Pageable pageable);
 
     Page<Membership> fetchGroupMembers(User user, String groupUid, Pageable pageable);
 

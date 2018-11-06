@@ -7,7 +7,11 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
@@ -50,8 +54,8 @@ public class UserRestController {
 
     @Autowired
     public UserRestController(UserManagementService userManagementService, PasswordTokenService passwordTokenService,
-                              GeoLocationBroker geoLocationBroker, MessagingServiceBroker messagingServiceBroker, NotificationService notificationService,
-                              PermissionBroker permissionBroker, Environment environment) {
+                              GeoLocationBroker geoLocationBroker, MessagingServiceBroker messagingServiceBroker,
+                              NotificationService notificationService, PermissionBroker permissionBroker, Environment environment) {
         this.userManagementService = userManagementService;
         this.passwordTokenService = passwordTokenService;
         this.geoLocationBroker = geoLocationBroker;
@@ -262,7 +266,6 @@ public class UserRestController {
         geoLocationBroker.logUserLocation(user.getUid(), latitude, longitude, Instant.now(), UserInterfaceType.ANDROID);
         return RestUtil.messageOkayResponse(RestMessage.LOCATION_RECORDED);
     }
-
 
     private boolean ifExists(String phoneNumber) {
         return userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));

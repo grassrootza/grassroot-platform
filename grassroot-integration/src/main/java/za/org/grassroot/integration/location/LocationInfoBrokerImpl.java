@@ -212,6 +212,9 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Override
     public Map<String, String> getAvailableSuffixes() {
         log.info("Fetching available suffixes for Geo APIs");
+        if (!geoApisEnabled)
+            return new HashMap<>();
+
         try {
             ScanResult result = dynamoDBClient.scan(new ScanRequest().withTableName("geo_apis"));
             if (result == null || result.getItems() == null)
@@ -225,7 +228,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.error("Error fetching GEO apis from table");
             return new HashMap<>();
         } catch (NullPointerException e) {
-            log.error("Null pointer in geo set up: ", e);
+            log.error("Null pointer in geo set up: ", e.getMessage());
             return new HashMap<>();
         }
     }

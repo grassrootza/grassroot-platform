@@ -34,6 +34,7 @@ public class AuthorizedUserDTO {
         this.email = user.getEmailAddress();
         this.province = user.getProvince();
         this.hasImage = user.isHasImage();
+        this.whatsAppOptedIn = user.isWhatsAppOptedIn();
 
         Optional<Role> highestSystemRole = user.getStandardRoles().stream().max(BaseRoles.sortSystemRole);
         systemRoles = user.getStandardRoles().stream().map(Role::getName).collect(Collectors.toList());
