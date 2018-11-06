@@ -26,7 +26,7 @@
 <p th:if="${hasDescription}">
   <i>More details (from the user generating the alert):</i>
 </p>
-<p th:if="${hasDescription}" th:utext="${#strings.replace(#strings.escapeXml(description),T(java.lang.System).getProperty('line.separator'),'&lt;br /&gt;')}" >
+<p th:if="${hasDescription}" th:utext="${#strings.replace(description,T(java.lang.System).getProperty('line.separator'),'&lt;br /&gt;')}" >
   Description
 </p>
 <span style="line-height: 5px; font-size: 5px;">&nbsp;<br></span>

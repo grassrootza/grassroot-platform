@@ -2,27 +2,48 @@ package za.org.grassroot.services.group;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.util.StringUtils;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
-import za.org.grassroot.core.domain.group.*;
-import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.JoinDateCondition;
+import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.dto.group.GroupFullDTO;
+import za.org.grassroot.core.dto.group.GroupLogDTO;
+import za.org.grassroot.core.dto.group.GroupMembersDTO;
+import za.org.grassroot.core.dto.group.GroupMinimalDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
+import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
+import za.org.grassroot.core.dto.group.GroupWebDTO;
+import za.org.grassroot.core.dto.group.MembershipRecordDTO;
 import za.org.grassroot.core.dto.membership.MembershipDTO;
 import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.CampaignLogRepository;
+import za.org.grassroot.core.repository.GroupLogRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.MembershipRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 
 import javax.persistence.EntityManager;
@@ -30,7 +51,15 @@ import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -277,6 +306,31 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         // note: for present, since this is minimal, not even getting member count
         return groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user).stream()
                 .map(group -> new GroupRefDTO(group.getUid(), group.getName(), 0)).collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<Group> fetchGroupFiltered(String userUid, Permission requiredPermission, String searchTerm, Pageable pageable) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+
+        // note : monitor this and if takes strain, optimize
+        long startTime = System.currentTimeMillis();
+
+        log.info("Fetching minimal groups, pageable = {}", pageable);
+        Pageable pageRequest = pageable == null ? PageRequest.of(0, 10) : pageable;
+
+        Page<Group> groupsFomDb;
+        if (!StringUtils.isEmpty(searchTerm)) {
+            final String tsEncodedTerm = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, true);
+            log.info("For search term {}, encoded version {}", searchTerm, tsEncodedTerm);
+            groupsFomDb = groupRepository.findUsersGroupsWithSearchTermOrderedByActivity(user.getId(), requiredPermission.name(), tsEncodedTerm, pageRequest);
+        } else {
+            log.info("No search term, but required permission: {}", requiredPermission.name());
+            groupsFomDb = groupRepository.findUsersGroupsOrderedByActivity(user.getId(), requiredPermission.name(), pageRequest);
+        }
+
+        log.info("Content of page: {}", groupsFomDb.getContent());
+        log.info("Time taken for WhatsApp group list: {} msecs", System.currentTimeMillis() - startTime);
+        return groupsFomDb;
     }
 
     @Override

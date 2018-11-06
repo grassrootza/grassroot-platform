@@ -45,6 +45,10 @@ public final class TodoSpecifications {
                 cb.equal(root.get(AbstractTodoEntity_.reminderActive), true));
     }
 
+    public static Specification<Todo> actionByDateAfter(Instant time) {
+        return (root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate), time);
+    }
+
     public static Specification<Todo> reminderTimeBefore(Instant time) {
         return (root, query, cb) -> cb.lessThan(root.get(Todo_.nextNotificationTime), time);
     }
@@ -55,6 +59,17 @@ public final class TodoSpecifications {
             Join<Group, Membership> members = groups.join(Group_.memberships);
             query.distinct(true);
             return cb.equal(members.get(Membership_.user), user);
+        };
+    }
+
+    public static Specification<Todo> todoNotCompleted() {
+        return (root, query, cb) -> cb.isFalse(root.get(Todo_.completed));
+    }
+
+    public static Specification<Todo> ancestorGroupPaidFor() {
+        return (root, query, cb) -> {
+            Join<Todo, Group> groupJoin = root.join("ancestorGroup");
+            return cb.isTrue(groupJoin.get("paidFor"));
         };
     }
 

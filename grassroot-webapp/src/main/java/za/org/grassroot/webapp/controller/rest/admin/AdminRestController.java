@@ -1,16 +1,17 @@
 package za.org.grassroot.webapp.controller.rest.admin;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -24,8 +25,10 @@ import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AdminService;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
@@ -35,6 +38,8 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.function.Function;
+
+import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookToDownload;
 
 
 @RestController @Grassroot2RestController
@@ -51,13 +56,18 @@ public class AdminRestController extends BaseRestController{
     private final GroupBroker groupBroker;
     private final JwtService jwtService;
 
+    private final AccountFeaturesBroker accountFeaturesBroker;
+
+    private MemberDataExportBroker memberDataExportBroker;
+
     public AdminRestController(UserManagementService userManagementService,
                                JwtService jwtService,
                                AdminService adminService,
                                GroupRepository groupRepository,
                                GroupBroker groupBroker,
                                MessagingServiceBroker messagingServiceBroker,
-                               PasswordTokenService passwordTokenService){
+                               PasswordTokenService passwordTokenService,
+                               AccountFeaturesBroker accountFeaturesBroker){
         super(jwtService,userManagementService);
         this.adminService = adminService;
         this.userManagementService = userManagementService;
@@ -66,6 +76,12 @@ public class AdminRestController extends BaseRestController{
         this.groupRepository = groupRepository;
         this.groupBroker = groupBroker;
         this.jwtService = jwtService;
+        this.accountFeaturesBroker = accountFeaturesBroker;
+    }
+
+    @Autowired(required = false) // as it depends on WhatsApp being active
+    public void setMemberDataExportBroker(MemberDataExportBroker memberDataExportBroker) {
+        this.memberDataExportBroker = memberDataExportBroker;
     }
 
     @RequestMapping(value = "/user/load",method = RequestMethod.GET)
@@ -191,6 +207,70 @@ public class AdminRestController extends BaseRestController{
         claims.put(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_SYSTEM_CALL);
         tokenRequest.setClaims(claims);
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
+    }
+
+    //Generating Excel file for whatsapp subscribed users
+    @RequestMapping(value = "/whatsapp/export", method = RequestMethod.GET)
+    @ApiOperation(value = "Download an Excel sheet of whatsapp opted in users")
+    public ResponseEntity<byte[]> exportWhatsappOptedInUsers() {
+        XSSFWorkbook xls = memberDataExportBroker.exportWhatsappOptedInUsers();
+        String fileName = "whatsappUsers.xlsx";
+        return convertWorkbookToDownload(fileName, xls);
+    }
+
+
+    @RequestMapping(value = "/config/fetch", method = RequestMethod.GET)
+    public ResponseEntity<Map<String, String>> fetchConfigVars() {
+        return ResponseEntity.ok(adminService.getCurrentConfigVariables());
+    }
+
+    @RequestMapping(value = "/config/fetch/list",method = RequestMethod.GET)
+    public ResponseEntity<List<ConfigVariable>> getAllConfigVariables(){
+        return ResponseEntity.ok(adminService.getAllConfigVariables());
+    }
+
+    @RequestMapping(value = "/config/update", method = RequestMethod.POST)
+    public ResponseEntity updateConfigVar(@RequestParam String key,
+                                          @RequestParam String value,
+                                          @RequestParam String description) {
+        adminService.updateConfigVariable(key, value,description);
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/config/create", method = RequestMethod.POST)
+    public ResponseEntity createConfigVar(@RequestParam String key,
+                                          @RequestParam String value,
+                                          @RequestParam String description) {
+        adminService.createConfigVariable(key, value,description);
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/config/delete",method = RequestMethod.POST)
+    public ResponseEntity deleteConfigVar(@RequestParam String key) {
+        adminService.deleteConfigVariable(key);
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/config/fetch/above/limit",method = RequestMethod.GET)
+    public ResponseEntity<Integer> getNumberOfGroupsAboveFreeLimit(){
+        int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(freeLimit));
+    }
+
+    @RequestMapping(value = "/config/fetch/below/limit",method = RequestMethod.GET)
+    public ResponseEntity<Integer> getNumberOfGroupsBelowFreeLimit(){
+        int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(freeLimit));
+    }
+
+    @RequestMapping(value = "/config/fetch/below/limit/{limit}",method = RequestMethod.GET)
+    public ResponseEntity<Integer> countGroupsBelowLimit(@PathVariable int limit){
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(limit));
+    }
+
+    @RequestMapping(value = "/config/fetch/above/limit/{limit}",method = RequestMethod.GET)
+    public ResponseEntity<Integer> countGroupsAboveLimit(@PathVariable int limit){
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(limit));
     }
 
 }

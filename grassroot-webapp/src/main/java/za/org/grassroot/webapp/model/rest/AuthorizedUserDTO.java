@@ -45,6 +45,8 @@ public class AuthorizedUserDTO {
         this.hasAccount = user.getPrimaryAccount() != null
                 && !user.getPrimaryAccount().isClosed()
                 && user.getPrimaryAccount().isEnabled();
+
+        this.whatsAppOptedIn = user.isWhatsAppOptedIn();
     }
 
 }

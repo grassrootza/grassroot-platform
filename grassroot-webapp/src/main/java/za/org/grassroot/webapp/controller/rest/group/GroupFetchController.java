@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -17,19 +18,34 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.JoinDateCondition;
 import za.org.grassroot.core.domain.group.Membership;
-import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.dto.group.GroupFullDTO;
+import za.org.grassroot.core.dto.group.GroupLogDTO;
+import za.org.grassroot.core.dto.group.GroupMinimalDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
+import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
+import za.org.grassroot.core.dto.group.GroupWebDTO;
+import za.org.grassroot.core.dto.group.MembershipRecordDTO;
 import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.dto.membership.MembershipStdDTO;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.location.LocationInfoBroker;
+import za.org.grassroot.integration.location.Municipality;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;
@@ -69,6 +85,7 @@ public class GroupFetchController extends BaseRestController {
     private final MemberDataExportBroker memberDataExportBroker;
     private final MessageSourceAccessor messageSourceAccessor;
     private final GroupBroker groupBroker;
+    private final LocationInfoBroker locationInfoBroker;
 
     private final static ImmutableMap<Permission, Integer> permissionsDisplayed = ImmutableMap.<Permission, Integer>builder()
             .put(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, 1)
@@ -88,12 +105,14 @@ public class GroupFetchController extends BaseRestController {
 
     public GroupFetchController(GroupFetchBroker groupFetchBroker, JwtService jwtService,
                                 UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker,
-                                MessageSourceAccessor messageSourceAccessor, GroupBroker groupBroker) {
+                                MessageSourceAccessor messageSourceAccessor, GroupBroker groupBroker,
+                                LocationInfoBroker locationInfoBroker) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.memberDataExportBroker = memberDataExportBroker;
         this.messageSourceAccessor = messageSourceAccessor;
         this.groupBroker = groupBroker;
+        this.locationInfoBroker = locationInfoBroker;
     }
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)
@@ -156,6 +175,27 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/minimal", method = RequestMethod.GET)
     public ResponseEntity<List<GroupRefDTO>> fetchMinimalGroupLIst(HttpServletRequest request) {
         return ResponseEntity.ok(groupFetchBroker.fetchGroupNamesUidsOnly(getUserIdFromRequest(request)));
+    }
+
+    @RequestMapping(value = "/minimal/filtered", method = RequestMethod.GET)
+    @ApiOperation("Returns a list of groups, optionally filtered for a name, sorted by last change time, and optionally paginated, for currently logged in user")
+    public ResponseEntity<Page<GroupRefDTO>> listUserGroupsFiltered(HttpServletRequest request,
+                                                                    @RequestParam Permission requiredPermission,
+                                                                    @RequestParam(required = false) String filterTerm,
+                                                                    @RequestParam(required = false) Integer pageNumber) {
+        String userId = getUserIdFromRequest(request);
+        log.info("Fetching minimal filtered groups for user Id : {}, with page number: {}", userId, pageNumber);
+        Pageable pageable = pageNumber == null ? null : PageRequest.of(pageNumber, 10); // might make this a parameter in future
+        Page<Group> groups = groupFetchBroker.fetchGroupFiltered(userId, requiredPermission, filterTerm, pageable);
+        Page<GroupRefDTO> groupDtos = groups.map(group -> new GroupRefDTO(group.getUid(), group.getName(), 0));
+        return ResponseEntity.ok(groupDtos);
+    }
+
+    @RequestMapping(value = "/minimal/specified/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<GroupRefDTO> fetchMinimalDetailsOnGroup(HttpServletRequest request, @PathVariable String groupUid) {
+        // todo : may want to permissions check
+        Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
+        return ResponseEntity.ok(new GroupRefDTO(groupUid, group.getName(), group.getMemberships().size()));
     }
 
     @RequestMapping(value = "/full", method = RequestMethod.GET)
@@ -391,6 +431,56 @@ public class GroupFetchController extends BaseRestController {
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
+    }
+
+    @RequestMapping(value = "/province/municipalities",method = RequestMethod.GET)
+    @ApiOperation(value = "Loads the municipalities for the provided province")
+    public  ResponseEntity<List<Municipality>> getMunicipalities(@RequestParam String province){
+        logger.info("Province recieved = {}",province);
+        if(province.equals("undefined")){
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        locationInfoBroker.loadMunicipalityByCoordinates(29.151640,-25.260050);
+
+        Province province1 = Province.valueOf(province);
+        return ResponseEntity.ok(locationInfoBroker.getMunicipalitiesForProvince(province1));
+    }
+
+    @RequestMapping(value = "/members/location",method = RequestMethod.GET)
+    public ResponseEntity<Map<String,Municipality>> loadUsersWithLocation(@RequestParam String groupUid){
+        Group group = groupBroker.load(groupUid);
+        Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
+
+        List<UserLocationLog> userLocationLogs = locationInfoBroker.loadUsersWithLocationNotNUll(memberUids);
+
+        Map<String,Municipality> userMunicipalityMap = new HashMap<>();
+
+        for(UserLocationLog userLocationLog:userLocationLogs){
+            Municipality municipality =
+                    locationInfoBroker.
+                            loadMunicipalityByCoordinates(userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
+
+            User user = getUser(group,userLocationLog.getUserUid());
+
+            userMunicipalityMap.put(user.getDisplayName(),municipality);
+        }
+
+        log.info("Municipalities for users with location = {}",userMunicipalityMap);
+
+        return ResponseEntity.ok(userMunicipalityMap);
+    }
+
+    private User getUser(Group group,String userUid){
+        User user = null;
+        for (User user1 : group.getMembers()) {
+            if (user1.getUid().equals(userUid)) {
+                //user = user1;
+                return user1;
+
+            }
+        }
+        return user;
     }
 
 }

@@ -60,7 +60,7 @@ public class ScheduledEmailTasks {
 
             final String userLine = String.format("Grassroot has reached %d users, of whom %d were added yesterday. A " +
                     "total of %d users have initiated a session, of which %d were yesterday. There have been %d Android " +
-                    "users, and %d web users.%n A total of %d users have opted in to WhatsApp outbound, and %d have had a WhatsApp session",
+                    "users, and %d web users.%n A total of %d users have opted in to WhatsApp outbound, and %d have had a WhatsApp session.%n%n",
                     totalUsers, usersYesterday, totalInitiated, initiatedYesterday, androidTotal, webTotal, whatsAppOptIn, whatsAppUsed);
 
             long allMeetings = analyticalService.countAllEvents(EventType.MEETING);

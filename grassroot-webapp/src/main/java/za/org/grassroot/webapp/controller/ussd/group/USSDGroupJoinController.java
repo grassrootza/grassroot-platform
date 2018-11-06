@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.Province;
@@ -75,7 +76,7 @@ public class USSDGroupJoinController extends USSDBaseController  {
 
         Group group = searchResult.get();
         log.debug("adding user via join code ... {}", trailingDigits);
-        if (accountFeaturesBroker.numberMembersLeftForGroup(group.getUid()) < 0) {
+        if (accountFeaturesBroker.numberMembersLeftForGroup(group.getUid(), GroupJoinMethod.USSD_JOIN_CODE) == 0) {
             return notifyGroupLimitReached(user, group);
         }
 

@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -34,13 +34,11 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.repository.AccountLogRepository;
-import za.org.grassroot.core.repository.AccountRepository;
-import za.org.grassroot.core.repository.NotificationRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.integration.authentication.JwtService;
 
 import javax.annotation.PostConstruct;
@@ -65,6 +63,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private final AccountRepository accountRepository;
     private final AccountLogRepository accountLogRepository;
     private final NotificationRepository notificationRepository;
+    private final UserLocationLogRepository userLocationLogRepository;
 
     private JwtService jwtService;
 
@@ -78,13 +77,16 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private String izweLamiLambda;
 
     @Autowired
-    public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository, AccountRepository accountRepository, AccountLogRepository accountLogRepository, NotificationRepository notificationRepository) {
+    public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository,
+                                  AccountRepository accountRepository, AccountLogRepository accountLogRepository,
+                                  NotificationRepository notificationRepository,UserLocationLogRepository userLocationLogRepository) {
         this.environment = environment;
         this.restTemplate = restTemplate;
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.accountLogRepository = accountLogRepository;
         this.notificationRepository = notificationRepository;
+        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @Autowired
@@ -210,6 +212,9 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Override
     public Map<String, String> getAvailableSuffixes() {
         log.info("Fetching available suffixes for Geo APIs");
+        if (!geoApisEnabled)
+            return new HashMap<>();
+
         try {
             ScanResult result = dynamoDBClient.scan(new ScanRequest().withTableName("geo_apis"));
             if (result == null || result.getItems() == null)
@@ -223,7 +228,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.error("Error fetching GEO apis from table");
             return new HashMap<>();
         } catch (NullPointerException e) {
-            log.error("Null pointer in geo set up: ", e);
+            log.error("Null pointer in geo set up: ", e.getMessage());
             return new HashMap<>();
         }
     }
@@ -363,6 +368,88 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         log.info("Result of province lookup: {}", result.getBody());
         return StringUtils.isEmpty(result.getBody()) ? null : Enums.getIfPresent(Province.class, "ZA_" + result.getBody()).orNull();
     }
+
+    @Override
+    public List<Municipality> getMunicipalitiesForProvince(Province province) {
+        UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/area/");
+        String areaId;
+        //Some provinces have Municipality Demarcation Board code and others use integer MapIt area id.
+        switch (province) {
+            case ZA_GP:     areaId = "MDB:GT/children";     break;//uses Municipality Demarcation Board code
+            case ZA_LP:     areaId = "4292/children";       break;//uses MapIt area id
+            case ZA_NC:     areaId = "4295/children";       break;
+            case ZA_EC:     areaId = "4288/children";       break;
+            case ZA_KZN:    areaId = "4291/children";       break;
+            case ZA_FS:     areaId = "4289/children";       break;
+            case ZA_MP:     areaId = "4293/children";       break;
+            case ZA_NW:     areaId = "MDB:NW/children";     break;
+            case ZA_WC:     areaId = "MDB:WC/children";     break;
+            default:        areaId = "UNDEFINED";           break;
+        }
+
+        if(areaId.equals("UNDEFINED")){
+            return new ArrayList<>();
+        }
+        componentsBuilder = componentsBuilder.path(areaId);
+        log.info("Composed URI: {}", componentsBuilder.toUriString());
+
+        ParameterizedTypeReference<Map<String, Municipality>> responseType =
+                new ParameterizedTypeReference<Map<String, Municipality>>() {};
+
+        ResponseEntity<Map<String, Municipality>> result =
+                restTemplate.exchange(componentsBuilder.build().toUri(), HttpMethod.GET, null, responseType);
+
+        log.info("Received response: {}", result);
+
+        List<Municipality> municipalities = new ArrayList<>();
+        if(result.getBody() != null){
+           municipalities = new ArrayList<>(result.getBody().values());
+        }
+
+        log.info("Processed munis: {}", municipalities);
+
+        return municipalities;
+    }
+
+    @Override
+    public Municipality loadMunicipalityByCoordinates(double longitude,double latitude){
+        UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/point/4326/");
+        String latLong = longitude + "," + latitude;
+
+        componentsBuilder = componentsBuilder.path(latLong)
+                .queryParam("type","MN");
+
+        log.info("Composed URI: {}", componentsBuilder.toUriString());
+
+        ParameterizedTypeReference<Map<String,Municipality>> responseType =
+                new ParameterizedTypeReference<Map<String, Municipality>>() {};
+
+        ResponseEntity<Map<String,Municipality>> result =
+                restTemplate.exchange(componentsBuilder.build().toUri(),HttpMethod.GET,null,responseType);
+
+        Municipality municipality = null;
+        if(result.getBody() != null){
+            municipality = result.getBody().entrySet().iterator().next().getValue();
+        }https://www.youtube.com/watch?v=aKW3IWrPfaU&index=2&list=PLEvPW3QeeZUxRxbArpOOYKMi-zK3SV2x3
+
+        log.info("Municipality = {}",municipality);
+
+        return municipality;
+    }
+
+    @Override
+    public  List<UserLocationLog> loadUsersWithLocationNotNUll(Set<String> userUids){
+
+        List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll()
+                .stream()
+                .filter(userLocationLog -> userLocationLog.getLocation() != null)
+                .collect(Collectors.toList());
+
+        log.info("Members that have location = {}",userLocationLogs);
+
+        return userLocationLogs;
+    }
+
 
     private void assembleAndSendHealthClinics(TownLookupResult place, String targetUserUid, Set<String> accountUids) {
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl(izweLamiLambda)

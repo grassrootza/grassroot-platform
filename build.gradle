@@ -1,7 +1,7 @@
 allprojects  {
   apply plugin: 'maven'
   group = 'za.org.grassroot'
-  version = '1.2.3'
+  version = '1.2.4'
 
   task downloadDependencies() {
     description 'Download all dependencies to the Gradle cache'

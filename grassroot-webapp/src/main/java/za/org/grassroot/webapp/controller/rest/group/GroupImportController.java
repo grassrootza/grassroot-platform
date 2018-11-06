@@ -38,6 +38,7 @@ public class GroupImportController extends GroupBaseController {
 
     @RequestMapping(value = "/analyze", method = RequestMethod.POST)
     public ResponseEntity<ExcelSheetAnalysis> analyzeExcelFile(@ModelAttribute MultipartFile file) throws IOException {
+        log.info("Analyzing an Excel sheet, file null ? : {}", file == null);
         File tempStore = File.createTempFile("members", "xls");
         tempStore.deleteOnExit();
         file.transferTo(tempStore);

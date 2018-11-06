@@ -110,7 +110,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
     @RequestMapping(value = "members/left/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> numberMembersLeftForGroup(@PathVariable String groupUid) {
-        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, accountFeaturesBroker.numberMembersLeftForGroup(groupUid));
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, accountFeaturesBroker.numberMembersLeftForGroup(groupUid, null));
     }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
