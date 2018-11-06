@@ -66,13 +66,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookToDownload;
@@ -454,13 +448,39 @@ public class GroupFetchController extends BaseRestController {
     }
 
     @RequestMapping(value = "/members/location",method = RequestMethod.GET)
-    public ResponseEntity<List<UserLocationLog>> loadUsersWithLocation(@RequestParam String groupUid){
+    public ResponseEntity<Map<String,Municipality>> loadUsersWithLocation(@RequestParam String groupUid){
         Group group = groupBroker.load(groupUid);
         Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
 
         List<UserLocationLog> userLocationLogs = locationInfoBroker.loadUsersWithLocationNotNUll(memberUids);
 
-        return ResponseEntity.ok(userLocationLogs);
+        Map<String,Municipality> userMunicipalityMap = new HashMap<>();
+
+        for(UserLocationLog userLocationLog:userLocationLogs){
+            Municipality municipality =
+                    locationInfoBroker.
+                            loadMunicipalityByCoordinates(userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
+
+            User user = getUser(group,userLocationLog.getUserUid());
+
+            userMunicipalityMap.put(user.getDisplayName(),municipality);
+        }
+
+        log.info("Municipalities for users with location = {}",userMunicipalityMap);
+
+        return ResponseEntity.ok(userMunicipalityMap);
+    }
+
+    private User getUser(Group group,String userUid){
+        User user = null;
+        for (User user1 : group.getMembers()) {
+            if (user1.getUid().equals(userUid)) {
+                //user = user1;
+                return user1;
+
+            }
+        }
+        return user;
     }
 
 }
