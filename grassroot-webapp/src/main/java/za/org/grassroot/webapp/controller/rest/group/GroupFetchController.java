@@ -441,8 +441,6 @@ public class GroupFetchController extends BaseRestController {
             return ResponseEntity.ok(Collections.emptyList());
         }
 
-        locationInfoBroker.loadMunicipalityByCoordinates(29.151640,-25.260050);
-
         Province province1 = Province.valueOf(province);
         return ResponseEntity.ok(locationInfoBroker.getMunicipalitiesForProvince(province1));
     }
@@ -459,11 +457,9 @@ public class GroupFetchController extends BaseRestController {
         for(UserLocationLog userLocationLog:userLocationLogs){
             Municipality municipality =
                     locationInfoBroker.
-                            loadMunicipalityByCoordinates(userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
+                            loadMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
 
-            User user = getUser(group,userLocationLog.getUserUid());
-
-            userMunicipalityMap.put(user.getDisplayName(),municipality);
+            userMunicipalityMap.put(userLocationLog.getUserUid(),municipality);
         }
 
         log.info("Municipalities for users with location = {}",userMunicipalityMap);
@@ -471,16 +467,24 @@ public class GroupFetchController extends BaseRestController {
         return ResponseEntity.ok(userMunicipalityMap);
     }
 
-    private User getUser(Group group,String userUid){
-        User user = null;
-        for (User user1 : group.getMembers()) {
-            if (user1.getUid().equals(userUid)) {
-                //user = user1;
-                return user1;
+    @RequestMapping(value = "/municipality/members",method = RequestMethod.GET)
+    public GroupFilterResponse loadMembersInMunicipality(@RequestParam int municipalityId,
+                                                         @RequestParam String groupUid,
+                                                         @RequestParam int maxEntities){
+        List<Membership> memberships = locationInfoBroker.getMembersInMunicipality(groupUid,municipalityId + "");
 
-            }
-        }
-        return user;
+        GroupFilterResponse response = new GroupFilterResponse();
+        List<MembershipStdDTO> dtos = memberships.stream().map(MembershipStdDTO::new).collect(Collectors.toList());
+
+        response.setNumberSms(dtos.stream().filter(MembershipStdDTO::hasPhone).count());
+        response.setNumberEmail(dtos.stream().filter(MembershipStdDTO::hasEmail).count());
+        response.setNumberSmsAndEmail(dtos.stream().filter(MembershipStdDTO::hasBoth).count());
+        response.setTotalElements(dtos.size());
+
+        // sublist too fragile, hence using this, though looks slightly clumsy
+        response.setContent(dtos.stream().limit(maxEntities).collect(Collectors.toList()));
+        
+        return response;
     }
 
 }

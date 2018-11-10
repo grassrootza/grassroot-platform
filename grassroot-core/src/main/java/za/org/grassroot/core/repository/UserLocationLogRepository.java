@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.geo.UserLocationLog;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 public interface UserLocationLogRepository extends JpaRepository<UserLocationLog, String> {
 	// both boudnaries are inclusive when using 'between'
@@ -16,5 +17,7 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 	UserLocationLog findFirstByUserUidAndTimestampAfterOrderByTimestampDesc(String userUid, Instant timestamp);
 
 	List<UserLocationLog> findByUserUidOrderByTimestampDesc(String userUid);
+
+	List<UserLocationLog> findByUserUidIn(Set<String> userUids);
 
 }

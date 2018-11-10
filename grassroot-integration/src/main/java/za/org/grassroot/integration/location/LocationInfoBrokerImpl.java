@@ -14,6 +14,9 @@ import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.google.common.base.Enums;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.Element;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +38,8 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.Province;
@@ -64,6 +69,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private final AccountLogRepository accountLogRepository;
     private final NotificationRepository notificationRepository;
     private final UserLocationLogRepository userLocationLogRepository;
+    private final CacheManager cacheManager;
+    private final GroupRepository groupRepository;
 
     private JwtService jwtService;
 
@@ -79,7 +86,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Autowired
     public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository,
                                   AccountRepository accountRepository, AccountLogRepository accountLogRepository,
-                                  NotificationRepository notificationRepository,UserLocationLogRepository userLocationLogRepository) {
+                                  NotificationRepository notificationRepository,UserLocationLogRepository userLocationLogRepository,
+                                  CacheManager cacheManager,GroupRepository groupRepository) {
         this.environment = environment;
         this.restTemplate = restTemplate;
         this.userRepository = userRepository;
@@ -87,6 +95,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         this.accountLogRepository = accountLogRepository;
         this.notificationRepository = notificationRepository;
         this.userLocationLogRepository = userLocationLogRepository;
+        this.cacheManager = cacheManager;
+        this.groupRepository = groupRepository;
     }
 
     @Autowired
@@ -412,7 +422,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
-    public Municipality loadMunicipalityByCoordinates(double longitude,double latitude){
+    public Municipality loadMunicipalityByCoordinates(String userUid,double longitude,double latitude){
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/point/4326/");
         String latLong = longitude + "," + latitude;
 
@@ -428,9 +438,13 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 restTemplate.exchange(componentsBuilder.build().toUri(),HttpMethod.GET,null,responseType);
 
         Municipality municipality = null;
+        Cache cache = cacheManager.getCache("user_municipality");
+
         if(result.getBody() != null){
             municipality = result.getBody().entrySet().iterator().next().getValue();
-        }https://www.youtube.com/watch?v=aKW3IWrPfaU&index=2&list=PLEvPW3QeeZUxRxbArpOOYKMi-zK3SV2x3
+
+            cache.put(new Element(userUid,municipality));
+        }
 
         log.info("Municipality = {}",municipality);
 
@@ -438,16 +452,41 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
-    public  List<UserLocationLog> loadUsersWithLocationNotNUll(Set<String> userUids){
+    public  List<UserLocationLog> loadUsersWithLocationNotNUll(Set<String> user){
 
-        List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll()
-                .stream()
-                .filter(userLocationLog -> userLocationLog.getLocation() != null)
-                .collect(Collectors.toList());
+        log.info("User uids ={}",user);
+
+        List<UserLocationLog> userLocationLogs = userLocationLogRepository.findByUserUidIn(user);
 
         log.info("Members that have location = {}",userLocationLogs);
 
         return userLocationLogs;
+    }
+
+    public List<Membership> getMembersInMunicipality(String groupUid, String municipalityIDs){
+
+        Cache cache = cacheManager.getCache("user_municipality");
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        Set<User> users = group.getMembers();
+
+        List<Membership> memberships = new ArrayList<>();
+
+        List<String> cacheKeys = cache.getKeys();
+
+        for (User user : users) {
+            if(cacheKeys.contains(user.getUid())){
+                Municipality municipality = (Municipality) cache.get(user.getUid()).getObjectValue();
+                log.info("Municipality for userUid = {}, is = {}",user.getUid(),municipality);
+                if(municipality.getId() == Integer.valueOf(municipalityIDs)){
+                    memberships.add(user.getGroupMembership(groupUid));
+                }
+            }
+        }
+
+        log.info("List of users in municipality id = {} members = {}",municipalityIDs,memberships);
+
+        return memberships;
     }
 
 

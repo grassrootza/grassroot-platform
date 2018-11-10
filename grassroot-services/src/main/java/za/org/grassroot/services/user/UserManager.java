@@ -18,6 +18,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.EventNotification;
@@ -25,10 +27,7 @@ import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.RoleRepository;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.repository.UserRequestRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.specifications.UserSpecifications;
@@ -78,6 +77,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired private MessageAssemblingService messageAssemblingService;
     @Autowired private MessagingServiceBroker messagingServiceBroker;
     @Autowired(required = false) private GraphBroker graphBroker;
+    @Autowired private UserLocationLogRepository userLocationLogRepository;
 
     private RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder().withinRange('a', 'z').build();
 
@@ -906,6 +906,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public UserDTO loadUserCreateRequest(String phoneNumber) {
         UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         return (new UserDTO(userCreateRequest));
+    }
+
+    @Override
+    public void saveUserLocation(String userUid, GeoLocation geoLocation){
+        userLocationLogRepository.save(new UserLocationLog(Instant.now(),userUid,geoLocation, LocationSource.LOGGED_APPROX));
     }
 
 
