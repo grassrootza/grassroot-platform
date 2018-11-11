@@ -183,7 +183,7 @@ public class USSDGroupUtil extends USSDUtil {
         if (groupCount == 0) { // case (a), ask for a name and then go to the next menu
             if (!StringUtils.isEmpty(builder.urlToCreateNewGroup)) {
                 groupMenu = createGroupPrompt(user, section, builder.urlToCreateNewGroup);
-            } else { // case (b), handle no new groups, with redirect option
+            } else { // case (b), handle no groups, with redirect option
                 groupMenu = new USSDMenu(getMessage(section, messageKey, promptKey + ".empty", user));
                 groupMenu.addMenuOption(builder.urlForNoGroups, getMessage(section, messageKey, optionsKey + "new", user));
                 groupMenu.addMenuOption("start_force", getMessage("start", user));
@@ -199,7 +199,7 @@ public class USSDGroupUtil extends USSDUtil {
         return groupMenu;
     }
 
-    public USSDMenu showGroupRequests(User user, USSDSection section) {
+    public USSDMenu showGroupJoinRequests(User user, USSDSection section) {
         List<GroupJoinRequest> requests = groupJoinRequestService.getPendingRequestsForUser(user.getUid());
         GroupJoinRequest request;
         if (requests != null && !requests.isEmpty()) {
@@ -261,17 +261,14 @@ public class USSDGroupUtil extends USSDUtil {
 
         int maxResults = totalResults == null ? permissionBroker.countActiveGroupsWithPermission(user, filter) : totalResults;
 
-        if ((pageNumber + 1) * PAGE_LENGTH < maxResults)
+        if ((pageNumber + 1) * PAGE_LENGTH < maxResults) // add "more" option
             menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber + 1), getMessage("group.more", user));
-        if (pageNumber > 0)
+        if (pageNumber > 0) // add "back" option
             menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber - 1), getMessage("group.back", user));
         if (urlForNewGroup != null)
             menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
         if (section != null && section.equals(GROUP_MANAGER) && pageNumber == 0)
             menu.addMenuOption(GROUP_MANAGER.toPath() + "sendall", getMessage(groupKeyForMessages,"sendall","prompt",user));
-
-        if (GROUP_MANAGER.equals(section) && (!groupQueryBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty()))
-            menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
 
         menu.addMenuOption("start_force", getMessage(groupKeyForMessages, "menu", optionsKey + "back", user));
 
@@ -413,11 +410,11 @@ public class USSDGroupUtil extends USSDUtil {
         listMenu.addMenuOption(groupMenuWithId("alias", groupUid), getMessage(menuKey + "alias", user));
 
         if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
-            String visibilityMenuOptionPrompt = group.isDiscoverable() ? getMessage(menuKey + hideGroup, user)
-                    : getMessage(menuKey + showGroup, user);
+            String visibilityMenuOptionPrompt = group.isDiscoverable() ? getMessage(menuKey + hideGroup, user) : getMessage(menuKey + showGroup, user);
             listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupUid), getMessage(tokenKey, user));
             listMenu.addMenuOption(groupMenuWithId("language", groupUid), getMessage("group.advanced.options.language", user));
             listMenu.addMenuOption(groupMenuWithId(visibility, groupUid), visibilityMenuOptionPrompt);
+            listMenu.addMenuOption(groupMenuWithId("organizer", groupUid), "Add an organizer");
         }
 
         if (groupBroker.isDeactivationAvailable(user, group, true))

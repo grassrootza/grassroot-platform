@@ -5,29 +5,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
-import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
-import za.org.grassroot.core.dto.membership.MembershipDTO;
-import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
-import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -35,16 +27,10 @@ import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static za.org.grassroot.core.specifications.GroupSpecifications.hasParent;
-import static za.org.grassroot.core.specifications.GroupSpecifications.isActive;
-import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
-import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by luke on 2016/09/28.
@@ -150,58 +136,6 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     }
 
     @Override
-    public Set<Group> subGroups(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        return new HashSet<>(groupRepository.findAll(Specification.where(hasParent(group)).and(isActive())));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Set<Group> possibleParents(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group groupToMakeChild = groupRepository.findOneByUid(groupUid);
-
-        Set<Group> groupsWithPermission = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
-        groupsWithPermission.remove(groupToMakeChild);
-
-        return groupsWithPermission.stream().filter(g -> !isGroupAlsoParent(groupToMakeChild, g)).collect(Collectors.toSet());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Set<Group> mergeCandidates(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        // todo: may want to check for both update and add members ...
-        Set<Group> otherGroups = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        otherGroups.remove(group);
-        return otherGroups;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public LocalDateTime getLastTimeGroupActiveOrModified(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        Event latestEvent = eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
-        GroupLog latestGroupLog = groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(group);
-
-        LocalDateTime lastActive = (latestEvent != null) ? latestEvent.getEventDateTimeAtSAST() : LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST());
-        LocalDateTime lastModified = (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime(), getSAST()) :
-                LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST());
-
-        return (lastActive != null && lastActive.isAfter(lastModified)) ? lastActive : lastModified;
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public ChangedSinceData<Group> getActiveGroups(User user, Instant changedSince) {
         Objects.requireNonNull(user, "User cannot be null");
@@ -230,51 +164,10 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<LocalDate> getMonthsGroupActive(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        LocalDate groupStartDate = LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST()).toLocalDate();
-        LocalDate today = LocalDate.now();
-        LocalDate monthIterator = LocalDate.of(groupStartDate.getYear(), groupStartDate.getMonth(), 1);
-        List<LocalDate> months = new ArrayList<>();
-        while (monthIterator.isBefore(today)) {
-            months.add(monthIterator);
-            monthIterator = monthIterator.plusMonths(1L);
-        }
-        return months;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        Sort sort = new Sort(Sort.Direction.DESC, "CreatedDateTime");
-        return groupLogRepository.findByGroupAndCreatedDateTimeBetween(group, convertToSystemTime(periodStart, getSAST()),
-                convertToSystemTime(periodEnd, getSAST()), sort);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Group> fetchGroupsWithOneCharNames(User user, int sizeThreshold) {
-        //for now limiting this to only groups created by the user
-        List<Group> candidateGroups = new ArrayList<>(groupRepository.findActiveGroupsWithNamesLessThanOneCharacter(user));
-        return candidateGroups.stream()
-                .filter(group -> group.getMembers().size() <= sizeThreshold)
-                .sorted(Collections.reverseOrder())
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize) {
         Objects.requireNonNull(user);
         return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user,
                 PageRequest.of(pageNumber, pageSize));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isGroupPaidFor(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        return group.isPaidFor() && group.getAccount() != null;
     }
 
     /*
@@ -384,25 +277,6 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         } else {
             return radiusDefinition;
         }
-    }
-
-
-    @Override
-    public long countMembershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant userJoinedAfter) {
-        return membershipRepository.count(MembershipSpecifications.membershipsInGroups(groupCreator, groupCreatedAfter, userJoinedAfter));
-    }
-
-    @Override
-    public Page<MembershipDTO> getMembershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant userJoinedAfter, Pageable pageable) {
-        Page<Membership> page = membershipRepository.findAll(MembershipSpecifications.membershipsInGroups(groupCreator, groupCreatedAfter, userJoinedAfter), pageable);
-        return page.map(MembershipDTO::new);
-
-    }
-
-    public List<GroupRefDTO> getSubgroups(Group group) {
-        return groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()))
-                .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName(), gr.getMemberships().size()))
-                .collect(Collectors.toList());
     }
 
 
