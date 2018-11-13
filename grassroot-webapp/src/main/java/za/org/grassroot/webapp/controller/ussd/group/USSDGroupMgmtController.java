@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.group.GroupBroker;
@@ -393,9 +394,10 @@ public class USSDGroupMgmtController extends USSDBaseController {
     @ResponseBody
     public Request addGroupOrganizerPrompt(@RequestParam(value = phoneNumber) String inputNumber,
                                            @RequestParam String groupUid) throws URISyntaxException {
-        final String prompt = "To add an organizer, please enter their phone number. Note: You will not be able to undo this except on the website";
-        final String url = groupPath + "/organizer/complete?groupUid=" + groupUid;
-        USSDMenu menu = new USSDMenu(prompt, url);
+        final User user = userManager.findByInputNumber(inputNumber);
+        final String prompt = getMessage("group.organizer.add.prompt", user);
+        final String url = groupMenuWithId("organizer/complete", groupUid);
+        final USSDMenu menu = new USSDMenu(prompt, url);
         return menuBuilder(menu);
     }
 
@@ -405,10 +407,22 @@ public class USSDGroupMgmtController extends USSDBaseController {
                                        @RequestParam String groupUid,
                                        @RequestParam(value = userInputParam) String organizerPhone) throws URISyntaxException {
         final User user = userManager.findByInputNumber(inputNumber);
-        MembershipInfo memberInfo = new MembershipInfo(organizerPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null);
-        groupBroker.addMembers(user.getUid(), groupUid, Collections.singleton(memberInfo), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
-        final String prompt = "Done! The user has been made an organizer. Do you want to add another? Enter their number, or 0 to go back";
-        final String url = "this";
-        return menuBuilder(new USSDMenu(prompt, url));
+        USSDMenu menu;
+        if ("0".equals(organizerPhone.trim())) {
+            // return the menu
+            final String prompt = getMessage("group.organizer.add.finished", user);
+            menu = new USSDMenu(prompt);
+            menu.addMenuOption(groupMenuWithId("menu", groupUid), getMessage("options.back", user));
+            menu.addMenuOptions(optionsHomeExit(user, true));
+        } else if (!PhoneNumberUtil.testInputNumber(inputNumber)) { // say it's wrong
+            menu = new USSDMenu(getMessage("group.organizer.add.error", user),
+                    groupMenuWithId("organizer/complete", groupUid));
+        } else {
+            MembershipInfo memberInfo = new MembershipInfo(organizerPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null);
+            groupBroker.addMembers(user.getUid(), groupUid, Collections.singleton(memberInfo), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
+            menu = new USSDMenu(getMessage("group.organizer.add.done", user),
+                    groupMenuWithId("organizer/complete", groupUid));
+        }
+        return menuBuilder(menu);
     }
 }

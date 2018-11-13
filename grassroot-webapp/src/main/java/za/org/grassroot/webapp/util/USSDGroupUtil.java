@@ -414,7 +414,7 @@ public class USSDGroupUtil extends USSDUtil {
             listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupUid), getMessage(tokenKey, user));
             listMenu.addMenuOption(groupMenuWithId("language", groupUid), getMessage("group.advanced.options.language", user));
             listMenu.addMenuOption(groupMenuWithId(visibility, groupUid), visibilityMenuOptionPrompt);
-            listMenu.addMenuOption(groupMenuWithId("organizer", groupUid), "Add an organizer");
+            listMenu.addMenuOption(groupMenuWithId("organizer", groupUid), getMessage("group.menu.options.organizer", user));
         }
 
         if (groupBroker.isDeactivationAvailable(user, group, true))

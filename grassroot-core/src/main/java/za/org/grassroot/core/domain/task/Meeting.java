@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.task;
 
+import org.apache.commons.lang3.StringUtils;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -70,7 +71,7 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	}
 
 	public void setEventLocation(String eventLocation) {
-		this.eventLocation = eventLocation;
+		this.eventLocation = StringUtils.truncate(eventLocation, 50);
 	}
 
 	@Override
