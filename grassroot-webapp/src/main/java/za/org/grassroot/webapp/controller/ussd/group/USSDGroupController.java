@@ -105,7 +105,7 @@ public class USSDGroupController extends USSDBaseController {
         // in case went "back" from menu in middle of create group
         User user = (interrupted) ? userManager.findByInputNumber(inputNumber, null) : userManager.findByInputNumber(inputNumber);
         if (!groupJoinRequestService.getPendingRequestsForUser(user.getUid()).isEmpty()) {
-            return menuBuilder(ussdGroupUtil.showGroupRequests(user, USSDSection.GROUP_MANAGER));
+            return menuBuilder(ussdGroupUtil.showGroupJoinRequests(user, USSDSection.GROUP_MANAGER));
         } else {
             final int numberGroups = permissionBroker.countActiveGroupsWithPermission(user, null);
             if (numberGroups != 1) {
