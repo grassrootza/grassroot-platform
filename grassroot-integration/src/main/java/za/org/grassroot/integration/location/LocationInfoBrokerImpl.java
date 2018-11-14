@@ -474,6 +474,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
         List<String> cacheKeys = cache.getKeys();
 
+        log.info("What is in cache keys ? {}",cacheKeys);
+
         for (User user : users) {
             if(cacheKeys.contains(user.getUid())){
                 Municipality municipality = (Municipality) cache.get(user.getUid()).getObjectValue();

@@ -236,11 +236,22 @@ public class GroupFetchController extends BaseRestController {
                                                      @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
                                                      @RequestParam (required = false) String namePhoneOrEmail,
                                                      @RequestParam (required = false) Collection<String> languages,
+                                                     @RequestParam (required = false) Integer municipalityId,
                                                      HttpServletRequest request) {
         log.info("filtering, name phone or email = {}", namePhoneOrEmail);
+        log.info("Do we have municipality ID? {}",municipalityId);
+
         List<Membership> memberships = groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, noProvince, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
                 joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages);
+
+        if(municipalityId != null){
+            List<Membership> membershipsInMunicipality = locationInfoBroker.getMembersInMunicipality(groupUid,municipalityId + "");
+
+            memberships.retainAll(membershipsInMunicipality);
+
+            log.info("Members in Municipality with id: {} is: {}",municipalityId,membershipsInMunicipality);
+        }
 
         // if this becomes non-performant, use a projection
         GroupFilterResponse response = new GroupFilterResponse();
@@ -465,26 +476,6 @@ public class GroupFetchController extends BaseRestController {
         log.info("Municipalities for users with location = {}",userMunicipalityMap);
 
         return ResponseEntity.ok(userMunicipalityMap);
-    }
-
-    @RequestMapping(value = "/municipality/members",method = RequestMethod.GET)
-    public GroupFilterResponse loadMembersInMunicipality(@RequestParam int municipalityId,
-                                                         @RequestParam String groupUid,
-                                                         @RequestParam int maxEntities){
-        List<Membership> memberships = locationInfoBroker.getMembersInMunicipality(groupUid,municipalityId + "");
-
-        GroupFilterResponse response = new GroupFilterResponse();
-        List<MembershipStdDTO> dtos = memberships.stream().map(MembershipStdDTO::new).collect(Collectors.toList());
-
-        response.setNumberSms(dtos.stream().filter(MembershipStdDTO::hasPhone).count());
-        response.setNumberEmail(dtos.stream().filter(MembershipStdDTO::hasEmail).count());
-        response.setNumberSmsAndEmail(dtos.stream().filter(MembershipStdDTO::hasBoth).count());
-        response.setTotalElements(dtos.size());
-
-        // sublist too fragile, hence using this, though looks slightly clumsy
-        response.setContent(dtos.stream().limit(maxEntities).collect(Collectors.toList()));
-        
-        return response;
     }
 
 }
