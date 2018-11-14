@@ -39,9 +39,9 @@ public class PublicLiveWireDTO {
         this.headline = alert.getHeadline();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
         this.description = alert.getDescription();
+        this.serverUid = alert.getUid();
 
         if (includeFullDetails) {
-            this.serverUid = alert.getUid();
             this.imageKeys = alert.getMediaFiles().stream().map(MediaFileRecord::getKey).collect(Collectors.toList());
             this.contactName = alert.getContactNameNullSafe();
             this.alertType = alert.getType();
