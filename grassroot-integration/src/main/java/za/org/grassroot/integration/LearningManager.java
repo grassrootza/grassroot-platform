@@ -3,12 +3,15 @@ package za.org.grassroot.integration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.exception.SeloApiCallFailure;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -21,8 +24,11 @@ public class LearningManager implements LearningService {
     @Value("${grassroot.datetime.lambda.url:http://localhost:5000/parse}")
     private String learningLambdaUrl;
 
+    @Value("${grassroot.datetime.poll.datetime:false}")
+    private boolean pollLearning;
+
     private static final String ERROR_PARSING = "ERROR_PARSING";
-    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"); //01-11-2018T00:00
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"); //01-11-2018T00:00
 
     private RestTemplate restTemplate;
 
@@ -62,6 +68,20 @@ public class LearningManager implements LearningService {
             // throw an error because this shouldn't happen (might be because of an error reaching the server ...)
             log.error("Error calling Selo! Error message: {}", e.toString());
             throw new SeloApiCallFailure();
+        }
+    }
+
+    @Scheduled(cron = "0 0/5 5-19 * * ?")
+    public void keepAliveParser() {
+        if (pollLearning) {
+            log.info("Keeping warm date time parser ... ");
+            try {
+                URI uri = UriComponentsBuilder.fromHttpUrl(learningLambdaUrl).queryParam("date_string", "Tomorrow at 9am").build().toUri();
+                String pollingResult = restTemplate.getForObject(uri, String.class);
+                log.info("Polling date time returned: {}", pollingResult);
+            } catch (RestClientException e) {
+                log.error("Keep alive error: {}", e.getMessage());
+            }
         }
     }
 
