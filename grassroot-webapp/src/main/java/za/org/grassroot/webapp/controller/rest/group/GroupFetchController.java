@@ -236,11 +236,22 @@ public class GroupFetchController extends BaseRestController {
                                                      @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
                                                      @RequestParam (required = false) String namePhoneOrEmail,
                                                      @RequestParam (required = false) Collection<String> languages,
+                                                     @RequestParam (required = false) Integer municipalityId,
                                                      HttpServletRequest request) {
         log.info("filtering, name phone or email = {}", namePhoneOrEmail);
+        log.info("Do we have municipality ID? {}",municipalityId);
+
         List<Membership> memberships = groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, noProvince, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
                 joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages);
+
+        if(municipalityId != null){
+            List<Membership> membershipsInMunicipality = locationInfoBroker.getMembersInMunicipality(groupUid,municipalityId + "");
+
+            memberships.retainAll(membershipsInMunicipality);
+
+            log.info("Members in Municipality with id: {} is: {}",municipalityId,membershipsInMunicipality);
+        }
 
         // if this becomes non-performant, use a projection
         GroupFilterResponse response = new GroupFilterResponse();
@@ -441,8 +452,6 @@ public class GroupFetchController extends BaseRestController {
             return ResponseEntity.ok(Collections.emptyList());
         }
 
-        locationInfoBroker.loadMunicipalityByCoordinates(29.151640,-25.260050);
-
         Province province1 = Province.valueOf(province);
         return ResponseEntity.ok(locationInfoBroker.getMunicipalitiesForProvince(province1));
     }
@@ -459,28 +468,14 @@ public class GroupFetchController extends BaseRestController {
         for(UserLocationLog userLocationLog:userLocationLogs){
             Municipality municipality =
                     locationInfoBroker.
-                            loadMunicipalityByCoordinates(userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
+                            loadMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
 
-            User user = getUser(group,userLocationLog.getUserUid());
-
-            userMunicipalityMap.put(user.getDisplayName(),municipality);
+            userMunicipalityMap.put(userLocationLog.getUserUid(),municipality);
         }
 
         log.info("Municipalities for users with location = {}",userMunicipalityMap);
 
         return ResponseEntity.ok(userMunicipalityMap);
-    }
-
-    private User getUser(Group group,String userUid){
-        User user = null;
-        for (User user1 : group.getMembers()) {
-            if (user1.getUid().equals(userUid)) {
-                //user = user1;
-                return user1;
-
-            }
-        }
-        return user;
     }
 
 }

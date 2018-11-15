@@ -89,4 +89,10 @@
            timeToLiveSeconds="60">
     </cache>
 
+    <cache  name="user_municipality"
+            maxEntriesLocalHeap="2000"
+            eternal="false"
+            timeToLiveSeconds="86400">
+    </cache>
+
 </ehcache>

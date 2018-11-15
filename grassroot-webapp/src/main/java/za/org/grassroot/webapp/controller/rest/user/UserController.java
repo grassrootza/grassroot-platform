@@ -50,7 +50,7 @@ public class UserController extends BaseRestController {
     private final PasswordTokenService passwordService;
     private final JwtService jwtService;
     private final AddressBroker addressBroker;
-    private final UserLocationLogRepository userLocationLogRepository;
+
 
     @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
     private String userProfileImagesFolder;
@@ -65,7 +65,6 @@ public class UserController extends BaseRestController {
         this.passwordService = passwordService;
         this.jwtService = jwtService;
         this.addressBroker = addressBroker;
-        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back")
@@ -178,7 +177,8 @@ public class UserController extends BaseRestController {
         String userUid = getUserIdFromRequest(request);
         GeoLocation geoLocation = new GeoLocation(lat,lon);
 
-        userLocationLogRepository.save(new UserLocationLog(Instant.now(),userUid,geoLocation, LocationSource.LOGGED_APPROX));
+        userService.saveUserLocation(userUid,geoLocation);
+
         return ResponseEntity.ok(RestMessage.LOCATION_RECORDED);
     }
 }
