@@ -7,12 +7,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.group.GroupBroker;
@@ -25,11 +29,10 @@ import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.groupMenuWithId;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.groupVisibilityOption;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveGroupMenu;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 // holder for a bunch of relatively straightforward and self-contained group mgmt menus (e.g., renaming etc)
 @Slf4j @RestController @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
@@ -300,24 +303,6 @@ public class USSDGroupMgmtController extends USSDBaseController {
         return menuBuilder(menu);
     }
 
-    @RequestMapping(value = groupPath + "clean")
-    @ResponseBody
-    public Request listGroupsWithInvalidNames(@RequestParam String msisdn) throws URISyntaxException {
-
-        User user = userManager.findByInputNumber(msisdn);
-        Group group = groupQueryBroker.fetchGroupsWithOneCharNames(user, 2).get(0);
-
-        String createdDate = DateTimeUtil.convertToUserTimeZone(group.getCreatedDateTime(), DateTimeUtil.getSAST())
-                .format(DateTimeFormatter.ofPattern("d MMM"));
-        String prompt = getMessage(thisSection, "clean", promptKey, new String[] { group.getGroupName(), createdDate, String.valueOf(group.getMembers().size()) }, user);
-        USSDMenu menu = new USSDMenu(prompt);
-        menu.addMenuOption(groupMenuWithId("rename", group.getUid()), getMessage(thisSection, "clean", optionsKey + "rename", user));
-        menu.addMenuOption(groupMenuWithId("inactive" + doSuffix, group.getUid()), getMessage(thisSection, "clean", optionsKey + "delete", user));
-        menu.addMenuOption(groupMenus + startMenu, getMessage(thisSection, "clean", optionsKey + "back", user));
-
-        return menuBuilder(menu);
-    }
-
     @RequestMapping(value = groupPath + "list")
     @ResponseBody
     public Request listGroupMemberSize(@RequestParam String msisdn, @RequestParam String groupUid) throws URISyntaxException {
@@ -402,6 +387,42 @@ public class USSDGroupMgmtController extends USSDBaseController {
         groupBroker.updateGroupDefaultLanguage(user.getUid(), groupUid, language, false);
         final String prompt = getMessage("group.language.selected", user);
         USSDMenu menu = new USSDMenu(prompt, optionsHomeExit(user, false));
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = groupPath + "/organizer")
+    @ResponseBody
+    public Request addGroupOrganizerPrompt(@RequestParam(value = phoneNumber) String inputNumber,
+                                           @RequestParam String groupUid) throws URISyntaxException {
+        final User user = userManager.findByInputNumber(inputNumber);
+        final String prompt = getMessage("group.organizer.add.prompt", user);
+        final String url = groupMenuWithId("organizer/complete", groupUid);
+        final USSDMenu menu = new USSDMenu(prompt, url);
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = groupPath + "/organizer/complete")
+    @ResponseBody
+    public Request addGroupOrganizerDo(@RequestParam(value = phoneNumber) String inputNumber,
+                                       @RequestParam String groupUid,
+                                       @RequestParam(value = userInputParam) String organizerPhone) throws URISyntaxException {
+        final User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu;
+        if ("0".equals(organizerPhone.trim())) {
+            // return the menu
+            final String prompt = getMessage("group.organizer.add.finished", user);
+            menu = new USSDMenu(prompt);
+            menu.addMenuOption(groupMenuWithId("menu", groupUid), getMessage("options.back", user));
+            menu.addMenuOptions(optionsHomeExit(user, true));
+        } else if (!PhoneNumberUtil.testInputNumber(inputNumber)) { // say it's wrong
+            menu = new USSDMenu(getMessage("group.organizer.add.error", user),
+                    groupMenuWithId("organizer/complete", groupUid));
+        } else {
+            MembershipInfo memberInfo = new MembershipInfo(organizerPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null);
+            groupBroker.addMembers(user.getUid(), groupUid, Collections.singleton(memberInfo), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
+            menu = new USSDMenu(getMessage("group.organizer.add.done", user),
+                    groupMenuWithId("organizer/complete", groupUid));
+        }
         return menuBuilder(menu);
     }
 }
