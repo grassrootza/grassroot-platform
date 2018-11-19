@@ -53,4 +53,6 @@ public interface LocationInfoBroker {
 
     List<Membership> getMembersInMunicipality(String groupUid,String municipalityIDs);
 
+    Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> user);
+
 }

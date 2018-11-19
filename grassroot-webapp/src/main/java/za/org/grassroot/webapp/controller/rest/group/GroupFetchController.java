@@ -461,19 +461,7 @@ public class GroupFetchController extends BaseRestController {
         Group group = groupBroker.load(groupUid);
         Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
 
-        List<UserLocationLog> userLocationLogs = locationInfoBroker.loadUsersWithLocationNotNUll(memberUids);
-
-        Map<String,Municipality> userMunicipalityMap = new HashMap<>();
-
-        for(UserLocationLog userLocationLog:userLocationLogs){
-            Municipality municipality =
-                    locationInfoBroker.
-                            loadMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
-
-            userMunicipalityMap.put(userLocationLog.getUserUid(),municipality);
-        }
-
-        log.info("Municipalities for users with location = {}",userMunicipalityMap);
+        Map<String,Municipality> userMunicipalityMap = locationInfoBroker.getMunicipalitiesForUsersWithLocationFromCache(memberUids);
 
         return ResponseEntity.ok(userMunicipalityMap);
     }
