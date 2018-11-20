@@ -13,7 +13,5 @@ public interface LearningService {
 
    LocalDateTime parse(String phrase) throws SeloParseDateTimeFailure;
 
-   Map<String, Double> findRelatedTerms(String searchTerm);
-
 
 }
