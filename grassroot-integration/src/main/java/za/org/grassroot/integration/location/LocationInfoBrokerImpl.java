@@ -463,6 +463,25 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         return userLocationLogs;
     }
 
+    @Override
+    public Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> user){
+        Cache cache = cacheManager.getCache("user_municipality");
+        Map<String,Municipality> municipalityMap = new HashMap<>();
+
+
+        List<String> cacheKeys = cache.getKeys();
+
+        for(String userUid: user){
+            if(cacheKeys.contains(userUid)){
+                Municipality municipality = (Municipality) cache.get(userUid).getObjectValue();
+                municipalityMap.put(userUid,municipality);
+            }
+        }
+
+        log.info("Municipalities for users with location from cache is = {}",municipalityMap);
+        return municipalityMap;
+    }
+
     public List<Membership> getMembersInMunicipality(String groupUid, String municipalityIDs){
 
         Cache cache = cacheManager.getCache("user_municipality");
