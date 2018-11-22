@@ -71,6 +71,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private final UserLocationLogRepository userLocationLogRepository;
     private final CacheManager cacheManager;
     private final GroupRepository groupRepository;
+    private final ConfigRepository configRepository;
 
     private JwtService jwtService;
 
@@ -87,7 +88,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository,
                                   AccountRepository accountRepository, AccountLogRepository accountLogRepository,
                                   NotificationRepository notificationRepository,UserLocationLogRepository userLocationLogRepository,
-                                  CacheManager cacheManager,GroupRepository groupRepository) {
+                                  CacheManager cacheManager,GroupRepository groupRepository,ConfigRepository configRepository) {
         this.environment = environment;
         this.restTemplate = restTemplate;
         this.userRepository = userRepository;
@@ -97,6 +98,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         this.userLocationLogRepository = userLocationLogRepository;
         this.cacheManager = cacheManager;
         this.groupRepository = groupRepository;
+        this.configRepository = configRepository;
     }
 
     @Autowired
@@ -452,15 +454,18 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
-    public  List<UserLocationLog> loadUsersWithLocationNotNUll(Set<String> user){
+    public  void loadUsersWithLocationNotNUll(){
+        List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll();
 
-        log.info("User uids ={}",user);
+        Map<String,Municipality> userMunicipalityMap = new HashMap<>();
 
-        List<UserLocationLog> userLocationLogs = userLocationLogRepository.findByUserUidIn(user);
+        for(UserLocationLog userLocationLog:userLocationLogs){
+            Municipality municipality =
+                            loadMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
 
-        log.info("Members that have location = {}",userLocationLogs);
+            userMunicipalityMap.put(userLocationLog.getUserUid(),municipality);
+        }
 
-        return userLocationLogs;
     }
 
     @Override
@@ -480,6 +485,24 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
         log.info("Municipalities for users with location from cache is = {}",municipalityMap);
         return municipalityMap;
+    }
+
+    @Override
+    public int countUserLocationLogsWithinYear(){
+        int userLocationLogsPeriod = Integer.parseInt(configRepository.findOneByKey("days.location.log.check").get().getValue());
+
+        Instant timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
+
+        return userLocationLogRepository.countByTimestampBefore(timeDaysAgo);
+    }
+
+    @Override
+    public int countUserLocationLogsOutsideYear(){
+        int userLocationLogsPeriod = Integer.parseInt(configRepository.findOneByKey("days.location.log.check").get().getValue());
+
+        Instant timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
+
+        return userLocationLogRepository.countByTimestampAfter(timeDaysAgo);
     }
 
     public List<Membership> getMembersInMunicipality(String groupUid, String municipalityIDs){

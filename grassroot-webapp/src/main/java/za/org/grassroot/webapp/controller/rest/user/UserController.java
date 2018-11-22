@@ -11,17 +11,14 @@ import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.media.MediaFunction;
-import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
-import za.org.grassroot.integration.storage.StorageBroker;
+import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.geo.AddressBroker;
@@ -36,7 +33,6 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.Instant;
 import java.util.Collections;
 
 
@@ -50,21 +46,23 @@ public class UserController extends BaseRestController {
     private final PasswordTokenService passwordService;
     private final JwtService jwtService;
     private final AddressBroker addressBroker;
+    private final LocationInfoBroker locationInfoBroker;
 
 
     @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
     private String userProfileImagesFolder;
 
-    public UserController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker,
+    public UserController(MediaFileBroker mediaFileBroker,
                           UserManagementService userService, JwtService jwtService,
                           PasswordTokenService passwordService, AddressBroker addressBroker,
-                          UserLocationLogRepository userLocationLogRepository) {
+                          LocationInfoBroker locationInfoBroker) {
         super(jwtService, userService);
         this.mediaFileBroker = mediaFileBroker;
         this.userService = userService;
         this.passwordService = passwordService;
         this.jwtService = jwtService;
         this.addressBroker = addressBroker;
+        this.locationInfoBroker = locationInfoBroker;
     }
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back")
@@ -177,8 +175,16 @@ public class UserController extends BaseRestController {
         String userUid = getUserIdFromRequest(request);
         GeoLocation geoLocation = new GeoLocation(lat,lon);
 
-        userService.saveUserLocation(userUid,geoLocation);
+        userService.saveUserLocation(userUid,geoLocation,UserInterfaceType.WEB_2);
 
         return ResponseEntity.ok(RestMessage.LOCATION_RECORDED);
+    }
+
+    @RequestMapping(value = "/user/location/refresh",method = RequestMethod.GET)
+    @ApiOperation(value = "Refreshes the municipalities for users with locations cache")
+    public ResponseEntity refreshCache(){
+        log.info("Updating user municipalities cache inside UserController --------------------->>>>>>>>>>>>>>>>>>>>>>>>");
+        this.locationInfoBroker.loadUsersWithLocationNotNUll();
+        return ResponseEntity.ok(RestMessage.UPDATED);
     }
 }

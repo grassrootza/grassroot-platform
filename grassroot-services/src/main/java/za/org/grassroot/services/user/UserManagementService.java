@@ -121,6 +121,6 @@ public interface UserManagementService {
 
     List<User> findUsersNotifiedAboutEvent(Event event, Class<? extends EventNotification> notificationClass);
 
-    void saveUserLocation(String userUid, GeoLocation geoLocation);
+    void saveUserLocation(String userUid, GeoLocation geoLocation,UserInterfaceType userInterfaceType);
 
 }

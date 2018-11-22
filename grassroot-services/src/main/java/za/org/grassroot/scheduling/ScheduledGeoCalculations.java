@@ -1,29 +1,22 @@
 package za.org.grassroot.scheduling;
 
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MeetingRepository;
-import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.location.LocationInfoBroker;
-import za.org.grassroot.integration.location.Municipality;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.springframework.data.jpa.domain.Specification.where;
 
@@ -40,19 +33,16 @@ public class ScheduledGeoCalculations {
     private final GroupRepository groupRepository;
     private final MeetingRepository meetingRepository;
     private final LocationInfoBroker locationInfoBroker;
-    private final UserLocationLogRepository userLocationLogRepository;
 
     @Autowired
     public ScheduledGeoCalculations(GeoLocationBroker geoLocationBroker,
                                     GroupRepository groupRepository,
                                     MeetingRepository meetingRepository,
-                                    LocationInfoBroker locationInfoBroker,
-                                    UserLocationLogRepository userLocationLogRepository) {
+                                    LocationInfoBroker locationInfoBroker) {
         this.geoLocationBroker = geoLocationBroker;
         this.groupRepository = groupRepository;
         this.meetingRepository = meetingRepository;
         this.locationInfoBroker = locationInfoBroker;
-        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @Scheduled(cron = "0 0 2 * * *") // runs at 2am UTC every day
@@ -94,19 +84,10 @@ public class ScheduledGeoCalculations {
 
     @Scheduled(fixedRate = 86400000)
     public void cacheMunicipalitiesForUsersWithLocation(){
+        log.info("Inside Scheduled Geo Calculations ---------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         log.info("Caching municipalities for users with location");
 
-        List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll();
-
-        Map<String,Municipality> userMunicipalityMap = new HashMap<>();
-
-        for(UserLocationLog userLocationLog:userLocationLogs){
-            Municipality municipality =
-                    locationInfoBroker.
-                            loadMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
-
-            userMunicipalityMap.put(userLocationLog.getUserUid(),municipality);
-        }
+        locationInfoBroker.loadUsersWithLocationNotNUll();
     }
 
 }

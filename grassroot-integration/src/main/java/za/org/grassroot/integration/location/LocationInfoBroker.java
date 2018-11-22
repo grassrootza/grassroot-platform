@@ -1,7 +1,6 @@
 package za.org.grassroot.integration.location;
 
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.Province;
 
@@ -49,10 +48,14 @@ public interface LocationInfoBroker {
 
     Municipality loadMunicipalityByCoordinates(String userUid,double longitude,double latitude);
 
-    List<UserLocationLog> loadUsersWithLocationNotNUll(Set<String> userUids);
+    void loadUsersWithLocationNotNUll();
 
     List<Membership> getMembersInMunicipality(String groupUid,String municipalityIDs);
 
     Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> user);
+
+    int countUserLocationLogsWithinYear();
+
+    int countUserLocationLogsOutsideYear();
 
 }

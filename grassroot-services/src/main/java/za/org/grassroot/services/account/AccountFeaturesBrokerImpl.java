@@ -1,6 +1,5 @@
 package za.org.grassroot.services.account;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -68,6 +67,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private final BroadcastRepository templateRepository;
     private final MessageAssemblingService messageAssemblingService;
     private final ConfigRepository configRepository;
+    private final UserLocationLogRepository userLocationLogRepository;
 
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ApplicationEventPublisher eventPublisher;
@@ -79,7 +79,8 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                      EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
                                      BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService,
-                                     LogsAndNotificationsBroker logsAndNotificationsBroker, ConfigRepository configRepository) {
+                                     LogsAndNotificationsBroker logsAndNotificationsBroker, ConfigRepository configRepository,
+                                     UserLocationLogRepository userLocationLogRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -90,6 +91,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         this.messageAssemblingService = messageAssemblingService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.configRepository = configRepository;
+        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @Autowired
@@ -106,6 +108,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         configDefaults.put("tasks.monthly.free", "4");
         configDefaults.put("tasks.limit.threshold", "10");
         configDefaults.put("welcome.messages.on", "false");
+        configDefaults.put("days.location.log.check","365");
 
         configDefaults.forEach((key, defaultValue) -> configVariables.put(key, convertKeyToValue(key, defaultValue)));
         log.info("Populated account features config variable map : {}", configVariables);

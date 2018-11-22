@@ -1,7 +1,6 @@
 package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
 
 import java.time.Instant;
@@ -20,4 +19,8 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 	List<UserLocationLog> findByUserUidOrderByTimestampDesc(String userUid);
 
 	List<UserLocationLog> findByUserUidIn(Set<String> userUids);
+
+	int countByTimestampAfter(Instant timeDaysAgo);
+
+	int countByTimestampBefore(Instant timeDaysAgo);
 }
