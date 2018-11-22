@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.JoinDateCondition;
@@ -457,6 +456,7 @@ public class GroupFetchController extends BaseRestController {
     }
 
     @RequestMapping(value = "/members/location",method = RequestMethod.GET)
+    @ApiOperation(value = "Loads the municipalities for users that have location in a group")
     public ResponseEntity<Map<String,Municipality>> loadUsersWithLocation(@RequestParam String groupUid){
         Group group = groupBroker.load(groupUid);
         Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());

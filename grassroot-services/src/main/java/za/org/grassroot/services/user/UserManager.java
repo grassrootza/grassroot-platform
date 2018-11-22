@@ -909,8 +909,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public void saveUserLocation(String userUid, GeoLocation geoLocation){
-        userLocationLogRepository.save(new UserLocationLog(Instant.now(),userUid,geoLocation, LocationSource.LOGGED_APPROX));
+    public void saveUserLocation(String userUid, GeoLocation geoLocation,UserInterfaceType userInterfaceType){
+        userLocationLogRepository.save(new UserLocationLog(Instant.now(),userUid,geoLocation, LocationSource.convertFromInterface(userInterfaceType)));
     }
 
 
