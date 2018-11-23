@@ -452,7 +452,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
         return municipality;
     }
-
+//    Loading users with location not null
     @Override
     public  void loadUsersWithLocationNotNUll(){
         List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll();
@@ -462,10 +462,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         for(UserLocationLog userLocationLog:userLocationLogs){
             Municipality municipality =
                             loadMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
-
             userMunicipalityMap.put(userLocationLog.getUserUid(),municipality);
         }
-
     }
 
     @Override
@@ -486,23 +484,21 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         log.info("Municipalities for users with location from cache is = {}",municipalityMap);
         return municipalityMap;
     }
-
+//Counting the user location log within a period of a year
     @Override
     public int countUserLocationLogsWithinYear(){
         int userLocationLogsPeriod = Integer.parseInt(configRepository.findOneByKey("days.location.log.check").get().getValue());
-
         Instant timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
-
-        return userLocationLogRepository.countByTimestampBefore(timeDaysAgo);
+        log.info("Users with location that is less than a year " , userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo));
+        return userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo);
     }
-
+    //Counting the user location log with a period of over a year
     @Override
     public int countUserLocationLogsOutsideYear(){
         int userLocationLogsPeriod = Integer.parseInt(configRepository.findOneByKey("days.location.log.check").get().getValue());
-
         Instant timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
-
-        return userLocationLogRepository.countByTimestampAfter(timeDaysAgo);
+        log.info("Users with location that is less than a year " , userLocationLogRepository.countByTimestampLessThan(timeDaysAgo));
+        return userLocationLogRepository.countByTimestampLessThan(timeDaysAgo);
     }
 
     public List<Membership> getMembersInMunicipality(String groupUid, String municipalityIDs){
