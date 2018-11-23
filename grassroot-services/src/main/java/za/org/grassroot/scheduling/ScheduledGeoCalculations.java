@@ -87,7 +87,7 @@ public class ScheduledGeoCalculations {
         log.info("Inside Scheduled Geo Calculations ---------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         log.info("Caching municipalities for users with location");
 
-        locationInfoBroker.loadUsersWithLocationNotNUll();
+        locationInfoBroker.cacheMunicipalitiesForUsersWithLocation();
     }
 
 }

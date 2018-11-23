@@ -20,7 +20,6 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 
 	List<UserLocationLog> findByUserUidIn(Set<String> userUids);
 
-	int countByTimestampAfter(Instant timeDaysAgo);
-
-	int countByTimestampBefore(Instant timeDaysAgo);
+	//Counting all user location logs based on Instant time days ago
+	int countByTimestampGreaterThan(Instant timeDaysAgo);
 }
