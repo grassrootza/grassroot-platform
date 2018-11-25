@@ -208,9 +208,9 @@ public class USSDCampaignController extends USSDBaseController {
         } else if (campaign.isOutboundTextEnabled() && campaign.outboundBudgetLeft() > 0
                 && !campaignBroker.hasUserShared(campaign.getUid(), user.getUid())) {
             menu = buildSharingMenu(campaign.getUid(), locale);
-        } else if (!addressBroker.hasAddressOrLocation(user.getUid())) {
-            final String prompt = getMessage("campaign.joined.town", user);
-            menu = new USSDMenu(prompt, userMenus + "town/select");
+//        } else if (!addressBroker.hasAddressOrLocation(user.getUid())) {
+//            final String prompt = getMessage("campaign.joined.town", user);
+//            menu = new USSDMenu(prompt, userMenus + "town/select");
         } else {
             menu = genericPositiveExit(campaign.getUid(), user, locale);
         }
