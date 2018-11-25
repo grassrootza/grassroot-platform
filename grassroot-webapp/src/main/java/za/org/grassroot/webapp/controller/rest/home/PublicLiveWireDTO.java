@@ -34,7 +34,7 @@ public class PublicLiveWireDTO {
     private GeoLocation location;
     private LocationSource locationSource;
 
-    public PublicLiveWireDTO(LiveWireAlert alert, boolean includeFullDetails) {
+    public PublicLiveWireDTO(LiveWireAlert alert, boolean includeFullDetails, boolean includeSubOnlyDetails) {
 
         this.headline = alert.getHeadline();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
@@ -46,10 +46,12 @@ public class PublicLiveWireDTO {
             this.contactName = alert.getContactNameNullSafe();
             this.alertType = alert.getType();
             this.tags = alert.getTagList();
-            this.contactNumber = alert.getContactNumberFormatted();
 
-            this.location = alert.getLocation();
-            this.locationSource = alert.getLocationSource();
+            if (includeSubOnlyDetails) {
+                this.contactNumber = alert.getContactNumberFormatted();
+                this.location = alert.getLocation();
+                this.locationSource = alert.getLocationSource();
+            }
 
             if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
                 Group group = alert.getGroup();
