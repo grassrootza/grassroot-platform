@@ -464,24 +464,11 @@ public class GroupFetchController extends BaseRestController {
         return ResponseEntity.ok(userMunicipalityMap);
     }
 
-    @RequestMapping(value = "/users/location/lessThanYear", method = RequestMethod.GET)
-    @ApiOperation(value = "Loads the users with gps coordinates less than a year ")
-    public ResponseEntity<Integer> numberOfUsersLocationLessThanYear () {
-        int userLocation = locationInfoBroker.countUserLocationLogsWithinYear();
-        log.info("##################################################### user location logs within a year ", locationInfoBroker.countUserLocationLogsWithinYear());
-        return ResponseEntity.ok(locationInfoBroker.countUserLocationLogsWithinYear());
-    }
-    @RequestMapping(value = "/users/location/overAyear" , method = RequestMethod.GET)
-    @ApiOperation(value = "Loading user count for users over a period of a year ")
-    public ResponseEntity<Integer> numberOfUsersLocationOverAYear(){
-        int userLocation = locationInfoBroker.countUserLocationLogsOutsideYear();
-        log.info("##################################################### user location logs outside a period of a year " , locationInfoBroker.countUserLocationLogsOutsideYear());
-        return ResponseEntity.ok(locationInfoBroker.countUserLocationLogsOutsideYear());
-    }
-
-}
-//    @RequestMapping(value = "/config/fetch/below/limit",method = RequestMethod.GET)
-//    public ResponseEntity<Integer> getNumberOfGroupsBelowFreeLimit(){
-//        int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
-//        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(freeLimit));
+//    @RequestMapping(value = "/users/location/lessThanYear", method = RequestMethod.GET)
+//    @ApiOperation(value = "Loads the users with gps coordinates less than a year ")
+//    public ResponseEntity<Integer> numberOfUsersLocationLessThanYear () {
+//        int userLocation = locationInfoBroker.countUserLocationLogsWithinYear();
+//        log.info("##################################################### user location logs within a year ", locationInfoBroker.countUserLocationLogsWithinYear());
+//        return ResponseEntity.ok(locationInfoBroker.countUserLocationLogsWithinYear());
 //    }
+}

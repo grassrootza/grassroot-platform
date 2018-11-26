@@ -184,7 +184,7 @@ public class UserController extends BaseRestController {
     @ApiOperation(value = "Refreshes the municipalities for users with locations cache")
     public ResponseEntity refreshCache(){
         log.info("Updating user municipalities cache inside UserController --------------------->>>>>>>>>>>>>>>>>>>>>>>>");
-        this.locationInfoBroker.loadUsersWithLocationNotNUll();
+        this.locationInfoBroker.cacheMunicipalitiesForUsersWithLocation();
         return ResponseEntity.ok(RestMessage.UPDATED);
     }
 }

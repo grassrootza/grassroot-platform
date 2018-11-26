@@ -46,16 +46,14 @@ public interface LocationInfoBroker {
 
     List<Municipality> getMunicipalitiesForProvince(Province province);
 
-    Municipality loadMunicipalityByCoordinates(String userUid,double longitude,double latitude);
+    Municipality cacheMunicipalityByCoordinates(String userUid, double longitude, double latitude);
 
-    void loadUsersWithLocationNotNUll();
+    void cacheMunicipalitiesForUsersWithLocation();
 
     List<Membership> getMembersInMunicipality(String groupUid,String municipalityIDs);
 
     Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> user);
 
-    int countUserLocationLogsWithinYear();
-
-    int countUserLocationLogsOutsideYear();
+    int countUserLocationLogs(boolean countAll);
 
 }

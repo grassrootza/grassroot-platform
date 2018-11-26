@@ -44,6 +44,7 @@ import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.authentication.JwtService;
 
 import javax.annotation.PostConstruct;
@@ -424,7 +425,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
-    public Municipality loadMunicipalityByCoordinates(String userUid,double longitude,double latitude){
+    public Municipality cacheMunicipalityByCoordinates(String userUid, double longitude, double latitude){
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/point/4326/");
         String latLong = longitude + "," + latitude;
 
@@ -454,27 +455,26 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 //    Loading users with location not null
     @Override
-    public  void loadUsersWithLocationNotNUll(){
+    public  void cacheMunicipalitiesForUsersWithLocation(){
         List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll();
 
         Map<String,Municipality> userMunicipalityMap = new HashMap<>();
 
         for(UserLocationLog userLocationLog:userLocationLogs){
             Municipality municipality =
-                            loadMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
+                            cacheMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
             userMunicipalityMap.put(userLocationLog.getUserUid(),municipality);
         }
     }
 
     @Override
-    public Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> user){
+    public Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> userUids){
         Cache cache = cacheManager.getCache("user_municipality");
         Map<String,Municipality> municipalityMap = new HashMap<>();
 
-
         List<String> cacheKeys = cache.getKeys();
 
-        for(String userUid: user){
+        for(String userUid: userUids){
             if(cacheKeys.contains(userUid)){
                 Municipality municipality = (Municipality) cache.get(userUid).getObjectValue();
                 municipalityMap.put(userUid,municipality);
@@ -486,19 +486,15 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 //Counting the user location log within a period of a year
     @Override
-    public int countUserLocationLogsWithinYear(){
+    public int countUserLocationLogs(boolean countAll){
         int userLocationLogsPeriod = Integer.parseInt(configRepository.findOneByKey("days.location.log.check").get().getValue());
-        Instant timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
-        log.info("Users with location that is less than a year " , userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo));
+        Instant timeDaysAgo;
+        if(countAll){
+            timeDaysAgo = DateTimeUtil.getEarliestInstant();
+        }else{
+            timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
+        }
         return userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo);
-    }
-    //Counting the user location log with a period of over a year
-    @Override
-    public int countUserLocationLogsOutsideYear(){
-        int userLocationLogsPeriod = Integer.parseInt(configRepository.findOneByKey("days.location.log.check").get().getValue());
-        Instant timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
-        log.info("Users with location that is less than a year " , userLocationLogRepository.countByTimestampLessThan(timeDaysAgo));
-        return userLocationLogRepository.countByTimestampLessThan(timeDaysAgo);
     }
 
     public List<Membership> getMembersInMunicipality(String groupUid, String municipalityIDs){
