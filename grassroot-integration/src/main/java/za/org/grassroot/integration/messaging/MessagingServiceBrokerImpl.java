@@ -76,13 +76,14 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
 
     @Override
     public MessageServicePushResponse sendPrioritySMS(String message, String phoneNumber) {
+        log.info("Sending a priority SMS ...");
         URI serviceCallUri = baseUri()
                 .path("/notification/push/priority/{phoneNumber}")
                 .queryParam("message", message)
                 .buildAndExpand(phoneNumber)
                 .toUri();
         try {
-            log.info("calling: {}", serviceCallUri);
+            log.info("Calling: {}", serviceCallUri);
             ResponseEntity<MessageServicePushResponse> responseEntity =
                     restTemplate.exchange(
                             serviceCallUri,
@@ -92,8 +93,8 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
                     );
             return responseEntity.getBody();
         } catch (Exception e) {
-            log.error("Error connecting to: {}", serviceCallUri);
-            throw e;
+            log.error("Error connecting to: {}, error: {}", serviceCallUri, e.getMessage());
+            return null;
         }
     }
 

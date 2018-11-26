@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,12 +31,12 @@ public class LiveWireNewsController {
 
     @RequestMapping(value = "/list/headlines", method = RequestMethod.GET)
     public Page<PublicLiveWireDTO> fetchLiveWireNewsHeadlines(Pageable pageable) {
-        return liveWireAlertBroker.findPublicAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, false));
+        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, false, false));
     }
 
     @RequestMapping(value = "/list/full", method = RequestMethod.GET)
     public Page<PublicLiveWireDTO> fetchLiveWireNewsArticles(Pageable pageable) {
-        return liveWireAlertBroker.findPublicAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, true));
+        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, true, false));
     }
 
     @RequestMapping(value = "/page/number",method = RequestMethod.GET)
@@ -44,7 +45,7 @@ public class LiveWireNewsController {
         Pageable pageable = PageRequest.of(page, 10, Sort.Direction.DESC,"creationTime");
         boolean found = false;
 
-        Page<LiveWireAlert> liveWireAlerts = liveWireAlertBroker.findPublicAlerts(pageable);
+        Page<LiveWireAlert> liveWireAlerts = liveWireAlertBroker.fetchReleasedAlerts(pageable);
         for(int x = 0;x < liveWireAlerts.getTotalPages();x++){
             for (LiveWireAlert alert:liveWireAlerts.getContent()) {
                 if(alert.getUid().equals(alertUid)){
@@ -57,9 +58,11 @@ public class LiveWireNewsController {
             }else{
                 page++;
                 pageable = PageRequest.of(page,10, Sort.Direction.DESC,"creationTime");
-                liveWireAlerts = liveWireAlertBroker.findPublicAlerts(pageable);
+                liveWireAlerts = liveWireAlertBroker.fetchReleasedAlerts(pageable);
             }
         }
         return ResponseEntity.ok(page);
     }
+
+
 }

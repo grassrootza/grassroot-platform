@@ -42,11 +42,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenValid(token)) {
             String userId = jwtService.getUserIdFromJwtToken(token);
+            log.debug("User ID: {}", userId);
             Set<Role> userRoles = jwtService.getStandardRolesFromJwtToken(token).stream().map(name -> new Role(name, null))
                     .collect(Collectors.toSet());
             log.debug("and user roles = {}", userRoles);
             JwtBasedAuthentication auth = new JwtBasedAuthentication(userRoles, token, userId);
             SecurityContextHolder.getContext().setAuthentication(auth);
+            log.debug("Finished pushing authentication object");
         } else {
             SecurityContextHolder.getContext().setAuthentication(new AnonAuthentication()); // to avoid redirects etc
         }
