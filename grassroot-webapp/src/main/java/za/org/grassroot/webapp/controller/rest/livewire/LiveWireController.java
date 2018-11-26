@@ -3,6 +3,8 @@ package za.org.grassroot.webapp.controller.rest.livewire;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
@@ -25,15 +27,16 @@ import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.controller.rest.home.PublicLiveWireDTO;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Set;
 
 @RestController @Grassroot2RestController @Slf4j
 @RequestMapping(value = "/v2/api/livewire") @Api("/v2/api/livewire")
-@PreAuthorize("hasRole('ROLE_FULL_USER')")
 public class LiveWireController extends BaseRestController{
 
     private final UserManagementService userManagementService;
@@ -62,9 +65,15 @@ public class LiveWireController extends BaseRestController{
         this.subscriberBroker = subscriberBroker;
     }
 
+    @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
+    @RequestMapping(value = "/list/subscriber", method = RequestMethod.GET)
+    public Page<PublicLiveWireDTO> fetchLiveWireAlertsForSubscribers(Pageable pageable) {
+        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, true, true));
+    }
+
+    @PreAuthorize("hasRole('ROLE_FULL_USER')")
     @RequestMapping(value = "/create/{userUid}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> createLiveWireAlert(@PathVariable String userUid,
-                                                               @RequestParam String headline,
+    public ResponseEntity<ResponseWrapper> createLiveWireAlert(@RequestParam String headline,
                                                                @RequestParam(required = false) String description,
                                                                @RequestParam LiveWireAlertType type,
                                                                @RequestParam(required = false) String groupUid,
@@ -76,8 +85,9 @@ public class LiveWireController extends BaseRestController{
                                                                @RequestParam(required = false) String destUid,
                                                                @RequestParam(required = false) Set<String> mediaFileKeys,
                                                                @RequestParam(required = false) String contactName,
-                                                               @RequestParam(required = false) String contactNumber) {
-        User creatingUser = userManagementService.load(userUid);
+                                                               @RequestParam(required = false) String contactNumber,
+                                                               @PathVariable String userUid, HttpServletRequest request) {
+        User creatingUser = userManagementService.load(getUserIdFromRequest(request));
         LiveWireAlert.Builder builder = LiveWireAlert.newBuilder();
 
         builder.creatingUser(creatingUser)

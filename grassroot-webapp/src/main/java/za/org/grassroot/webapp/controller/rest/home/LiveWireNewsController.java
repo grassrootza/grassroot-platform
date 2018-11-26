@@ -39,12 +39,6 @@ public class LiveWireNewsController {
         return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, true, false));
     }
 
-    @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
-    @RequestMapping(value = "/list/private", method = RequestMethod.GET)
-    public Page<PublicLiveWireDTO> fetchLiveWireAlertsForSubscribers(Pageable pageable) {
-        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, true, true));
-    }
-
     @RequestMapping(value = "/page/number",method = RequestMethod.GET)
     public ResponseEntity<Integer> findAlertpageNumber(@RequestParam String alertUid){
         int page = 0;
