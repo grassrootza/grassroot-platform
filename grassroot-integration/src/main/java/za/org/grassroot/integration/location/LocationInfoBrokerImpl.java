@@ -484,14 +484,19 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         log.info("Municipalities for users with location from cache is = {}",municipalityMap);
         return municipalityMap;
     }
-//Counting the user location log within a period of a year
+    //Counting the user location log within a period of a year
     @Override
     public int countUserLocationLogs(boolean countAll){
+
         int userLocationLogsPeriod = Integer.parseInt(configRepository.findOneByKey("days.location.log.check").get().getValue());
+
         Instant timeDaysAgo;
+
         if(countAll){
+           //All Users count with the gps coordinates since the earliest instant , which is from the beginning of grassroots
             timeDaysAgo = DateTimeUtil.getEarliestInstant();
         }else{
+            //users count with gps coordinates within a period of a year
             timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
         }
         return userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo);

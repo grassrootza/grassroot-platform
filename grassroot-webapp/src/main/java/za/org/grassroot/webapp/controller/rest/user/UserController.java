@@ -179,7 +179,7 @@ public class UserController extends BaseRestController {
 
         return ResponseEntity.ok(RestMessage.LOCATION_RECORDED);
     }
-
+    // Refreshing the user location log cache for updating user count with gps coordinates
     @RequestMapping(value = "/user/location/refresh",method = RequestMethod.GET)
     @ApiOperation(value = "Refreshes the municipalities for users with locations cache")
     public ResponseEntity refreshCache(){
