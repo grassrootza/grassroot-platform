@@ -37,11 +37,6 @@ public class UserLocationLog {
 		// for JPA
 	}
 
-	public UserLocationLog(String uid,double latitude,double longitude){
-	    this.uid = uid;
-	    this.location = new GeoLocation(latitude,longitude);
-    }
-
 	public UserLocationLog(Instant timestamp, String userUid, GeoLocation location, LocationSource locationSource) {
 		this.uid = UUID.randomUUID().toString();
 		this.timestamp = Objects.requireNonNull(timestamp);
