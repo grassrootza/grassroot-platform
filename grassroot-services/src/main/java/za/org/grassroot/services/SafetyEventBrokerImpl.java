@@ -101,6 +101,8 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
         SafetyEvent safetyEvent = safetyEventRepository.findOneByUid(safetyEventUid);
         User respondent = userRepository.findOneByUid(userUid);
 
+        boolean wasRespondedToPrior = safetyEvent.isRespondedTo();
+
         safetyEvent.setRespondedTo(true);
         safetyEvent.setActive(false);
         safetyEvent.setFalseAlarm(!isValid);
@@ -114,12 +116,13 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
             messagingServiceBroker.sendSMS(requestor.getUid(), message, false);
         }
 
-        Group group = safetyEvent.getGroup();
-        User requestor = safetyEvent.getActivatedBy();
-        group.getMembers().stream()
-                .filter(m -> !requestor.equals(m))
-                .forEach((m -> sendRespondedNotice(safetyEvent, respondent, m)));
-
+        if (!wasRespondedToPrior) {
+            Group group = safetyEvent.getGroup();
+            User requestor = safetyEvent.getActivatedBy();
+            group.getMembers().stream()
+                    .filter(m -> !requestor.equals(m))
+                    .forEach((m -> sendRespondedNotice(safetyEvent, respondent, m)));
+        }
     }
 
     private void sendRespondedNotice(SafetyEvent safetyEvent, User responder, User member) {

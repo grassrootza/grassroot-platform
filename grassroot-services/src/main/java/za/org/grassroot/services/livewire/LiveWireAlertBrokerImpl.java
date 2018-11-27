@@ -633,7 +633,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<LiveWireAlert> findPublicAlerts(Pageable pageRequest) {
+    public Page<LiveWireAlert> fetchReleasedAlerts(Pageable pageRequest) {
         return alertRepository.findByCompleteTrueAndReviewedTrueAndSentTrueAndDestinationTypeIn(PUBLIC_TYPES, pageRequest);
     }
 

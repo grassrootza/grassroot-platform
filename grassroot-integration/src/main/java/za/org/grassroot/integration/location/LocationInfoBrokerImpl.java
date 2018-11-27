@@ -157,7 +157,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                     stdRequestEntity(uriBuilder.build().toUri(), HttpMethod.GET), TownLookupResult[].class);
             return lookupResult.getBody() != null ? Arrays.asList(lookupResult.getBody()) : new ArrayList<>();
         } catch (RestClientException e) {
-            log.error("Error constructing or executing lookup URL: ", e);
+            log.error("Error constructing or executing lookup URL: {}", e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -175,7 +175,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.info("found place: {}", responseEntity.getBody());
             return responseEntity.getBody();
         } catch (RestClientException e) {
-            log.error("Error constructing or executing lookup URL: {}", e);
+            log.error("Error constructing or executing lookup URL: {}", e.getMessage());
             return null;
         }
     }
