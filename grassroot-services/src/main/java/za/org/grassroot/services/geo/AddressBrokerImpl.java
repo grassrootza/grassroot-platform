@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.AddressLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.enums.AddressLogType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -256,6 +257,10 @@ public class AddressBrokerImpl implements AddressBroker {
             address.setPostalCode(place.getPostalCode());
             if (place.getLatitude() != null) {
                 address.setLocation(new GeoLocation(place.getLatitude(), place.getLongitude()));
+
+                /*UserLocationLog userLocationLog = new UserLocationLog(Instant.now(),userUid,new GeoLocation(place.getLatitude(),place.getLongitude()),locationAccuracy);
+                userLocationLogRepository.save(userLocationLog);*/
+
                 address.setLocationSource(locationAccuracy);
             }
 

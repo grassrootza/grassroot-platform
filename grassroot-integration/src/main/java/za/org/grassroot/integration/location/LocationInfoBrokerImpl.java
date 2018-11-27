@@ -109,7 +109,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     @PostConstruct
     public void init() {
-        placeLookupLambda = environment.getProperty("grassroot.places.lambda.url", "http://localhost:3000");
+        placeLookupLambda = environment.getProperty("grassroot.places.lambda.url", "https://l48oimxk54.execute-api.eu-west-1.amazonaws.com/latest");
         izweLamiLambda = environment.getProperty("grassroot.izwelami.lambda.url", "http://localhost:3001");
 
         if (geoApisEnabled) {
@@ -146,6 +146,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Override
     public List<TownLookupResult> lookupPostCodeOrTown(String postCodeOrTown, Province province) {
         try {
+            log.info("Place Lookup Lambda URL = {}",placeLookupLambda);
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(placeLookupLambda + "/lookup")
                     .queryParam("searchTerm", postCodeOrTown.trim());
 
