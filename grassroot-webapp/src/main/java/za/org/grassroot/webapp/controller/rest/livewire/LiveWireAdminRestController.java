@@ -2,13 +2,20 @@ package za.org.grassroot.webapp.controller.rest.livewire;
 
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
@@ -21,7 +28,9 @@ import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.MediaFileBroker;
+import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.authentication.JwtType;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.GenericPostResponse;
 import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
@@ -37,7 +46,11 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.LiveWireAlertDTO;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -57,6 +70,8 @@ public class LiveWireAdminRestController extends BaseRestController {
     private final SocialMediaBroker socialMediaBroker;
     private final UserManagementService userManagementService;
     private final PasswordTokenService passwordTokenService;
+
+    private JwtService jwtService;
 
     private static final Pattern emailSplitPattern = Pattern.compile("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b",
             Pattern.CASE_INSENSITIVE);
@@ -79,6 +94,11 @@ public class LiveWireAdminRestController extends BaseRestController {
         this.socialMediaBroker = socialMediaBroker;
         this.userManagementService = userManagementService;
         this.passwordTokenService = passwordTokenService;
+    }
+
+    @Autowired
+    public void setJwtService(JwtService jwtService) {
+        this.jwtService = jwtService;
     }
 
     @RequestMapping(value = "/list",method = RequestMethod.GET)
@@ -375,6 +395,16 @@ public class LiveWireAdminRestController extends BaseRestController {
             restMessage = RestMessage.UPDATED;
         }
         return ResponseEntity.ok(restMessage.name());
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/subscriber/token", method = RequestMethod.GET)
+    public ResponseEntity getSubscriberToken(@RequestParam String subscriberUid) {
+        DataSubscriber subscriberAdmin= dataSubscriberBroker.load(subscriberUid);
+        CreateJwtTokenRequest jwtTokenRequest = new CreateJwtTokenRequest(JwtType.API_CLIENT);
+        jwtTokenRequest.addClaim(JwtService.USER_UID_KEY, subscriberAdmin.getUid());
+        jwtTokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_LIVEWIRE_USER);
+        return ResponseEntity.ok(jwtService.createJwt(jwtTokenRequest));
     }
 
     private List<String> splitEmailInput(String emailsInSingleString) {

@@ -53,7 +53,6 @@ public interface LocationInfoBroker {
     List<Membership> getMembersInMunicipality(String groupUid,String municipalityIDs);
 
     Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> user);
-
+// counting all user location logs
     int countUserLocationLogs(boolean countAll);
-
 }

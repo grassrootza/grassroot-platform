@@ -70,6 +70,7 @@ public interface UserManagementService {
                        String emailAddress, Province province, AlertPreference alertPreference,
                        Locale locale, String validationOtp,boolean whatsappOptIn, UserInterfaceType channel);
 
+
     void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName);
 
     void setDisplayNameByOther(String updatingUserUid, String targetUserUid, String displayName);

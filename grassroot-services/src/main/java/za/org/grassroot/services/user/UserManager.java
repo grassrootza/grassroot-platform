@@ -246,6 +246,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(noRollbackFor = InvalidOtpException.class)
     public boolean updateUser(String userUid, String displayName, String phoneNumber, String emailAddress,
+
                               Province province, AlertPreference alertPreference, Locale locale, String validationOtp,
                               boolean whatsappOptIn, UserInterfaceType channel) {
         Objects.requireNonNull(userUid);// added whatsapp opt in field to the updateUser method
@@ -264,7 +265,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         boolean emailChanged = !StringUtils.isEmpty(user.getEmailAddress()) && !user.getEmailAddress().equals(emailAddress);
         boolean whatsAppChanged = whatsappOptIn != user.isWhatsAppOptedIn();
         boolean otherChanged = false;
-//        boolean subscribeWhatsapp = whatsappOptIn;// whatsapp subscribtion log boolean
 
         user.setWhatsAppOptedIn(whatsappOptIn);
 
@@ -333,6 +333,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         //Storing a log for whats app subscription after changes have been altered.
+
         if (whatsAppChanged){
             user.setWhatsAppOptedIn(whatsappOptIn);
             logs.add(new UserLog(userUid,UserLogType.USER_SUBSCRIBED_WHATSAPP,"Subscribed for whats app notifications",

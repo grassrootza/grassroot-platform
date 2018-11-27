@@ -42,6 +42,7 @@ import za.org.grassroot.core.dto.group.MembershipRecordDTO;
 import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.dto.membership.MembershipStdDTO;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.integration.location.Municipality;
@@ -442,7 +443,7 @@ public class GroupFetchController extends BaseRestController {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
     }
-
+// fetch all the municipalities in the province provided
     @RequestMapping(value = "/province/municipalities",method = RequestMethod.GET)
     @ApiOperation(value = "Loads the municipalities for the provided province")
     public  ResponseEntity<List<Municipality>> getMunicipalities(@RequestParam String province){
@@ -454,16 +455,21 @@ public class GroupFetchController extends BaseRestController {
         Province province1 = Province.valueOf(province);
         return ResponseEntity.ok(locationInfoBroker.getMunicipalitiesForProvince(province1));
     }
-
+//    Getting the users for a certain municipalities
     @RequestMapping(value = "/members/location",method = RequestMethod.GET)
     @ApiOperation(value = "Loads the municipalities for users that have location in a group")
     public ResponseEntity<Map<String,Municipality>> loadUsersWithLocation(@RequestParam String groupUid){
         Group group = groupBroker.load(groupUid);
         Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
-
         Map<String,Municipality> userMunicipalityMap = locationInfoBroker.getMunicipalitiesForUsersWithLocationFromCache(memberUids);
-
         return ResponseEntity.ok(userMunicipalityMap);
+    }
+    //Fetching count for all the users that have gps coordinates
+    @RequestMapping(value = "/users/location/timeStamp", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetching the number of users who have coordinates with a specific time stamp period ")
+    public ResponseEntity<Integer> countByTimestampGreaterThan(@RequestParam boolean countAll){
+        int userLocation = locationInfoBroker.countUserLocationLogs(countAll);
+        return ResponseEntity.ok(locationInfoBroker.countUserLocationLogs(countAll));
     }
 
 }

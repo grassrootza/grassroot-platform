@@ -158,7 +158,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                     stdRequestEntity(uriBuilder.build().toUri(), HttpMethod.GET), TownLookupResult[].class);
             return lookupResult.getBody() != null ? Arrays.asList(lookupResult.getBody()) : new ArrayList<>();
         } catch (RestClientException e) {
-            log.error("Error constructing or executing lookup URL: ", e);
+            log.error("Error constructing or executing lookup URL: {}", e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -176,7 +176,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             log.info("found place: {}", responseEntity.getBody());
             return responseEntity.getBody();
         } catch (RestClientException e) {
-            log.error("Error constructing or executing lookup URL: {}", e);
+            log.error("Error constructing or executing lookup URL: {}", e.getMessage());
             return null;
         }
     }
@@ -454,7 +454,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
         return municipality;
     }
-
+//    Loading users with location not null
     @Override
     public  void cacheMunicipalitiesForUsersWithLocation(){
         List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll();
@@ -464,7 +464,6 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         for(UserLocationLog userLocationLog:userLocationLogs){
             Municipality municipality =
                             cacheMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
-
             userMunicipalityMap.put(userLocationLog.getUserUid(),municipality);
         }
     }
@@ -486,18 +485,21 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         log.info("Municipalities for users with location from cache is = {}",municipalityMap);
         return municipalityMap;
     }
-
+    //Counting the user location log within a period of a year
     @Override
     public int countUserLocationLogs(boolean countAll){
+
         int userLocationLogsPeriod = Integer.parseInt(configRepository.findOneByKey("days.location.log.check").get().getValue());
+
         Instant timeDaysAgo;
 
         if(countAll){
+           //All Users count with the gps coordinates since the earliest instant , which is from the beginning of grassroots
             timeDaysAgo = DateTimeUtil.getEarliestInstant();
         }else{
+            //users count with gps coordinates within a period of a year
             timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
         }
-
         return userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo);
     }
 
