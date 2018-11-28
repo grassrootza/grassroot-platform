@@ -32,10 +32,12 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.group.Group;
@@ -73,6 +75,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private final CacheManager cacheManager;
     private final GroupRepository groupRepository;
     private final ConfigRepository configRepository;
+    private final AddressRepository addressRepository;
 
     private JwtService jwtService;
 
@@ -89,7 +92,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository,
                                   AccountRepository accountRepository, AccountLogRepository accountLogRepository,
                                   NotificationRepository notificationRepository,UserLocationLogRepository userLocationLogRepository,
-                                  CacheManager cacheManager,GroupRepository groupRepository,ConfigRepository configRepository) {
+                                  CacheManager cacheManager,GroupRepository groupRepository,ConfigRepository configRepository,AddressRepository addressRepository) {
         this.environment = environment;
         this.restTemplate = restTemplate;
         this.userRepository = userRepository;
@@ -100,6 +103,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         this.cacheManager = cacheManager;
         this.groupRepository = groupRepository;
         this.configRepository = configRepository;
+        this.addressRepository = addressRepository;
     }
 
     @Autowired
@@ -489,7 +493,13 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Override
     public int countUserLocationLogs(boolean countAll){
 
-        int userLocationLogsPeriod = Integer.parseInt(configRepository.findOneByKey("days.location.log.check").get().getValue());
+        ConfigVariable configVariable = configRepository.findOneByKey("days.location.log.check").isPresent() ?
+                configRepository.findOneByKey("days.location.log.check").get() : null;
+
+        int userLocationLogsPeriod = 0;
+        if (configVariable != null) {
+            userLocationLogsPeriod = Integer.parseInt(configVariable.getValue());
+        }
 
         Instant timeDaysAgo;
 
@@ -501,6 +511,17 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
         }
         return userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo);
+    }
+
+    @Override
+    public void saveLocationLogsFromAddress(){
+        List<Address> addresses = addressRepository.loadAddressesWithLocation();
+        if(addresses != null){
+            for(Address address:addresses){
+                UserLocationLog userLocationLog = new UserLocationLog(Instant.now(),address.getResident().getUid(),address.getLocation(),address.getLocationSource());
+                userLocationLogRepository.save(userLocationLog);
+            }
+        }
     }
 
     public List<Membership> getMembersInMunicipality(String groupUid, String municipalityIDs){

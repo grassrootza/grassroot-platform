@@ -55,4 +55,6 @@ public interface LocationInfoBroker {
     Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> user);
 // counting all user location logs
     int countUserLocationLogs(boolean countAll);
+
+    void saveLocationLogsFromAddress();
 }

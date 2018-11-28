@@ -23,6 +23,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
+import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
@@ -60,6 +61,8 @@ public class AdminRestController extends BaseRestController{
 
     private MemberDataExportBroker memberDataExportBroker;
 
+    private final LocationInfoBroker locationInfoBroker;
+
     public AdminRestController(UserManagementService userManagementService,
                                JwtService jwtService,
                                AdminService adminService,
@@ -67,7 +70,8 @@ public class AdminRestController extends BaseRestController{
                                GroupBroker groupBroker,
                                MessagingServiceBroker messagingServiceBroker,
                                PasswordTokenService passwordTokenService,
-                               AccountFeaturesBroker accountFeaturesBroker){
+                               AccountFeaturesBroker accountFeaturesBroker,
+                               LocationInfoBroker locationInfoBroker){
         super(jwtService,userManagementService);
         this.adminService = adminService;
         this.userManagementService = userManagementService;
@@ -77,6 +81,7 @@ public class AdminRestController extends BaseRestController{
         this.groupBroker = groupBroker;
         this.jwtService = jwtService;
         this.accountFeaturesBroker = accountFeaturesBroker;
+        this.locationInfoBroker = locationInfoBroker;
     }
 
     @Autowired(required = false) // as it depends on WhatsApp being active
@@ -271,6 +276,13 @@ public class AdminRestController extends BaseRestController{
     @RequestMapping(value = "/config/fetch/above/limit/{limit}",method = RequestMethod.GET)
     public ResponseEntity<Integer> countGroupsAboveLimit(@PathVariable int limit){
         return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(limit));
+    }
+
+    @RequestMapping(value = "/update/location/address",method = RequestMethod.GET)
+    @ApiOperation(value = "Refreshes the user location log table by adding locations that are in address but not in location log")
+    public ResponseEntity updateLocationLogFromAddress(){
+        locationInfoBroker.saveLocationLogsFromAddress();
+        return ResponseEntity.ok(RestMessage.UPDATED);
     }
 
 }

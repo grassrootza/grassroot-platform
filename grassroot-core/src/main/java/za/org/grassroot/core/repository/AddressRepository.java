@@ -18,9 +18,9 @@ public interface AddressRepository extends JpaRepository<Address, Long>, JpaSpec
 
     Address findOneByUid(String uid);
 
-    @Query("select * from address ad where ad.latitude is not null " +
-            "and ad.resident_user_id in (" +
-            "select id from user_profile where uid not in (select user_uid from user_location_log))")
+    @Query("select ad from Address ad where ad.location is not null " +
+            "and ad.resident in (" +
+            "select u.id from User u where u.uid not in (select userUid from UserLocationLog))")
     List<Address> loadAddressesWithLocation();
 
 }
