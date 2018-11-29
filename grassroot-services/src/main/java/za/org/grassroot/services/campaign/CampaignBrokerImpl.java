@@ -9,9 +9,21 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.Notification_;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.Role_;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
-import za.org.grassroot.core.domain.campaign.*;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.campaign.CampaignLog_;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.core.domain.campaign.Campaign_;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Group_;
 import za.org.grassroot.core.domain.group.Membership;
@@ -42,7 +54,16 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
@@ -54,6 +75,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private static final List<String> SYSTEM_CODES = Arrays.asList("123", "911");
 
     private final CampaignRepository campaignRepository;
+
     private final CampaignMessageRepository campaignMessageRepository;
     private final CampaignStatsBroker campaignStatsBroker;
 

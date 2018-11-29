@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.campaign.CampaignLogProjection;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -28,7 +29,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -92,6 +101,23 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
     public void clearCampaignStatsCache(String campaignUid) {
         Cache staticCache = getStatsCache(CURRENT_CACHE);
         staticCache.remove(campaignUid + "_engagement");
+    }
+
+    @Override
+    public CampaignLogsDataCollection getCampaignLogData(String campaignUid) {
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        List<CampaignLogProjection> logs = campaignLogRepository.findByCampaign(campaign);
+        log.info("Found {} logs for campaign", logs.size());
+        long startTime = System.currentTimeMillis();
+        CampaignLogsDataCollection collection = CampaignLogsDataCollection.builder()
+                .totalEngaged(logs.stream().filter(log -> log.typeFilter(CampaignLogType.CAMPAIGN_FOUND)).count())
+                .totalSigned(logs.stream().filter(log -> log.typeFilter(CampaignLogType.CAMPAIGN_PETITION_SIGNED)).count())
+                .totalJoined(logs.stream().filter(log -> log.typeFilter(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP)).count())
+                .lastActivityEpochMilli(logs.stream().max(Comparator.comparing(CampaignLogProjection::getCreationTime))
+                        .map(log -> log.getCreationTime().toEpochMilli()).orElse(0L))
+                .build();
+        log.info("Took {} msecs to assemble stats", System.currentTimeMillis() - startTime);
+        return collection;
     }
 
     @Override

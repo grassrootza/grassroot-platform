@@ -14,7 +14,13 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
@@ -24,6 +30,7 @@ import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignMessageDTO;
+import za.org.grassroot.services.campaign.CampaignStatsBroker;
 import za.org.grassroot.services.campaign.CampaignTextBroker;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
 import za.org.grassroot.services.exception.NoPaidAccountException;
@@ -41,7 +48,12 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
@@ -52,6 +64,8 @@ public class CampaignManagerController extends BaseRestController {
 
     private final CampaignBroker campaignBroker;
     private final CampaignTextBroker campaignTextBroker;
+    private final CampaignStatsBroker campaignStatsBroker;
+
     private final UserManagementService userManager;
     private final GroupBroker groupBroker;
     private final CacheManager cacheManager;
@@ -67,10 +81,11 @@ public class CampaignManagerController extends BaseRestController {
             .eternal(false).timeToLiveSeconds(300).maxEntriesLocalHeap(20);
 
     @Autowired
-    public CampaignManagerController(JwtService jwtService, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, UserManagementService userManager, GroupBroker groupBroker, CacheManager cacheManager) {
+    public CampaignManagerController(JwtService jwtService, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, CampaignStatsBroker campaignStatsBroker, UserManagementService userManager, GroupBroker groupBroker, CacheManager cacheManager) {
         super(jwtService, userManager);
         this.campaignBroker = campaignBroker;
         this.campaignTextBroker = campaignTextBroker;
+        this.campaignStatsBroker = campaignStatsBroker;
         this.userManager = userManager;
         this.groupBroker = groupBroker;
         this.cacheManager = cacheManager;
@@ -97,12 +112,30 @@ public class CampaignManagerController extends BaseRestController {
         } else {
             List<CampaignViewDTO> dbCampaigns = campaignBroker
                     .getCampaignsManagedByUser(getUserIdFromRequest(request))
-                    .stream().map(CampaignViewDTO::new)
+                    .stream().map(campaign -> {
+                        campaignStatsBroker.getCampaignLogData(campaign.getUid());
+                        return new CampaignViewDTO(campaign, true);
+                    })
                     .sorted(Comparator.comparing(CampaignViewDTO::getLastActivityEpochMilli, Comparator.reverseOrder()))
                     .collect(Collectors.toList());
             cacheUserCampaigns(userUid, dbCampaigns);
             return ResponseEntity.ok(dbCampaigns);
         }
+    }
+
+    @RequestMapping(value = "/list/minimal", method = RequestMethod.GET)
+    @ApiOperation(value = "Stripped down list of campaigns", notes = "Lists the campaigns a user is managing")
+    public ResponseEntity<List<CampaignViewDTO>> fetchMinimalCampaignsForUser(HttpServletRequest request) {
+        final String userUid = getUserIdFromRequest(request);
+        return checkCacheForUser(userUid).orElseGet(() -> {
+            List<CampaignViewDTO> dbCampaigns = campaignBroker
+                    .getCampaignsManagedByUser(getUserIdFromRequest(request))
+                    .stream().map(campaign -> new CampaignViewDTO(campaign, false))
+                    .sorted(Comparator.comparing(CampaignViewDTO::getLastActivityEpochMilli, Comparator.reverseOrder()))
+                    .collect(Collectors.toList());
+            cacheUserCampaigns(userUid, dbCampaigns);
+            return ResponseEntity.ok(dbCampaigns);
+        });
     }
 
     @RequestMapping(value = "/list/group", method = RequestMethod.GET)
@@ -112,7 +145,7 @@ public class CampaignManagerController extends BaseRestController {
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> {
                     List<CampaignViewDTO> campaigns = campaignBroker.getCampaignsCreatedLinkedToGroup(groupUid).stream()
-                            .map(CampaignViewDTO::new).collect(Collectors.toList());
+                            .map(campaign -> new CampaignViewDTO(campaign, false)).collect(Collectors.toList());
                     cacheGroupCampaigns(groupUid, campaigns);
                     return ResponseEntity.ok(campaigns);
                 });
@@ -127,7 +160,7 @@ public class CampaignManagerController extends BaseRestController {
                 return ResponseEntity.ok(viewDto);
             }
             Campaign campaign = campaignBroker.load(campaignUid);
-            viewDto = new CampaignViewDTO(campaign);
+            viewDto = new CampaignViewDTO(campaign, true);
             log.info("sending back DTO with messages: {}", viewDto.getCampaignMessages());
             cacheCampaignFull(viewDto, getUserIdFromRequest(request));
             return ResponseEntity.ok(viewDto);
@@ -189,7 +222,7 @@ public class CampaignManagerController extends BaseRestController {
                 createCampaignRequest.getImageKey());
 
         clearCaches(campaign.getUid(), userUid, campaign.getMasterGroup().getUid());
-        return ResponseEntity.ok(new CampaignViewDTO(campaign));
+        return ResponseEntity.ok(new CampaignViewDTO(campaign, true));
     }
 
     @ExceptionHandler(CampaignCodeTakenException.class)
@@ -234,7 +267,7 @@ public class CampaignManagerController extends BaseRestController {
         log.info("campaign messages received: {}", campaignMessages);
         Campaign updatedCampaign = campaignBroker.setCampaignMessages(getUserIdFromRequest(request), campaignUid, campaignMessages);
         clearCaches(campaignUid, getUserIdFromRequest(request), null);
-        return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign));
+        return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign, true));
     }
 
     @RequestMapping(value = "/update/image/{campaignUid}", method = RequestMethod.POST)
@@ -283,7 +316,7 @@ public class CampaignManagerController extends BaseRestController {
         Campaign updatedCampaign = campaignBroker.load(campaignUid);
         log.info("updated campaign group name: {}", updatedCampaign.getMasterGroup().getName());
         clearCaches(campaignUid, userUid, updatedCampaign.getMasterGroup().getUid());
-        return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign));
+        return ResponseEntity.ok(new CampaignViewDTO(updatedCampaign, true));
     }
 
     @RequestMapping(value = "/end/{campaignUid}", method = RequestMethod.GET)
@@ -347,7 +380,7 @@ public class CampaignManagerController extends BaseRestController {
     private CampaignViewDTO fetchAndCacheUpdatedCampaign(String campaignUid, String userUid) {
         Campaign updatedCampaign = campaignBroker.load(campaignUid);
         clearCaches(campaignUid, userUid, updatedCampaign.getMasterGroup().getUid());
-        CampaignViewDTO viewDTO = new CampaignViewDTO(updatedCampaign);
+        CampaignViewDTO viewDTO = new CampaignViewDTO(updatedCampaign, true);
         cacheCampaignFull(viewDTO, userUid);
         return viewDTO;
     }
@@ -368,6 +401,15 @@ public class CampaignManagerController extends BaseRestController {
             log.info("null pointer strangeness in campaigns cache again");
             return null;
         }
+    }
+
+    private Optional<ResponseEntity<List<CampaignViewDTO>>> checkCacheForUser(String userUid) {
+        if (userCampaignsCache == null)
+            return Optional.empty();
+        else if (!userCampaignsCache.isKeyInCache(userUid))
+            return Optional.empty();
+        else
+            return Optional.of(ResponseEntity.ok((List<CampaignViewDTO>) userCampaignsCache.get(userUid).getObjectValue()));
     }
 
     private void cacheUserCampaigns(String userUid, List<CampaignViewDTO> campaigns) {

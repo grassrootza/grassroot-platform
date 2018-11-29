@@ -43,6 +43,7 @@ public class CampaignViewDTO {
 
     private long totalJoined;
     private long totalEngaged;
+    private long totalSigned;
     private long lastActivityEpochMilli;
 
     private String textJoinWord;
@@ -75,7 +76,7 @@ public class CampaignViewDTO {
         this.joinTopics = campaignTags;
     }
 
-    public CampaignViewDTO(Campaign campaign){
+    public CampaignViewDTO(Campaign campaign, boolean fullInfo) {
         this(campaign.getUid(),
                 campaign.getName(),
                 campaign.getDescription(),
@@ -89,40 +90,44 @@ public class CampaignViewDTO {
                 campaign.getCampaignCode(),
                 campaign.getJoinTopics());
 
-        this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;
-        this.masterGroupUid = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null;
-
-        this.petitionConnected = !StringUtils.isEmpty(campaign.getPetitionApi()) && !StringUtils.isEmpty(campaign.getPetitionResultApi());
-        if (this.petitionConnected) {
-            this.petitionUrl = campaign.getPetitionApi();
-        }
-
-        this.outboundSmsEnabled = campaign.isOutboundTextEnabled();
-        this.outboundSmsLimit = campaign.getOutboundBudget() / campaign.getAccount().getFreeFormCost();
-        this.outboundSmsSpent = campaign.getOutboundSpent();
-        this.outboundSmsUnitCost = campaign.getAccount().getFreeFormCost();
-        log.debug("campaign with sms unit cost: {}", this.outboundSmsUnitCost);
-
         long startTime = System.currentTimeMillis();
         this.totalEngaged = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_FOUND);
         this.totalJoined = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
+        this.totalSigned = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_PETITION_SIGNED);
+
         this.lastActivityEpochMilli = campaign.getLastActivityTimeEpochMillis();
         log.info("time to count campaign messages and get last activity time: {} msecs", System.currentTimeMillis() - startTime);
 
-        if (!campaign.getCampaignMessages().isEmpty()){
-            this.campaignMessages = groupCampaignMessages(campaign);
-            log.debug("campaign DTO message list: {}", campaign.getCampaignMessages());
-        }
+        if (fullInfo) {
+            this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;
+            this.masterGroupUid = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null;
 
-        if (campaign.getCampaignImage() != null) {
-            this.campaignImageKey = campaign.getCampaignImage().getUid();
-        }
+            this.petitionConnected = !StringUtils.isEmpty(campaign.getPetitionApi()) && !StringUtils.isEmpty(campaign.getPetitionResultApi());
+            if (this.petitionConnected) {
+                this.petitionUrl = campaign.getPetitionApi();
+            }
 
-        if (!StringUtils.isEmpty(campaign.getPublicJoinWord())) {
-            this.textJoinWord = campaign.getPublicJoinWord();
-        }
+            this.outboundSmsEnabled = campaign.isOutboundTextEnabled();
+            this.outboundSmsLimit = campaign.getOutboundBudget() / campaign.getAccount().getFreeFormCost();
+            this.outboundSmsSpent = campaign.getOutboundSpent();
+            this.outboundSmsUnitCost = campaign.getAccount().getFreeFormCost();
+            log.debug("campaign with sms unit cost: {}", this.outboundSmsUnitCost);
 
-        this.defaultLanguage = campaign.getDefaultLanguage();
+            if (!campaign.getCampaignMessages().isEmpty()) {
+                this.campaignMessages = groupCampaignMessages(campaign);
+                log.debug("campaign DTO message list: {}", campaign.getCampaignMessages());
+            }
+
+            if (campaign.getCampaignImage() != null) {
+                this.campaignImageKey = campaign.getCampaignImage().getUid();
+            }
+
+            if (!StringUtils.isEmpty(campaign.getPublicJoinWord())) {
+                this.textJoinWord = campaign.getPublicJoinWord();
+            }
+
+            this.defaultLanguage = campaign.getDefaultLanguage();
+        }
     }
 
     private List<CampaignMessageDTO> groupCampaignMessages(Campaign campaign) {

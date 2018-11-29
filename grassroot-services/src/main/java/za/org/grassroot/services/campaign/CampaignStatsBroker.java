@@ -10,6 +10,8 @@ public interface CampaignStatsBroker {
 
     void clearCampaignStatsCache(String campaignUid);
 
+    CampaignLogsDataCollection getCampaignLogData(String campaignUid);
+
     Map<String, Integer> getCampaignMembershipStats(String campaignUid, @Nullable Integer year, @Nullable Integer month);
 
     Map<String, Long> getCampaignConversionStats(String campaignUid);
