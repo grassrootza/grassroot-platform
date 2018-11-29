@@ -247,22 +247,17 @@ public class GroupFetchController extends BaseRestController {
 
         if(municipalityId != null){
             List<Membership> membershipsInMunicipality = locationInfoBroker.getMembersInMunicipality(groupUid,municipalityId + "");
-
             memberships.retainAll(membershipsInMunicipality);
-
             log.info("Members in Municipality with id: {} is: {}",municipalityId,membershipsInMunicipality);
         }
-
         // if this becomes non-performant, use a projection
         GroupFilterResponse response = new GroupFilterResponse();
         List<MembershipStdDTO> dtos = memberships.stream().map(MembershipStdDTO::new).collect(Collectors.toList());
-
         // dtos are now in memory so this is fine
         response.setNumberSms(dtos.stream().filter(MembershipStdDTO::hasPhone).count());
         response.setNumberEmail(dtos.stream().filter(MembershipStdDTO::hasEmail).count());
         response.setNumberSmsAndEmail(dtos.stream().filter(MembershipStdDTO::hasBoth).count());
         response.setTotalElements(dtos.size());
-
         // sublist too fragile, hence using this, though looks slightly clumsy
         response.setContent(dtos.stream().limit(maxEntities).collect(Collectors.toList()));
 

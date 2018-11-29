@@ -108,7 +108,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         configDefaults.put("tasks.monthly.free", "4");
         configDefaults.put("tasks.limit.threshold", "10");
         configDefaults.put("welcome.messages.on", "false");
-        configDefaults.put("days.location.log.check","365");
 
         configDefaults.forEach((key, defaultValue) -> configVariables.put(key, convertKeyToValue(key, defaultValue)));
         log.info("Populated account features config variable map : {}", configVariables);

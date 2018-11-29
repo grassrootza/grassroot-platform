@@ -71,19 +71,17 @@ public class GroupModifyController extends GroupBaseController {
     private final AccountBroker accountBroker;
     private final AccountFeaturesBroker accountFeaturesBroker;
     private final GroupStatsBroker groupStatsBroker;
-    private final GeoLocationBroker geoLocationBroker;
 
 
     public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, GroupFetchBroker groupFetchBroker,
                                  GroupImageBroker groupImageBroker, AccountBroker accountBroker, AccountFeaturesBroker accountFeaturesBroker,
-                                 GroupStatsBroker groupStatsBroker,GeoLocationBroker geoLocationBroker) {
+                                 GroupStatsBroker groupStatsBroker) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.groupImageBroker = groupImageBroker;
         this.accountBroker = accountBroker;
         this.accountFeaturesBroker = accountFeaturesBroker;
         this.groupStatsBroker = groupStatsBroker;
-        this.geoLocationBroker = geoLocationBroker;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)

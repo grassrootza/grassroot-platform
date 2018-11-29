@@ -82,9 +82,8 @@ public class ScheduledGeoCalculations {
         });
     }
 
-    @Scheduled(fixedRate = 86400000)
+    @Scheduled(cron = "0 0 1 * * *")
     public void cacheMunicipalitiesForUsersWithLocation(){
-        log.info("Inside Scheduled Geo Calculations ---------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         log.info("Caching municipalities for users with location");
 
         locationInfoBroker.cacheMunicipalitiesForUsersWithLocation();

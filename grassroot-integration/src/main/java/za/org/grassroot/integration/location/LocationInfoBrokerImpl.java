@@ -113,7 +113,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     @PostConstruct
     public void init() {
-        placeLookupLambda = environment.getProperty("grassroot.places.lambda.url", "https://l48oimxk54.execute-api.eu-west-1.amazonaws.com/latest");
+        placeLookupLambda = environment.getProperty("grassroot.places.lambda.url", "http://localhost:3000");
         izweLamiLambda = environment.getProperty("grassroot.izwelami.lambda.url", "http://localhost:3001");
 
         if (geoApisEnabled) {
@@ -489,7 +489,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         log.info("Municipalities for users with location from cache is = {}",municipalityMap);
         return municipalityMap;
     }
-    //Counting the user location log within a period of a year
+    //Counting the user location log. If the parameter value is true,count from the earliest time grassroot went live else count within a config variable value.
     @Override
     public int countUserLocationLogs(boolean countAll){
 
@@ -516,11 +516,13 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Override
     public void saveLocationLogsFromAddress(){
         List<Address> addresses = addressRepository.loadAddressesWithLocation();
+        Set<UserLocationLog> userLocationLogs;
         if(addresses != null){
-            for(Address address:addresses){
-                UserLocationLog userLocationLog = new UserLocationLog(Instant.now(),address.getResident().getUid(),address.getLocation(),address.getLocationSource());
-                userLocationLogRepository.save(userLocationLog);
-            }
+            userLocationLogs = addresses
+                    .stream()
+                    .map(address -> new UserLocationLog(Instant.now(), address.getResident().getUid(), address.getLocation(), address.getLocationSource()))
+                    .collect(Collectors.toSet());
+            userLocationLogRepository.saveAll(userLocationLogs);
         }
     }
 

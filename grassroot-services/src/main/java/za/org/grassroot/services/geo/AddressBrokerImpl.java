@@ -257,10 +257,6 @@ public class AddressBrokerImpl implements AddressBroker {
             address.setPostalCode(place.getPostalCode());
             if (place.getLatitude() != null) {
                 address.setLocation(new GeoLocation(place.getLatitude(), place.getLongitude()));
-
-                /*UserLocationLog userLocationLog = new UserLocationLog(Instant.now(),userUid,new GeoLocation(place.getLatitude(),place.getLongitude()),locationAccuracy);
-                userLocationLogRepository.save(userLocationLog);*/
-
                 address.setLocationSource(locationAccuracy);
             }
 
