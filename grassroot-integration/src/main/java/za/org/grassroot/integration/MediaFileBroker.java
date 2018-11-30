@@ -17,6 +17,8 @@ public interface MediaFileBroker {
 
     String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey, String fileName);
 
+    String recordFile(String userUid, String bucket, String mimeType, String imageKey, String fileName);
+
     void deleteFile(LiveWireAlert liveWireAlert, String imageKey, MediaFunction function);
 
     String getBucketForFunction(MediaFunction function);

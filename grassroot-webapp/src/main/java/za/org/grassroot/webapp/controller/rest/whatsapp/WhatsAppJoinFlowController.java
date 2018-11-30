@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.BaseRoles;
@@ -107,6 +108,10 @@ public class WhatsAppJoinFlowController extends BaseController {
     // so in case overall microservice token is compromised, only some features can be called
     @RequestMapping(value = "/user/token", method = RequestMethod.POST)
     public ResponseEntity fetchRestrictedUserToken(@RequestParam String userId) {
+        User user = userManagementService.load(userId);
+        if (user == null)
+            throw new AccessDeniedException("Only existing / created users can have a token");
+
         CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.MSGING_CLIENT);
         tokenRequest.addClaim(JwtService.USER_UID_KEY, userId);
         tokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_FULL_USER);
