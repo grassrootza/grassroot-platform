@@ -52,8 +52,8 @@ public interface LocationInfoBroker {
 
     List<Membership> getMembersInMunicipality(String groupUid,String municipalityIDs);
 
-    Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> user);
-// counting all user location logs
+    UserMunicipalitiesResponse getMunicipalitiesForUsersWithLocationFromCache(Set<String> user);
+    //Counting user location logs. if boolean parameter is true, count from grassroot's begining of time, else within config variable value
     int countUserLocationLogs(boolean countAll);
 
     void saveLocationLogsFromAddress();

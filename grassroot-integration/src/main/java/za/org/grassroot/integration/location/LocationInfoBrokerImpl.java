@@ -423,9 +423,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         if(result.getBody() != null){
            municipalities = new ArrayList<>(result.getBody().values());
         }
-
         log.info("Processed munis: {}", municipalities);
-
         return municipalities;
     }
 
@@ -436,9 +434,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
         componentsBuilder = componentsBuilder.path(latLong)
                 .queryParam("type","MN");
-
         log.info("Composed URI: {}", componentsBuilder.toUriString());
-
         ParameterizedTypeReference<Map<String,Municipality>> responseType =
                 new ParameterizedTypeReference<Map<String, Municipality>>() {};
 
@@ -447,24 +443,19 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
         Municipality municipality = null;
         Cache cache = cacheManager.getCache("user_municipality");
-
         if(result.getBody() != null){
             municipality = result.getBody().entrySet().iterator().next().getValue();
 
             cache.put(new Element(userUid,municipality));
         }
-
         log.info("Municipality = {}",municipality);
-
         return municipality;
     }
 //    Loading users with location not null
     @Override
     public  void cacheMunicipalitiesForUsersWithLocation(){
         List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll();
-
         Map<String,Municipality> userMunicipalityMap = new HashMap<>();
-
         for(UserLocationLog userLocationLog:userLocationLogs){
             Municipality municipality =
                             cacheMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
@@ -473,47 +464,42 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
-    public Map<String,Municipality> getMunicipalitiesForUsersWithLocationFromCache(Set<String> userUids){
+    public UserMunicipalitiesResponse getMunicipalitiesForUsersWithLocationFromCache(Set<String> userUids){
         Cache cache = cacheManager.getCache("user_municipality");
         Map<String,Municipality> municipalityMap = new HashMap<>();
-
         List<String> cacheKeys = cache.getKeys();
-
+        List<String> notYetCachedUids = new ArrayList<>();
         for(String userUid: userUids){
             if(cacheKeys.contains(userUid)){
                 Municipality municipality = (Municipality) cache.get(userUid).getObjectValue();
                 municipalityMap.put(userUid,municipality);
+            }else{
+                notYetCachedUids.add(userUid);
             }
         }
-
         log.info("Municipalities for users with location from cache is = {}",municipalityMap);
-        return municipalityMap;
+        return new UserMunicipalitiesResponse(municipalityMap,notYetCachedUids);
     }
-    //Counting the user location log. If the parameter value is true,count from the earliest time grassroot went live else count within a config variable value.
+
     @Override
     public int countUserLocationLogs(boolean countAll){
-
         ConfigVariable configVariable = configRepository.findOneByKey("days.location.log.check").isPresent() ?
                 configRepository.findOneByKey("days.location.log.check").get() : null;
-
         int userLocationLogsPeriod = 0;
         if (configVariable != null) {
             userLocationLogsPeriod = Integer.parseInt(configVariable.getValue());
         }
-
         Instant timeDaysAgo;
-
         if(countAll){
-           //All Users count with the gps coordinates since the earliest instant , which is from the beginning of grassroots
             timeDaysAgo = DateTimeUtil.getEarliestInstant();
         }else{
-            //users count with gps coordinates within a period of a year
             timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
         }
         return userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo);
     }
 
     @Override
+    @Async
     public void saveLocationLogsFromAddress(){
         List<Address> addresses = addressRepository.loadAddressesWithLocation();
         Set<UserLocationLog> userLocationLogs;
@@ -526,6 +512,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
+    @Override
     public List<Membership> getMembersInMunicipality(String groupUid, String municipalityIDs){
 
         Cache cache = cacheManager.getCache("user_municipality");
@@ -542,7 +529,6 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         for (User user : users) {
             if(cacheKeys.contains(user.getUid())){
                 Municipality municipality = (Municipality) cache.get(user.getUid()).getObjectValue();
-                log.info("Municipality for userUid = {}, is = {}",user.getUid(),municipality);
                 if(municipality.getId() == Integer.valueOf(municipalityIDs)){
                     memberships.add(user.getGroupMembership(groupUid));
                 }

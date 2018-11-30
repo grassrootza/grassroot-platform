@@ -46,6 +46,7 @@ import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.integration.location.Municipality;
+import za.org.grassroot.integration.location.UserMunicipalitiesResponse;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;
@@ -453,11 +454,11 @@ public class GroupFetchController extends BaseRestController {
 //    Getting the users for a certain municipalities
     @RequestMapping(value = "/members/location",method = RequestMethod.GET)
     @ApiOperation(value = "Loads the municipalities for users that have location in a group")
-    public ResponseEntity<Map<String,Municipality>> loadUsersWithLocation(@RequestParam String groupUid){
+    public ResponseEntity<UserMunicipalitiesResponse> loadUsersWithLocation(@RequestParam String groupUid){
         Group group = groupBroker.load(groupUid);
         Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
-        Map<String,Municipality> userMunicipalityMap = locationInfoBroker.getMunicipalitiesForUsersWithLocationFromCache(memberUids);
-        return ResponseEntity.ok(userMunicipalityMap);
+        UserMunicipalitiesResponse userMunicipalitiesResponse = locationInfoBroker.getMunicipalitiesForUsersWithLocationFromCache(memberUids);
+        return ResponseEntity.ok(userMunicipalitiesResponse);
     }
     //Fetching count for all the users that have gps coordinates
     @RequestMapping(value = "/users/location/timeStamp", method = RequestMethod.GET)

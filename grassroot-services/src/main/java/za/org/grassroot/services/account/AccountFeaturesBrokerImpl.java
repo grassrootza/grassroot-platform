@@ -67,7 +67,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private final BroadcastRepository templateRepository;
     private final MessageAssemblingService messageAssemblingService;
     private final ConfigRepository configRepository;
-    private final UserLocationLogRepository userLocationLogRepository;
 
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ApplicationEventPublisher eventPublisher;
@@ -79,8 +78,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                      EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
                                      BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService,
-                                     LogsAndNotificationsBroker logsAndNotificationsBroker, ConfigRepository configRepository,
-                                     UserLocationLogRepository userLocationLogRepository) {
+                                     LogsAndNotificationsBroker logsAndNotificationsBroker, ConfigRepository configRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -91,7 +89,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         this.messageAssemblingService = messageAssemblingService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.configRepository = configRepository;
-        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @Autowired
