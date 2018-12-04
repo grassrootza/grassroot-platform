@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.campaign.CampaignBroker;
@@ -30,7 +31,11 @@ import za.org.grassroot.webapp.util.USSDCampaignConstants;
 import javax.annotation.PostConstruct;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -100,7 +105,7 @@ public class USSDCampaignController extends USSDBaseController {
     public Request processJoinMasterGroupRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                                  @RequestParam(required = false) String messageUid,
                                                  @RequestParam(required = false) String campaignUid)  throws URISyntaxException{
-        User user = userManager.findByInputNumber(inputNumber);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
         Locale locale;
         String promptStart;
         if (campaignUid == null) {
@@ -108,7 +113,7 @@ public class USSDCampaignController extends USSDBaseController {
             campaignUid = message.getCampaign().getUid();
             locale = message.getLocale();
             promptStart = message.getMessage() + (StringUtils.isEmpty(message.getMessage()) ? "" : ". ");
-            log.info("prompt start: {}, message : {}", promptStart, message.getMessage());
+            log.debug("prompt start: {}, message : {}", promptStart, message.getMessage());
         } else {
             promptStart = getMessage("campaign.joined.generic", user);
             locale = user.getLocale();
@@ -121,7 +126,7 @@ public class USSDCampaignController extends USSDBaseController {
     @ResponseBody
     public Request processSignPetitionRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                               @RequestParam String messageUid) throws URISyntaxException{
-        User user = userManager.findByInputNumber(inputNumber);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
         CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
         campaignBroker.signPetition(message.getCampaign().getUid(), user.getUid(), UserInterfaceType.USSD);
         final String promptStart = message.getMessage() + (StringUtils.isEmpty(message.getMessage()) ? "" : ". ");
@@ -144,7 +149,7 @@ public class USSDCampaignController extends USSDBaseController {
     public Request setUserJoinTopic(@RequestParam(value = phoneNumber) String inputNumber,
                                     @RequestParam String campaignUid,
                                     @RequestParam String topic) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
         Campaign campaign = campaignBroker.load(campaignUid);
         campaignBroker.setUserJoinTopic(campaignUid, user.getUid(), topic, UserInterfaceType.USSD);
         return menuBuilder(processFinalOptionsMenu(campaign, user, "", user.getLocale()));
@@ -154,8 +159,8 @@ public class USSDCampaignController extends USSDBaseController {
     public Request processProvinceRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                           @RequestParam String campaignUid,
                                           @RequestParam Province province) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
-        userManager.updateUserProvince(user.getUid(), province);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
+        user = userManager.updateUserProvince(user.getUid(), province);
         Campaign campaign = campaignBroker.load(campaignUid);
         return menuBuilder(processFinalOptionsMenu(campaign, user, "", user.getLocale()));
     }
@@ -164,13 +169,13 @@ public class USSDCampaignController extends USSDBaseController {
     public Request processNameRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam String campaignUid,
                                       @RequestParam(value = userInputParam) String enteredName) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
-        userManager.updateDisplayName(user.getUid(), user.getUid(), enteredName);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
+        user = userManager.updateDisplayName(user.getUid(), user.getUid(), enteredName);
         Campaign campaign = campaignBroker.load(campaignUid);
         return menuBuilder(processFinalOptionsMenu(campaign, user, "", user.getLocale()));
     }
 
-    private USSDMenu joinGroupOrFinalOptionsMenu(Campaign campaign, User user, String promptStart, Locale locale) {
+    private USSDMenu joinGroupOrFinalOptionsMenu(Campaign campaign, UserMinimalProjection user, String promptStart, Locale locale) {
         USSDMenu menu;
         if (!campaignBroker.isUserInCampaignMasterGroup(campaign.getUid(), user.getUid())) {
             final String prompt = promptStart + getMessage("campaign.join.generic", locale.getLanguage());
@@ -183,7 +188,7 @@ public class USSDCampaignController extends USSDBaseController {
         return menu;
     }
 
-    private USSDMenu topicsOrFinalOptionsMenu(Campaign campaign, User user, String promptStart, Locale locale) {
+    private USSDMenu topicsOrFinalOptionsMenu(Campaign campaign, UserMinimalProjection user, String promptStart, Locale locale) {
         USSDMenu menu;
         if (!campaign.getJoinTopics().isEmpty()) {
             final String prompt = promptStart + getMessage("campaign.choose.topic", locale.getLanguage());
@@ -196,7 +201,7 @@ public class USSDCampaignController extends USSDBaseController {
         return menu;
     }
 
-    private USSDMenu processFinalOptionsMenu(Campaign campaign, User user, String promptStart, Locale locale) {
+    private USSDMenu processFinalOptionsMenu(Campaign campaign, UserMinimalProjection user, String promptStart, Locale locale) {
         USSDMenu menu;
         if (user.getProvince() == null) {
             final String prompt = promptStart + getMessage("campaign.joined.province", user);
@@ -222,7 +227,7 @@ public class USSDCampaignController extends USSDBaseController {
     public Request processExitRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam(required = false) String messageUid,
                                       @RequestParam(required = false) String campaignUid)  throws URISyntaxException{
-        User user = userManager.findByInputNumber(inputNumber);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
         if (campaignUid == null) {
             CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
             return menuBuilder(buildCampaignUSSDMenu(message));
@@ -235,7 +240,7 @@ public class USSDCampaignController extends USSDBaseController {
     @ResponseBody
     public Request sharePrompt(@RequestParam(value = phoneNumber) String inputNumber,
                                @RequestParam String messageUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
         CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
         return menuBuilder(buildCampaignUSSDMenu(message));
     }
@@ -245,7 +250,7 @@ public class USSDCampaignController extends USSDBaseController {
     public Request shareDo(@RequestParam(value = phoneNumber) String inputNumber,
                            @RequestParam(value = userInputParam) String userInput,
                            @RequestParam String campaignUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
         final String shareDefault = getMessage("campaign.share.send.generic", user);
         campaignBroker.sendShareMessage(campaignUid, user.getUid(), userInput, shareDefault, UserInterfaceType.USSD);
         return menuBuilder(genericPositiveExit(campaignUid, user, user.getLocale()));
@@ -275,7 +280,7 @@ public class USSDCampaignController extends USSDBaseController {
         return new USSDMenu(prompt, campaignMenus + "share/do?campaignUid=" + campaignUid);
     }
 
-    private USSDMenu genericPositiveExit(String campaignUid, User user, Locale locale) {
+    private USSDMenu genericPositiveExit(String campaignUid, UserMinimalProjection user, Locale locale) {
         log.info("inside generic positive exit ...");
         List<CampaignMessage> campaignMessage = campaignBroker.findCampaignMessage(campaignUid,
                 CampaignActionType.EXIT_POSITIVE, locale, UserInterfaceType.USSD);

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.util.ArrayList;
@@ -38,6 +39,23 @@ public class CacheUtilManager implements CacheUtilService {
             log.error("FAILED to clear userRSVP..." + userUid + " error: " + e.toString());
         }
 
+    }
+
+    @Override
+    public UserMinimalProjection checkCacheForUserMinimalInfo(String msisdn) {
+        Cache cache = cacheManager.getCache("user_msisdn_minimal");
+        if (cache != null && cache.isKeyInCache(msisdn)) {
+            return (UserMinimalProjection) cache.get(msisdn).getObjectValue();
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public void stashUserForMsisdn(String msisdn, UserMinimalProjection user) {
+        Cache cache = cacheManager.getCache("user_msisdn_minimal");
+        log.debug("Putting in cache, user: {}", user);
+        cache.put(new Element(msisdn, user));
     }
 
     @Override

@@ -130,7 +130,7 @@ public class USSDHomeController extends USSDBaseController {
         Long startTime = System.currentTimeMillis();
 
         final boolean trailingDigitsPresent = codeHasTrailingDigits(enteredUSSD);
-        log.info("Initiating USSD, trailing digits present: {}", trailingDigitsPresent);
+        log.debug("Initiating USSD, trailing digits present: {}", trailingDigitsPresent);
 
         if (!trailingDigitsPresent && userInterrupted(inputNumber)) {
             return menuBuilder(interruptedPrompt(inputNumber, null));
@@ -228,11 +228,11 @@ public class USSDHomeController extends USSDBaseController {
             returnMenu = groupJoinController.lookForJoinCode(user, trailingDigits);
             boolean groupJoin = returnMenu != null;
             if (!groupJoin) {
-                log.info("checking if campaign: {}", trailingDigits);
+                log.debug("Checking if campaign: {}", trailingDigits);
                 returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
             }
             sendWelcomeIfNew = groupJoin;
-            log.info("group or campaign join, trailing digits ={}, send welcome = {}", trailingDigits, sendWelcomeIfNew);
+            log.debug("Group or campaign join, trailing digits ={}, send welcome = {}", trailingDigits, sendWelcomeIfNew);
         }
         recordInitiatedAndSendWelcome(user, sendWelcomeIfNew);
         return returnMenu;
@@ -311,7 +311,7 @@ public class USSDHomeController extends USSDBaseController {
                 StringBuilder url = new StringBuilder("campaign/");
                 url.append(USSDCampaignConstants.getCampaignUrlPrefixs().get(action.getValue())).append("?");
                 url.append(USSDCampaignConstants.MESSAGE_UID_PARAMETER).append(action.getKey());
-                log.info("adding url: {}", url.toString());
+                log.debug("adding url: {}", url.toString());
                 linksMap.put(url.toString(), option);
             }
         }

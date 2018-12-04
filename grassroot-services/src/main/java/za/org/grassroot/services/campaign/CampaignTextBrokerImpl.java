@@ -152,7 +152,7 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
         Campaign campaign = campaignBroker.load(campaignUid);
         User user = userManager.load(Objects.requireNonNull(userUid));
         Broadcast template = broadcastRepository.findTopByCampaignAndBroadcastScheduleAndActiveTrue(campaign, BroadcastSchedule.ENGAGED_CAMPAIGN);
-        log.info("checked for welcome message, found? : {}", template);
+        log.debug("checked for welcome message, found? : {}", template);
         if (template != null && !StringUtils.isEmpty(template.getSmsTemplate1()) && campaign.outboundBudgetLeft() > 0) {
             triggerCampaignText(campaign, user, template, template.getSmsTemplate1(), channel, callBackNumber);
         }
