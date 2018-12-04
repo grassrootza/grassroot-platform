@@ -137,8 +137,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
         final Cache openingMsgCache = cacheManager.getCache("campaign_opening_message");
 
         if (openingMsgCache.isKeyInCache(cacheKey)) {
-            log.debug("Opening message in cache, avoiding DB, retrieving and exiting");
-            return (CampaignMessage) openingMsgCache.get(cacheKey).getObjectValue();
+            Element cacheElement = openingMsgCache.get(cacheKey);
+            if (cacheElement != null && cacheElement.getObjectValue() != null) {
+                log.info("Opening message in cache, avoiding DB, retrieving and exiting");
+                return (CampaignMessage) openingMsgCache.get(cacheKey).getObjectValue();
+            }
         }
 
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
