@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -41,8 +42,11 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
     private static final String path = "/ussd/campaign/";
 
     private User testUser;
+    private UserMinimalProjection testUserMin;
+
     private Group testGroup;
     private Campaign testCampaign;
+
     MultiValueMap<String, String> params;
 
     @InjectMocks
@@ -59,6 +63,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         wireUpMessageSourceAndGroupUtil(ussdCampaignController);
 
         testUser = new User(testUserPhone, null, null);
+        testUserMin = new UserMinimalProjection(testUser.getUid(), null, null, null);
         testGroup = new Group("test group", testUser);
         testCampaign = createTestCampaign();
         params = new LinkedMultiValueMap<>();
@@ -91,7 +96,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
     public void testSignPetitionRequest() throws Exception {
         CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, CampaignActionType.MORE_INFO, "testing_123", Locale.ENGLISH, "English Sign petition Message",
                 UserInterfaceType.USSD, null);
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(userManagementServiceMock.findUserMinimalByMsisdn(testUserPhone)).thenReturn(testUserMin);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.SIGN_PETITION_URL)
                 .params(getParams(testMsg.getUid()))).andExpect(status().isOk());
@@ -104,7 +109,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
     public void testProcessExitRequest() throws Exception {
         CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, CampaignActionType.EXIT_NEGATIVE, "testing_123", Locale.ENGLISH, "English Exit Message",
                 UserInterfaceType.USSD, null);
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(userManagementServiceMock.findUserMinimalByMsisdn(testUserPhone)).thenReturn(testUserMin);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.EXIT_URL).params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());
@@ -116,8 +121,8 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
     public void testProcessJoinMasterGroupRequest() throws Exception {
         CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, CampaignActionType.JOIN_GROUP, "testing_123", Locale.ENGLISH, "English Join Master group Message",
                 UserInterfaceType.USSD, null);
-        testUser.setProvince(Province.ZA_GP);
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        UserMinimalProjection setProvinceUserMin = new UserMinimalProjection(testUser.getUid(), null, null, Province.ZA_GP);
+        when(userManagementServiceMock.findUserMinimalByMsisdn(testUserPhone)).thenReturn(setProvinceUserMin);
         when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
         when(campaignBroker.addUserToCampaignMasterGroup(testCampaign.getUid(), testUser.getUid(), UserInterfaceType.USSD)).thenReturn(testCampaign);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignConstants.JOIN_MASTER_GROUP_URL)

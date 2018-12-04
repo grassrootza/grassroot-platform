@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
@@ -20,7 +21,15 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -174,17 +183,25 @@ public class USSDBaseController {
     /**
      * Some default menu returns and some frequently used sets of menu options
      */
-
-    protected Map<String, String> optionsHomeExit(User user, boolean shortForm) {
+    protected Map<String, String> optionsHomeExit(UserMinimalProjection user, boolean shortForm) {
         return ImmutableMap.<String, String>builder().
                 put("start_force", getMessage(startMenu + (shortForm ? ".short" : ""), user)).
                 put("exit", getMessage("exit.option" + (shortForm ? ".short" : ""), user)).build();
     }
 
+    protected Map<String, String> optionsHomeExit(User user, boolean shortForm) {
+        return optionsHomeExit(convert(user), shortForm);
+    }
+
+
     protected Map<String, String> optionsYesNo(User sessionUser, String yesUri, String noUri) {
+        return optionsYesNo(convert(sessionUser), yesUri, noUri);
+    }
+
+    protected Map<String, String> optionsYesNo(UserMinimalProjection user, String yesUri, String noUri) {
         return ImmutableMap.<String, String>builder().
-                put(yesUri + "&" + yesOrNoParam + "=yes", getMessage(optionsKey + "yes", sessionUser)).
-                put(noUri + "&" + yesOrNoParam + "=no", getMessage(optionsKey + "no", sessionUser)).build();
+                put(yesUri + "&" + yesOrNoParam + "=yes", getMessage(optionsKey + "yes", user)).
+                put(noUri + "&" + yesOrNoParam + "=no", getMessage(optionsKey + "no", user)).build();
     }
 
     protected Map<String, String> optionsYesNo(User sesionUser, String nextUri) {
@@ -192,6 +209,10 @@ public class USSDBaseController {
     }
 
     protected Map<String, String> provinceOptions(User user, String url) {
+        return provinceOptions(convert(user), url);
+    }
+
+    protected Map<String, String> provinceOptions(UserMinimalProjection user, String url) {
         Map<String, String> options = new LinkedHashMap<>();
         Province.ZA_CANONICAL.forEach(p ->
                 options.put(url + p, getMessage("province." + p.name().substring("ZA_".length()), user)));
@@ -233,12 +254,23 @@ public class USSDBaseController {
         return messageAssembler.getMessage(messageKey, sessionUser);
     }
 
+    protected String getMessage(String messageKey, UserMinimalProjection user) {
+        return messageAssembler.getMessage(messageKey, user);
+    }
+
     protected String getMessage(String messageKey, String language) {
         return messageAssembler.getMessage(messageKey, language);
     }
 
     protected String getMessage(String messageKey, String[] params, User user) {
         return messageAssembler.getMessage(messageKey, params, user);
+    }
+
+    /*
+    For some overloads as we work on this conversion
+     */
+    protected UserMinimalProjection convert(User user) {
+        return new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince());
     }
 
 }

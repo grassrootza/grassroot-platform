@@ -1,6 +1,9 @@
 package za.org.grassroot.services.campaign;
 
 import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -9,9 +12,21 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.Notification_;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.Role_;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
-import za.org.grassroot.core.domain.campaign.*;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.campaign.CampaignLog_;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.core.domain.campaign.Campaign_;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Group_;
 import za.org.grassroot.core.domain.group.Membership;
@@ -42,7 +57,16 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
@@ -67,6 +91,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    private CacheManager cacheManager;
+
     @Autowired
     public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, CampaignStatsBroker campaignStatsBroker, GroupBroker groupBroker, AccountFeaturesBroker accountFeaturesBroker, UserManagementService userManagementService,
                               LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, MediaFileBroker mediaFileBroker, ApplicationEventPublisher eventPublisher){
@@ -80,6 +106,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
         this.permissionBroker = permissionBroker;
         this.mediaFileBroker = mediaFileBroker;
         this.eventPublisher = eventPublisher;
+    }
+
+    @Autowired
+    public void setCacheManager(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
     }
 
     @Override
@@ -98,14 +129,31 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Override
     @Transactional(readOnly = true)
     public CampaignMessage getOpeningMessage(String campaignUid, Locale locale, UserInterfaceType channel, MessageVariationAssignment variation) {
-        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         Locale safeLocale = locale == null ? new Locale("eng") : locale;
         UserInterfaceType safeChannel = channel == null ? UserInterfaceType.USSD : channel;
         MessageVariationAssignment safeVariation = variation == null ? MessageVariationAssignment.DEFAULT: variation;
-        log.info("getting opening message for {}, with input locale: {}, safe locale: {}, input channel: {}, safe channel: {}, " +
+
+        final String cacheKey = String.format("%s-%s-%s-%s", campaignUid, safeLocale, safeChannel, safeVariation);
+        final Cache openingMsgCache = cacheManager.getCache("campaign_opening_message");
+
+        if (openingMsgCache.isKeyInCache(cacheKey)) {
+            log.debug("Opening message in cache, avoiding DB, retrieving and exiting");
+            return (CampaignMessage) openingMsgCache.get(cacheKey).getObjectValue();
+        }
+
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        log.debug("getting opening message for {}, with input locale: {}, safe locale: {}, input channel: {}, safe channel: {}, " +
                 "input variation: {}, safe variation: {}", campaign.getName(), locale, safeLocale, channel, safeChannel, variation, safeVariation);
+
         List<CampaignMessage> messages = campaignMessageRepository.findAll(
                 CampaignMessageSpecifications.ofTypeForCampaign(campaign, CampaignActionType.OPENING, safeLocale, safeChannel, safeVariation));
+        CampaignMessage message = selectFromList(messages);
+        if (message != null)
+            openingMsgCache.put(new Element(cacheKey, message));
+        return message;
+    }
+
+    private CampaignMessage selectFromList(List<CampaignMessage> messages) {
         if (messages.isEmpty()) {
             log.error("Error! Cannot find opening message for campaign");
             return null;
@@ -780,9 +828,22 @@ public class CampaignBrokerImpl implements CampaignBroker {
         return mediaFileBroker.fetchInboundMediaRecordsForCampaign(campaignUid);
     }
 
+    // Hibernate / Hikari should be caching this but because of sheer volume on peak, adding an extra layer of caching
     private Campaign getCampaignByCampaignCode(String campaignCode){
         Objects.requireNonNull(campaignCode);
-        return campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode, Instant.now());
+
+        Cache campaignCache = cacheManager.getCache("campaign_lookup_codes");
+        if (campaignCache != null && campaignCache.isKeyInCache(campaignCode)) {
+            log.info("Found campaign code in cache, returning without hitting DB");
+            return (Campaign) campaignCache.get(campaignCode).getObjectValue();
+        }
+
+        Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode, Instant.now());
+        if (campaign != null && campaignCache != null) {
+            log.info("Found a campaign, sticking it in cache for next day");
+            campaignCache.put(new Element(campaignCode, campaign));
+        }
+        return campaign;
     }
 
     private void createAndStoreCampaignLog(CampaignLog campaignLog) {

@@ -6,6 +6,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.util.Locale;
@@ -71,6 +72,10 @@ public class USSDMessageAssembler {
     // final convenience version, for the root strings, stripping out "."
     protected String getMessage(String messageKey, User sessionUser) {
         return getMessage("ussd." + messageKey, null, new Locale(getLanguage(sessionUser)));
+    }
+
+    protected String getMessage(String messageKey, UserMinimalProjection user) {
+        return getMessage("ussd." + messageKey, null, user.getLocale());
     }
 
     protected String getMessage(String messageKey, String language) {
