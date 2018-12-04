@@ -837,8 +837,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         Cache campaignCache = cacheManager.getCache("campaign_lookup_codes");
         if (campaignCache != null && campaignCache.isKeyInCache(campaignCode)) {
-            log.info("Found campaign code in cache, returning without hitting DB");
-            return (Campaign) campaignCache.get(campaignCode).getObjectValue();
+            Element campaignStored = campaignCache.get(campaignCode);
+            if (campaignStored != null && campaignStored.getObjectValue() != null) {
+                log.info("Found campaign code in cache, returning without hitting DB");
+                return (Campaign) campaignStored.getObjectValue();
+            }
         }
 
         Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode, Instant.now());
