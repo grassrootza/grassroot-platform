@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface UserLocationLogRepository extends JpaRepository<UserLocationLog, String> {
+
 	// both boudnaries are inclusive when using 'between'
 	List<UserLocationLog> findByTimestampBetween(Instant start, Instant end);
 

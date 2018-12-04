@@ -5,7 +5,14 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.document.*;
+import com.amazonaws.services.dynamodbv2.document.AttributeUpdate;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Index;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
+import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
+import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.UpdateItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
@@ -14,8 +21,8 @@ import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.google.common.base.Enums;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +52,14 @@ import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.AccountLogRepository;
+import za.org.grassroot.core.repository.AccountRepository;
+import za.org.grassroot.core.repository.AddressRepository;
+import za.org.grassroot.core.repository.ConfigRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.NotificationRepository;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.authentication.JwtService;
 
@@ -53,7 +67,15 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component @Slf4j
@@ -391,7 +413,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     public List<Municipality> getMunicipalitiesForProvince(Province province) {
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/area/");
         String areaId;
-        //Some provinces have Municipality Demarcation Board code and others use integer MapIt area id.
+
+        // Some provinces have Municipality Demarcation Board code and others use integer MapIt area id.
         switch (province) {
             case ZA_GP:     areaId = "MDB:GT/children";     break;//uses Municipality Demarcation Board code
             case ZA_LP:     areaId = "4292/children";       break;//uses MapIt area id
@@ -405,9 +428,10 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             default:        areaId = "UNDEFINED";           break;
         }
 
-        if(areaId.equals("UNDEFINED")){
+        if ("UNDEFINED".equals(areaId) {
             return new ArrayList<>();
         }
+
         componentsBuilder = componentsBuilder.path(areaId);
         log.info("Composed URI: {}", componentsBuilder.toUriString());
 
@@ -420,9 +444,10 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         log.info("Received response: {}", result);
 
         List<Municipality> municipalities = new ArrayList<>();
-        if(result.getBody() != null){
+        if (result.getBody() != null) {
            municipalities = new ArrayList<>(result.getBody().values());
         }
+
         log.info("Processed munis: {}", municipalities);
         return municipalities;
     }
@@ -432,69 +457,58 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/point/4326/");
         String latLong = longitude + "," + latitude;
 
-        componentsBuilder = componentsBuilder.path(latLong)
-                .queryParam("type","MN");
+        componentsBuilder = componentsBuilder.path(latLong).queryParam("type","MN");
+
         log.info("Composed URI: {}", componentsBuilder.toUriString());
-        ParameterizedTypeReference<Map<String,Municipality>> responseType =
-                new ParameterizedTypeReference<Map<String, Municipality>>() {};
+        ParameterizedTypeReference<Map<String,Municipality>> responseType = new ParameterizedTypeReference<Map<String, Municipality>>() {};
 
         ResponseEntity<Map<String,Municipality>> result =
                 restTemplate.exchange(componentsBuilder.build().toUri(),HttpMethod.GET,null,responseType);
 
         Municipality municipality = null;
         Cache cache = cacheManager.getCache("user_municipality");
-        if(result.getBody() != null){
+        if (result.getBody() != null){
             municipality = result.getBody().entrySet().iterator().next().getValue();
-
             cache.put(new Element(userUid,municipality));
         }
         log.info("Municipality = {}",municipality);
         return municipality;
     }
+
 //    Loading users with location not null
     @Override
-    public  void cacheMunicipalitiesForUsersWithLocation(){
+    public  void cacheMunicipalitiesForUsersWithLocation() {
+        // todo : fix
         List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll();
-        Map<String,Municipality> userMunicipalityMap = new HashMap<>();
         for(UserLocationLog userLocationLog:userLocationLogs){
-            Municipality municipality =
-                            cacheMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
-            userMunicipalityMap.put(userLocationLog.getUserUid(),municipality);
+            cacheMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
         }
     }
 
     @Override
-    public UserMunicipalitiesResponse getMunicipalitiesForUsersWithLocationFromCache(Set<String> userUids){
+    public UserMunicipalitiesResponse getMunicipalitiesForUsersWithLocationFromCache(Set<String> userUids) {
         Cache cache = cacheManager.getCache("user_municipality");
-        Map<String,Municipality> municipalityMap = new HashMap<>();
-        List<String> cacheKeys = cache.getKeys();
-        List<String> notYetCachedUids = new ArrayList<>();
-        for(String userUid: userUids){
-            if(cacheKeys.contains(userUid)){
-                Municipality municipality = (Municipality) cache.get(userUid).getObjectValue();
-                municipalityMap.put(userUid,municipality);
-            }else{
-                notYetCachedUids.add(userUid);
+        Map<String, Municipality> municipalityMap = new HashMap<>();
+        userUids.stream().filter(cache::isKeyInCache).forEach(uid -> {
+            Element cacheElement = cache.get(uid);
+            if (cacheElement != null && cacheElement.getObjectValue() != null) {
+                Municipality municipality = (Municipality) cacheElement.getObjectValue();
+                municipalityMap.put(uid, municipality);
             }
-        }
+        });
+        List<String> notYetCachedUids = new ArrayList<>(userUids);
+        notYetCachedUids.removeAll(municipalityMap.keySet());
+
         log.info("Municipalities for users with location from cache is = {}",municipalityMap);
-        return new UserMunicipalitiesResponse(municipalityMap,notYetCachedUids);
+        return new UserMunicipalitiesResponse(municipalityMap, notYetCachedUids);
     }
 
     @Override
     public int countUserLocationLogs(boolean countAll){
         ConfigVariable configVariable = configRepository.findOneByKey("days.location.log.check").isPresent() ?
                 configRepository.findOneByKey("days.location.log.check").get() : null;
-        int userLocationLogsPeriod = 0;
-        if (configVariable != null) {
-            userLocationLogsPeriod = Integer.parseInt(configVariable.getValue());
-        }
-        Instant timeDaysAgo;
-        if(countAll){
-            timeDaysAgo = DateTimeUtil.getEarliestInstant();
-        }else{
-            timeDaysAgo = Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
-        }
+        int userLocationLogsPeriod = configVariable == null ? 0 : Integer.parseInt(configVariable.getValue());
+        Instant timeDaysAgo = countAll ? DateTimeUtil.getEarliestInstant() : Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
         return userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo);
     }
 
