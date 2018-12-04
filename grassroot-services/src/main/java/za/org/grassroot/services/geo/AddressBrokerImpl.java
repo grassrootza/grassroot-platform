@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.AddressLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.enums.AddressLogType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -202,6 +203,10 @@ public class AddressBrokerImpl implements AddressBroker {
         log.info("size of returned address: {}", duplicateCheck.size());
         storedAddress = duplicateCheck.isEmpty() ?
                 addressRepository.save(address) : duplicateCheck.iterator().next();
+        if (storedAddress.hasLocation()) {
+            final String userUid = storedAddress.getResident().getUid();
+            userLocationLogRepository.save(new UserLocationLog(Instant.now(), userUid, address.getLocation(), address.getLocationSource()));
+        }
         return storedAddress;
     }
 
