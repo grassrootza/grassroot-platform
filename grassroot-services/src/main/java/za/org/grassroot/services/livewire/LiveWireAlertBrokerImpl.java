@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
@@ -75,6 +76,9 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     protected final static double KM_PER_DEGREE = 111.045;
 
+    private final LiveWireLogRepository liveWireLogRepository;
+    private final ConfigRepository configRepository;
+
     @Value("${grassroot.livewire.instant.minsize:100}")
     private int minGroupSizeForInstantAlert;
 
@@ -82,7 +86,17 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private int minGroupTasksForInstantAlert;
 
     @Autowired
-    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker,PermissionBroker permissionBroker) {
+    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository,
+                                   UserRepository userRepository,
+                                   GroupRepository groupRepository,
+                                   MeetingRepository meetingRepository,
+                                   EntityManager entityManager,
+                                   DataSubscriberRepository dataSubscriberRepository,
+                                   ApplicationEventPublisher applicationEventPublisher,
+                                   LogsAndNotificationsBroker logsAndNotificationsBroker,
+                                   PermissionBroker permissionBroker,
+                                   LiveWireLogRepository liveWireLogRepository,
+                                   ConfigRepository configRepository) {
         this.alertRepository = alertRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
@@ -92,6 +106,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         this.applicationEventPublisher = applicationEventPublisher;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.permissionBroker = permissionBroker;
+        this.liveWireLogRepository = liveWireLogRepository;
+        this.configRepository = configRepository;
     }
 
     @Autowired
@@ -528,6 +544,27 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         alertRepository.save(alert);
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    @Override
+    public boolean isUserBlocked(String userUid){
+        User user = userRepository.findOneByUid(userUid);
+        boolean canCreate = true;
+
+        ConfigVariable timesConfigVariable = configRepository.findOneByKey("times.livewire.user.blocked")
+                .isPresent() ? configRepository.findOneByKey("times.livewire.user.blocked").get() : null;
+
+        ConfigVariable blockPeriodConfigVariable = configRepository.findOneByKey("period.to.block.user")
+                .isPresent() ? configRepository.findOneByKey("period.to.block.user").get() : null;
+
+        int numberOfTimesUserBlocked = liveWireLogRepository.countNumberOfTimesUserAlertWasBlocked(user);
+
+        log.info("Number of times user was blocked is {} and our config variable value is {}",numberOfTimesUserBlocked,timesConfigVariable.getValue());
+
+        if(numberOfTimesUserBlocked >= Integer.parseInt(timesConfigVariable.getValue())){
+            canCreate = false;
+        }
+        return canCreate;
     }
 
     private void validateCreatingUser(User user, LiveWireAlert alert) throws AccessDeniedException {

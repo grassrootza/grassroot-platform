@@ -83,4 +83,6 @@ public interface LiveWireAlertBroker {
 
     Page<LiveWireAlert> fetchReleasedAlerts(Pageable pageRequest);
 
+    boolean isUserBlocked(String userUid);
+
 }
