@@ -73,7 +73,7 @@ public class USSDCampaignController extends USSDBaseController {
     }
 
     private String iso3CountryCodeToIso2CountryCode(String iso3CountryCode) {
-        log.info("iso 3 country code: {}", iso3CountryCode);
+        log.debug("iso 3 country code: {}", iso3CountryCode);
         return localeMap.getOrDefault(iso3CountryCode, Locale.ENGLISH).getLanguage();
     }
 

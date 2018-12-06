@@ -34,7 +34,11 @@ import za.org.grassroot.webapp.util.USSDCampaignConstants;
 import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
@@ -222,7 +226,7 @@ public class USSDHomeController extends USSDBaseController {
             returnMenu = assembleSendMeAndroidLinkMenu(user);
             sendWelcomeIfNew = true;
         } else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
-            returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
+            returnMenu = geoApiController.openingMenu(convert(user), geoApiSuffixes.get(trailingDigits));
             sendWelcomeIfNew = false;
         } else {
             returnMenu = groupJoinController.lookForJoinCode(user, trailingDigits);

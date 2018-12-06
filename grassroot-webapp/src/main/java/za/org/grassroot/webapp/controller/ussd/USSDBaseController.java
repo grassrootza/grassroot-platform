@@ -231,13 +231,13 @@ public class USSDBaseController {
     i18n helper methods
      */
 
-    protected String getMessage(USSDSection section, String menu, String messageType, User user) {
+    protected String getMessage(USSDSection section, String menu, String messageType, UserMinimalProjection user) {
         return messageAssembler.getMessage(section, menu, messageType, user);
     }
 
     // convenience function for when passing just a name (of user or group, for example)
-    protected String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, User sessionUser) {
-        return messageAssembler.getMessage(section, menuKey, messageLocation, parameter, sessionUser);
+    protected String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, UserMinimalProjection user) {
+        return messageAssembler.getMessage(section, menuKey, messageLocation, parameter, user);
     }
 
     protected String getMessage(USSDSection section, String menu, String messageType, String[] parameters, User user) {
@@ -250,10 +250,6 @@ public class USSDBaseController {
     }
 
     // final convenience version, for the root strings, stripping out "."
-    protected String getMessage(String messageKey, User sessionUser) {
-        return messageAssembler.getMessage(messageKey, sessionUser);
-    }
-
     protected String getMessage(String messageKey, UserMinimalProjection user) {
         return messageAssembler.getMessage(messageKey, user);
     }
@@ -272,5 +268,18 @@ public class USSDBaseController {
     protected UserMinimalProjection convert(User user) {
         return new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince());
     }
+
+    protected String getMessage(USSDSection section, String menu, String messageType, User user) {
+        return getMessage(section, menu, messageType, convert(user));
+    }
+
+    protected String getMessage(String messageKey, User sessionUser) {
+        return getMessage(messageKey, convert(sessionUser));
+    }
+
+    protected String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, User sessionUser) {
+        return getMessage(section, menuKey, messageLocation, parameter, convert(sessionUser));
+    }
+
 
 }

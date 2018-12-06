@@ -117,8 +117,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         log.info("Recording user's location from explicit pin send");
         UserLocationLog locationLog = new UserLocationLog(Instant.now(), userUid, location, locationSource);
         userLocationLogRepository.save(locationLog);
-        UserLog userLog = new UserLog(userUid, UserLogType.GAVE_LOCATION_PERMISSION, "User sent location PIN", channel);
-        userLogRepository.save(userLog);
         log.info("Completed log recording");
     }
 

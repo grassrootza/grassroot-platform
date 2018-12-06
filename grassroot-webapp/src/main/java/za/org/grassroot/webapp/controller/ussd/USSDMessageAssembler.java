@@ -26,18 +26,22 @@ public class USSDMessageAssembler {
         this.messageSource = messageSource;
     }
 
-    protected String getMessage(String key, Object[] params, User user) {
+    protected String getMessage(String key, Object[] params, UserMinimalProjection user) {
         try {
-            return messageSource.getMessage("ussd." + key, params, new Locale(getLanguage(user)));
+            return messageSource.getMessage("ussd." + key, params, user.getLocale());
         } catch (NoSuchMessageException e) {
             return messageSource.getMessage("ussd." + key, params, Locale.ENGLISH);
         }
     }
 
-    protected String getMessage(USSDSection section, String menu, String messageType, User user) {
+    protected String getMessage(String key, Object[] params, User user) {
+        return getMessage(key, params, new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince()));
+    }
+
+        protected String getMessage(USSDSection section, String menu, String messageType, UserMinimalProjection user) {
         final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;
         try {
-            return messageSource.getMessage(messageKey, null, new Locale(getLanguage(user)));
+            return messageSource.getMessage(messageKey, null, user.getLocale());
         } catch (NoSuchMessageException e) {
             return messageSource.getMessage(messageKey, null, new Locale("EN"));
         }
@@ -53,9 +57,9 @@ public class USSDMessageAssembler {
     }
 
     // convenience function for when passing just a name (of user or group, for example)
-    protected String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, User sessionUser) {
+    protected String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, UserMinimalProjection user) {
         final String messageKey = "ussd." + section.toKey() + menuKey + "." + messageLocation;
-        return getMessage(messageKey, new String[]{ parameter }, new Locale(getLanguage(sessionUser)));
+        return getMessage(messageKey, new String[]{ parameter }, user.getLocale());
     }
 
     protected String getMessage(USSDSection section, String menu, String messageType, String[] parameters, User user) {

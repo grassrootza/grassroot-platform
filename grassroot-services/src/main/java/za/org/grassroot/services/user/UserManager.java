@@ -125,15 +125,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User loadOrCreateUser(String msisdn, UserInterfaceType channel) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(msisdn);
         log.debug("Using phone number, formatted: {}", phoneNumber);
-        User user;
-        if (!userExist(phoneNumber)) {
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+        if (user == null) {
             User sessionUser = new User(phoneNumber, null, null);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
             asyncRecordNewUser(newUser.getUid(), "Created via loadOrCreateUser", channel);
             user = newUser;
-        } else {
-            user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         }
         UserMinimalProjection userForCache = new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince());
         cacheUtilService.stashUserForMsisdn(msisdn, userForCache);
@@ -508,6 +506,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
             cacheUtilService.stashUserForMsisdn(msisdn, userInDb);
             return userInDb;
         }
+    }
+
+    @Override
+    public UserMinimalProjection findUserMinimalAndStashMenu(String msisdn, String currentUssdMenu) throws NoSuchUserException {
+        UserMinimalProjection user = findUserMinimalByMsisdn(msisdn);
+        cacheUtilService.putUssdMenuForUser(msisdn, currentUssdMenu);
+        return user;
     }
 
     @Override

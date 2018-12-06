@@ -27,6 +27,8 @@ public interface UserManagementService {
 
     UserMinimalProjection findUserMinimalByMsisdn(String msisdn) throws NoSuchUserException;
 
+    UserMinimalProjection findUserMinimalAndStashMenu(String msisdn, String currentUssdMenu) throws NoSuchUserException;
+
     User findByNumberOrEmail(String inputNumber, String emailAddress);
 
     User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;

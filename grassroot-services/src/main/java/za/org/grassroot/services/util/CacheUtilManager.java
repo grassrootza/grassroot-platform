@@ -44,11 +44,15 @@ public class CacheUtilManager implements CacheUtilService {
     @Override
     public UserMinimalProjection checkCacheForUserMinimalInfo(String msisdn) {
         Cache cache = cacheManager.getCache("user_msisdn_minimal");
+        UserMinimalProjection returnValue;
         if (cache != null && cache.isKeyInCache(msisdn)) {
-            return (UserMinimalProjection) cache.get(msisdn).getObjectValue();
+            Element element = cache.get(msisdn);
+            returnValue = (element != null && element.getObjectValue() != null) ?
+                    (UserMinimalProjection) cache.get(msisdn).getObjectValue() : null;
         } else {
-            return null;
+            returnValue = null;
         }
+        return returnValue;
     }
 
     @Override
