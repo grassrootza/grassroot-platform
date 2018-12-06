@@ -5,8 +5,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
@@ -40,7 +45,7 @@ public class USSDGeoApiController extends USSDBaseController {
         this.messageAssembler = messageAssembler;
     }
 
-    private USSDMenu infoSetMenu(final String dataSet, final User user, final boolean skippedLanguage) {
+    private USSDMenu infoSetMenu(final String dataSet, final UserMinimalProjection user, final boolean skippedLanguage) {
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("service.prompt." + dataSet
                 + (skippedLanguage ? ".open" : ""), user));
         Map<String, String> infoSets = locationInfoBroker.getAvailableInfoAndLowestLevelForDataSet(dataSet);
@@ -60,7 +65,7 @@ public class USSDGeoApiController extends USSDBaseController {
     private USSDMenu languageMenu(final String dataSetLabel,
                                   final String subsequentUrl,
                                   final List<Locale> availableLocales,
-                                  final User user) {
+                                  final UserMinimalProjection user) {
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("language.prompt." + dataSetLabel, user));
         availableLocales.forEach(l -> menu.addMenuOption(REL_PATH + subsequentUrl + l.toString(),
                 messageAssembler.getMessage("language." + l.toString(), user)));
@@ -80,11 +85,11 @@ public class USSDGeoApiController extends USSDBaseController {
             promptMenu.addMenuOption("geo/opening/" + dataSet + "?forceOpening=true", getMessage("home.start.interrupted.start", user));
             return menuBuilder(promptMenu);
         } else {
-            return menuBuilder(openingMenu(user, dataSet));
+            return menuBuilder(openingMenu(convert(user), dataSet));
         }
     }
 
-    USSDMenu openingMenu(final User user, final String dataSetLabel) {
+    USSDMenu openingMenu(final UserMinimalProjection user, final String dataSetLabel) {
         long startTime = System.currentTimeMillis();
         USSDMenu menu;
         List<Locale> availableLocales = locationInfoBroker.getAvailableLocalesForDataSet(dataSetLabel);
@@ -104,11 +109,10 @@ public class USSDGeoApiController extends USSDBaseController {
                                  @RequestParam String dataSet,
                                  @RequestParam(required = false) Locale language,
                                  @RequestParam(required = false) Boolean interrupted) throws URISyntaxException{
-        User user = userManager.findByInputNumber(inputNumber, saveUrl("/infoset", dataSet));
+        UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, saveUrl("/infoset", dataSet));
         log.info("locale: {}, interrupted: {}", language, interrupted);
         if (interrupted == null || !interrupted) {
-            userManager.updateUserLanguage(user.getUid(), language, UserInterfaceType.USSD);
-            user.setLanguageCode(language.getLanguage()); // to avoid a reload (even if H caches)
+            user = userManager.updateUserLanguage(user.getUid(), language, UserInterfaceType.USSD);
             log.info("set user language to: ", user.getLanguageCode());
         }
         return menuBuilder(infoSetMenu(dataSet, user, false));
@@ -119,12 +123,12 @@ public class USSDGeoApiController extends USSDBaseController {
                                   @PathVariable String dataSet,
                                   @PathVariable String infoSet,
                                   @RequestParam(required = false) Boolean interrupted) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, saveUrl("/location/place/" + dataSet + "/" + infoSet, null));
+        UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, saveUrl("/location/place/" + dataSet + "/" + infoSet, null));
         log.info("infoset: {}, interrupted: {}", infoSet, interrupted);
         return menuBuilder(provinceMenu(dataSet, infoSet, user));
     }
 
-    private USSDMenu provinceMenu(final String dataSetLabel, final String infoSet, final User user) {
+    private USSDMenu provinceMenu(final String dataSetLabel, final String infoSet, final UserMinimalProjection user) {
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("province.prompt." + dataSetLabel, user));
         List<Province> provinces = locationInfoBroker.getAvailableProvincesForDataSet(dataSetLabel);
         final String baseUrl = REL_PATH + "/info/send/province/" + dataSetLabel + "/" + infoSet + "?province=";
@@ -137,7 +141,7 @@ public class USSDGeoApiController extends USSDBaseController {
     public Request enterTown(@RequestParam(value = phoneNumber) String inputNumber,
                              @PathVariable String dataSet,
                              @PathVariable String infoSet) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, saveUrl("/location/place/" + dataSet + "/" + infoSet, null));
+        UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, saveUrl("/location/place/" + dataSet + "/" + infoSet, null));
         final String prompt = "To send you the closest clinics, please enter the nearest post code, or type a town name:";
         return menuBuilder(new USSDMenu(prompt, "geo/location/place/select/" + dataSet + "/" + infoSet));
     }
@@ -148,7 +152,7 @@ public class USSDGeoApiController extends USSDBaseController {
                                      @PathVariable String dataSet,
                                      @PathVariable String infoSet,
                                      @RequestParam(value = userInputParam) String userInput) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, saveUrl("/location/place/select/" + dataSet + "/" + infoSet, null));
+        UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, saveUrl("/location/place/select/" + dataSet + "/" + infoSet, null));
         List<TownLookupResult> results = locationInfoBroker.lookupPostCodeOrTown(userInput.trim(), null);
         if (results.isEmpty()) {
             final String prompt = getMessage("user.town.none.prompt", user);
@@ -172,10 +176,9 @@ public class USSDGeoApiController extends USSDBaseController {
                                      @PathVariable String dataSet,
                                      @PathVariable String infoSet,
                                      @RequestParam String placeId) throws URISyntaxException{
-        User user = userManager.findByInputNumber(inputNumber, null);
+        UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, null);
         locationInfoBroker.assembleAndSendForPlace(dataSet, infoSet, placeId, user.getUid());
-        final String prompt = messageAssembler.getMessage(dataSet + ".sent.prompt",
-                new String[] { "5" }, user);
+        final String prompt = messageAssembler.getMessage(dataSet + ".sent.prompt", new String[] { "5" }, user);
         return menuBuilder(new USSDMenu(prompt));
     }
 
@@ -184,11 +187,11 @@ public class USSDGeoApiController extends USSDBaseController {
                                        @PathVariable String dataSet,
                                        @PathVariable String infoSet,
                                        @RequestParam Province province) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, null);
+        UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, null);
         return menuBuilder(sendMessageWithInfo(dataSet, infoSet, province, user));
     }
 
-    private USSDMenu sendMessageWithInfo(String dataSet, String infoTag, Province province, User user) {
+    private USSDMenu sendMessageWithInfo(String dataSet, String infoTag, Province province, UserMinimalProjection user) {
         List<String> records = locationInfoBroker.retrieveRecordsForProvince(dataSet, infoTag, province, user.getLocale());
         final String prompt = messageAssembler.getMessage(dataSet + ".sent.prompt",
                 new String[] { String.valueOf(records.size()) }, user);

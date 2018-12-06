@@ -10,13 +10,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.EntityForUserResponse;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.domain.task.TodoRequest;
 import za.org.grassroot.core.domain.task.TodoType;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.exception.SeloApiCallFailure;
@@ -137,7 +142,8 @@ public class USSDTodoController extends USSDBaseController {
             todoBroker.recordResponse(user.getUid(), todoUid, "SKIPPED", false);
             return menuBuilder(welcomeMenu(getMessage("home.start.prompt", user), user));
         } else {
-            USSDMenu menu = new USSDMenu(messageAssembler.getMessage(USSDSection.TODO, "info", promptKey + ".confirm", userInput, user));
+            UserMinimalProjection overload = new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince());
+            USSDMenu menu = new USSDMenu(messageAssembler.getMessage(USSDSection.TODO, "info", promptKey + ".confirm", userInput, overload));
             menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid +
                     "&response=" + USSDUrlUtil.encodeParameter(userInput), messageAssembler.getMessage("options.yes", user));
             menu.addMenuOption(REL_PATH + "/respond/info/revise", messageAssembler.getMessage("todo.info.response.change", user));

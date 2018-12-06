@@ -1,9 +1,5 @@
 <ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="ehcache.xsd">
-    <cache name="countries"
-           maxEntriesLocalHeap="200"
-           timeToLiveSeconds="600">
-    </cache>
 
     <cache name="userRSVP"
            maxEntriesLocalHeap="2000"
@@ -23,29 +19,51 @@
            eternal="false"
            timeToIdleSeconds="3600">
     </cache>
-    <!-- Setting this to an hour, because it is 'time to idle', i.e., refreshed continuously-->
-    <cache name="user_session"
+
+    <!-- This gets hit _a lot_ in peak use, hence setting a large heap, but it is a small set of entities -->
+    <cache name="user_msisdn_minimal"
+           maxEntriesLocalHeap="20000"
+           eternal="false"
+           timeToIdleSeconds="600">
+    </cache>
+
+    <cache name="user_join_group"
            maxEntriesLocalHeap="2000"
            eternal="false"
-           timeToIdleSeconds="3600">
+           timeToLiveSeconds="60">
     </cache>
+
     <cache name="userSafetyEvents"
            maxEntriesLocalHeap="2000"
            eternal="false"
            timeToIdleSeconds="3600">
     </cache>
 
+    <!-- Setting this to an hour, because it is 'time to idle', i.e., refreshed continuously-->
+    <cache name="user_session"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="3600">
+    </cache>
+
+    <!-- These two are polled quite often from frontend, so am just keeping them off the DB unless necessary -->
     <cache name="public_activity_logs"
            maxEntriesLocalHeap="100"
            eternal="false"
            timeToLiveSeconds="300" />
 
+    <cache name="user_notifications"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="10">
+    </cache>
+
+    <!-- These counting queries are heavy, very heavy - hence the caches (but will not be used often) -->
     <cache name="group_stats_member_count"
            maxEntriesLocalHeap="2000"
            eternal="false"
            timeToIdleSeconds="900">
     </cache>
-
 
     <cache name="group_stats_provinces"
            maxEntriesLocalHeap="2000"
@@ -77,16 +95,16 @@
            timeToIdleSeconds="900">
     </cache>
 
-    <cache name="user_notifications"
-           maxEntriesLocalHeap="2000"
-           eternal="false"
-           timeToIdleSeconds="10">
+    <!-- Making it expire daily because it only needs to kick in at peak, and want to enforce refresh if campaign ends -->
+    <cache name="campaign_lookup_codes"
+           maxEntriesLocalHeap="1000"
+           timeToLiveSeconds="86400">
     </cache>
 
-    <cache name="user_join_group"
-           maxEntriesLocalHeap="2000"
-           eternal="false"
-           timeToLiveSeconds="60">
+    <!-- This one is shorter because users might want to refresh and have multiple routes to doing so (but probably best to force update in time) -->
+    <cache name="campaign_opening_message"
+           maxEntriesLocalHeap="1000"
+           timeToIdleSeconds="600">
     </cache>
 
 </ehcache>
