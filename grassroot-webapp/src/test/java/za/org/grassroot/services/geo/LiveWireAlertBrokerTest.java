@@ -53,6 +53,12 @@ public class LiveWireAlertBrokerTest {
     @Mock
     private TypedQuery<LiveWireAlert> mockQuery;
 
+    @Mock
+    private ConfigRepository configRepositoryMock;
+
+    @Mock
+    private LiveWireLogRepository liveWireLogRepositoryMock;
+
     private User testUser;
     private Integer testRadius = 5;
     private GeoLocation testLocation;
@@ -62,7 +68,8 @@ public class LiveWireAlertBrokerTest {
     public void setUp () {
         liveWireAlertBroker = new LiveWireAlertBrokerImpl(alertRepositoryMock,userRepositoryMock,
                 groupRepositoryMock,meetingRepositoryMock,entityManagerMock,dataSubscriberRepositoryMock,
-                applicationEventPublisherMock,logsAndNotificationsBrokerMock, permissionBrokerMock);
+                applicationEventPublisherMock,logsAndNotificationsBrokerMock, permissionBrokerMock,
+                liveWireLogRepositoryMock,configRepositoryMock);
 
         testUser = new User("1234567899","Testing", null);
         testLocation = new GeoLocation(testLat,testLong);
