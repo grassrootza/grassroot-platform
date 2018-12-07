@@ -6,6 +6,7 @@ import za.org.grassroot.core.dto.group.GroupLogDTO;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 public interface MemberDataExportBroker {
 
@@ -15,9 +16,9 @@ public interface MemberDataExportBroker {
 
     XSSFWorkbook exportGroupMembersFiltered(String groupUid, String userUid, List<String> memberUids);
 
-    XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupUidsToExport);
-
     XSSFWorkbook exportCampaignJoinedData(String campaignUid, String userUid);
+
+    XSSFWorkbook exportCampaignBillingData(String campaignUid, Map<String, String> billingCounts);
 
     XSSFWorkbook exportTodoData(String userUid, String todoUid);
 

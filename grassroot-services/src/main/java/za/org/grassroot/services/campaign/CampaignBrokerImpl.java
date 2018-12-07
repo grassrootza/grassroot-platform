@@ -78,6 +78,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private static final List<String> SYSTEM_CODES = Arrays.asList("123", "911");
 
     private final CampaignRepository campaignRepository;
+
     private final CampaignMessageRepository campaignMessageRepository;
     private final CampaignStatsBroker campaignStatsBroker;
 
@@ -117,6 +118,14 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Transactional(readOnly = true)
     public Campaign load(String campaignUid) {
         return campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void validateUserCanViewFull(String userUid, String campaignUid) {
+        User user = userManager.load(userUid);
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        validateUserCanModifyCampaign(user, campaign);
     }
 
     @Override

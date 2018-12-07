@@ -7,7 +7,10 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.campaign.CampaignActivityStatsRequest;
 import za.org.grassroot.services.campaign.CampaignStatsBroker;
@@ -17,7 +20,6 @@ import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
@@ -81,5 +83,14 @@ public class CampaignStatsController extends BaseRestController {
         XSSFWorkbook xls = memberDataExportBroker.exportCampaignJoinedData(campaignUid, userUid);
         return RestUtil.convertWorkbookToDownload(fileName, xls);
     }
+
+    @RequestMapping(value = "/billing", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> downloadBillingData(@RequestParam String campaignUid, HttpServletRequest request) {
+        String fileName = "campaign_billing.xlsx";
+        Map<String, String> counts = campaignStatsBroker.getCampaignBillingStatsInPeriod(campaignUid, null, null);
+        XSSFWorkbook xls = memberDataExportBroker.exportCampaignBillingData(campaignUid, counts);
+        return RestUtil.convertWorkbookToDownload(fileName, xls);
+    }
+
 }
 
