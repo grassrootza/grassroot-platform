@@ -15,7 +15,7 @@
     </cache>
 
     <cache name="user_language"
-           maxEntriesLocalHeap="2000"
+           maxEntriesLocalHeap="4000"
            eternal="false"
            timeToIdleSeconds="3600">
     </cache>
@@ -56,6 +56,13 @@
            maxEntriesLocalHeap="2000"
            eternal="false"
            timeToIdleSeconds="10">
+    </cache>
+
+    <!-- So we don't have to keep doing big counts on campaigns -->
+    <cache name="campaign_view_dtos"
+           maxEntriesLocalHeap="100"
+           eternal="false"
+           timeToIdleSeconds="900">
     </cache>
 
     <!-- These counting queries are heavy, very heavy - hence the caches (but will not be used often) -->

@@ -1,4 +1,4 @@
-package za.org.grassroot.services.campaign;
+package za.org.grassroot.core.dto;
 
 import lombok.Builder;
 import lombok.Getter;

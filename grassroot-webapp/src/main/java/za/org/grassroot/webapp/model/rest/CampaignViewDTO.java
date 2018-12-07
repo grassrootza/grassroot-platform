@@ -9,7 +9,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignType;
-import za.org.grassroot.core.enums.CampaignLogType;
+import za.org.grassroot.core.dto.CampaignLogsDataCollection;
 import za.org.grassroot.services.campaign.CampaignMessageDTO;
 import za.org.grassroot.services.campaign.MessageLanguagePair;
 
@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 
 @Getter @Slf4j @ToString
 public class CampaignViewDTO {
+
+    private boolean fullInfo;
 
     private String campaignUid;
     private String name;
@@ -76,7 +78,7 @@ public class CampaignViewDTO {
         this.joinTopics = campaignTags;
     }
 
-    public CampaignViewDTO(Campaign campaign, boolean fullInfo) {
+    public CampaignViewDTO(Campaign campaign, CampaignLogsDataCollection logsDataCollection, boolean fullInfo) {
         this(campaign.getUid(),
                 campaign.getName(),
                 campaign.getDescription(),
@@ -90,13 +92,13 @@ public class CampaignViewDTO {
                 campaign.getCampaignCode(),
                 campaign.getJoinTopics());
 
-        long startTime = System.currentTimeMillis();
-        this.totalEngaged = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_FOUND);
-        this.totalJoined = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
-        this.totalSigned = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_PETITION_SIGNED);
+        this.fullInfo = fullInfo;
 
-        this.lastActivityEpochMilli = campaign.getLastActivityTimeEpochMillis();
-        log.info("time to count campaign messages and get last activity time: {} msecs", System.currentTimeMillis() - startTime);
+        this.totalEngaged = logsDataCollection.getTotalEngaged();
+        this.totalJoined = logsDataCollection.getTotalJoined();
+        this.totalSigned = logsDataCollection.getTotalSigned();
+
+        this.lastActivityEpochMilli = logsDataCollection.getLastActivityEpochMilli();
 
         if (fullInfo) {
             this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;

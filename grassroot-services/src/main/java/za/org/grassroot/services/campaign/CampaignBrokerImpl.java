@@ -122,6 +122,14 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public void validateUserCanViewFull(String userUid, String campaignUid) {
+        User user = userManager.load(userUid);
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        validateUserCanModifyCampaign(user, campaign);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Set<Locale> getCampaignLanguages(String campaignUid) {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         return new HashSet<>(campaignMessageRepository.selectLocalesForCampaign(campaign));
