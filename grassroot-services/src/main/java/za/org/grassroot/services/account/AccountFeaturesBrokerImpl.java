@@ -174,8 +174,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     @Override
     @Transactional(readOnly = true)
     public int numberMembersLeftForGroup(final Group group, GroupJoinMethod joinMethod) {
-        int currentMembers = group.getMemberships().size();
-
         final boolean groupSizeLimited = Boolean.parseBoolean(configVariables.getOrDefault("group.size.limited","false"));
         final boolean groupJoinsLimited = Boolean.parseBoolean(configVariables.getOrDefault("group.joins.limited", "false"));
 
@@ -187,7 +185,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         final boolean isGroupJoin = joinMethod != null && GroupJoinMethod.JOIN_CODE_METHODS.contains(joinMethod);
         final boolean limitDoesNotApply = !groupSizeLimited || (isGroupJoin && !groupJoinsLimited) || group.robustIsPaidFor();
 
-        return limitDoesNotApply ? 99999 : Math.max(0, freeGroupLimit - currentMembers);
+        return limitDoesNotApply ? 99999 : Math.max(0, freeGroupLimit - group.getMemberships().size()); // todo: optimize this with direct query?
     }
 
     @Override

@@ -515,7 +515,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         validateJoinCode(group, tokenPassed);
         recordJoinCodeInbound(group, tokenPassed);
 
-        return selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null, null);
+        final GroupJoinMethod groupJoinMethod = getJoinMethodFromInterface(interfaceType);
+        return selfJoinViaCode(user, group, groupJoinMethod, tokenPassed, null, null, null);
     }
 
     @Override
@@ -682,8 +683,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     private void validateJoinCode(Group group, String joinCode) {
-        Set<String> joinWords = groupJoinCodeRepository.selectActiveJoinCodesForGroup(group);
-        boolean valid = Instant.now().isBefore(group.getTokenExpiryDateTime()) && (joinCode.equals(group.getGroupTokenCode()) || joinWords.contains(joinCode.toLowerCase()));
+//        Set<String> joinWords = groupJoinCodeRepository.selectActiveJoinCodesForGroup(group);
+        final boolean valid = Instant.now().isBefore(group.getTokenExpiryDateTime()) && (joinCode.equals(group.getGroupTokenCode()) ||
+                // todo: joinCode->group foreign key index
+                group.getActiveJoinCode(joinCode).isPresent());
         if (!valid) {
             throw new InvalidTokenException("Invalid token: " + joinCode);
         }
@@ -691,12 +694,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private void recordJoinCodeInbound(Group group, String code) {
         DebugUtil.transactionRequired("");
-        GroupJoinCode gjc = groupJoinCodeRepository.findByGroupUidAndCodeAndActiveTrue(group.getUid(), code);
-        if (gjc != null) {
-            gjc.incrementInboundUses();
+        final Optional<GroupJoinCode> joinCodeOptional = group.getActiveJoinCode(code);
+        if (joinCodeOptional.isPresent()) {
+            joinCodeOptional.get().incrementInboundUses();
         }
     }
-
 
     @Override
     @Transactional
@@ -1742,15 +1744,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+        final User user = userRepository.findOneByUid(userUid);
+        final Group group = groupRepository.findOneByUid(groupUid);
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         logger.info("looking for code: {}", code);
-        GroupJoinCode gjc = groupJoinCodeRepository.findByGroupUidAndCodeAndActiveTrue(group.getUid(), code);
-
-        if (gjc != null) {
+        final Optional<GroupJoinCode> joinCodeOptional = group.getActiveJoinCode(code);
+        if (joinCodeOptional.isPresent()) {
+            final GroupJoinCode gjc = joinCodeOptional.get();
             gjc.setActive(false);
             gjc.setClosedTime(Instant.now());
             gjc.setClosingUser(user);

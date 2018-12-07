@@ -66,8 +66,7 @@ public class USSDGroupJoinController extends USSDBaseController  {
         this.accountFeaturesBroker = accountFeaturesBroker;
     }
 
-    // with mass votes this may get tricky, though most of it involves very fast & indexed select or count queries,
-    // but still adding in timing so that we can watch out
+    // with mass votes this may get tricky, though most of it involves very fast & indexed select or count queries
     public USSDMenu lookForJoinCode(final User user, final String trailingDigits) {
         final String token = trailingDigits.trim();
         final Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(token);
@@ -79,7 +78,7 @@ public class USSDGroupJoinController extends USSDBaseController  {
             }
 
             final Membership membership = groupBroker.addMemberViaJoinCode(user, group, token, UserInterfaceType.USSD);
-            if (group.getJoinTopics() != null && !group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
+            if (!group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
                 return askForJoinTopics(group, user);
             } else if (voteBroker.hasMassVoteOpen(group)) {
                 return respondToMassVoteMenu(group, user);

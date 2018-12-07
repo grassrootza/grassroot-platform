@@ -639,6 +639,16 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return new HashSet<>(groupRoles);
     }
 
+    public Set<GroupJoinCode> getJoinCodes() {
+        return new HashSet<>(this.groupJoinCodes);
+    }
+
+    public Optional<GroupJoinCode> getActiveJoinCode(String code) {
+		return this.groupJoinCodes.stream()
+				.filter(groupJoinCode -> groupJoinCode.isActive() && groupJoinCode.getCode().equalsIgnoreCase(code))
+				.findAny();
+	}
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
