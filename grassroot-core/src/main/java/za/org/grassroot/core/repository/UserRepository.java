@@ -59,11 +59,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     User findByUsername(String username);
 
-    /*
-    See if the phone number exists, before adding it
-     */
-    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN 'true' ELSE 'false' END FROM User u WHERE u.phoneNumber = ?1")
-    Boolean existsByPhoneNumber(String phoneNumber);
+    boolean existsByPhoneNumber(String phoneNumber);
 
     @Query("SELECT CASE WHEN COUNT(u) > 0 then 'true' ELSE 'false' END FROM User u where lower(u.emailAddress) = lower(?1)")
     Boolean existsByEmail(String emailAddress);

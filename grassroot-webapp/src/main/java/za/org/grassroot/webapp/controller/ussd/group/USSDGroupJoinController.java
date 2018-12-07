@@ -68,31 +68,29 @@ public class USSDGroupJoinController extends USSDBaseController  {
 
     // with mass votes this may get tricky, though most of it involves very fast & indexed select or count queries,
     // but still adding in timing so that we can watch out
-    public USSDMenu lookForJoinCode(User user, String trailingDigits) {
-        long startTime = System.currentTimeMillis();
-        Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
-        if (!searchResult.isPresent())
-            return null;
+    public USSDMenu lookForJoinCode(final User user, final String trailingDigits) {
+        final String token = trailingDigits.trim();
+        final Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(token);
+        if (searchResult.isPresent()) {
+            final Group group = searchResult.get();
+            log.debug("adding user via join code ... {}", token);
+            if (accountFeaturesBroker.numberMembersLeftForGroup(group, GroupJoinMethod.USSD_JOIN_CODE) == 0) {
+                return notifyGroupLimitReached(user, group);
+            }
 
-        Group group = searchResult.get();
-        log.debug("adding user via join code ... {}", trailingDigits);
-        if (accountFeaturesBroker.numberMembersLeftForGroup(group.getUid(), GroupJoinMethod.USSD_JOIN_CODE) == 0) {
-            return notifyGroupLimitReached(user, group);
-        }
-
-        Membership membership = groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD);
-        USSDMenu menu;
-        if (group.getJoinTopics() != null && !group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
-            menu = askForJoinTopics(group, user);
-        } else if (voteBroker.hasMassVoteOpen(group.getUid())) {
-            menu = respondToMassVoteMenu(group, user);
+            final Membership membership = groupBroker.addMemberViaJoinCode(user, group, token, UserInterfaceType.USSD);
+            if (group.getJoinTopics() != null && !group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
+                return askForJoinTopics(group, user);
+            } else if (voteBroker.hasMassVoteOpen(group)) {
+                return respondToMassVoteMenu(group, user);
+            } else {
+                String promptStart = group.hasName() ? getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
+                        getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);
+                return setUserProfile(user, promptStart);
+            }
         } else {
-            String promptStart = (group.hasName()) ? getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
-                    getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);
-            menu = setUserProfile(user, promptStart);
+            return null;
         }
-        log.info("Completed use of group join code, time taken : {} msecs", System.currentTimeMillis() - startTime);
-        return menu;
     }
 
     private USSDMenu notifyGroupLimitReached(User user, Group group) {

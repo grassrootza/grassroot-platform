@@ -292,9 +292,7 @@ public class VoteBrokerImpl implements VoteBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean hasMassVoteOpen(String groupUid) {
-        final Group group = groupRepository.findOneByUid(groupUid);
+    public boolean hasMassVoteOpen(final Group group) {
         return voteRepository.count(EventSpecifications.isOpenMassVoteForGroup(group)) > 0;
     }
 

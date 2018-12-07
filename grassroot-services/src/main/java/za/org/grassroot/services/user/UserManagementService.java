@@ -38,9 +38,6 @@ public interface UserManagementService {
 
     boolean emailTaken(String userUid, String email);
 
-    // username can be msisdn or pwd
-    boolean doesUserHaveStandardRole(String userName, String roleName);
-
     /*
     Methods to create a user, for various interfaces
      */
@@ -71,8 +68,6 @@ public interface UserManagementService {
 
     void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName);
 
-    void setDisplayNameByOther(String updatingUserUid, String targetUserUid, String displayName);
-
     void updateUserLanguage(String userUid, Locale locale, UserInterfaceType channel);
 
     void updateUserProvince(String userUid, Province province);
@@ -81,13 +76,11 @@ public interface UserManagementService {
 
     void setMessagingPreference(String userUid, DeliveryRoute preference);
 
-    void setHasInitiatedUssdSession(String userUid, boolean sendWelcomeMessage);
+    void setHasInitiatedUssdSession(User user, boolean sendWelcomeMessage);
 
     void resetUserPassword(String username, String newPassword, String token);
 
     void updateEmailAddress(String callingUserUid, String userUid, String emailAddress);
-
-    void updatePhoneNumber(String callingUserUid, String userUid, String phoneNumber);
 
     void updateHasImage(String userUid, boolean hasImage);
 

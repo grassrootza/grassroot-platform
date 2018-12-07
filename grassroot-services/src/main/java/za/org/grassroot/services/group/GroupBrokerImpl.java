@@ -507,7 +507,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     public Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
+        return addMemberViaJoinCode(user, group, tokenPassed, interfaceType);
+    }
 
+    @Override
+    public Membership addMemberViaJoinCode(final User user, final Group group, final String tokenPassed, final UserInterfaceType interfaceType) {
         validateJoinCode(group, tokenPassed);
         recordJoinCodeInbound(group, tokenPassed);
 
@@ -677,11 +681,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
     }
 
-
     private void validateJoinCode(Group group, String joinCode) {
         Set<String> joinWords = groupJoinCodeRepository.selectActiveJoinCodesForGroup(group);
-        if (!joinWords.contains(joinCode.toLowerCase()) && !joinCode.equals(group.getGroupTokenCode()) || Instant.now().isAfter(group.getTokenExpiryDateTime()))
+        boolean valid = Instant.now().isBefore(group.getTokenExpiryDateTime()) && (joinCode.equals(group.getGroupTokenCode()) || joinWords.contains(joinCode.toLowerCase()));
+        if (!valid) {
             throw new InvalidTokenException("Invalid token: " + joinCode);
+        }
     }
 
     private void recordJoinCodeInbound(Group group, String code) {
@@ -732,7 +737,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
 
         // depends how we're limiting
-        int numberMembersLeft = limitSizeCheck ? accountFeaturesBroker.numberMembersLeftForGroup(group.getUid(), joinMethod) : 9999;
+        int numberMembersLeft = limitSizeCheck ? accountFeaturesBroker.numberMembersLeftForGroup(group, joinMethod) : 9999;
 
         for (MembershipInfo membershipInfo : membershipInfos) {
             if (numberMembersLeft < 0) {
@@ -1899,7 +1904,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
-        return accountFeaturesBroker.numberMembersLeftForGroup(group.getUid(), null) > numberOfMembersAdding;
+        return accountFeaturesBroker.numberMembersLeftForGroup(group, null) > numberOfMembersAdding;
     }
 
 }

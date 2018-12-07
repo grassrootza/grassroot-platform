@@ -58,7 +58,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@Transactional
 public class UserManager implements UserManagementService, UserDetailsService {
 
     @Value("${grassroot.languages.notify.mincount:3}")
@@ -345,6 +344,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional
     public String generateAndroidUserVerifier(String phoneNumber, String displayName, String password) {
         Objects.requireNonNull(phoneNumber);
         phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
@@ -392,6 +392,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         if (StringUtils.isEmpty(username)) {
@@ -414,18 +415,19 @@ public class UserManager implements UserManagementService, UserDetailsService {
      */
 
     @Override
+    @Transactional
     public User loadOrCreateUser(String inputNumber, UserInterfaceType channel) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
         log.info("Using phone number, formatted: {}", phoneNumber);
-        if (!userExist(phoneNumber)) {
-            User sessionUser = new User(phoneNumber, null, null);
-            sessionUser.setUsername(phoneNumber);
-            User newUser = userRepository.save(sessionUser);
-            asyncRecordNewUser(newUser.getUid(), "Created via loadOrCreateUser", channel);
-            return newUser;
-        } else {
-            return userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+        if (user == null) {
+            log.info("Creating enw user: msisdn={}", inputNumber);
+            user = new User(phoneNumber, null, null);
+            user.setUsername(phoneNumber);
+            user = userRepository.save(user);
+            asyncRecordNewUser(user.getUid(), "Created via loadOrCreateUser", channel);
         }
+        return user;
     }
 
     @Override
@@ -507,18 +509,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
             }
         }
         return user;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean doesUserHaveStandardRole(String userName, String roleName) {
-        User user = findByNumberOrEmail(userName, userName);
-        try {
-            Role role = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD).get(0);
-            return user.getStandardRoles().contains(role);
-        } catch (NullPointerException e) {
-            return false;
-        }
     }
 
     @Override
@@ -609,6 +599,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     Method for user to reset password themselves, relies on them being able to access a token
      */
     @Override
+    @Transactional
     public void resetUserPassword(String username, String newPassword, String token) throws InvalidTokenException {
         User user = userRepository.findByUsername(username);
         log.info("Found this user: " + user);
@@ -639,23 +630,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         user.setEmailAddress(emailAddress);
         asyncUserService.recordUserLog(userUid, UserLogType.USER_EMAIL_CHANGED, emailAddress, null);
-    }
-
-    @Override
-    @Transactional
-    public void updatePhoneNumber(String callingUserUid, String userUid, String phoneNumber) {
-        Objects.requireNonNull(callingUserUid);
-        Objects.requireNonNull(userUid);
-
-        validateUserCanAlter(callingUserUid, userUid);
-        User user = userRepository.findOneByUid(userUid);
-
-        if (!StringUtils.isEmpty(phoneNumber)) {
-            String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-            user.setPhoneNumber(msisdn);
-        } else if (!user.hasEmailAddress()) {
-            throw new IllegalArgumentException("Cannot set phone number to empty if no email address");
-        }
     }
 
     @Override
@@ -739,10 +713,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    @Transactional
-    public void setHasInitiatedUssdSession(String userUid, boolean sendWelcomeMessage) {
-        User sessionUser = userRepository.findOneByUid(userUid);
-
+    public void setHasInitiatedUssdSession(User sessionUser, boolean sendWelcomeMessage) {
         sessionUser.setHasInitiatedSession(true);
 
         Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
@@ -785,6 +756,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<User> findRelatedUsers(User user, String nameFragment) {
         List<Group> groups = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
         return userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groups));
@@ -804,23 +776,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (callingUserUid.equals(userToUpdateUid)) {
             user.setHasSetOwnName(true);
         }
-    }
-
-    @Override
-    @Transactional
-    public void setDisplayNameByOther(String updatingUserUid, String targetUserUid, String displayName) {
-        Objects.requireNonNull(updatingUserUid);
-        Objects.requireNonNull(targetUserUid);
-        Objects.requireNonNull(displayName);
-
-        User updatingUser = userRepository.findOneByUid(updatingUserUid); // major todo : check if user is in graph
-        User targetUser = userRepository.findOneByUid(targetUserUid);
-
-        if (targetUser.isHasSetOwnName()) {
-            throw new AccessDeniedException("Error! User has set their own name, only they can update it");
-        }
-
-        targetUser.setDisplayName(displayName);
     }
 
     @Override

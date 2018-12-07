@@ -1,5 +1,6 @@
 package za.org.grassroot.services.task;
 
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Vote;
 
 import java.time.LocalDateTime;
@@ -29,7 +30,7 @@ public interface VoteBroker {
 
     Map<String, Long> fetchVoteResults(String userUid, String voteUid, boolean swallowMemberException);
 
-    boolean hasMassVoteOpen(String groupUid);
+    boolean hasMassVoteOpen(Group group);
 
     Vote getMassVoteForGroup(String groupUid);
 

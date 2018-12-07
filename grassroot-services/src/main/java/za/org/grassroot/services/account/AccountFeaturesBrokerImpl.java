@@ -173,8 +173,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
 
     @Override
     @Transactional(readOnly = true)
-    public int numberMembersLeftForGroup(String groupUid, GroupJoinMethod joinMethod) {
-        Group group = groupRepository.findOneByUid(groupUid);
+    public int numberMembersLeftForGroup(final Group group, GroupJoinMethod joinMethod) {
         int currentMembers = group.getMemberships().size();
 
         final boolean groupSizeLimited = Boolean.parseBoolean(configVariables.getOrDefault("group.size.limited","false"));

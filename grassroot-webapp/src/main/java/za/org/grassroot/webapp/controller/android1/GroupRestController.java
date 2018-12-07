@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
@@ -44,6 +45,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
     private final AccountFeaturesBroker accountFeaturesBroker;
     private final MessageSourceAccessor messageSourceAccessor;
+    private final GroupRepository groupRepository;
 
     private final static Set<Permission> permissionsDisplayed = Sets.newHashSet(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
             Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
@@ -54,9 +56,10 @@ public class GroupRestController extends GroupAbstractRestController {
             Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
     @Autowired
-    public GroupRestController(AccountFeaturesBroker accountFeaturesBroker, @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+    public GroupRestController(AccountFeaturesBroker accountFeaturesBroker, @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSourceAccessor, GroupRepository groupRepository) {
         this.accountFeaturesBroker = accountFeaturesBroker;
         this.messageSourceAccessor = messageSourceAccessor;
+        this.groupRepository = groupRepository;
     }
 
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName}/{description:.+}", method = RequestMethod.POST)
@@ -110,7 +113,8 @@ public class GroupRestController extends GroupAbstractRestController {
 
     @RequestMapping(value = "members/left/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> numberMembersLeftForGroup(@PathVariable String groupUid) {
-        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, accountFeaturesBroker.numberMembersLeftForGroup(groupUid, null));
+        Group group = this.groupRepository.findOneByUid(groupUid);
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, accountFeaturesBroker.numberMembersLeftForGroup(group, null));
     }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)

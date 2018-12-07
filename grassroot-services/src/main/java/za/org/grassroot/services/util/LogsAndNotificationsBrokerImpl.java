@@ -90,7 +90,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	}
 
 	@Override
-	@Transactional
+//	@Transactional
 	public void storeBundle(LogsAndNotificationsBundle bundle) {
 		Objects.requireNonNull(bundle);
 

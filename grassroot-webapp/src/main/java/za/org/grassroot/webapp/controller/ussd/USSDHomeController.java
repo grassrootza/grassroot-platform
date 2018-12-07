@@ -1,5 +1,25 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.PostConstruct;
+
+import com.google.common.base.Stopwatch;
 import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -30,11 +50,6 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDCampaignConstants;
-
-import javax.annotation.PostConstruct;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
@@ -84,8 +99,11 @@ public class USSDHomeController extends USSDBaseController {
 
     private Map<String, String> geoApiSuffixes;
 
+	private final UssdService ussdService;
+
     @Autowired
-    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupJoinController groupJoinController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
+    public USSDHomeController(UssdService ussdService, UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupJoinController groupJoinController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
+    	this.ussdService = ussdService;
         this.userResponseBroker = userResponseBroker;
         this.liveWireController = liveWireController;
         this.groupJoinController = groupJoinController;
@@ -120,6 +138,56 @@ public class USSDHomeController extends USSDBaseController {
         } else {
             log.info("Geo APIs disabled, not setting");
         }
+    }
+
+    private final ExecutorService starttestExecutors = Executors.newFixedThreadPool(4);
+
+    @RequestMapping(value = homePath + "startTest")
+    public void startMenuTest() throws InterruptedException, ExecutionException {
+        final List<Callable<Void>> callables = constructTestCallables();
+        log.info("### Starting start test");
+
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        List<Future<Void>> futures = starttestExecutors.invokeAll(callables);
+        for (Future<Void> future : futures) {
+            future.get();
+        }
+        log.info("### Lasted secs: " + stopwatch.elapsed(TimeUnit.SECONDS));
+    }
+
+    @RequestMapping(value = homePath + "startTestSingle")
+    public void startMenuTestSingle(@RequestParam(value = phoneNumber) String inputNumber) throws InterruptedException, ExecutionException, URISyntaxException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        startMenu(inputNumber, "*134*19940*2446#");
+        log.info("### TX outer lasted ms: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    private List<Callable<Void>> constructTestCallables() {
+        int amount = 250; // cannot be larger than 900
+
+        final Random random = new Random(System.currentTimeMillis());
+        final long startNumber = 100000 + random.nextInt(900000);
+
+        final List<Callable<Void>> callables = new ArrayList<>();
+        for (long i = 0; i < amount; i++) {
+            final long iFinal = i;
+            final Callable<Void> callable = () -> {
+                final String msisdn = "27" + startNumber + (100L + iFinal);
+                log.info("### Start test msisdn = " + msisdn);
+                try {
+
+                    Stopwatch stopwatch = Stopwatch.createStarted();
+                    startMenu(msisdn, "*134*19940*2446#");
+                    log.info("### TX outer = " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                }
+                catch (URISyntaxException e) {
+                    log.error("Error for number " + msisdn + ": " + e.getMessage(), e);
+                }
+                return null;
+            };
+            callables.add(callable);
+        }
+        return callables;
     }
 
     @RequestMapping(value = homePath + startMenu)
@@ -165,7 +233,7 @@ public class USSDHomeController extends USSDBaseController {
 
     private void recordInitiatedAndSendWelcome(User user, boolean sendWelcome) {
         if (!user.isHasInitiatedSession()) {
-            userManager.setHasInitiatedUssdSession(user.getUid(), sendWelcome);
+            userManager.setHasInitiatedUssdSession(user, sendWelcome);
         }
     }
 
@@ -226,12 +294,12 @@ public class USSDHomeController extends USSDBaseController {
             sendWelcomeIfNew = false;
         } else {
             returnMenu = groupJoinController.lookForJoinCode(user, trailingDigits);
-            boolean groupJoin = returnMenu != null;
-            if (!groupJoin) {
+            if (returnMenu != null) { // if group joined
+                sendWelcomeIfNew = true;
+            } else {
                 log.info("checking if campaign: {}", trailingDigits);
                 returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
             }
-            sendWelcomeIfNew = groupJoin;
             log.info("group or campaign join, trailing digits ={}, send welcome = {}", trailingDigits, sendWelcomeIfNew);
         }
         recordInitiatedAndSendWelcome(user, sendWelcomeIfNew);

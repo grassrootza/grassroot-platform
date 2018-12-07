@@ -130,8 +130,9 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Override
     public Optional<Group> findGroupFromJoinCode(String joinCode) {
         Optional<Group> groupToReturn = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode));
-        if (!groupToReturn.isPresent()) return Optional.empty();
-        if (groupToReturn.get().getTokenExpiryDateTime().isBefore(Instant.now())) return Optional.empty();
+        if (!groupToReturn.isPresent() || groupToReturn.get().getTokenExpiryDateTime().isBefore(Instant.now())) {
+            return Optional.empty();
+        }
         return groupToReturn;
     }
 

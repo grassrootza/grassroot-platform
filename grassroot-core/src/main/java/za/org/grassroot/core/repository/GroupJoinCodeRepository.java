@@ -24,7 +24,6 @@ public interface GroupJoinCodeRepository extends JpaRepository<GroupJoinCode, UU
 
     // need to use the UID property in here else postgres throws casting error
     GroupJoinCode findByGroupUidAndCodeAndActiveTrue(String groupUid, String code);
-    List<GroupJoinCode> findByGroupUidAndActiveTrue(String groupUid);
 
     List<GroupJoinCode> findByActiveTrue();
 
