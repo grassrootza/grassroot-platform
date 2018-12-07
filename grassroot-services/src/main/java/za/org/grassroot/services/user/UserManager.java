@@ -16,7 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserCreateRequest;
+import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -24,7 +30,14 @@ import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.UserDTO;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.dto.UserMinimalProjection;
+import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -50,7 +63,12 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 /**
@@ -95,6 +113,28 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Transactional(readOnly = true)
     public List<User> load(Set<String> userUids) {
         return userRepository.findByUidIn(userUids);
+    }
+
+    /**
+     * Creating some functions to internalize conversion of phone numbers and querying
+     */
+
+    @Override
+    @Transactional
+    public User loadOrCreateUser(String msisdn, UserInterfaceType channel) {
+        String phoneNumber = PhoneNumberUtil.convertPhoneNumber(msisdn);
+        log.debug("Using phone number, formatted: {}", phoneNumber);
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+        if (user == null) {
+            User sessionUser = new User(phoneNumber, null, null);
+            sessionUser.setUsername(phoneNumber);
+            User newUser = userRepository.save(sessionUser);
+            asyncRecordNewUser(newUser.getUid(), "Created via loadOrCreateUser", channel);
+            user = newUser;
+        }
+        UserMinimalProjection userForCache = new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince());
+        cacheUtilService.stashUserForMsisdn(msisdn, userForCache);
+        return user;
     }
 
     @Override
@@ -392,7 +432,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         if (StringUtils.isEmpty(username)) {
@@ -410,25 +450,23 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return user;
     }
 
-    /**
-     * Creating some functions to internalize conversion of phone numbers and querying
-     */
-
-    @Override
-    @Transactional
-    public User loadOrCreateUser(String inputNumber, UserInterfaceType channel) {
-        String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
-        log.info("Using phone number, formatted: {}", phoneNumber);
-        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
-        if (user == null) {
-            log.info("Creating enw user: msisdn={}", inputNumber);
-            user = new User(phoneNumber, null, null);
-            user.setUsername(phoneNumber);
-            user = userRepository.save(user);
-            asyncRecordNewUser(user.getUid(), "Created via loadOrCreateUser", channel);
-        }
-        return user;
-    }
+/*
+	@Override
+ @Transactional
+ public User loadOrCreateUser(String inputNumber, UserInterfaceType channel) {
+     String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
+     log.info("Using phone number, formatted: {}", phoneNumber);
+     User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+     if (user == null) {
+         log.info("Creating enw user: msisdn={}", inputNumber);
+         user = new User(phoneNumber, null, null);
+         user.setUsername(phoneNumber);
+         user = userRepository.save(user);
+         asyncRecordNewUser(user.getUid(), "Created via loadOrCreateUser", channel);
+     }
+     return user;
+ }
+*/
 
     @Override
     @Transactional
@@ -471,6 +509,28 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User sessionUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         if (sessionUser == null) throw new NoSuchUserException("Could not find user with phone number: " + inputNumber);
         return sessionUser;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserMinimalProjection findUserMinimalByMsisdn(String msisdn) throws NoSuchUserException {
+        UserMinimalProjection userInCache = cacheUtilService.checkCacheForUserMinimalInfo(msisdn);
+        if (userInCache != null) {
+            log.debug("Excellent! User is in cache, not hitting DB");
+            return userInCache;
+        } else {
+            log.info("User not in cache, have to hit DB, msisdn: {}", msisdn);
+            UserMinimalProjection userInDb = userRepository.findFirstByPhoneNumberAndPhoneNumberNotNull(msisdn);
+            cacheUtilService.stashUserForMsisdn(msisdn, userInDb);
+            return userInDb;
+        }
+    }
+
+    @Override
+    public UserMinimalProjection findUserMinimalAndStashMenu(String msisdn, String currentUssdMenu) throws NoSuchUserException {
+        UserMinimalProjection user = findUserMinimalByMsisdn(msisdn);
+        cacheUtilService.putUssdMenuForUser(msisdn, currentUssdMenu);
+        return user;
     }
 
     @Override
@@ -580,7 +640,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Transactional(readOnly = true)
     public boolean shouldSendLanguageText(User user) {
         final boolean isNonPhoneOrNonZA = !user.hasPhoneNumber() || PhoneNumberUtil.isPhoneNumberSouthAfrican(user.getPhoneNumber());
-        if (isUserNonEnglish(user) || asyncUserService.hasChangedLanguage(user.getUid()))
+        if (isNonPhoneOrNonZA || isUserNonEnglish(user) || asyncUserService.hasChangedLanguage(user.getUid()))
             return false;
 
         Specification<Notification> totalCountSpecs = Specification.where(NotificationSpecifications.toUser(user));
@@ -764,7 +824,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName) {
+    public UserMinimalProjection updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName) {
         Objects.requireNonNull(callingUserUid);
         Objects.requireNonNull(userToUpdateUid);
         Objects.requireNonNull(displayName);
@@ -776,11 +836,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (callingUserUid.equals(userToUpdateUid)) {
             user.setHasSetOwnName(true);
         }
+
+        UserMinimalProjection projection = convertUser(user);
+        if (user.hasPhoneNumber()) {
+            cacheUtilService.stashUserForMsisdn(user.getPhoneNumber(), convertUser(user));
+        }
+        return projection;
     }
 
     @Override
     @Transactional
-    public void updateUserLanguage(String userUid, Locale locale, UserInterfaceType channel) {
+    public UserMinimalProjection updateUserLanguage(String userUid, Locale locale, UserInterfaceType channel) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(locale);
 
@@ -790,14 +856,25 @@ public class UserManager implements UserManagementService, UserDetailsService {
         log.info("set the user language to : {} ", user.getLanguageCode());
 
         asyncUserService.recordUserLog(userUid, UserLogType.CHANGED_LANGUAGE, locale.getLanguage(), channel);
-        cacheUtilService.putUserLanguage(user.getPhoneNumber(), locale.getLanguage());
+
+        UserMinimalProjection projection = convertUser(user);
+        if (user.hasPhoneNumber()) {
+            cacheUtilService.putUserLanguage(user.getPhoneNumber(), locale.getLanguage());
+            cacheUtilService.stashUserForMsisdn(user.getPhoneNumber(), projection);
+        }
+        return projection;
     }
 
     @Override
     @Transactional
-    public void updateUserProvince(String userUid, Province province) {
+    public UserMinimalProjection updateUserProvince(String userUid, Province province) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         user.setProvince(province);
+        UserMinimalProjection projection = convertUser(user);
+        if (user.hasPhoneNumber()) {
+            cacheUtilService.stashUserForMsisdn(user.getPhoneNumber(), projection);
+        }
+        return projection;
     }
 
     @Override
@@ -861,6 +938,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public UserDTO loadUserCreateRequest(String phoneNumber) {
         UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         return (new UserDTO(userCreateRequest));
+    }
+
+    private UserMinimalProjection convertUser(User user) {
+        return new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince());
     }
 
 

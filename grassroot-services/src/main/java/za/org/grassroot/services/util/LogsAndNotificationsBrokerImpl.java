@@ -96,7 +96,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 		Set<ActionLog> logs = bundle.getLogs();
 		if (!logs.isEmpty()) {
-			log.info("Storing {} logs", logs.size());
+			log.debug("Storing {} logs", logs.size());
 		}
 
 		Set<Group> groupsToUpdateLogTimestamp = new HashSet<>();

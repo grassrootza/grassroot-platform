@@ -94,7 +94,7 @@ public class USSDMenuUtil {
 
     private boolean checkMenuLength(USSDMenu menuToCheck, boolean firstMenu) {
         final int characterLimit = firstMenu ? maxOpeningMenuLength : maxMenuLength;
-        log.info("Length of menu: " + menuToCheck.getMenuCharLength(enumLength));
+        log.debug("Length of menu: " + menuToCheck.getMenuCharLength(enumLength));
         return (menuToCheck.getMenuCharLength(enumLength) < characterLimit); // might be able to get away with <=, but prefer to be conservative
     }
 

@@ -51,6 +51,15 @@ import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDCampaignConstants;
 
+import javax.annotation.PostConstruct;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
 
@@ -99,11 +108,8 @@ public class USSDHomeController extends USSDBaseController {
 
     private Map<String, String> geoApiSuffixes;
 
-	private final UssdService ussdService;
-
     @Autowired
-    public USSDHomeController(UssdService ussdService, UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupJoinController groupJoinController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
-    	this.ussdService = ussdService;
+    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupJoinController groupJoinController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
         this.userResponseBroker = userResponseBroker;
         this.liveWireController = liveWireController;
         this.groupJoinController = groupJoinController;
@@ -198,7 +204,7 @@ public class USSDHomeController extends USSDBaseController {
         Long startTime = System.currentTimeMillis();
 
         final boolean trailingDigitsPresent = codeHasTrailingDigits(enteredUSSD);
-        log.info("Initiating USSD, trailing digits present: {}", trailingDigitsPresent);
+        log.debug("Initiating USSD, trailing digits present: {}", trailingDigitsPresent);
 
         if (!trailingDigitsPresent && userInterrupted(inputNumber)) {
             return menuBuilder(interruptedPrompt(inputNumber, null));
@@ -290,7 +296,7 @@ public class USSDHomeController extends USSDBaseController {
             returnMenu = assembleSendMeAndroidLinkMenu(user);
             sendWelcomeIfNew = true;
         } else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
-            returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
+            returnMenu = geoApiController.openingMenu(convert(user), geoApiSuffixes.get(trailingDigits));
             sendWelcomeIfNew = false;
         } else {
             returnMenu = groupJoinController.lookForJoinCode(user, trailingDigits);
@@ -379,7 +385,7 @@ public class USSDHomeController extends USSDBaseController {
                 StringBuilder url = new StringBuilder("campaign/");
                 url.append(USSDCampaignConstants.getCampaignUrlPrefixs().get(action.getValue())).append("?");
                 url.append(USSDCampaignConstants.MESSAGE_UID_PARAMETER).append(action.getKey());
-                log.info("adding url: {}", url.toString());
+                log.debug("adding url: {}", url.toString());
                 linksMap.put(url.toString(), option);
             }
         }
