@@ -9,7 +9,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignType;
-import za.org.grassroot.core.enums.CampaignLogType;
+import za.org.grassroot.core.dto.CampaignLogsDataCollection;
 import za.org.grassroot.services.campaign.CampaignMessageDTO;
 import za.org.grassroot.services.campaign.MessageLanguagePair;
 
@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 
 @Getter @Slf4j @ToString
 public class CampaignViewDTO {
+
+    private boolean fullInfo;
 
     private String campaignUid;
     private String name;
@@ -43,6 +45,7 @@ public class CampaignViewDTO {
 
     private long totalJoined;
     private long totalEngaged;
+    private long totalSigned;
     private long lastActivityEpochMilli;
 
     private String textJoinWord;
@@ -75,7 +78,7 @@ public class CampaignViewDTO {
         this.joinTopics = campaignTags;
     }
 
-    public CampaignViewDTO(Campaign campaign){
+    public CampaignViewDTO(Campaign campaign, CampaignLogsDataCollection logsDataCollection, boolean fullInfo) {
         this(campaign.getUid(),
                 campaign.getName(),
                 campaign.getDescription(),
@@ -89,40 +92,44 @@ public class CampaignViewDTO {
                 campaign.getCampaignCode(),
                 campaign.getJoinTopics());
 
-        this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;
-        this.masterGroupUid = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null;
+        this.fullInfo = fullInfo;
 
-        this.petitionConnected = !StringUtils.isEmpty(campaign.getPetitionApi()) && !StringUtils.isEmpty(campaign.getPetitionResultApi());
-        if (this.petitionConnected) {
-            this.petitionUrl = campaign.getPetitionApi();
+        this.totalEngaged = logsDataCollection.getTotalEngaged();
+        this.totalJoined = logsDataCollection.getTotalJoined();
+        this.totalSigned = logsDataCollection.getTotalSigned();
+
+        this.lastActivityEpochMilli = logsDataCollection.getLastActivityEpochMilli();
+
+        if (fullInfo) {
+            this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;
+            this.masterGroupUid = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null;
+
+            this.petitionConnected = !StringUtils.isEmpty(campaign.getPetitionApi()) && !StringUtils.isEmpty(campaign.getPetitionResultApi());
+            if (this.petitionConnected) {
+                this.petitionUrl = campaign.getPetitionApi();
+            }
+
+            this.outboundSmsEnabled = campaign.isOutboundTextEnabled();
+            this.outboundSmsLimit = campaign.getOutboundBudget() / campaign.getAccount().getFreeFormCost();
+            this.outboundSmsSpent = campaign.getOutboundSpent();
+            this.outboundSmsUnitCost = campaign.getAccount().getFreeFormCost();
+            log.debug("campaign with sms unit cost: {}", this.outboundSmsUnitCost);
+
+            if (!campaign.getCampaignMessages().isEmpty()) {
+                this.campaignMessages = groupCampaignMessages(campaign);
+                log.debug("campaign DTO message list: {}", campaign.getCampaignMessages());
+            }
+
+            if (campaign.getCampaignImage() != null) {
+                this.campaignImageKey = campaign.getCampaignImage().getUid();
+            }
+
+            if (!StringUtils.isEmpty(campaign.getPublicJoinWord())) {
+                this.textJoinWord = campaign.getPublicJoinWord();
+            }
+
+            this.defaultLanguage = campaign.getDefaultLanguage();
         }
-
-        this.outboundSmsEnabled = campaign.isOutboundTextEnabled();
-        this.outboundSmsLimit = campaign.getOutboundBudget() / campaign.getAccount().getFreeFormCost();
-        this.outboundSmsSpent = campaign.getOutboundSpent();
-        this.outboundSmsUnitCost = campaign.getAccount().getFreeFormCost();
-        log.debug("campaign with sms unit cost: {}", this.outboundSmsUnitCost);
-
-        long startTime = System.currentTimeMillis();
-        this.totalEngaged = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_FOUND);
-        this.totalJoined = campaign.countUsersInLogs(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP);
-        this.lastActivityEpochMilli = campaign.getLastActivityTimeEpochMillis();
-        log.info("time to count campaign messages and get last activity time: {} msecs", System.currentTimeMillis() - startTime);
-
-        if (!campaign.getCampaignMessages().isEmpty()){
-            this.campaignMessages = groupCampaignMessages(campaign);
-            log.debug("campaign DTO message list: {}", campaign.getCampaignMessages());
-        }
-
-        if (campaign.getCampaignImage() != null) {
-            this.campaignImageKey = campaign.getCampaignImage().getUid();
-        }
-
-        if (!StringUtils.isEmpty(campaign.getPublicJoinWord())) {
-            this.textJoinWord = campaign.getPublicJoinWord();
-        }
-
-        this.defaultLanguage = campaign.getDefaultLanguage();
     }
 
     private List<CampaignMessageDTO> groupCampaignMessages(Campaign campaign) {

@@ -5,7 +5,12 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.UserDTO;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.dto.UserMinimalProjection;
+import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
@@ -19,11 +24,15 @@ public interface UserManagementService {
 
     List<User> load(Set<String> userUids);
 
-    User loadOrCreateUser(String inputNumber, UserInterfaceType channel); // used only in USSD where there is no registration process
+    User loadOrCreateUser(String msisdn, UserInterfaceType channel); // used only in USSD where there is no registration process
 
     User loadOrCreate(String phoneOrEmail);
 
     User findByInputNumber(String inputNumber) throws NoSuchUserException;
+
+    UserMinimalProjection findUserMinimalByMsisdn(String msisdn) throws NoSuchUserException;
+
+    UserMinimalProjection findUserMinimalAndStashMenu(String msisdn, String currentUssdMenu) throws NoSuchUserException;
 
     User findByNumberOrEmail(String inputNumber, String emailAddress);
 
@@ -70,14 +79,11 @@ public interface UserManagementService {
                        String emailAddress, Province province, AlertPreference alertPreference,
                        Locale locale, String validationOtp,boolean whatsappOptIn, UserInterfaceType channel);
 
+    UserMinimalProjection updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName);
 
-    void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName);
+    UserMinimalProjection updateUserLanguage(String userUid, Locale locale, UserInterfaceType channel);
 
-    void setDisplayNameByOther(String updatingUserUid, String targetUserUid, String displayName);
-
-    void updateUserLanguage(String userUid, Locale locale, UserInterfaceType channel);
-
-    void updateUserProvince(String userUid, Province province);
+    UserMinimalProjection updateUserProvince(String userUid, Province province);
 
     void updateAlertPreferences(String userUid, AlertPreference alertPreference);
 

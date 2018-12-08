@@ -28,7 +28,12 @@ import za.org.grassroot.integration.storage.StorageBroker;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class MediaFileBrokerImpl implements MediaFileBroker {
@@ -114,6 +119,16 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
             logger.error("Error storing media file, returning null");
             return null;
         }
+    }
+
+    @Override
+    @Transactional
+    public String recordFile(String userUid, String bucket, String mimeType, String imageKey, String fileName) {
+        logger.info("Storing a file with bucket {}, key {}, mime type {}", bucket, imageKey, mimeType);
+        MediaFileRecord record = new MediaFileRecord(bucket, mimeType, imageKey, fileName, userUid);
+        record.setStoredTime(Instant.now());
+        record = recordRepository.save(record);
+        return record.getUid();
     }
 
     @Override

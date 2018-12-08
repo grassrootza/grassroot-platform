@@ -58,13 +58,13 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
         if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {
-            log.info("Found a header in legacy interceptor, so returning true");
+            log.info("Found a header in legacy interceptor, so returning true and allowing other filters to handle");
             return true;
         } else if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenExpired(token)) {
             isTokenExpired = true;
         } else if(authorizationHeader.doesNotHaveBearerToken()) {
             Map<String, String> legacyVars = getLegacyTokenParams(request);
-            log.info("Legacy params: {}", legacyVars);
+            log.debug("Legacy params: {}", legacyVars);
             if (isLegacyTokenValid(legacyVars)) {
                 log.info("Legacy token is valid, allowing request");
                 return true;

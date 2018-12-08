@@ -6,26 +6,38 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.integration.MediaFileBroker;
+import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
+
 @RestController @Grassroot2RestController
 @Api("/v2/api/media") @Slf4j
 @RequestMapping(value = "/v2/api/media")
 @PreAuthorize("hasRole('ROLE_FULL_USER')")
-public class MediaController {
+public class MediaController extends BaseRestController {
 
     private final MediaFileBroker mediaFileBroker;
 
     @Autowired
-    public MediaController(MediaFileBroker mediaFileBroker) {
+    public MediaController(JwtService jwtService, UserManagementService userManagementService, MediaFileBroker mediaFileBroker) {
+        super(jwtService, userManagementService);
         this.mediaFileBroker = mediaFileBroker;
+        log.info("CONTROLLER :: {}", mediaFileBroker);
     }
 
     // respective libraries on other end handle file uploads differently, hence duplication in here
@@ -66,6 +78,16 @@ public class MediaController {
                 mediaFileBroker.load(mediaFunction, imageKey).getUid() :
                 mediaFileBroker.storeFile(file, mediaFunction, mimeType, imageKey, file.getOriginalFilename());
         return RestUtil.okayResponseWithData(duplicate ? RestMessage.ALREADY_EXISTS : RestMessage.UPLOADED, storedFileUid);
+    }
+
+    @RequestMapping(value = "/store/record", method = RequestMethod.POST)
+    public ResponseEntity recordMediaFile(HttpServletRequest request,
+                                           @RequestParam String bucket,
+                                           @RequestParam String imageKey,
+                                           @RequestParam String mimeType) {
+        log.info("Recording a media file, with image key {}, and bucket {}", imageKey, bucket);
+        String storedFileUid = mediaFileBroker.recordFile(getUserIdFromRequest(request), bucket, mimeType, imageKey, null);
+        return ResponseEntity.ok(storedFileUid);
     }
 
 

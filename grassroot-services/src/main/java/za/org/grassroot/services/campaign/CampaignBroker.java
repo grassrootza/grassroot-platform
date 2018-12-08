@@ -19,6 +19,8 @@ public interface CampaignBroker {
 
     Campaign load(String campaignUid);
 
+    void validateUserCanViewFull(String userUid, String campaignUid);
+
     Set<Locale> getCampaignLanguages(String campaignUid);
 
     // passing null to and of the last three will set them to defaults

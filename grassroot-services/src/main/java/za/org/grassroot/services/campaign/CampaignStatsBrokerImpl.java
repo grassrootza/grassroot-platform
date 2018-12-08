@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.campaign.CampaignLog_;
+import za.org.grassroot.core.dto.CampaignLogsDataCollection;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -23,12 +25,21 @@ import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.annotation.Nullable;
 import javax.persistence.criteria.Join;
+import java.math.BigInteger;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,6 +91,10 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         return Specification.where(forCampaign(campaign)).and(isEngagementLog);
     }
 
+    private static Specification<CampaignLog> ofType(CampaignLogType type) {
+        return (root, query, cb) -> cb.equal(root.get("campaignLogType"), type);
+    }
+
     @Autowired
     public CampaignStatsBrokerImpl(CampaignRepository campaignRepository, CampaignLogRepository campaignLogRepository, UserRepository userRepository, CacheManager cacheManager) {
         this.campaignRepository = campaignRepository;
@@ -92,6 +107,23 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
     public void clearCampaignStatsCache(String campaignUid) {
         Cache staticCache = getStatsCache(CURRENT_CACHE);
         staticCache.remove(campaignUid + "_engagement");
+    }
+
+    @Override
+    public CampaignLogsDataCollection getCampaignLogData(String campaignUid) {
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        // trying one route, then the other
+        long startTime = System.currentTimeMillis();
+        Map<String, BigInteger> otherCollection = campaignLogRepository.selectCampaignLogCounts(campaign.getId());
+        // at some point maybe we remove even that final query, but for now it already strips it way down
+        CampaignLogsDataCollection collection2 = CampaignLogsDataCollection.builder()
+                .totalEngaged(otherCollection.get("total_engaged").longValue())
+                .totalSigned(otherCollection.get("total_signed").longValue())
+                .totalJoined(otherCollection.get("total_joined").longValue())
+                .lastActivityEpochMilli(campaignLogRepository.findFirstByCampaignOrderByCreationTimeDesc(campaign).getCreationTime().toEpochMilli())
+                .build();
+        log.info("Collecting campaign counts took {} msecs to assemble", System.currentTimeMillis() - startTime);
+        return collection2;
     }
 
     @Override
@@ -208,6 +240,40 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         log.info("latest stage map: {}", lastStageMap);
 
         return new ArrayList<>(lastStageMap.values());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, String> getCampaignBillingStatsInPeriod(String campaignUid, Instant billStart, Instant billEnd) {
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+
+        Instant start = billStart == null ? campaign.getMasterGroup().getAccount().getLastBillingDate() : billStart;
+        Instant end = billEnd == null ? Instant.now() : billEnd;
+
+        Map<String, String> countMap = new HashMap<>();
+
+        Specification<CampaignLog> rootSpec = forCampaign(campaign).and((root, query, criteriaBuilder) -> criteriaBuilder.between(root.get(CampaignLog_.creationTime), start, end));
+
+        // number of campaign logs in period gives estimate of USSD sessions (as each ~20 seconds)
+        long allEngagementLogs = campaignLogRepository.count(rootSpec.and(isSignedOrBetterLog));
+        log.info("Counted : {} engagement logs for campaign: {}", allEngagementLogs, campaign.getName());
+        countMap.put("total_sessions", "" + allEngagementLogs);
+
+        long sharedLogs = campaignLogRepository.count(rootSpec.and(ofType(CampaignLogType.CAMPAIGN_SHARED)));
+        log.info("Counted : {} shares for campaign: {}", sharedLogs);
+        countMap.put("total_shares", "" + sharedLogs);
+
+        long welcomeLogs = campaignLogRepository.count(rootSpec.and(ofType(CampaignLogType.CAMPAIGN_WELCOME_MESSAGE)));
+        log.info("Counted : {} welcome msgs for campaign : {}", sharedLogs);
+        countMap.put("total_welcomes", "" + welcomeLogs);
+
+        countMap.put("start_time", "" + start.toEpochMilli());
+        countMap.put("end_time", "" + end.toEpochMilli());
+
+        countMap.put("campaign_uid", campaignUid);
+        countMap.put("campaign_name", campaign.getName());
+
+        return countMap;
     }
 
 

@@ -2,7 +2,12 @@ package za.org.grassroot.services.group;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.xssf.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
@@ -26,7 +31,6 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.specifications.UserLogSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -42,7 +46,13 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
@@ -180,50 +190,6 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     }
 
     @Override
-    public XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupsToExportUids) {
-
-        Set<User> uniqueUsers = new HashSet<>();
-        for (String uid : groupsToExportUids) {
-            Group group = groupBroker.load(uid);
-            uniqueUsers.addAll(group.getMembers());
-        }
-
-        XSSFWorkbook workbook = new XSSFWorkbook();
-        XSSFSheet sheet = workbook.createSheet("Members");
-
-        generateHeader(workbook, sheet, new String[]{"Name", "Phone number", "Email", "Groups"}, new int[]{2000, 5000, 5000, 5000});
-
-        //table content stuff
-        XSSFCellStyle contentStyle = workbook.createCellStyle();
-        XSSFFont contentFont = workbook.createFont();
-        contentStyle.setFont(contentFont);
-
-        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
-        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
-
-        //we are starting from 1 because row number 0 is header
-
-        int rowIndex = 1;
-        for (User user : uniqueUsers) {
-            StringBuilder sb = new StringBuilder();
-            List<Membership> memberships = user.getMemberships().stream().sorted(Comparator.comparing(o -> o.getGroup().getGroupName())).collect(Collectors.toList());
-            for (Membership membership : memberships) {
-                Group gr = membership.getGroup();
-                if (gr.isActive() && userGroupUids.contains(gr.getUid())) {
-                    sb.append(gr.getGroupName());
-                    sb.append(", ");
-                }
-            }
-            String groupList = sb.toString();
-            if (groupList.endsWith(", "))
-                groupList = groupList.substring(0, groupList.length() - 2);
-            addRow(sheet, rowIndex, new String[]{user.getDisplayName(), user.getPhoneNumber(), user.getEmailAddress(), groupList});
-            rowIndex++;
-        }
-        return workbook;
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public XSSFWorkbook exportCampaignJoinedData(String campaignUid, String userUid) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
@@ -256,6 +222,28 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
                     log.getCampaignLogType().name()});
             rowIndex++;
         }
+
+        return workbook;
+    }
+
+    @Override
+    public XSSFWorkbook exportCampaignBillingData(String campaignName, Map<String, String> billingCounts) {
+
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Campaign engagement");
+
+        generateHeader(workbook, sheet, new String[]{"Billing Data For Campaign: " + billingCounts.get("campaign_name"), ""},
+                new int[]{14000, 5000});
+
+        final DateTimeFormatter df = DateTimeFormatter.ofPattern("d MMMM, yyyy");
+        final String startDate = Instant.ofEpochMilli(Long.parseLong(billingCounts.get("start_time"))).atZone(DateTimeUtil.getSAST()).format(df);
+        final String endDate = Instant.ofEpochMilli(Long.parseLong(billingCounts.get("end_time"))).atZone(DateTimeUtil.getSAST()).format(df);
+        addRow(sheet, 1, new String[] {"From " + startDate + " to " + endDate, ""});
+        addRow(sheet, 2, new String[] {"", ""});
+
+        addRow(sheet, 3, new String[] { "Total USSD sessions", billingCounts.get("total_sessions")});
+        addRow(sheet, 4, new String[] { "Campaign welcome SMSs", billingCounts.get("total_shares")});
+        addRow(sheet, 5, new String[] { "Sharing SMSs", billingCounts.get("total_shares")});
 
         return workbook;
     }
