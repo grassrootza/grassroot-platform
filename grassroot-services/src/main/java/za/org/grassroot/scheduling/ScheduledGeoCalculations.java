@@ -10,7 +10,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MeetingRepository;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.location.LocationInfoBroker;
+import za.org.grassroot.integration.location.MunicipalFilteringBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import java.time.Instant;
@@ -32,17 +32,21 @@ public class ScheduledGeoCalculations {
     private final GeoLocationBroker geoLocationBroker;
     private final GroupRepository groupRepository;
     private final MeetingRepository meetingRepository;
-    private final LocationInfoBroker locationInfoBroker;
+
+    private MunicipalFilteringBroker municipalFilteringBroker;
 
     @Autowired
     public ScheduledGeoCalculations(GeoLocationBroker geoLocationBroker,
                                     GroupRepository groupRepository,
-                                    MeetingRepository meetingRepository,
-                                    LocationInfoBroker locationInfoBroker) {
+                                    MeetingRepository meetingRepository) {
         this.geoLocationBroker = geoLocationBroker;
         this.groupRepository = groupRepository;
         this.meetingRepository = meetingRepository;
-        this.locationInfoBroker = locationInfoBroker;
+    }
+
+    @Autowired(required = false)
+    public void setMunicipalFilteringBroker(MunicipalFilteringBroker municipalFilteringBroker) {
+        this.municipalFilteringBroker = municipalFilteringBroker;
     }
 
     @Scheduled(cron = "0 0 2 * * *") // runs at 2am UTC every day
@@ -83,10 +87,13 @@ public class ScheduledGeoCalculations {
     }
 
     @Scheduled(cron = "0 0 1 * * *")
-    public void cacheMunicipalitiesForUsersWithLocation(){
-        log.info("Caching municipalities for users with location");
-
-        locationInfoBroker.cacheMunicipalitiesForUsersWithLocation();
+    public void cacheMunicipalitiesForUsersWithLocation() {
+        if (municipalFilteringBroker != null) {
+            log.info("Caching municipalities for users with location");
+            municipalFilteringBroker.fetchMunicipalitiesForUsersWithLocations(null);
+        } else {
+            log.info("Municipal filtering not enabled, skipping logging");
+        }
     }
 
 }

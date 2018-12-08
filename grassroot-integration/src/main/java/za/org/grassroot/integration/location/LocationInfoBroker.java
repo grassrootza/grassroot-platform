@@ -44,17 +44,4 @@ public interface LocationInfoBroker {
 
     Province getProvinceFromGeoLocation(GeoLocation location);
 
-    List<Municipality> getMunicipalitiesForProvince(Province province);
-
-    Municipality cacheMunicipalityByCoordinates(String userUid, double longitude, double latitude);
-
-    void cacheMunicipalitiesForUsersWithLocation();
-
-    List<Membership> getMembersInMunicipality(String groupUid,String municipalityIDs);
-
-    UserMunicipalitiesResponse getMunicipalitiesForUsersWithLocationFromCache(Set<String> user);
-    //Counting user location logs. if boolean parameter is true, count from grassroot's begining of time, else within config variable value
-    int countUserLocationLogs(boolean countAll);
-
-    void saveLocationLogsFromAddress();
 }

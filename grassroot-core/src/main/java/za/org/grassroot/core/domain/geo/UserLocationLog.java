@@ -1,9 +1,19 @@
 package za.org.grassroot.core.domain.geo;
 
 import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.core.enums.Province;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -33,6 +43,16 @@ public class UserLocationLog {
 	@Column(name = "source", length = 50, nullable = false)
 	private LocationSource locationSource;
 
+	@Enumerated(EnumType.STRING)
+    @Column(name = "province", length = 50)
+    @Setter private Province province;
+
+	@Column(name="municipality_id", length = 50)
+	@Setter private String municipalityId; // to store more simply
+
+    @Column(name="municipality_name", length = 255)
+    @Setter private String municipalityName; // not normalized, but API can't do bulk queries, so alternative is 000s of queries for no reason
+
 	private UserLocationLog() {
 		// for JPA
 	}
@@ -44,6 +64,14 @@ public class UserLocationLog {
 		this.location = Objects.requireNonNull(location);
 		this.locationSource = Objects.requireNonNull(locationSource);
 	}
+
+	public void setLocationData(Province province, String municipalityId, String municipalityName) {
+	    if (province != null) {
+	        this.province = province;
+        }
+	    this.municipalityId = municipalityId;
+	    this.municipalityName = municipalityName;
+    }
 
 	@Override
 	public boolean equals(Object o) {

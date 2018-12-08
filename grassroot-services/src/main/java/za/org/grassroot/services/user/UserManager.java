@@ -99,8 +99,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired private LogsAndNotificationsBroker logsAndNotificationsBroker;
     @Autowired private MessageAssemblingService messageAssemblingService;
     @Autowired private MessagingServiceBroker messagingServiceBroker;
-    @Autowired(required = false) private GraphBroker graphBroker;
     @Autowired private UserLocationLogRepository userLocationLogRepository;
+
+    @Autowired(required = false) private GraphBroker graphBroker;
 
     private RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder().withinRange('a', 'z').build();
 

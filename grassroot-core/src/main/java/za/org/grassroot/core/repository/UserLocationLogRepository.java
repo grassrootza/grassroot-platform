@@ -1,13 +1,15 @@
 package za.org.grassroot.core.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 
-public interface UserLocationLogRepository extends JpaRepository<UserLocationLog, String> {
+public interface UserLocationLogRepository extends JpaRepository<UserLocationLog, String>, JpaSpecificationExecutor<UserLocationLog> {
 
 	// both boudnaries are inclusive when using 'between'
 	List<UserLocationLog> findByTimestampBetween(Instant start, Instant end);
@@ -19,7 +21,9 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 
 	List<UserLocationLog> findByUserUidOrderByTimestampDesc(String userUid);
 
-	List<UserLocationLog> findByUserUidIn(Set<String> userUids);
+	Page<UserLocationLog> findByMunicipalityIdIsNullAndTimestampAfter(Instant cutoffTime, PageRequest pageRequest);
+
+	UserLocationLog findFirstByUserUidAndMunicipalityIdIsNotNullOrderByTimestampDesc(String userUid);
 
 	//Counting all user location logs based on Instant time days ago
 	int countByTimestampGreaterThan(Instant timeDaysAgo);

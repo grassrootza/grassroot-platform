@@ -6,7 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
@@ -18,7 +22,6 @@ import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
-import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.geo.AddressBroker;
@@ -46,23 +49,19 @@ public class UserController extends BaseRestController {
     private final PasswordTokenService passwordService;
     private final JwtService jwtService;
     private final AddressBroker addressBroker;
-    private final LocationInfoBroker locationInfoBroker;
-
 
     @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
     private String userProfileImagesFolder;
 
     public UserController(MediaFileBroker mediaFileBroker,
                           UserManagementService userService, JwtService jwtService,
-                          PasswordTokenService passwordService, AddressBroker addressBroker,
-                          LocationInfoBroker locationInfoBroker) {
+                          PasswordTokenService passwordService, AddressBroker addressBroker) {
         super(jwtService, userService);
         this.mediaFileBroker = mediaFileBroker;
         this.userService = userService;
         this.passwordService = passwordService;
         this.jwtService = jwtService;
         this.addressBroker = addressBroker;
-        this.locationInfoBroker = locationInfoBroker;
     }
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back")
@@ -179,12 +178,5 @@ public class UserController extends BaseRestController {
 
         return ResponseEntity.ok(RestMessage.LOCATION_RECORDED);
     }
-    // Refreshing the user location log cache for updating user count with gps coordinates
-    @RequestMapping(value = "/user/location/refresh",method = RequestMethod.GET)
-    @ApiOperation(value = "Refreshes the municipalities for users with locations cache")
-    public ResponseEntity refreshCache(){
-        log.info("Updating user municipalities cache inside UserController --------------------->>>>>>>>>>>>>>>>>>>>>>>>");
-        this.locationInfoBroker.cacheMunicipalitiesForUsersWithLocation();
-        return ResponseEntity.ok(RestMessage.UPDATED);
-    }
+
 }

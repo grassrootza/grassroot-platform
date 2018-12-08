@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -42,9 +43,8 @@ import za.org.grassroot.core.dto.group.MembershipRecordDTO;
 import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.dto.membership.MembershipStdDTO;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.integration.authentication.JwtService;
-import za.org.grassroot.integration.location.LocationInfoBroker;
+import za.org.grassroot.integration.location.MunicipalFilteringBroker;
 import za.org.grassroot.integration.location.Municipality;
 import za.org.grassroot.integration.location.UserMunicipalitiesResponse;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -67,7 +67,14 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookToDownload;
@@ -86,7 +93,8 @@ public class GroupFetchController extends BaseRestController {
     private final MemberDataExportBroker memberDataExportBroker;
     private final MessageSourceAccessor messageSourceAccessor;
     private final GroupBroker groupBroker;
-    private final LocationInfoBroker locationInfoBroker;
+
+    private MunicipalFilteringBroker municipalFilteringBroker;
 
     private final static ImmutableMap<Permission, Integer> permissionsDisplayed = ImmutableMap.<Permission, Integer>builder()
             .put(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, 1)
@@ -104,16 +112,20 @@ public class GroupFetchController extends BaseRestController {
             .build();
 
 
-    public GroupFetchController(GroupFetchBroker groupFetchBroker, JwtService jwtService,
-                                UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker,
-                                MessageSourceAccessor messageSourceAccessor, GroupBroker groupBroker,
-                                LocationInfoBroker locationInfoBroker) {
+    @Autowired
+    public GroupFetchController(JwtService jwtService, UserManagementService userManagementService,
+                                GroupBroker groupBroker, GroupFetchBroker groupFetchBroker,
+                                MemberDataExportBroker memberDataExportBroker, MessageSourceAccessor messageSourceAccessor) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.memberDataExportBroker = memberDataExportBroker;
         this.messageSourceAccessor = messageSourceAccessor;
         this.groupBroker = groupBroker;
-        this.locationInfoBroker = locationInfoBroker;
+    }
+
+    @Autowired(required = false)
+    public void setMunicipalFilteringBroker(MunicipalFilteringBroker municipalFilteringBroker) {
+        this.municipalFilteringBroker = municipalFilteringBroker;
     }
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)
@@ -246,8 +258,8 @@ public class GroupFetchController extends BaseRestController {
                 provinces, noProvince, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
                 joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages);
 
-        if(municipalityId != null){
-            List<Membership> membershipsInMunicipality = locationInfoBroker.getMembersInMunicipality(groupUid,municipalityId + "");
+        if (municipalFilteringBroker != null && municipalityId != null) {
+            List<Membership> membershipsInMunicipality = municipalFilteringBroker.getMembersInMunicipality(groupUid,municipalityId + "");
             memberships.retainAll(membershipsInMunicipality);
             log.info("Members in Municipality with id: {} is: {}",municipalityId,membershipsInMunicipality);
         }
@@ -449,7 +461,7 @@ public class GroupFetchController extends BaseRestController {
         }
 
         Province province1 = Province.valueOf(province);
-        return ResponseEntity.ok(locationInfoBroker.getMunicipalitiesForProvince(province1));
+        return ResponseEntity.ok(municipalFilteringBroker.getMunicipalitiesForProvince(province1));
     }
 //    Getting the users for a certain municipalities
     @RequestMapping(value = "/members/location",method = RequestMethod.GET)
@@ -457,15 +469,14 @@ public class GroupFetchController extends BaseRestController {
     public ResponseEntity<UserMunicipalitiesResponse> loadUsersWithLocation(@RequestParam String groupUid){
         Group group = groupBroker.load(groupUid);
         Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
-        UserMunicipalitiesResponse userMunicipalitiesResponse = locationInfoBroker.getMunicipalitiesForUsersWithLocationFromCache(memberUids);
+        UserMunicipalitiesResponse userMunicipalitiesResponse = municipalFilteringBroker.getMunicipalitiesForUsersWithLocationFromCache(memberUids);
         return ResponseEntity.ok(userMunicipalitiesResponse);
     }
     //Fetching count for all the users that have gps coordinates
     @RequestMapping(value = "/users/location/timeStamp", method = RequestMethod.GET)
     @ApiOperation(value = "Fetching the number of users who have coordinates with a specific time stamp period ")
-    public ResponseEntity<Integer> countByTimestampGreaterThan(@RequestParam boolean countAll){
-        int userLocation = locationInfoBroker.countUserLocationLogs(countAll);
-        return ResponseEntity.ok(locationInfoBroker.countUserLocationLogs(countAll));
+    public ResponseEntity<Long> countByTimestampGreaterThan(@RequestParam boolean countAll){
+        return ResponseEntity.ok(municipalFilteringBroker.countUserLocationLogs(countAll, true));
     }
 
 }

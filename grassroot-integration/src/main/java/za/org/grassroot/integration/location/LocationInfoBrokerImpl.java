@@ -21,13 +21,9 @@ import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.google.common.base.Enums;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Element;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -39,28 +35,18 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
-import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
-import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.AccountLogRepository;
 import za.org.grassroot.core.repository.AccountRepository;
-import za.org.grassroot.core.repository.AddressRepository;
-import za.org.grassroot.core.repository.ConfigRepository;
-import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.NotificationRepository;
-import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.authentication.JwtService;
 
 import javax.annotation.PostConstruct;
@@ -93,11 +79,6 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private final AccountRepository accountRepository;
     private final AccountLogRepository accountLogRepository;
     private final NotificationRepository notificationRepository;
-    private final UserLocationLogRepository userLocationLogRepository;
-    private final CacheManager cacheManager;
-    private final GroupRepository groupRepository;
-    private final ConfigRepository configRepository;
-    private final AddressRepository addressRepository;
 
     private JwtService jwtService;
 
@@ -113,19 +94,13 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Autowired
     public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository,
                                   AccountRepository accountRepository, AccountLogRepository accountLogRepository,
-                                  NotificationRepository notificationRepository,UserLocationLogRepository userLocationLogRepository,
-                                  CacheManager cacheManager,GroupRepository groupRepository,ConfigRepository configRepository,AddressRepository addressRepository) {
+                                  NotificationRepository notificationRepository) {
         this.environment = environment;
         this.restTemplate = restTemplate;
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.accountLogRepository = accountLogRepository;
         this.notificationRepository = notificationRepository;
-        this.userLocationLogRepository = userLocationLogRepository;
-        this.cacheManager = cacheManager;
-        this.groupRepository = groupRepository;
-        this.configRepository = configRepository;
-        this.addressRepository = addressRepository;
     }
 
     @Autowired
@@ -407,151 +382,6 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
         log.info("Result of province lookup: {}", result.getBody());
         return StringUtils.isEmpty(result.getBody()) ? null : Enums.getIfPresent(Province.class, "ZA_" + result.getBody()).orNull();
-    }
-
-    @Override
-    public List<Municipality> getMunicipalitiesForProvince(Province province) {
-        UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/area/");
-        String areaId;
-
-        // Some provinces have Municipality Demarcation Board code and others use integer MapIt area id.
-        switch (province) {
-            case ZA_GP:     areaId = "MDB:GT/children";     break;//uses Municipality Demarcation Board code
-            case ZA_LP:     areaId = "4292/children";       break;//uses MapIt area id
-            case ZA_NC:     areaId = "4295/children";       break;
-            case ZA_EC:     areaId = "4288/children";       break;
-            case ZA_KZN:    areaId = "4291/children";       break;
-            case ZA_FS:     areaId = "4289/children";       break;
-            case ZA_MP:     areaId = "4293/children";       break;
-            case ZA_NW:     areaId = "MDB:NW/children";     break;
-            case ZA_WC:     areaId = "MDB:WC/children";     break;
-            default:        areaId = "UNDEFINED";           break;
-        }
-
-        if ("UNDEFINED".equals(areaId) {
-            return new ArrayList<>();
-        }
-
-        componentsBuilder = componentsBuilder.path(areaId);
-        log.info("Composed URI: {}", componentsBuilder.toUriString());
-
-        ParameterizedTypeReference<Map<String, Municipality>> responseType =
-                new ParameterizedTypeReference<Map<String, Municipality>>() {};
-
-        ResponseEntity<Map<String, Municipality>> result =
-                restTemplate.exchange(componentsBuilder.build().toUri(), HttpMethod.GET, null, responseType);
-
-        log.info("Received response: {}", result);
-
-        List<Municipality> municipalities = new ArrayList<>();
-        if (result.getBody() != null) {
-           municipalities = new ArrayList<>(result.getBody().values());
-        }
-
-        log.info("Processed munis: {}", municipalities);
-        return municipalities;
-    }
-
-    @Override
-    public Municipality cacheMunicipalityByCoordinates(String userUid, double longitude, double latitude){
-        UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl("http://mapit.code4sa.org/point/4326/");
-        String latLong = longitude + "," + latitude;
-
-        componentsBuilder = componentsBuilder.path(latLong).queryParam("type","MN");
-
-        log.info("Composed URI: {}", componentsBuilder.toUriString());
-        ParameterizedTypeReference<Map<String,Municipality>> responseType = new ParameterizedTypeReference<Map<String, Municipality>>() {};
-
-        ResponseEntity<Map<String,Municipality>> result =
-                restTemplate.exchange(componentsBuilder.build().toUri(),HttpMethod.GET,null,responseType);
-
-        Municipality municipality = null;
-        Cache cache = cacheManager.getCache("user_municipality");
-        if (result.getBody() != null){
-            municipality = result.getBody().entrySet().iterator().next().getValue();
-            cache.put(new Element(userUid,municipality));
-        }
-        log.info("Municipality = {}",municipality);
-        return municipality;
-    }
-
-//    Loading users with location not null
-    @Override
-    public  void cacheMunicipalitiesForUsersWithLocation() {
-        // todo : fix
-        List<UserLocationLog> userLocationLogs = userLocationLogRepository.findAll();
-        for(UserLocationLog userLocationLog:userLocationLogs){
-            cacheMunicipalityByCoordinates(userLocationLog.getUserUid(),userLocationLog.getLocation().getLongitude(),userLocationLog.getLocation().getLatitude());
-        }
-    }
-
-    @Override
-    public UserMunicipalitiesResponse getMunicipalitiesForUsersWithLocationFromCache(Set<String> userUids) {
-        Cache cache = cacheManager.getCache("user_municipality");
-        Map<String, Municipality> municipalityMap = new HashMap<>();
-        userUids.stream().filter(cache::isKeyInCache).forEach(uid -> {
-            Element cacheElement = cache.get(uid);
-            if (cacheElement != null && cacheElement.getObjectValue() != null) {
-                Municipality municipality = (Municipality) cacheElement.getObjectValue();
-                municipalityMap.put(uid, municipality);
-            }
-        });
-        List<String> notYetCachedUids = new ArrayList<>(userUids);
-        notYetCachedUids.removeAll(municipalityMap.keySet());
-
-        log.info("Municipalities for users with location from cache is = {}",municipalityMap);
-        return new UserMunicipalitiesResponse(municipalityMap, notYetCachedUids);
-    }
-
-    @Override
-    public int countUserLocationLogs(boolean countAll){
-        ConfigVariable configVariable = configRepository.findOneByKey("days.location.log.check").isPresent() ?
-                configRepository.findOneByKey("days.location.log.check").get() : null;
-        int userLocationLogsPeriod = configVariable == null ? 0 : Integer.parseInt(configVariable.getValue());
-        Instant timeDaysAgo = countAll ? DateTimeUtil.getEarliestInstant() : Instant.now().minus(userLocationLogsPeriod, ChronoUnit.DAYS);
-        return userLocationLogRepository.countByTimestampGreaterThan(timeDaysAgo);
-    }
-
-    @Override
-    @Async
-    public void saveLocationLogsFromAddress(){
-        List<Address> addresses = addressRepository.loadAddressesWithLocation();
-        Set<UserLocationLog> userLocationLogs;
-        if(addresses != null){
-            userLocationLogs = addresses
-                    .stream()
-                    .map(address -> new UserLocationLog(Instant.now(), address.getResident().getUid(), address.getLocation(), address.getLocationSource()))
-                    .collect(Collectors.toSet());
-            userLocationLogRepository.saveAll(userLocationLogs);
-        }
-    }
-
-    @Override
-    public List<Membership> getMembersInMunicipality(String groupUid, String municipalityIDs){
-
-        Cache cache = cacheManager.getCache("user_municipality");
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        Set<User> users = group.getMembers();
-
-        List<Membership> memberships = new ArrayList<>();
-
-        List<String> cacheKeys = cache.getKeys();
-
-        log.info("What is in cache keys ? {}",cacheKeys);
-
-        for (User user : users) {
-            if(cacheKeys.contains(user.getUid())){
-                Municipality municipality = (Municipality) cache.get(user.getUid()).getObjectValue();
-                if(municipality.getId() == Integer.valueOf(municipalityIDs)){
-                    memberships.add(user.getGroupMembership(groupUid));
-                }
-            }
-        }
-
-        log.info("List of users in municipality id = {} members = {}",municipalityIDs,memberships);
-
-        return memberships;
     }
 
 
