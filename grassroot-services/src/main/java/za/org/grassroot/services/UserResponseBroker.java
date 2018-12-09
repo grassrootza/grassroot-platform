@@ -13,15 +13,6 @@ public interface UserResponseBroker {
      */
     EntityForUserResponse checkForEntityForUserResponse(String userUid, boolean checkSafetyAlerts);
 
-    /**
-     * Check whether the user has something to respond to, based on an incoming message
-     * @param userUid
-     * @param response
-     * @param checkAlerts
-     * @return
-     */
-    EntityForUserResponse checkForPossibleEntityResponding(String userUid, String response, boolean checkAlerts);
-
     boolean checkValidityOfResponse(EntityForUserResponse entity, String message);
 
     /**

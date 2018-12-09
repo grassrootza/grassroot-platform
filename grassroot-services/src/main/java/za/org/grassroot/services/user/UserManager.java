@@ -122,15 +122,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional
     public User loadOrCreateUser(String msisdn, UserInterfaceType channel) {
-        String phoneNumber = PhoneNumberUtil.convertPhoneNumber(msisdn);
-        log.debug("Using phone number, formatted: {}", phoneNumber);
+        final String phoneNumber = PhoneNumberUtil.convertPhoneNumber(msisdn);
+        log.info("Using phone number, formatted: {}", phoneNumber);
         User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         if (user == null) {
-            User sessionUser = new User(phoneNumber, null, null);
-            sessionUser.setUsername(phoneNumber);
-            User newUser = userRepository.save(sessionUser);
-            asyncRecordNewUser(newUser.getUid(), "Created via loadOrCreateUser", channel);
-            user = newUser;
+            log.info("Creating new user: msisdn={}", msisdn);
+            user = new User(phoneNumber, null, null);
+            user.setUsername(phoneNumber);
+            user = userRepository.save(user);
+            asyncRecordNewUser(user.getUid(), "Created via loadOrCreateUser", channel);
         }
         UserMinimalProjection userForCache = new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince());
         cacheUtilService.stashUserForMsisdn(msisdn, userForCache);
@@ -450,24 +450,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return user;
     }
 
-/*
-	@Override
- @Transactional
- public User loadOrCreateUser(String inputNumber, UserInterfaceType channel) {
-     String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
-     log.info("Using phone number, formatted: {}", phoneNumber);
-     User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
-     if (user == null) {
-         log.info("Creating enw user: msisdn={}", inputNumber);
-         user = new User(phoneNumber, null, null);
-         user.setUsername(phoneNumber);
-         user = userRepository.save(user);
-         asyncRecordNewUser(user.getUid(), "Created via loadOrCreateUser", channel);
-     }
-     return user;
- }
-*/
-
     @Override
     @Transactional
     public User loadOrCreate(String phoneOrEmail) {
@@ -560,7 +542,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public User findByUsernameLoose(String userName) {
-        User user = fetchUserByUsernameStrict(userName);
+        User user = userRepository.findByUsername(userName);;
         if (user == null) {
             if (PhoneNumberUtil.testInputNumber(userName)) {
                 user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(userName));
@@ -569,26 +551,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
             }
         }
         return user;
-    }
-
-    @Override
-    @Transactional
-    public String create(String phoneNumber, String displayName, String emailAddress) {
-        Objects.requireNonNull(phoneNumber);
-        Objects.requireNonNull(displayName);
-
-        String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-        if (userExist(msisdn)) {
-            throw new UserExistsException("Error! User with that phone number exists!");
-        }
-
-        User user = new User(msisdn, null, null);
-        user.setUsername(msisdn);
-        user.setDisplayName(displayName);
-        user.setEmailAddress(emailAddress);
-        user = userRepository.save(user);
-        asyncRecordNewUser(user.getUid(), "Created via sponsorship request", null);
-        return user.getUid();
     }
 
     @Override
@@ -701,13 +663,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void updateContactError(String userUid, boolean hasContactError) {
-        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
-        user.setContactError(hasContactError);
-    }
-
-    @Override
-    @Transactional
     public void deleteUser(String userUid, String validationOtp) {
         User user = userRepository.findOneByUid(userUid);
         passwordTokenService.validateOtp(user.getUsername(), validationOtp);
@@ -767,12 +722,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    @Transactional
-    public User fetchUserByUsernameStrict(String username) {
-        return userRepository.findByUsername(username);
-    }
-
-    @Override
     public void setHasInitiatedUssdSession(User sessionUser, boolean sendWelcomeMessage) {
         sessionUser.setHasInitiatedSession(true);
 
@@ -802,17 +751,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         logsAndNotificationsBroker.storeBundle(bundle);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<String[]> findOthersInGraph(User user, String nameFragment) {
-        List<Group> groups = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
-        List<User> records = userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groups));
-
-        return records.stream()
-                .map(u -> new String[] { u.getDisplayName(), u.getPhoneNumber() })
-                .collect(Collectors.toList());
     }
 
     @Override

@@ -36,8 +36,6 @@ public interface GroupBroker {
 
     void updateDescription(String userUid, String groupUid, String description);
 
-    void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes);
-
     void updateGroupDefaultLanguage(String userUid, String groupUid, String newLocale, boolean includeSubGroups);
 
     void updateTopics(String userUid, String groupUid, Set<String> topics);
@@ -46,8 +44,6 @@ public interface GroupBroker {
     void setJoinTopics(String userUid, String groupUid, List<String> joinTopics);
 
     /** METHODS FOR DEALING WITH MEMBERS AND PERMISSIONS **/
-
-    boolean canAddMember(String groupUid);
 
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos,
                     GroupJoinMethod joinMethod, boolean adminUserCalling);
@@ -97,10 +93,6 @@ public interface GroupBroker {
 
     boolean updateViewPriority(String userUid, String groupUid, GroupViewPriority priority);
 
-    void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean checkForDeletion);
-
-    void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
-
     void updateGroupPermissionsForRole(String userUid, String groupUid, String roleName, Set<Permission> permissionsToAdd,
                                        Set<Permission> permissionsToRemove);
 
@@ -136,11 +128,6 @@ public interface GroupBroker {
     void updateDiscoverable(String userUid, String groupUid, boolean discoverable, String authUserPhoneNumber);
 
     /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/
-
-    void link(String userUid, String childGroupUid, String parentGroupUid);
-
-    Group merge(String userUid, String firstGroupUid, String secondGroupUid,
-                boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
 
     void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode);
 

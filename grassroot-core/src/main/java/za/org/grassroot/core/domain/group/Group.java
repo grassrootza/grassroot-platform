@@ -319,8 +319,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         if (!getGroupRoles().contains(role)) {
             throw new IllegalArgumentException("Role " + role + " is not one of roles belonging to group: " + this);
         }
-        Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod,
-                joinMethodDescriptor);
+        final Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod, joinMethodDescriptor);
         boolean added = this.memberships.add(membership);
         if (added) {
             newMember.addMappedByMembership(membership);

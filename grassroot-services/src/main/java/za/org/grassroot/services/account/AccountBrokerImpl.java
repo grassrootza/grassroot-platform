@@ -557,7 +557,6 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     @Transactional(readOnly = true)
     public long countChargedNotificationsForGroup(String accountUid, String groupUid, Instant start, Instant end) {
-        Account account = accountRepository.findOneByUid(accountUid);
         Group group = groupRepository.findOneByUid(groupUid);
         return countAllForGroups(Collections.singleton(group), start, end);
     }

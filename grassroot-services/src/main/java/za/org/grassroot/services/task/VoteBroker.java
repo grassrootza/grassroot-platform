@@ -17,13 +17,6 @@ public interface VoteBroker {
     // votes cannot change topic or scope (groups included or not) after creation, just closing time & description field
     Vote updateVote(String userUid, String voteUid, LocalDateTime eventStartDateTime, String description);
 
-    void updateVoteClosingTime(String userUid, String eventUid, LocalDateTime closingDateTime);
-
-    void addVoteOption(String userUid, String voteUid, String voteOption);
-
-    // note: pass in an empty list to revert to yes/no
-    void setListOfOptions(String userUid, String voteUid, List<String> options);
-
     void recordUserVote(String userUid, String voteUid, String voteOption);
 
     void calculateAndSendVoteResults(String voteUid);

@@ -64,16 +64,14 @@ public class VoteBrokerImpl implements VoteBroker {
     private static final List<String> optionsForYesNoVote = Arrays.asList(YES, NO, ABSTAIN);
 
     private final UserManagementService userService;
-    private final GroupRepository groupRepository;
     private final VoteRepository voteRepository;
     private final EventLogRepository eventLogRepository;
     private final MessageAssemblingService messageService;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    public VoteBrokerImpl(UserManagementService userService, GroupRepository groupRepository, VoteRepository voteRepository, EventLogRepository eventLogRepository, MessageAssemblingService messageService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public VoteBrokerImpl(UserManagementService userService, VoteRepository voteRepository, EventLogRepository eventLogRepository, MessageAssemblingService messageService, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userService = userService;
-        this.groupRepository = groupRepository;
         this.voteRepository = voteRepository;
         this.eventLogRepository = eventLogRepository;
         this.messageService = messageService;
@@ -125,67 +123,6 @@ public class VoteBrokerImpl implements VoteBroker {
         logsAndNotificationsBroker.storeBundle(bundle);
 
         return savedVote;
-    }
-
-    @Override
-    @Transactional
-    public void updateVoteClosingTime(String userUid, String eventUid, LocalDateTime closingDateTime) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(eventUid);
-        Objects.requireNonNull(closingDateTime);
-
-        Vote vote = voteRepository.findOneByUid(eventUid);
-        User user = userService.load(userUid);
-
-        validateUserPermissionToModify(user, vote);
-
-        Instant convertedClosing = DateTimeUtil.convertToSystemTime(closingDateTime, DateTimeUtil.getSAST());
-        validateVoteClosingTime(convertedClosing);
-
-        vote.setEventStartDateTime(convertedClosing);
-        vote.updateScheduledReminderTime();
-    }
-
-    @Override
-    @Transactional
-    public void addVoteOption(String userUid, String voteUid, String voteOption) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(voteUid);
-
-        User user = userService.load(userUid);
-        Vote vote = voteRepository.findOneByUid(voteUid);
-
-        validateUserPermissionToModify(user, vote);
-
-        if (StringUtils.isEmpty(voteOption)) {
-            throw new IllegalArgumentException("Error! Vote option cannot be an empty string");
-        }
-
-        if (voteOption.length() > MAX_OPTION_LENGTH) {
-            throw new InvalidParameterException("Error! Vote option description is too long");
-        }
-
-        vote.addVoteOption(voteOption);
-        eventLogRepository.save(new EventLog(user, vote, EventLogType.VOTE_OPTION_ADDED, voteOption));
-    }
-
-    @Override
-    @Transactional
-    public void setListOfOptions(String userUid, String voteUid, List<String> options) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(voteUid);
-        Objects.requireNonNull(options);
-
-        User user = userService.load(userUid);
-        Vote vote = voteRepository.findOneByUid(voteUid);
-
-        validateUserPermissionToModify(user, vote);
-
-        vote.setTags(listToArray(options));
-        EventLog eventLog = options.isEmpty() ?
-                new EventLog(user, vote, EventLogType.VOTE_SET_YES_NO) :
-                new EventLog(user, vote, EventLogType.VOTE_OPTIONS_SET, joinStringList(options, ", ", 250));
-        eventLogRepository.save(eventLog);
     }
 
     @Override
@@ -335,16 +272,6 @@ public class VoteBrokerImpl implements VoteBroker {
         if (!closingTime.isAfter(now)) {
             throw new EventStartTimeNotInFutureException("Event start time " + closingTime.toString() +
                     " is not in the future");
-        }
-    }
-
-    private void validateUserPermissionToModify(User user, Vote vote) {
-        if (!vote.getCreatedByUser().equals(user)) {
-            Membership userMembership = vote.getThisOrAncestorGroup().getMembership(user);
-            if (userMembership == null ||
-                    !userMembership.getRole().getName().equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
-                throw new AccessDeniedException("Error! Only vote caller or group organizer can modify");
-            }
         }
     }
 

@@ -185,7 +185,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         final boolean isGroupJoin = joinMethod != null && GroupJoinMethod.JOIN_CODE_METHODS.contains(joinMethod);
         final boolean limitDoesNotApply = !groupSizeLimited || (isGroupJoin && !groupJoinsLimited) || group.robustIsPaidFor();
 
-        return limitDoesNotApply ? 99999 : Math.max(0, freeGroupLimit - group.getMemberships().size()); // todo: optimize this with direct query?
+        return limitDoesNotApply ? 99999 : Math.max(0, freeGroupLimit - group.getMemberships().size()); // todo: VJERAN: optimize this with direct query?
     }
 
     @Override
@@ -311,55 +311,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
                     .description("Group welcome messages deactivated due to conflicting creation of new template").build());
             template.setActive(false);
         }
-    }
-
-    @Override
-    @Transactional
-    public void updateGroupWelcomeNotifications(String userUid, String groupUid, List<String> messages, Duration delayToSend) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(messages);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        Account account = group.getAccount();
-
-        validateAdmin(user, account);
-
-        // todo : as above, checking for uniqueness, disabling, etc
-        Broadcast template = templateRepository.findTopByGroupAndBroadcastScheduleAndActiveTrue(group,
-                BroadcastSchedule.ADDED_TO_GROUP);
-
-        boolean changedTime = false;
-        if (delayToSend != null && delayToSend != Duration.of(template.getDelayIntervalMillis(), ChronoUnit.MILLIS)) {
-            template.setDelayIntervalMillis(delayToSend.toMillis());
-            changedTime = true;
-        }
-
-        boolean changedMessages = !messages.equals(template.getTemplateStrings());
-        if (changedMessages) {
-            template.setSmsTemplate1(messages.get(0));
-            if (messages.size() > 1) {
-                template.setSmsTemplate2(messages.get(1));
-            } else if (!StringUtils.isEmpty(template.getSmsTemplate2())) {
-                template.setSmsTemplate2(null);
-            }
-            if (messages.size() > 2) {
-                template.setSmsTemplate3(messages.get(2));
-            } else if (!StringUtils.isEmpty(template.getSmsTemplate3())) {
-                template.setSmsTemplate3(null);
-            }
-        }
-
-        final String logDescription = (changedTime ? String.format("Duration: %s,", delayToSend.toString()) : "") +
-                (changedMessages ? String.format("Messages: %s", messages.toString()) : "");
-        storeAccountLogPostCommit(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.GROUP_WELCOME_MESSAGES_CHANGED)
-                .group(group)
-                .paidGroupUid(group.getUid())
-                .user(user)
-                .description(logDescription).build());
     }
 
     @Override

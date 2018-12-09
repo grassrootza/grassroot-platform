@@ -92,22 +92,6 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     @Override
-    public TaskDTO load(String userUid, String taskUid) {
-        User user = userRepository.findOneByUid(userUid);
-        Event event = eventBroker.load(taskUid);
-        if (event != null) {
-            return new TaskDTO(event, user, eventLogRepository);
-        } else {
-            Todo todo = todoBroker.load(taskUid);
-            if (todo != null) {
-                return new TaskDTO(todo, user);
-            } else {
-                return null;
-            }
-        }
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public TaskDTO load(String userUid, String taskUid, TaskType type) {
         Objects.requireNonNull(userUid);
@@ -180,60 +164,6 @@ public class TaskBrokerImpl implements TaskBroker {
     public String fetchUserResponse(String userUid, Task task) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         return getUserResponse(task, user);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupBroker.load(groupUid);
-
-        Set<TaskDTO> taskDtos = new HashSet<>();
-
-        eventBroker.retrieveGroupEvents(group, user, Instant.now(), null).stream()
-                .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
-                .forEach(e -> taskDtos.add(new TaskDTO(e, user, eventLogRepository)));
-
-        Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
-        Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
-        List<Todo> todos = todoBroker.fetchTodosForGroup(userUid, groupUid, false, true, todoStart, todoEnd, null);
-
-        log.info("number of todos fetched for group = {}", todos.size());
-
-        for (Todo todo : todos) {
-            taskDtos.add(new TaskDTO(todo, user));
-        }
-
-        List<TaskDTO> tasks = new ArrayList<>(taskDtos);
-        Collections.sort(tasks);
-        return tasks;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TaskDTO> fetchGroupTasksInPeriod(String userUid, String groupUid, Instant start, Instant end) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupBroker.load(groupUid);
-
-        permissionBroker.validateGroupPermission(user, group, null);
-
-        Set<TaskDTO> taskDtos = new HashSet<>();
-
-        eventBroker.retrieveGroupEvents(group, user, start, end)
-                .forEach(e -> taskDtos.add(new TaskDTO(e, user, eventLogRepository)));
-
-        todoBroker.fetchTodosForGroup(userUid, groupUid, false, false, start, end, null)
-                .forEach(t -> taskDtos.add(new TaskDTO(t, user)));
-
-        List<TaskDTO> tasks = new ArrayList<>(taskDtos);
-        Collections.sort(tasks);
-        return tasks;
     }
 
     @Override
@@ -383,7 +313,6 @@ public class TaskBrokerImpl implements TaskBroker {
     @Override
     @Transactional(readOnly = true)
     public TaskMinimalDTO fetchDescription(String userUid, String taskUid, TaskType type) {
-        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         Objects.requireNonNull(taskUid);
         Objects.requireNonNull(type);
 
@@ -520,21 +449,6 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Task> fetchTasksRequiringUserResponse(String userUid, String userResponse) {
-        Objects.requireNonNull(userUid);
-        User user = userRepository.findOneByUid(userUid);
-
-        List<Task> tasks = new ArrayList<>();
-
-        tasks.addAll(eventBroker.getEventsNeedingResponseFromUser(user));
-        tasks.addAll(todoBroker.fetchTodosForUser(userUid, false, true, Instant.now(), null,
-                new Sort(Sort.Direction.ASC, "createdDateTime")));
-
-        return tasks;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<Membership> fetchMembersAssignedToTask(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         List<Membership> members = new ArrayList<>();
@@ -557,30 +471,6 @@ public class TaskBrokerImpl implements TaskBroker {
         }
 
         return members;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<String> fetchUserUidsForTask(String userUid, String taskUid, TaskType taskType) {
-        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
-
-        if (TaskType.TODO.equals(taskType)) {
-            Todo todo = todoBroker.load(taskUid);
-            validateUserPartOfGroupOrSystemAdmin(todo.getAncestorGroup(), user);
-            Set<TodoAssignment> todoAssignments = new HashSet<>(todoAssignmentRepository.findByTodo(todo));
-            return todoAssignments.stream().map(TodoAssignment::getUser).map(User::getUid).collect(Collectors.toList());
-        } else {
-            Event event = eventBroker.load(taskUid);
-            Group ancestorGroup = event.getAncestorGroup();
-            validateUserPartOfGroupOrSystemAdmin(ancestorGroup, user);
-            Set<User> assignedUsers = userRepository.findByEvents(event);
-            log.info("assigned users: {}", assignedUsers);
-            if (assignedUsers == null || assignedUsers.isEmpty()) {
-                assignedUsers = event.getAncestorGroup().getMembers();
-            }
-            log.info("after group check, assigned users: {}", assignedUsers);
-            return assignedUsers.stream().map(User::getUid).collect(Collectors.toList());
-        }
     }
 
     private void validateUserPartOfGroupOrSystemAdmin(Group group, User user) {
@@ -676,14 +566,6 @@ public class TaskBrokerImpl implements TaskBroker {
             default:
                 throw new IllegalArgumentException("Error! Unsupported task type");
         }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Task> loadAllTasks() {
-        List<Task> allTasks = new ArrayList<>(eventRepository.findAll(EventSpecifications.notCancelled()));
-        allTasks.addAll(todoBroker.loadAllTodos());
-        return allTasks;
     }
 
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {

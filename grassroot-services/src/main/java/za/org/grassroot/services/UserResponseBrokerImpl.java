@@ -74,52 +74,6 @@ public class UserResponseBrokerImpl implements UserResponseBroker {
         return null;
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public EntityForUserResponse checkForPossibleEntityResponding(String userUid, String response, boolean checkAlerts) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(response);
-
-        User user = userRepository.findOneByUid(userUid);
-
-        // first check for an event response
-
-        EventRSVPResponse responseType = EventRSVPResponse.fromString(response);
-        boolean isYesNoResponse = responseType == EventRSVPResponse.YES || responseType == EventRSVPResponse.NO || responseType == EventRSVPResponse.MAYBE;
-
-        List<Event> outstandingEvents = eventBroker.getEventsNeedingResponseFromUser(user);
-        List<Event> outstandingYesNoVotes = outstandingEvents.stream()
-                .filter(event -> EventType.VOTE.equals(event.getEventType()))
-                .filter(vote -> vote.getTags() == null || vote.getTags().length == 0)
-                .collect(Collectors.toList());
-
-        List<Event> outstandingOptionsVotes = outstandingEvents.stream()
-                .filter(event -> EventType.VOTE.equals(event.getEventType()))
-                .filter(vote -> hasVoteOption(response, vote))
-                .collect(Collectors.toList());
-
-        List<Event> outstandingMeetings = outstandingEvents.stream()
-                .filter(event -> EventType.MEETING.equals(event.getEventType())).collect(Collectors.toList());
-
-        // add in check on response
-        Todo outstandingTodo = todoBroker.checkForTodoNeedingResponse(userUid);
-
-        if (isYesNoResponse && !outstandingYesNoVotes.isEmpty()) { // user sent yes-no response and there is a vote awaiting yes-no response
-            log.info("User response is {}, type {} and there are outstanding YES_NO votes for that use", response, responseType);
-            return outstandingYesNoVotes.get(0);
-        } else if (isYesNoResponse && !outstandingMeetings.isEmpty()) {  // user sent yes-no response and there is a meeting awaiting yes-no response
-            log.info("User response is {}, type {} and there are outstanding meetings for that user", response, responseType);
-            return outstandingMeetings.get(0);
-        } else if (!outstandingOptionsVotes.isEmpty()) { // user sent something other then yes-no, and there is a vote that has this option (tag)
-            log.info("User response is {}, type {} and there are outstanding votes with custom option matching user's answer. Recording vote...", response, responseType);
-            return outstandingOptionsVotes.get(0);
-        } else if (outstandingTodo != null) {
-            return outstandingTodo;
-        } else {// we have not found any meetings or votes that this could be response to
-            return null;
-        }
-    }
-
     // todo : handle with a bit more sophistication (e.g., look for 'yes it is done')
     @Override
     public boolean checkValidityOfResponse(EntityForUserResponse entity, String message) {

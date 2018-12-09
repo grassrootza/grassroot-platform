@@ -19,10 +19,6 @@ import java.util.Map;
  */
 public interface TaskBroker {
 
-    // note: this is a highly inefficient method that will scan the repos to find the entity with the corresponding UID
-    // use it only when gains are significant and use relatively low. If the type is readily available, use the subsequent method.
-    TaskDTO load(String userUid, String taskUid);
-
     TaskDTO load(String userUid, String taskUid, TaskType type);
 
     <T extends Task> T loadEntity(String userUid, String taskUid, TaskType type, Class<T> returnType);
@@ -30,10 +26,6 @@ public interface TaskBroker {
     Map<String, String> loadResponses(String userUid, String taskUid, TaskType type);
 
     String fetchUserResponse(String userUid, Task task);
-
-    List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid);
-
-    List<TaskDTO> fetchGroupTasksInPeriod(String userUid, String groupUid, Instant start, Instant end);
 
     ChangedSinceData<TaskDTO> fetchGroupTasks(String userUid, String groupUid, Instant changedSince);
 
@@ -83,12 +75,7 @@ public interface TaskBroker {
      */
     List<TaskFullDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType);
 
-    List<Task> fetchTasksRequiringUserResponse(String userUid, String userResponse);
-
     List<Membership> fetchMembersAssignedToTask(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders);
-
-    // getting around Spring-Hibernate TX hell for some async methods
-    List<String> fetchUserUidsForTask(String userUid, String taskUid, TaskType taskType);
 
     @Transactional(readOnly = true)
     List<TaskFullDTO> fetchUpcomingGroupTasks(String userUid, String groupUid);
@@ -98,8 +85,4 @@ public interface TaskBroker {
     TaskFullDTO changeTaskDate(String userUid, String taskUid, TaskType taskType, Instant newDateTime);
 
     void respondToTask(String userUid, String taskUid, TaskType taskType, String response);
-
-    // we use this to populate the graph (temporary convenience)
-    List<Task> loadAllTasks();
-
 }
