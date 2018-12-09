@@ -85,7 +85,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         wireUpHomeController(ussdHomeController);
         wireUpMessageSourceAndGroupUtil(ussdMeetingController);
-        ussdHomeController.setMeetingController(ussdMeetingController);
+        // todo: VJERAN fix this dep
+//        ussdHomeController.setMeetingController(ussdMeetingController);
         ussdMeetingController.setEventUtil(ussdEventUtil);
         ussdMeetingController.setGroupUtil(ussdGroupUtil);
 

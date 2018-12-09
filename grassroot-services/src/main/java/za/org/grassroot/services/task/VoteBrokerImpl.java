@@ -228,17 +228,6 @@ public class VoteBrokerImpl implements VoteBroker {
         }
     }
 
-    @Override
-    public boolean hasMassVoteOpen(final Group group) {
-        return voteRepository.count(EventSpecifications.isOpenMassVoteForGroup(group)) > 0;
-    }
-
-    @Override
-    public Vote getMassVoteForGroup(String groupUid) {
-
-        return null;
-    }
-
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {
         Map<String, Long> results = new LinkedHashMap<>();
         List<EventLog> eventLogs = eventLogRepository.findAll(Specification.where(isResponseToVote(vote)));

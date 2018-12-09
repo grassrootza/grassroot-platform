@@ -67,7 +67,7 @@ public class USSDGroupJoinController extends USSDBaseController  {
     }
 
     // with mass votes this may get tricky, though most of it involves very fast & indexed select or count queries
-    public USSDMenu lookForJoinCode(final User user, final String trailingDigits) {
+    public USSDMenu ussdJoinGroupViaToken(final User user, final String trailingDigits) {
         final String token = trailingDigits.trim();
         final Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(token);
         if (searchResult.isPresent()) {
@@ -80,8 +80,6 @@ public class USSDGroupJoinController extends USSDBaseController  {
             final Membership membership = groupBroker.addMemberViaJoinCode(user, group, token, UserInterfaceType.USSD);
             if (!group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
                 return askForJoinTopics(group, user);
-            } else if (voteBroker.hasMassVoteOpen(group)) {
-                return respondToMassVoteMenu(group, user);
             } else {
                 String promptStart = group.hasName() ? getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
                         getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);
@@ -103,15 +101,6 @@ public class USSDGroupJoinController extends USSDBaseController  {
         final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
         USSDMenu menu = new USSDMenu(prompt);
         group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));
-        return menu;
-    }
-
-    private USSDMenu respondToMassVoteMenu(Group group, User user) {
-        Vote massVote = voteBroker.getMassVoteForGroup(group.getUid());
-        final String prompt = getMessage("home.start.prompt.group.vote", new String[] { group.getName(), massVote.getName() }, user);
-        USSDMenu menu = voteController.assembleVoteMenu(user, massVote); // handles option setting, etc.
-        menu.setPromptMessage(prompt); // because this is better in this context than standard
-        log.info("Created a mass vote, here it is: {}", menu);
         return menu;
     }
 

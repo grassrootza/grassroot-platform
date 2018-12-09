@@ -65,7 +65,9 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
                 .build();
         wireUpHomeController(ussdHomeController);
         wireUpMessageSourceAndGroupUtil(ussdVoteController);
-        ussdHomeController.setVoteController(ussdVoteController);
+
+        // todo: VJERAN fix this dep
+//        ussdHomeController.setVoteController(ussdVoteController);
         ussdEventUtil.setMessageSource(messageSource());
         ussdVoteController.setEventUtil(ussdEventUtil);
         ussdVoteController.setGroupUtil(ussdGroupUtil);

@@ -1,9 +1,11 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import java.net.URISyntaxException;
-
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
+import java.net.URISyntaxException;
+
 public interface UssdService {
-	Request processStart(final String inputNumber, final String enteredUSSD) throws URISyntaxException;
+	Request processStartMenu(String inputNumber, String enteredUSSD) throws URISyntaxException;
+
+	Request processForceStartMenu(String inputNumber, String trailingDigits) throws URISyntaxException;
 }

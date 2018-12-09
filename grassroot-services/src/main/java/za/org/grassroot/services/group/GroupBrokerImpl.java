@@ -500,8 +500,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     public Membership addMemberViaJoinCode(final User user, final Group group, final String tokenPassed, final UserInterfaceType interfaceType) {
-        validateJoinCode(group, tokenPassed);
-        recordJoinCodeInbound(group, tokenPassed);
+        validateJoinCode(group, tokenPassed, false, false);
 
         final GroupJoinMethod groupJoinMethod = getJoinMethodFromInterface(interfaceType);
         return selfJoinViaCode(user, group, groupJoinMethod, tokenPassed, null, null, null);
@@ -523,7 +522,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Group group = groupRepository.findOneByUid(groupUid);
 
         if (!StringUtils.isEmpty(code)) {
-            validateJoinCode(group, code); // don't record use, as already done elsewhere
+            validateJoinCode(group, code, true, false); // don't record use, as already done elsewhere
         }
 
         Broadcast broadcast = StringUtils.isEmpty(broadcastId) ? null : broadcastRepository.findOneByUid(broadcastId);
@@ -670,22 +669,23 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
     }
 
-    private void validateJoinCode(Group group, String joinCode) {
-//        Set<String> joinWords = groupJoinCodeRepository.selectActiveJoinCodesForGroup(group);
+    private void validateJoinCode(Group group, String joinCode, boolean includeJoinWords, boolean recordIfJoinWordFound) {
         final boolean valid = Instant.now().isBefore(group.getTokenExpiryDateTime()) && (joinCode.equals(group.getGroupTokenCode()) ||
-                // todo: VJERAN: joinCode->group foreign key index
-                group.getActiveJoinCode(joinCode).isPresent());
+                (includeJoinWords && validateJoinWord(group, joinCode, recordIfJoinWordFound)));
         if (!valid) {
-            throw new InvalidTokenException("Invalid token: " + joinCode);
+            throw new InvalidTokenException("Invalid join code: " + joinCode);
         }
     }
 
-    private void recordJoinCodeInbound(Group group, String code) {
-        DebugUtil.transactionRequired("");
-        final Optional<GroupJoinCode> joinCodeOptional = group.getActiveJoinCode(code);
+    private boolean validateJoinWord(final Group group, final String joinWord, final boolean recordIfJoinWordFound) {
+        Optional<GroupJoinCode> joinCodeOptional = group.getActiveJoinCode(joinWord); // todo: VJERAN: joinCode->group foreign key index
         if (joinCodeOptional.isPresent()) {
-            joinCodeOptional.get().incrementInboundUses();
+            if (recordIfJoinWordFound) {
+                joinCodeOptional.get().incrementInboundUses();
+            }
+            return true;
         }
+        return false;
     }
 
     @Override
@@ -1337,8 +1337,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Group group = load(groupUid);
         logger.info("code =? {}, and b id = {}", code, broadcastId);
         if (!StringUtils.isEmpty(code)) {
-            validateJoinCode(group, code);
-            recordJoinCodeInbound(group, code);
+            validateJoinCode(group, code, true, true);
         }
         if (!StringUtils.isEmpty(broadcastId)) {
             logger.info("we had an inbound on broadcast ID! record it");

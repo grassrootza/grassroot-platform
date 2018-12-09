@@ -23,8 +23,4 @@ public interface VoteBroker {
 
     Map<String, Long> fetchVoteResults(String userUid, String voteUid, boolean swallowMemberException);
 
-    boolean hasMassVoteOpen(Group group);
-
-    Vote getMassVoteForGroup(String groupUid);
-
 }
