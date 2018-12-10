@@ -18,9 +18,5 @@ public interface GroupLogRepository extends JpaRepository<GroupLog, Long>, JpaSp
 
 	GroupLog findFirstByGroupOrderByCreatedDateTimeDesc(Group group);
 
-    List<GroupLog> findByGroupAndCreatedDateTimeBetween(Group group, Instant startDateTime, Instant endDateTime, Sort sort);
-
-    List<GroupLog> findByGroupAndGroupLogTypeAndCreatedDateTimeBetween(Group group, GroupLogType type, Instant start, Instant end);
-
     List<GroupLog> findByGroupLogTypeIn(Collection<GroupLogType> types, Pageable pageable);
 }

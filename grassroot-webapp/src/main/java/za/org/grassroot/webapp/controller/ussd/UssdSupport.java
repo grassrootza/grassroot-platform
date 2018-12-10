@@ -34,12 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static za.org.grassroot.webapp.enums.USSDSection.GROUP_MANAGER;
-import static za.org.grassroot.webapp.enums.USSDSection.MEETINGS;
-import static za.org.grassroot.webapp.enums.USSDSection.MORE;
-import static za.org.grassroot.webapp.enums.USSDSection.TODO;
-import static za.org.grassroot.webapp.enums.USSDSection.USER_PROFILE;
-import static za.org.grassroot.webapp.enums.USSDSection.VOTES;
+import static za.org.grassroot.webapp.enums.USSDSection.*;
 
 @Component
 @Slf4j
@@ -238,4 +233,19 @@ public class UssdSupport {
 		return getMessage(section, menuKey, messageLocation, parameter, convert(sessionUser));
 	}
 
+	public USSDMenu setUserProfile(User user, String promptStart) {
+		String promptSuffix;
+		log.info("does user have language ? : {}, lang code = {}", user.hasLanguage(), user.getLanguageCode());
+		if (!user.hasLanguage()) {
+			promptSuffix = getMessage("home.start.prompt.language", user);
+			return new USSDMenu(promptStart + " " + promptSuffix, languageOptions("group/join/profile?field=LANGUAGE&language="));
+		} else if (user.getProvince() == null) {
+			promptSuffix = getMessage("home.start.prompt.province", user);
+			return new USSDMenu(promptStart + " " + promptSuffix, provinceOptions(user, "group/join/profile?field=PROVINCE&province="));
+		} else {
+			promptSuffix = getMessage("home.start.prompt.choose", user);
+			return !userManager.needsToSetName(user, false) ? welcomeMenu(promptStart + " " + promptSuffix, user) :
+					new USSDMenu(getMessage(HOME, USSDBaseController.startMenu, promptKey + "-rename.short", user), "rename-start");
+		}
+	}
 }

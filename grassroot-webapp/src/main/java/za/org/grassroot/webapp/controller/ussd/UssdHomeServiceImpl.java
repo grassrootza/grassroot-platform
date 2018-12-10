@@ -13,34 +13,37 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.UserResponseBroker;
+import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignTextBroker;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
-import za.org.grassroot.webapp.controller.ussd.group.USSDGroupJoinController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDCampaignConstants;
+import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import javax.annotation.PostConstruct;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
 
 @Service
-public class UssdServiceImpl implements UssdService {
-	private final Logger log = LoggerFactory.getLogger(UssdServiceImpl.class);
+public class UssdHomeServiceImpl implements UssdHomeService {
+	private final Logger log = LoggerFactory.getLogger(UssdHomeServiceImpl.class);
 
 	@Value("${grassroot.ussd.code.length:9}")
 	private int hashPosition;
@@ -65,7 +68,6 @@ public class UssdServiceImpl implements UssdService {
 	private final USSDSafetyGroupController safetyController;
 	private final LocationInfoBroker locationInfoBroker;
 	private final USSDGeoApiController geoApiController;
-	private final USSDGroupJoinController groupJoinController;
 	private final UserManagementService userManager;
 	private final CampaignBroker campaignBroker;
 	private final CampaignTextBroker campaignTextBroker;
@@ -77,15 +79,18 @@ public class UssdServiceImpl implements UssdService {
 	private final USSDMeetingController meetingController;
 	private final UserResponseBroker userResponseBroker;
 
+	private final GroupQueryBroker groupQueryBroker;
+	private final AccountFeaturesBroker accountFeaturesBroker;
+	private final GroupBroker groupBroker;
+
 	private static final USSDSection thisSection = HOME;
 
 
-	public UssdServiceImpl(@Autowired(required = false) USSDGeoApiController geoApiController, USSDLiveWireController liveWireController, USSDSafetyGroupController safetyController, LocationInfoBroker locationInfoBroker, USSDGroupJoinController groupJoinController, UserManagementService userManager, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, AsyncUserLogger userLogger, UssdSupport ussdSupport, CacheUtilService cacheManager, USSDTodoController todoController, USSDVoteController voteController, USSDMeetingController meetingController, UserResponseBroker userResponseBroker) {
+	public UssdHomeServiceImpl(USSDLiveWireController liveWireController, USSDSafetyGroupController safetyController, LocationInfoBroker locationInfoBroker, @Autowired(required = false) USSDGeoApiController geoApiController, UserManagementService userManager, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, AsyncUserLogger userLogger, UssdSupport ussdSupport, CacheUtilService cacheManager, USSDTodoController todoController, USSDVoteController voteController, USSDMeetingController meetingController, UserResponseBroker userResponseBroker, GroupQueryBroker groupQueryBroker, AccountFeaturesBroker accountFeaturesBroker, GroupBroker groupBroker) {
 		this.liveWireController = liveWireController;
 		this.safetyController = safetyController;
 		this.locationInfoBroker = locationInfoBroker;
 		this.geoApiController = geoApiController;
-		this.groupJoinController = groupJoinController;
 		this.userManager = userManager;
 		this.campaignBroker = campaignBroker;
 		this.campaignTextBroker = campaignTextBroker;
@@ -96,6 +101,9 @@ public class UssdServiceImpl implements UssdService {
 		this.voteController = voteController;
 		this.meetingController = meetingController;
 		this.userResponseBroker = userResponseBroker;
+		this.groupQueryBroker = groupQueryBroker;
+		this.accountFeaturesBroker = accountFeaturesBroker;
+		this.groupBroker = groupBroker;
 	}
 
 	@PostConstruct
@@ -150,7 +158,7 @@ public class UssdServiceImpl implements UssdService {
 			returnMenu = geoApiController.openingMenu(ussdSupport.convert(user), geoApiSuffixes.get(trailingDigits));
 			sendWelcomeIfNew = false;
 		} else {
-			returnMenu = groupJoinController.ussdJoinGroupViaToken(user, trailingDigits);
+			returnMenu = ussdJoinGroupViaToken(user, trailingDigits);
 			if (returnMenu != null) { // if group joined
 				sendWelcomeIfNew = true;
 			} else {
@@ -314,4 +322,40 @@ public class UssdServiceImpl implements UssdService {
 		}
 	}
 
+	public USSDMenu ussdJoinGroupViaToken(final User user, final String trailingDigits) {
+		final String token = trailingDigits.trim();
+		final Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(token);
+		if (searchResult.isPresent()) {
+			final Group group = searchResult.get();
+			log.debug("adding user via join code ... {}", token);
+			if (accountFeaturesBroker.numberMembersLeftForGroup(group, GroupJoinMethod.USSD_JOIN_CODE) == 0) {
+				return notifyGroupLimitReached(user, group);
+			}
+
+			final Membership membership = groupBroker.addMemberViaJoinCode(user, group, token, UserInterfaceType.USSD);
+			if (!group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
+				return askForJoinTopics(group, user);
+			} else {
+				String promptStart = group.hasName() ? ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.token.named", group.getGroupName(), user) :
+						ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.token.unnamed", user);
+				return ussdSupport.setUserProfile(user, promptStart);
+			}
+		} else {
+			return null;
+		}
+	}
+
+	private USSDMenu notifyGroupLimitReached(User user, Group group) {
+		USSDMenu menu = new USSDMenu(ussdSupport.getMessage("group.join.limit.exceeded", new String[]{group.getName()}, user));
+		menu.addMenuOptions(ussdSupport.optionsHomeExit(user, false));
+		return menu;
+	}
+
+	private USSDMenu askForJoinTopics(Group group, User user) {
+		final String prompt = ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.topics", group.getName(), user);
+		final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
+		USSDMenu menu = new USSDMenu(prompt);
+		group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));
+		return menu;
+	}
 }

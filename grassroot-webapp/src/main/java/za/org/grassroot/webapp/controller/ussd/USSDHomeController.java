@@ -35,7 +35,7 @@ public class USSDHomeController extends USSDBaseController {
 //    @Setter(AccessLevel.PACKAGE) private USSDVoteController voteController;
 //    @Setter(AccessLevel.PACKAGE) private USSDMeetingController meetingController;
 
-    private final UssdService ussdService;
+    private final UssdHomeService ussdHomeService;
 
     @Value("${grassroot.ussd.code.length:9}")
     private int hashPosition;
@@ -56,8 +56,8 @@ public class USSDHomeController extends USSDBaseController {
     private boolean geoApisEnabled;
 
     @Autowired
-    public USSDHomeController(UssdService ussdService) {
-        this.ussdService = ussdService;
+    public USSDHomeController(UssdHomeService ussdHomeService) {
+        this.ussdHomeService = ussdHomeService;
     }
 
     private final ExecutorService starttestExecutors = Executors.newFixedThreadPool(4);
@@ -114,7 +114,7 @@ public class USSDHomeController extends USSDBaseController {
     @ResponseBody
     public Request startMenu(@RequestParam(value = phoneNumber) String inputNumber,
                              @RequestParam(value = userInputParam, required = false) String enteredUSSD) throws URISyntaxException {
-		return this.ussdService.processStartMenu(inputNumber, enteredUSSD);
+		return this.ussdHomeService.processStartMenu(inputNumber, enteredUSSD);
 	}
 
     /*
@@ -124,7 +124,7 @@ public class USSDHomeController extends USSDBaseController {
     @ResponseBody
     public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber,
                                   @RequestParam(required = false) String trailingDigits) throws URISyntaxException {
-        return this.ussdService.processForceStartMenu(inputNumber, trailingDigits);
+        return this.ussdHomeService.processForceStartMenu(inputNumber, trailingDigits);
     }
 
 

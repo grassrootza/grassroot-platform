@@ -11,9 +11,6 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.services.UserResponseBroker;
-import za.org.grassroot.services.task.VoteBroker;
-import za.org.grassroot.webapp.controller.ussd.group.USSDGroupController;
 import za.org.grassroot.webapp.controller.ussd.group.USSDGroupJoinController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 
@@ -42,14 +39,9 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     private User testUser = new User(phoneForTests, testUserName, null);
 
-    @Mock private VoteBroker voteBrokerMock;
-    @Mock private UserResponseBroker userResponseBrokerMock;
-
     // these should be tested in their own controllers, home's role is just to direct
     @Mock private USSDLiveWireController liveWireControllerMock;
-    @Mock private USSDGroupController groupControllerMock;
     @Mock private USSDGroupJoinController groupJoinControllerMock;
-    @Mock private USSDMeetingController meetingControllerMock;
 
     @InjectMocks
     private USSDHomeController ussdHomeController;
@@ -141,7 +133,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         // todo : write a test in group controller too
         when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
-        when(groupJoinControllerMock.ussdJoinGroupViaToken(testUser, "111")).thenReturn(new USSDMenu("Found the code"));
+        // todo: VJERAN: fix?
+//        when(groupJoinControllerMock.ussdJoinGroupViaToken(testUser, "111")).thenReturn(new USSDMenu("Found the code"));
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests).param("request", "*134*1994*111#"))
                 .andExpect(status().isOk());
