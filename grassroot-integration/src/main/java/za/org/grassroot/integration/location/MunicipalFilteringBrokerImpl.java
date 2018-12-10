@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -92,8 +93,6 @@ public class MunicipalFilteringBrokerImpl implements MunicipalFilteringBroker {
 
         componentsBuilder = componentsBuilder.path(areaId);
         log.info("Composed URI: {}", componentsBuilder.toUriString());
-
-        ParameterizedTypeReference<Map<String, Municipality>> responseType = new ParameterizedTypeReference<Map<String, Municipality>>() {};
 
         ResponseEntity<Map<String, Municipality>> result = restTemplate.exchange(componentsBuilder.build().toUri(), HttpMethod.GET, null, MUNICIPALITY_RESPONSE_TYPE);
 
@@ -178,7 +177,7 @@ public class MunicipalFilteringBrokerImpl implements MunicipalFilteringBroker {
         noMunicipalityUids.removeAll(municipalityMap.keySet());
 
         log.info("Municipalities for users with location from cache is = {}",municipalityMap);
-        return new UserMunicipalitiesResponse(municipalityMap, notYetCachedUids);
+        return new UserMunicipalitiesResponse(municipalityMap, noMunicipalityUids);
     }
 
     @Override
@@ -197,11 +196,11 @@ public class MunicipalFilteringBrokerImpl implements MunicipalFilteringBroker {
 
     @Async
     @Override
-    public void saveLocationLogsFromAddress(int pageSize){
+    public void saveLocationLogsFromAddress(int pageSize) {
         List<Address> addresses = addressRepository.loadAddressesWithLocation();
-        Set<UserLocationLog> userLocationLogs;
-        if(addresses != null){
-            userLocationLogs = addresses
+        if (addresses != null) {
+            log.info("Would need to process {} addresses, but limited to page size of {}", addresses.size(), pageSize);
+            Set<UserLocationLog> userLocationLogs = addresses
                     .stream()
                     .limit((long) pageSize)
                     .map(address -> new UserLocationLog(Instant.now(), address.getResident().getUid(), address.getLocation(), address.getLocationSource()))
@@ -218,20 +217,22 @@ public class MunicipalFilteringBrokerImpl implements MunicipalFilteringBroker {
 
         Set<User> users = group.getMembers();
 
-        List<Membership> memberships = new ArrayList<>();
-
-        List<String> cacheKeys = cache.getKeys();
-
-        log.info("What is in cache keys ? {}",cacheKeys);
-
-        for (User user : users) {
-            if(cacheKeys.contains(user.getUid())){
-                Municipality municipality = (Municipality) cache.get(user.getUid()).getObjectValue();
-                if(municipality.getId() == Integer.valueOf(municipalityIDs)){
-                    memberships.add(user.getGroupMembership(groupUid));
-                }
-            }
-        }
+        // todo : clean this up properly
+        List<Membership> memberships = users.stream()
+                .filter(user -> cache.isKeyInCache(user.getUid()))
+                .filter(user -> {
+                    Element element = cache.get(user.getUid());
+                    return element != null && element.getObjectValue() != null;
+                })
+                .map(user -> {
+                    Municipality municipality = (Municipality) cache.get(user.getUid()).getObjectValue();
+                    if(municipality.getId() == Integer.valueOf(municipalityIDs)) {
+                        return user.getGroupMembership(groupUid);
+                    } else {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull).collect(Collectors.toList());
 
         log.info("List of users in municipality id = {} members = {}",municipalityIDs,memberships);
 

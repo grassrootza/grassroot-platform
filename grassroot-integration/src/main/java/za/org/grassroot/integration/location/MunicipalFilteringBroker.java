@@ -10,7 +10,6 @@ public interface MunicipalFilteringBroker {
 
     List<Municipality> getMunicipalitiesForProvince(Province province);
 
-    //
     void fetchMunicipalitiesForUsersWithLocations(Integer batchSize);
 
     List<Membership> getMembersInMunicipality(String groupUid, String municipalityIDs);
