@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
@@ -183,7 +184,7 @@ public class USSDUserController extends USSDBaseController {
 
     @RequestMapping(value = homePath + userMenus + "town")
     @ResponseBody public Request townPrompt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
         final String prompt = getMessage(thisSection, "town", "prompt", user);
         return menuBuilder(new USSDMenu(prompt, userMenus + "town/select"));
     }
@@ -191,7 +192,7 @@ public class USSDUserController extends USSDBaseController {
     @RequestMapping(value = homePath + userMenus + "town/select")
     @ResponseBody public Request townOptions(@RequestParam(value = phoneNumber) String inputNumber,
                                              @RequestParam(value = userInputParam) String userInput) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
         if ("0".equals(userInput.trim()))
             return menuBuilder(new USSDMenu(getMessage("campaign.exit_positive.generic", user)));
 
@@ -218,8 +219,8 @@ public class USSDUserController extends USSDBaseController {
     @RequestMapping(value = homePath + userMenus + "town/confirm")
     @ResponseBody public Request townConfirm(@RequestParam(value = phoneNumber) String inputNumber,
                                              @RequestParam String placeId) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
-        addressBroker.setUserArea(user.getUid(), placeId, LocationSource.TOWN_LOOKUP, true);
+        UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
+        addressBroker.setUserAreaFromUSSD(user.getUid(), placeId, LocationSource.TOWN_LOOKUP, true);
         USSDMenu menu = new USSDMenu(getMessage("user.town.updated.prompt", user));
         menu.addMenuOptions(optionsHomeExit(user, true));
         return menuBuilder(menu);

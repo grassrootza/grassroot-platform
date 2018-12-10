@@ -96,16 +96,8 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
             "SELECT * FROM tree",nativeQuery = true)
     List<Group> findGroupAndSubGroupsById(Long groupId);
 
-    @Query(value = "with distinct_root as (select distinct q1.root, q1.id as member from (select g.id, getroot(g.id) as root " +
-            "from group_profile g, group_user_membership gu where gu.user_id = ?1 and gu.group_id = g.id  ) as q1) " +
-            "select distinct (getchildren(root)).*, root  from distinct_root order by root,parent", nativeQuery = true)
-    List<Object[]> getGroupMemberTree(Long userId);
-
     @Query(value = "SELECT g FROM Group g WHERE g.active = true AND g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")
     List<Group> findGroupsWhereJoinCodeUsedBetween(Instant periodStart, Instant periodEnd);
-
-    @Query(value = "SELECT g from Group g WHERE g.createdByUser = ?1 AND g.active = true AND LENGTH(g.groupName) < 2")
-    List<Group> findActiveGroupsWithNamesLessThanOneCharacter(User createdByUser);
 
     @Query("select g from GroupLog gl inner join gl.group g inner join g.memberships m WHERE gl.groupLogType = 'GROUP_REMOVED' and gl.createdDateTime >= ?2 and m.user = ?1")
     List<Group> findMemberGroupsDeactivatedAfter(User member, Instant time);

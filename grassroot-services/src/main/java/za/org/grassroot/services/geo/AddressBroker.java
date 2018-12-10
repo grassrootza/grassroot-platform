@@ -27,7 +27,7 @@ public interface AddressBroker {
     void reviseLocationAddress(String userUid, String addressUid, GeoLocation location,
                                String description, UserInterfaceType interfaceType);
 
-    void setUserArea(String userUid, String placeId, LocationSource locationAccuracy, boolean setPrimary);
+    void setUserAreaFromUSSD(String userUid, String placeId, LocationSource locationAccuracy, boolean setPrimary);
 
     boolean hasAddressOrLocation(String userUid);
 }

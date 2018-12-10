@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 
 import java.util.List;
 import java.util.Set;
@@ -19,6 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     Note: can now no longer rely on NoSuchElement exceptions to catch 'no such user', probably should now do ourselves
      */
     User findByPhoneNumberAndPhoneNumberNotNull(String phoneNumber);
+
+    // first is in reality not necessary as phone number is not null, but need to distinguish from above
+    UserMinimalProjection findFirstByPhoneNumberAndPhoneNumberNotNull(String phoneNumber);
 
     User findByEmailAddressAndEmailAddressNotNull(String emailAddress);
 

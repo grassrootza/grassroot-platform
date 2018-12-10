@@ -3,6 +3,7 @@ package za.org.grassroot.services.util;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.util.List;
@@ -14,7 +15,9 @@ public interface CacheUtilService {
 
     void clearRsvpCacheForUser(String userUid);
 
-    // void clearCacheForAllUsersInGroup(EventDTO event);
+    UserMinimalProjection checkCacheForUserMinimalInfo(String msisdn);
+
+    void stashUserForMsisdn(String msisdn, UserMinimalProjection user);
 
     List<Event> getOutstandingResponseForUser(String userUid);
 

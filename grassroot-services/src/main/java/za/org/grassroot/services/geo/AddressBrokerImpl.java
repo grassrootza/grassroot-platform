@@ -16,7 +16,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.AddressLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.enums.AddressLogType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -160,7 +159,7 @@ public class AddressBrokerImpl implements AddressBroker {
             returnAddress = potentialAddresses != null && !potentialAddresses.isEmpty() && potentialAddresses.get(0).hasStreetAndArea()
                     ? potentialAddresses.get(0) : reverseGeoCodeLocation(location, user, UserInterfaceType.SYSTEM, false);
             if (returnAddress != null && storeForUser) {
-                storeAddressRawAfterDuplicateCheck(returnAddress);
+                storeAddressRawAfterDuplicateCheck(returnAddress, null);
             }
         }
         return returnAddress;
@@ -172,7 +171,7 @@ public class AddressBrokerImpl implements AddressBroker {
         User user = userRepository.findOneByUid(userUid);
         Address address = reverseGeoCodeLocation(location, user, userInterfaceType, primary);
         if (address != null) {
-            Address storedAddress = storeAddressRawAfterDuplicateCheck(address);
+            Address storedAddress = storeAddressRawAfterDuplicateCheck(address, userInterfaceType);
             if (primary) {
                 address.setPrimary(true);
             }
@@ -193,7 +192,7 @@ public class AddressBrokerImpl implements AddressBroker {
         }
     }
 
-    private Address storeAddressRawAfterDuplicateCheck(Address address) {
+    private Address storeAddressRawAfterDuplicateCheck(Address address, UserInterfaceType channel) {
         address.setPrimary(false); // to make sure we never accidentally override
         Address storedAddress;
         List<Address> duplicateCheck = addressRepository.findAll(Specification
@@ -201,11 +200,10 @@ public class AddressBrokerImpl implements AddressBroker {
                         .and(matchesStreetArea(address.getHouse(), address.getStreet(), address.getNeighbourhood())),
                 new Sort(Sort.Direction.DESC, "createdDateTime"));
         log.info("size of returned address: {}", duplicateCheck.size());
-        storedAddress = duplicateCheck.isEmpty() ?
-                addressRepository.save(address) : duplicateCheck.iterator().next();
+        storedAddress = duplicateCheck.isEmpty() ? addressRepository.save(address) : duplicateCheck.iterator().next();
         if (storedAddress.hasLocation()) {
             final String userUid = storedAddress.getResident().getUid();
-            userLocationLogRepository.save(new UserLocationLog(Instant.now(), userUid, address.getLocation(), address.getLocationSource()));
+            asyncUserLogger.recordUserLocation(userUid, address.getLocation(), address.getLocationSource(), channel);
         }
         return storedAddress;
     }
@@ -252,7 +250,7 @@ public class AddressBrokerImpl implements AddressBroker {
 
     @Override
     @Transactional
-    public void setUserArea(String userUid, String placeId, LocationSource locationAccuracy, boolean setPrimary) {
+    public void setUserAreaFromUSSD(String userUid, String placeId, LocationSource locationAccuracy, boolean setPrimary) {
         TownLookupResult place = locationInfoBroker.lookupPlaceDetails(placeId);
         if (place != null) {
             User user = userRepository.findOneByUid(userUid);
@@ -264,7 +262,7 @@ public class AddressBrokerImpl implements AddressBroker {
                 address.setLocationSource(locationAccuracy);
             }
 
-            storeAddressRawAfterDuplicateCheck(address);
+            storeAddressRawAfterDuplicateCheck(address, UserInterfaceType.USSD);
         }
     }
 

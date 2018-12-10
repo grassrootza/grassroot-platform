@@ -2,10 +2,9 @@ package za.org.grassroot.scheduling;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationListener;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,9 +16,13 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.events.AlterConfigVariableEvent;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.ConfigRepository;
+import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.MeetingRepository;
+import za.org.grassroot.core.repository.SafetyEventRepository;
+import za.org.grassroot.core.repository.TodoRepository;
+import za.org.grassroot.core.repository.VoteRepository;
 import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -46,6 +49,7 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
  * Created by aakilomar on 10/5/15.
  */
 @Component @Slf4j
+@ConditionalOnProperty(value = "grassroot.scheduled.tasks.enabled", matchIfMissing = true)
 public class ScheduledTasks implements ApplicationListener<AlterConfigVariableEvent> {
 
     private Map<String, String> configDefaults = ImmutableMap.of(

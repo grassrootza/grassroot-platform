@@ -12,12 +12,28 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
-import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Version;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity @Getter @Setter @Slf4j
@@ -187,22 +203,6 @@ public class Campaign implements UidIdentifiable, TagHolder {
                 .findFirst()
                 .map(s -> s.substring(PUBLIC_JOIN_WORD_PREFIX.length()))
                 .orElse(null);
-    }
-
-    public long countUsersInLogs(CampaignLogType logType) {
-        return getCampaignLogs().stream()
-                .filter(log -> logType.equals(log.getCampaignLogType()))
-                .map(log -> log.getUser().getId())
-                .distinct()
-                .count();
-    }
-
-    // this is possibly nasty, but we cache campaigns, so keep an eye out but should be fine
-    public long getLastActivityTimeEpochMillis() {
-        return getCampaignLogs().stream()
-                .map(CampaignLog::getCreationTime)
-                .mapToLong(Instant::toEpochMilli)
-                .max().orElse(this.createdDateTime.toEpochMilli());
     }
 
     public void addCampaignMessages(Set<CampaignMessage> messages) {
