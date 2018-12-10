@@ -8,6 +8,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
@@ -551,20 +553,31 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         User user = userRepository.findOneByUid(userUid);
         boolean canCreate = true;
 
-        ConfigVariable timesConfigVariable = configRepository.findOneByKey("times.livewire.user.blocked")
-                .isPresent() ? configRepository.findOneByKey("times.livewire.user.blocked").get() : null;
+        Optional<ConfigVariable> timesConfigVariable = configRepository.findOneByKey("times.livewire.user.blocked");
+        int timesUserBlocked = timesConfigVariable.map(var -> Integer.parseInt(var.getValue())).orElse(0);
 
-        ConfigVariable blockPeriodConfigVariable = configRepository.findOneByKey("period.to.block.user")
-                .isPresent() ? configRepository.findOneByKey("period.to.block.user").get() : null;
+        Optional<ConfigVariable> blockPeriodConfigVariable = configRepository.findOneByKey("period.to.block.user");
+        int blockPeriod = blockPeriodConfigVariable.map(var -> Integer.parseInt(var.getValue())).orElse(0);
 
-        int numberOfTimesUserBlocked = liveWireLogRepository.countNumberOfTimesUserAlertWasBlocked(user);
+        int numberOfTimesUserBlocked = countNumberOfTimesUserAlertWasBlocked(user,blockPeriod);
 
-        log.info("Number of times user was blocked is {} and our config variable value is {}",numberOfTimesUserBlocked,timesConfigVariable.getValue());
+        log.info("User was blocked {} times and config variable is {}",numberOfTimesUserBlocked,timesUserBlocked);
 
-        if(numberOfTimesUserBlocked >= Integer.parseInt(timesConfigVariable.getValue())){
+        if(numberOfTimesUserBlocked >= timesUserBlocked){
             canCreate = false;
         }
         return canCreate;
+    }
+
+    @Override
+    public int countNumberOfTimesUserAlertWasBlocked(User user,int days){
+        Instant daysBack = Instant.now().minus(days,ChronoUnit.DAYS);
+
+        Specification<LiveWireLog> typeSpecification = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("type"),LiveWireLogType.ALERT_BLOCKED);
+        Specification<LiveWireLog> creationTimeSpecification = (root, query, criteriaBuilder) -> criteriaBuilder.between(root.get("creationTime"),daysBack,Instant.now());
+        Specification<LiveWireLog> actingUserSpecification = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("userTakingAction"),user);
+
+        return (int) liveWireLogRepository.count(typeSpecification.and(creationTimeSpecification).and(actingUserSpecification));
     }
 
     private void validateCreatingUser(User user, LiveWireAlert alert) throws AccessDeniedException {

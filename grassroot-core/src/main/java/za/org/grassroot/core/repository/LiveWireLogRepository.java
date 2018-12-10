@@ -17,9 +17,4 @@ public interface LiveWireLogRepository extends JpaRepository<LiveWireLog, Long>,
 
     List<LiveWireLog> findByType(LiveWireLogType type, Pageable pageable);
 
-    @Query(value = "SELECT COUNT(l.type) FROM live_wire_log l " +
-            "WHERE l.type='ALERT_BLOCKED' " +
-            "AND l.creation_time < (CURRENT_TIMESTAMP - INTERVAL '1 DAY') " +
-            "AND l.user_acting_id=?1",nativeQuery = true)
-    int countNumberOfTimesUserAlertWasBlocked(User user);
 }

@@ -2,6 +2,7 @@ package za.org.grassroot.services.livewire;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
@@ -84,5 +85,8 @@ public interface LiveWireAlertBroker {
     Page<LiveWireAlert> fetchReleasedAlerts(Pageable pageRequest);
 
     boolean isUserBlocked(String userUid);
+
+    //Counting number of times user was alerts blocked between today and today minus days parameter.
+    int countNumberOfTimesUserAlertWasBlocked(User user,int days);
 
 }
