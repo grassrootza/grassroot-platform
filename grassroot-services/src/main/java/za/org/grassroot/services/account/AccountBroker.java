@@ -19,6 +19,8 @@ public interface AccountBroker {
 
     Account loadDefaultAccountForUser(String userUid);
 
+    void validateUserCanViewAccount(String accountUid, String userUid);
+
     String createAccount(String userUid, String accountName, String billedUserUid, String billingEmail, String ongoingPaymentRef);
 
     void setAccountSubscriptionRef(String userUid, String accountUid, String subscriptionId);

@@ -36,7 +36,7 @@ public interface CampaignBroker {
 
     List<Campaign> getCampaignsManagedByUser(String userUid);
 
-    List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid);
+    List<Campaign> getCampaignsOnAccount(String accountUid, boolean activeOnly);
 
     Campaign getCampaignDetailsByCode(String campaignCode, String userUid, boolean storeLog, UserInterfaceType channel);
 

@@ -171,6 +171,11 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     }
 
     @Override
+    public Account load(String accountUid) {
+        return accountRepository.findOneByUid(accountUid);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public int numberMembersLeftForGroup(String groupUid, GroupJoinMethod joinMethod) {
         Group group = groupRepository.findOneByUid(groupUid);
