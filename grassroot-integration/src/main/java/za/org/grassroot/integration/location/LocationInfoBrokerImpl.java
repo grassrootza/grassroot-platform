@@ -5,7 +5,14 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.document.*;
+import com.amazonaws.services.dynamodbv2.document.AttributeUpdate;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Index;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
+import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
+import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.UpdateItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
@@ -17,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -47,7 +53,15 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component @Slf4j
@@ -78,7 +92,9 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private String izweLamiLambda;
 
     @Autowired
-    public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository, AccountRepository accountRepository, AccountLogRepository accountLogRepository, NotificationRepository notificationRepository) {
+    public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository,
+                                  AccountRepository accountRepository, AccountLogRepository accountLogRepository,
+                                  NotificationRepository notificationRepository) {
         this.environment = environment;
         this.restTemplate = restTemplate;
         this.userRepository = userRepository;
@@ -131,6 +147,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Override
     public List<TownLookupResult> lookupPostCodeOrTown(String postCodeOrTown, Province province) {
         try {
+            log.info("Place Lookup Lambda URL = {}",placeLookupLambda);
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(placeLookupLambda + "/lookup")
                     .queryParam("searchTerm", postCodeOrTown.trim());
 
@@ -366,6 +383,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         log.info("Result of province lookup: {}", result.getBody());
         return StringUtils.isEmpty(result.getBody()) ? null : Enums.getIfPresent(Province.class, "ZA_" + result.getBody()).orNull();
     }
+
 
     private void assembleAndSendHealthClinics(TownLookupResult place, String targetUserUid, Set<String> accountUids) {
         UriComponentsBuilder componentsBuilder = UriComponentsBuilder.fromHttpUrl(izweLamiLambda)

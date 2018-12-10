@@ -6,10 +6,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -17,7 +22,6 @@ import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
-import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.geo.AddressBroker;
@@ -49,7 +53,7 @@ public class UserController extends BaseRestController {
     @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
     private String userProfileImagesFolder;
 
-    public UserController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker,
+    public UserController(MediaFileBroker mediaFileBroker,
                           UserManagementService userService, JwtService jwtService,
                           PasswordTokenService passwordService, AddressBroker addressBroker) {
         super(jwtService, userService);
@@ -159,6 +163,20 @@ public class UserController extends BaseRestController {
         CreateJwtTokenRequest jwtRequest = new CreateJwtTokenRequest(JwtType.API_CLIENT,
                 userId, Collections.singleton(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER.getName()));
         return ResponseEntity.ok(jwtService.createJwt(jwtRequest));
+    }
+
+    @RequestMapping(value = "/user/location",method = RequestMethod.POST)
+    public ResponseEntity createUserLocationLog(@RequestParam double lat,
+                                                @RequestParam double lon,
+                                                HttpServletRequest request){
+        log.info("Recieved coodinates, lat = {} , long = {}",lat,lon);
+
+        String userUid = getUserIdFromRequest(request);
+        GeoLocation geoLocation = new GeoLocation(lat,lon);
+
+        userService.saveUserLocation(userUid,geoLocation,UserInterfaceType.WEB_2);
+
+        return ResponseEntity.ok(RestMessage.LOCATION_RECORDED);
     }
 
 }

@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.integration.location.Municipality;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
@@ -31,12 +32,14 @@ import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.JoinWordsExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.group.GroupImageBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
@@ -69,8 +72,10 @@ public class GroupModifyController extends GroupBaseController {
     private final AccountFeaturesBroker accountFeaturesBroker;
     private final GroupStatsBroker groupStatsBroker;
 
+
     public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, GroupFetchBroker groupFetchBroker,
-                                 GroupImageBroker groupImageBroker, AccountBroker accountBroker, AccountFeaturesBroker accountFeaturesBroker, GroupStatsBroker groupStatsBroker) {
+                                 GroupImageBroker groupImageBroker, AccountBroker accountBroker, AccountFeaturesBroker accountFeaturesBroker,
+                                 GroupStatsBroker groupStatsBroker) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.groupImageBroker = groupImageBroker;

@@ -133,8 +133,4 @@ public class AdminAccountsController extends BaseRestController {
         Account account = accountBroker.loadAccount(accountUid);
         return billingServiceBroker.cancelSubscription(account.getSubscriptionRef(), getJwtTokenFromRequest(request)).toFuture();
     }
-
-
-
-
 }

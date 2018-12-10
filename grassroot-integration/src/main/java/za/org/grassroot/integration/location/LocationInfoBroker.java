@@ -1,6 +1,7 @@
 package za.org.grassroot.integration.location;
 
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.Province;
 
 import java.util.List;
