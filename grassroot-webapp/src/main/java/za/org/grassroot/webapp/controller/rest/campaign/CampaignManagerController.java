@@ -333,10 +333,6 @@ public class CampaignManagerController extends BaseRestController {
         return dto;
     }
 
-    private List<CampaignViewDTO> getCampaignsMinimal(List<String> campaignUids) {
-        return campaignUids.stream().map(uid -> getCampaign(uid, false)).collect(Collectors.toList());
-    }
-
     private CampaignViewDTO getCampaign(String campaignUid, boolean fullInfo) {
         return getCampaignIfInCache(campaignUid, fullInfo).orElseGet(() -> {
             CampaignLogsDataCollection countCollection = campaignStatsBroker.getCampaignLogData(campaignUid);
