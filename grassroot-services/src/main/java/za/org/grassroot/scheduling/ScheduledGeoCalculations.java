@@ -86,11 +86,12 @@ public class ScheduledGeoCalculations {
         });
     }
 
+    // disabling this until confident in behaviour
     @Scheduled(cron = "0 0 1 * * *")
     public void cacheMunicipalitiesForUsersWithLocation() {
         if (municipalFilteringBroker != null) {
             log.info("Caching municipalities for users with location");
-            municipalFilteringBroker.fetchMunicipalitiesForUsersWithLocations(null);
+//            municipalFilteringBroker.fetchMunicipalitiesForUsersWithLocations(null);
         } else {
             log.info("Municipal filtering not enabled, skipping logging");
         }

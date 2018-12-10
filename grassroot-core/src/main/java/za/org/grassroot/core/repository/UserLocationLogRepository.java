@@ -1,7 +1,7 @@
 package za.org.grassroot.core.repository;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
@@ -21,7 +21,7 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 
 	List<UserLocationLog> findByUserUidOrderByTimestampDesc(String userUid);
 
-	Page<UserLocationLog> findByMunicipalityIdIsNullAndTimestampAfter(Instant cutoffTime, PageRequest pageRequest);
+	Page<UserLocationLog> findByMunicipalityIdIsNullAndTimestampAfter(Instant cutoffTime, Pageable pageRequest);
 
 	UserLocationLog findFirstByUserUidAndMunicipalityIdIsNotNullOrderByTimestampDesc(String userUid);
 
