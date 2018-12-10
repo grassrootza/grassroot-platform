@@ -94,11 +94,13 @@ public class CampaignViewDTO {
 
         this.fullInfo = fullInfo;
 
-        this.totalEngaged = logsDataCollection.getTotalEngaged();
-        this.totalJoined = logsDataCollection.getTotalJoined();
-        this.totalSigned = logsDataCollection.getTotalSigned();
+        if (logsDataCollection != null) {
+            this.totalEngaged = logsDataCollection.getTotalEngaged();
+            this.totalJoined = logsDataCollection.getTotalJoined();
+            this.totalSigned = logsDataCollection.getTotalSigned();
+            this.lastActivityEpochMilli = logsDataCollection.getLastActivityEpochMilli();
+        }
 
-        this.lastActivityEpochMilli = logsDataCollection.getLastActivityEpochMilli();
 
         if (fullInfo) {
             this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;

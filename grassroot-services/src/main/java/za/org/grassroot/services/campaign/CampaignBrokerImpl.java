@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.Role_;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
@@ -215,6 +216,16 @@ public class CampaignBrokerImpl implements CampaignBroker {
         return campaigns;
     }
 
+    @Override
+    public List<Campaign> getCampaignsOnAccount(String accountUid, boolean activeOnly) {
+        Account account = accountFeaturesBroker.load(accountUid);
+        Specification<Campaign> spec = (root, query, cb) -> cb.equal(root.get(Campaign_.account), account);
+        if (activeOnly) {
+            spec = spec.and((root, query, cb) -> cb.greaterThan(root.get(Campaign_.endDateTime), Instant.now()));
+        }
+        return campaignRepository.findAll(spec);
+    }
+
     private List<Campaign> fetchCampaignsUserCanManage(User user) {
         Specification<Campaign> createdByUser = (root, query, cb) -> cb.equal(root.get(Campaign_.createdByUser), user);
         Specification<Campaign> userIsOrganizerInGroup = (root, query, cb) -> {
@@ -227,11 +238,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         };
 
         return campaignRepository.findAll(Specification.where(createdByUser).or(userIsOrganizerInGroup), Sort.by("createdDateTime"));
-    }
-
-    @Override
-    public List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid) {
-        return campaignRepository.findByMasterGroupUid(groupUid, Sort.by("createdDateTime"));
     }
 
     @Override
