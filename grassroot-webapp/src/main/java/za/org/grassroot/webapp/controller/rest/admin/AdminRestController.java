@@ -291,18 +291,18 @@ public class AdminRestController extends BaseRestController{
 
     @RequestMapping(value = "/update/location/address",method = RequestMethod.GET)
     @ApiOperation(value = "Refreshes the user location log table by adding locations that are in address but not in location log")
-    public ResponseEntity updateLocationLogFromAddress(){
+    public ResponseEntity updateLocationLogFromAddress(@RequestParam Integer pageSize){
         log.info("Saving location logs from address");
-        municipalFilteringBroker.saveLocationLogsFromAddress(10);
+        municipalFilteringBroker.saveLocationLogsFromAddress(pageSize);
         return ResponseEntity.ok(RestMessage.UPDATED);
     }
 
     // Refreshing the user location log cache for updating user count with gps coordinates
     @RequestMapping(value = "/municipalities/trigger",method = RequestMethod.GET)
     @ApiOperation(value = "Refreshes the municipalities for users with locations cache")
-    public ResponseEntity triggerMunicipalityFetch(){
-        log.info("Updating user municipalities cache inside UserController --------------------->>>>>>>>>>>>>>>>>>>>>>>>");
-        municipalFilteringBroker.fetchMunicipalitiesForUsersWithLocations(10);
+    public ResponseEntity triggerMunicipalityFetch(@RequestParam Integer pageSize) {
+        log.info("Updating user municipalities cache, page size: {}", pageSize);
+        municipalFilteringBroker.fetchMunicipalitiesForUsersWithLocations(pageSize);
         return ResponseEntity.ok(RestMessage.UPDATED);
     }
 

@@ -530,7 +530,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         final Locale gettingOverJavaLocaleHorror = maybeContains.orElse(safeLocale);
         List<CampaignMessage> campaignMessages = campaignMessageRepository.findAll(CampaignMessageSpecifications
                 .ofTypeForCampaign(campaign, linkedAction, gettingOverJavaLocaleHorror));
-        log.info("Prior to channel filter, have messages: {}", campaignMessages);
+        log.debug("Prior to channel filter, have messages: {}", campaignMessages);
         return filterForChannelOrDefault(campaignMessages, channel, UserInterfaceType.USSD);
     }
 
@@ -538,12 +538,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
         List<CampaignMessage> filteredMessages = messages.stream().filter(message ->
                 preferredChannel == null || preferredChannel.equals(message.getChannel())).collect(Collectors.toList());
         if (!filteredMessages.isEmpty()) {
-            log.info("Found messages for channel {}, returning: {}", preferredChannel, filteredMessages);
+            log.debug("Found messages for channel {}, returning: {}", preferredChannel, filteredMessages);
             return filteredMessages;
         } else {
             List<CampaignMessage> defaultMsgs = messages.stream()
                     .filter(message -> defaultChannel == null || defaultChannel.equals(message.getChannel())).collect(Collectors.toList());
-            log.info("found for default channel {}, messages {}", defaultChannel, defaultMsgs);
+            log.debug("found for default channel {}, messages {}", defaultChannel, defaultMsgs);
             return defaultMsgs;
         }
     }

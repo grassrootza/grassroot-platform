@@ -92,7 +92,7 @@ public class MunicipalFilteringBrokerImpl implements MunicipalFilteringBroker {
         }
 
         componentsBuilder = componentsBuilder.path(areaId);
-        log.info("Composed URI: {}", componentsBuilder.toUriString());
+        log.debug("Composed URI: {}", componentsBuilder.toUriString());
 
         ResponseEntity<Map<String, Municipality>> result = restTemplate.exchange(componentsBuilder.build().toUri(), HttpMethod.GET, null, MUNICIPALITY_RESPONSE_TYPE);
 
@@ -129,16 +129,19 @@ public class MunicipalFilteringBrokerImpl implements MunicipalFilteringBroker {
 
         componentsBuilder = componentsBuilder.path(latLong).queryParam("type","MN");
 
-        log.info("Composed URI: {}", componentsBuilder.toUriString());
+        log.debug("Composed URI: {}", componentsBuilder.toUriString());
 
         ResponseEntity<Map<String,Municipality>> result = restTemplate.exchange(componentsBuilder.build().toUri(),HttpMethod.GET,null, MUNICIPALITY_RESPONSE_TYPE);
 
         Municipality municipality = null;
-        if (result.getBody() != null) {
+        final boolean hasResult = result.getBody() != null && !result.getBody().isEmpty();
+        if (hasResult) {
             municipality = result.getBody().entrySet().iterator().next().getValue();
             cacheMunicipality(userUid, municipality);
+            log.info("Found a municipality! = {}",municipality);
+        } else {
+            log.info("No municipality found! Uri: {}", componentsBuilder.build().toUri());
         }
-        log.info("Municipality = {}",municipality);
 
         return municipality;
     }

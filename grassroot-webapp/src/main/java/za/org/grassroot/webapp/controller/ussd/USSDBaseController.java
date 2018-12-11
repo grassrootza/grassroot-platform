@@ -258,7 +258,7 @@ public class USSDBaseController {
         return messageAssembler.getMessage(messageKey, language);
     }
 
-    protected String getMessage(String messageKey, String[] params, User user) {
+    protected String getMessage(String messageKey, String[] params, UserMinimalProjection user) {
         return messageAssembler.getMessage(messageKey, params, user);
     }
 
@@ -281,5 +281,8 @@ public class USSDBaseController {
         return getMessage(section, menuKey, messageLocation, parameter, convert(sessionUser));
     }
 
+    protected String getMessage(String messageKey, String[] params, User user) {
+        return messageAssembler.getMessage(messageKey, params, user);
+    }
 
 }
