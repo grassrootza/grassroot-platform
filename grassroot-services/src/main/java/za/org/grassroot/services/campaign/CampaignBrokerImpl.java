@@ -339,9 +339,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         User user = userManager.load(userUid);
 
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_PETITION_SIGNED, campaign, channel, null);
-        if (!StringUtils.isEmpty(campaign.getPetitionApi())) {
-            log.info("firing at the petition API!", campaign.getPetitionApi());
-        }
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(campaignLog);
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
@@ -621,9 +618,9 @@ public class CampaignBrokerImpl implements CampaignBroker {
             }
         }
 
-        if (!Objects.equals(landingUrl, campaign.getLandingUrl()) || !Objects.equals(petitionApi, campaign.getPetitionApi())) {
+        if (!Objects.equals(landingUrl, campaign.getLandingUrl()) || !Objects.equals(petitionApi, campaign.getPetitionApiUrl())) {
             campaign.setLandingUrl(landingUrl);
-            campaign.setPetitionApi(petitionApi);
+            campaign.setPetitionApiUrl(petitionApi);
             bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_URLS_CHANGED, campaign, null,
                     landingUrl + "; " + petitionApi));
         }

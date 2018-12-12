@@ -117,7 +117,9 @@ public class MunicipalFilteringBrokerImpl implements MunicipalFilteringBroker {
 
         userLocationLogs.forEach(log -> {
             Municipality muni = fetchMunicipalityByCoordinates(log.getUserUid(), log.getLocation());
-            log.setLocationData(null, String.valueOf(muni.getId()), muni.getName());
+            if (muni != null) {
+                log.setLocationData(null, String.valueOf(muni.getId()), muni.getName());
+            }
         });
 
         userLocationLogRepository.saveAll(userLocationLogs);

@@ -101,14 +101,15 @@ public class CampaignViewDTO {
             this.lastActivityEpochMilli = logsDataCollection.getLastActivityEpochMilli();
         }
 
-
+        log.debug("Assembling DTO, full info? : {}", fullInfo);
         if (fullInfo) {
             this.masterGroupName = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null;
             this.masterGroupUid = campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null;
 
-            this.petitionConnected = !StringUtils.isEmpty(campaign.getPetitionApi()) && !StringUtils.isEmpty(campaign.getPetitionResultApi());
+            log.debug("Petition connected? : {}", campaign.getPetitionApiUrl());
+            this.petitionConnected = !StringUtils.isEmpty(campaign.getPetitionApiUrl());
             if (this.petitionConnected) {
-                this.petitionUrl = campaign.getPetitionApi();
+                this.petitionUrl = campaign.getPetitionApiUrl();
             }
 
             this.outboundSmsEnabled = campaign.isOutboundTextEnabled();
