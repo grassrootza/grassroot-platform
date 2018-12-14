@@ -529,6 +529,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         LiveWireLog log = new LiveWireLog.Builder()
                 .alert(alert)
                 .userTakingAction(user)
+                .userTargeted(alert.getCreatingUser())
                 .type(send ? LiveWireLogType.ALERT_RELEASED : LiveWireLogType.ALERT_BLOCKED)
                 .notes("tags added: " + tags + ", lists: " + publicListUids)
                 .build();
@@ -554,17 +555,16 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         boolean canCreate = true;
 
         Optional<ConfigVariable> timesConfigVariable = configRepository.findOneByKey("times.livewire.user.blocked");
-        int timesUserBlocked = timesConfigVariable.map(var -> Integer.parseInt(var.getValue())).orElse(0);
+        Integer timesUserBlocked = timesConfigVariable.map(var -> Integer.parseInt(var.getValue())).orElse(null);
 
         Optional<ConfigVariable> blockPeriodConfigVariable = configRepository.findOneByKey("period.to.block.user");
-        int blockPeriod = blockPeriodConfigVariable.map(var -> Integer.parseInt(var.getValue())).orElse(0);
+        Integer blockPeriod = blockPeriodConfigVariable.map(var -> Integer.parseInt(var.getValue())).orElse(null);
 
-        int numberOfTimesUserBlocked = countNumberOfTimesUserAlertWasBlocked(user,blockPeriod);
-
-        log.info("User was blocked {} times and config variable is {}",numberOfTimesUserBlocked,timesUserBlocked);
-
-        if(numberOfTimesUserBlocked >= timesUserBlocked){
-            canCreate = false;
+        if(blockPeriod != null && timesUserBlocked != null){
+            log.info("User was blocked {} times,and config var value is {}",countNumberOfTimesUserAlertWasBlocked(user,blockPeriod),blockPeriod);
+            if(countNumberOfTimesUserAlertWasBlocked(user,blockPeriod) >= timesUserBlocked){
+                canCreate = false;
+            }
         }
         return canCreate;
     }
@@ -575,7 +575,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         Specification<LiveWireLog> typeSpecification = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("type"),LiveWireLogType.ALERT_BLOCKED);
         Specification<LiveWireLog> creationTimeSpecification = (root, query, criteriaBuilder) -> criteriaBuilder.between(root.get("creationTime"),daysBack,Instant.now());
-        Specification<LiveWireLog> actingUserSpecification = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("userTakingAction"),user);
+        Specification<LiveWireLog> actingUserSpecification = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("userTargeted"),user);
 
         return (int) liveWireLogRepository.count(typeSpecification.and(creationTimeSpecification).and(actingUserSpecification));
     }

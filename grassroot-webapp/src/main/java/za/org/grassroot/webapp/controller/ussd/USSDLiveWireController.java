@@ -80,7 +80,13 @@ public class USSDLiveWireController extends USSDBaseController {
                 groupsForInstant, meetingList.size(), System.currentTimeMillis() - startTime);
 
         USSDMenu menu;
-        if (groupsForInstant == 0L && meetingList.isEmpty()) {
+
+        if(!liveWireAlertBroker.isUserBlocked(user.getUid())){
+            log.info("User is blocked ---------->>>>>>>>>>>>>>>>>");
+            menu = new USSDMenu(getMessage(LIVEWIRE,startMenu,"prompt.blocked",user));
+            menu.addMenuOption(startMenu, "Main menu");
+            menu.addMenuOption("exit", "Exit");
+        }else if (groupsForInstant == 0L && meetingList.isEmpty()) {
             menu = new USSDMenu(getMessage(LIVEWIRE, startMenu, "prompt.nomeetings", user));
             menu.addMenuOption(meetingMenus + startMenu + "?newMtg=1", "Create a meeting");
             menu.addMenuOption(startMenu, "Main menu");
