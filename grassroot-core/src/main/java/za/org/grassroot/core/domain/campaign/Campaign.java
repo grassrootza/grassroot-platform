@@ -100,7 +100,7 @@ public class Campaign implements UidIdentifiable, TagHolder {
     private String landingUrl;
 
     @Column(name = "petition_api")
-    private String petitionApi;
+    private String petitionApiUrl;
 
     @Column(name = "petition_result_api")
     private String petitionResultApi;

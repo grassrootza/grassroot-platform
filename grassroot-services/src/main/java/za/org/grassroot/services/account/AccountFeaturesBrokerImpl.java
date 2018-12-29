@@ -1,6 +1,5 @@
 package za.org.grassroot.services.account;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -169,6 +168,11 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private void storeAccountLogPostCommit(AccountLog accountLog) {
         AfterTxCommitTask task = () -> createAndStoreSingleAccountLog(accountLog);
         eventPublisher.publishEvent(task);
+    }
+
+    @Override
+    public Account load(String accountUid) {
+        return accountRepository.findOneByUid(accountUid);
     }
 
     @Override

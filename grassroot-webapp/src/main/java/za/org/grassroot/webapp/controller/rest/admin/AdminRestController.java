@@ -9,7 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.User;
@@ -23,6 +27,8 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
+import za.org.grassroot.integration.location.LocationInfoBroker;
+import za.org.grassroot.integration.location.MunicipalFilteringBroker;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
@@ -36,7 +42,10 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookToDownload;
@@ -59,6 +68,7 @@ public class AdminRestController extends BaseRestController{
     private final AccountFeaturesBroker accountFeaturesBroker;
 
     private MemberDataExportBroker memberDataExportBroker;
+    private MunicipalFilteringBroker municipalFilteringBroker;
 
     public AdminRestController(UserManagementService userManagementService,
                                JwtService jwtService,
@@ -67,7 +77,8 @@ public class AdminRestController extends BaseRestController{
                                GroupBroker groupBroker,
                                MessagingServiceBroker messagingServiceBroker,
                                PasswordTokenService passwordTokenService,
-                               AccountFeaturesBroker accountFeaturesBroker){
+                               AccountFeaturesBroker accountFeaturesBroker,
+                               LocationInfoBroker locationInfoBroker){
         super(jwtService,userManagementService);
         this.adminService = adminService;
         this.userManagementService = userManagementService;
@@ -82,6 +93,11 @@ public class AdminRestController extends BaseRestController{
     @Autowired(required = false) // as it depends on WhatsApp being active
     public void setMemberDataExportBroker(MemberDataExportBroker memberDataExportBroker) {
         this.memberDataExportBroker = memberDataExportBroker;
+    }
+
+    @Autowired(required = false)
+    public void setMunicipalFilteringBroker(MunicipalFilteringBroker municipalFilteringBroker) {
+        this.municipalFilteringBroker = municipalFilteringBroker;
     }
 
     @RequestMapping(value = "/user/load",method = RequestMethod.GET)
@@ -271,6 +287,23 @@ public class AdminRestController extends BaseRestController{
     @RequestMapping(value = "/config/fetch/above/limit/{limit}",method = RequestMethod.GET)
     public ResponseEntity<Integer> countGroupsAboveLimit(@PathVariable int limit){
         return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(limit));
+    }
+
+    @RequestMapping(value = "/update/location/address",method = RequestMethod.GET)
+    @ApiOperation(value = "Refreshes the user location log table by adding locations that are in address but not in location log")
+    public ResponseEntity updateLocationLogFromAddress(@RequestParam Integer pageSize){
+        log.info("Saving location logs from address");
+        municipalFilteringBroker.saveLocationLogsFromAddress(pageSize);
+        return ResponseEntity.ok(RestMessage.UPDATED);
+    }
+
+    // Refreshing the user location log cache for updating user count with gps coordinates
+    @RequestMapping(value = "/municipalities/trigger",method = RequestMethod.GET)
+    @ApiOperation(value = "Refreshes the municipalities for users with locations cache")
+    public ResponseEntity triggerMunicipalityFetch(@RequestParam Integer pageSize) {
+        log.info("Updating user municipalities cache, page size: {}", pageSize);
+        municipalFilteringBroker.fetchMunicipalitiesForUsersWithLocations(pageSize);
+        return ResponseEntity.ok(RestMessage.UPDATED);
     }
 
 }

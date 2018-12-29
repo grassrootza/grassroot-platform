@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -43,6 +44,9 @@ import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.dto.membership.MembershipStdDTO;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.authentication.JwtService;
+import za.org.grassroot.integration.location.MunicipalFilteringBroker;
+import za.org.grassroot.integration.location.Municipality;
+import za.org.grassroot.integration.location.UserMunicipalitiesResponse;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;
@@ -65,6 +69,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -89,6 +94,8 @@ public class GroupFetchController extends BaseRestController {
     private final MessageSourceAccessor messageSourceAccessor;
     private final GroupBroker groupBroker;
 
+    private MunicipalFilteringBroker municipalFilteringBroker;
+
     private final static ImmutableMap<Permission, Integer> permissionsDisplayed = ImmutableMap.<Permission, Integer>builder()
             .put(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, 1)
             .put(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, 2)
@@ -105,14 +112,20 @@ public class GroupFetchController extends BaseRestController {
             .build();
 
 
-    public GroupFetchController(GroupFetchBroker groupFetchBroker, JwtService jwtService,
-                                UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker,
-                                MessageSourceAccessor messageSourceAccessor, GroupBroker groupBroker) {
+    @Autowired
+    public GroupFetchController(JwtService jwtService, UserManagementService userManagementService,
+                                GroupBroker groupBroker, GroupFetchBroker groupFetchBroker,
+                                MemberDataExportBroker memberDataExportBroker, MessageSourceAccessor messageSourceAccessor) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.memberDataExportBroker = memberDataExportBroker;
         this.messageSourceAccessor = messageSourceAccessor;
         this.groupBroker = groupBroker;
+    }
+
+    @Autowired(required = false)
+    public void setMunicipalFilteringBroker(MunicipalFilteringBroker municipalFilteringBroker) {
+        this.municipalFilteringBroker = municipalFilteringBroker;
     }
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)
@@ -236,22 +249,28 @@ public class GroupFetchController extends BaseRestController {
                                                      @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
                                                      @RequestParam (required = false) String namePhoneOrEmail,
                                                      @RequestParam (required = false) Collection<String> languages,
+                                                     @RequestParam (required = false) Integer municipalityId,
                                                      HttpServletRequest request) {
         log.info("filtering, name phone or email = {}", namePhoneOrEmail);
+        log.info("Do we have municipality ID? {}",municipalityId);
+
         List<Membership> memberships = groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, noProvince, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
                 joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages);
 
+        if (municipalFilteringBroker != null && municipalityId != null) {
+            List<Membership> membershipsInMunicipality = municipalFilteringBroker.getMembersInMunicipality(groupUid,municipalityId + "");
+            memberships.retainAll(membershipsInMunicipality);
+            log.info("Members in Municipality with id: {} is: {}",municipalityId,membershipsInMunicipality);
+        }
         // if this becomes non-performant, use a projection
         GroupFilterResponse response = new GroupFilterResponse();
         List<MembershipStdDTO> dtos = memberships.stream().map(MembershipStdDTO::new).collect(Collectors.toList());
-
         // dtos are now in memory so this is fine
         response.setNumberSms(dtos.stream().filter(MembershipStdDTO::hasPhone).count());
         response.setNumberEmail(dtos.stream().filter(MembershipStdDTO::hasEmail).count());
         response.setNumberSmsAndEmail(dtos.stream().filter(MembershipStdDTO::hasBoth).count());
         response.setTotalElements(dtos.size());
-
         // sublist too fragile, hence using this, though looks slightly clumsy
         response.setContent(dtos.stream().limit(maxEntities).collect(Collectors.toList()));
 
@@ -431,6 +450,33 @@ public class GroupFetchController extends BaseRestController {
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
+    }
+// fetch all the municipalities in the province provided
+    @RequestMapping(value = "/province/municipalities",method = RequestMethod.GET)
+    @ApiOperation(value = "Loads the municipalities for the provided province")
+    public  ResponseEntity<List<Municipality>> getMunicipalities(@RequestParam String province){
+        logger.info("Province recieved = {}",province);
+        if(province.equals("undefined")){
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        Province province1 = Province.valueOf(province);
+        return ResponseEntity.ok(municipalFilteringBroker.getMunicipalitiesForProvince(province1));
+    }
+//    Getting the users for a certain municipalities
+    @RequestMapping(value = "/members/location",method = RequestMethod.GET)
+    @ApiOperation(value = "Loads the municipalities for users that have location in a group")
+    public ResponseEntity<UserMunicipalitiesResponse> loadUsersWithLocation(@RequestParam String groupUid){
+        Group group = groupBroker.load(groupUid);
+        Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
+        UserMunicipalitiesResponse userMunicipalitiesResponse = municipalFilteringBroker.getMunicipalitiesForUsersWithLocationFromCache(memberUids);
+        return ResponseEntity.ok(userMunicipalitiesResponse);
+    }
+    //Fetching count for all the users that have gps coordinates
+    @RequestMapping(value = "/users/location/timeStamp", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetching the number of users who have coordinates with a specific time stamp period ")
+    public ResponseEntity<Long> countByTimestampGreaterThan(@RequestParam boolean countAll){
+        return ResponseEntity.ok(municipalFilteringBroker.countUserLocationLogs(countAll, true));
     }
 
 }

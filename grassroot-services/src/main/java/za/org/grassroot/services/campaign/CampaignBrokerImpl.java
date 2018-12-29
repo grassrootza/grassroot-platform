@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.Role_;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
@@ -215,6 +216,16 @@ public class CampaignBrokerImpl implements CampaignBroker {
         return campaigns;
     }
 
+    @Override
+    public List<Campaign> getCampaignsOnAccount(String accountUid, boolean activeOnly) {
+        Account account = accountFeaturesBroker.load(accountUid);
+        Specification<Campaign> spec = (root, query, cb) -> cb.equal(root.get(Campaign_.account), account);
+        if (activeOnly) {
+            spec = spec.and((root, query, cb) -> cb.greaterThan(root.get(Campaign_.endDateTime), Instant.now()));
+        }
+        return campaignRepository.findAll(spec);
+    }
+
     private List<Campaign> fetchCampaignsUserCanManage(User user) {
         Specification<Campaign> createdByUser = (root, query, cb) -> cb.equal(root.get(Campaign_.createdByUser), user);
         Specification<Campaign> userIsOrganizerInGroup = (root, query, cb) -> {
@@ -227,11 +238,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         };
 
         return campaignRepository.findAll(Specification.where(createdByUser).or(userIsOrganizerInGroup), Sort.by("createdDateTime"));
-    }
-
-    @Override
-    public List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid) {
-        return campaignRepository.findByMasterGroupUid(groupUid, Sort.by("createdDateTime"));
     }
 
     @Override
@@ -333,9 +339,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         User user = userManager.load(userUid);
 
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_PETITION_SIGNED, campaign, channel, null);
-        if (!StringUtils.isEmpty(campaign.getPetitionApi())) {
-            log.info("firing at the petition API!", campaign.getPetitionApi());
-        }
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(campaignLog);
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
@@ -524,7 +527,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         final Locale gettingOverJavaLocaleHorror = maybeContains.orElse(safeLocale);
         List<CampaignMessage> campaignMessages = campaignMessageRepository.findAll(CampaignMessageSpecifications
                 .ofTypeForCampaign(campaign, linkedAction, gettingOverJavaLocaleHorror));
-        log.info("Prior to channel filter, have messages: {}", campaignMessages);
+        log.debug("Prior to channel filter, have messages: {}", campaignMessages);
         return filterForChannelOrDefault(campaignMessages, channel, UserInterfaceType.USSD);
     }
 
@@ -532,12 +535,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
         List<CampaignMessage> filteredMessages = messages.stream().filter(message ->
                 preferredChannel == null || preferredChannel.equals(message.getChannel())).collect(Collectors.toList());
         if (!filteredMessages.isEmpty()) {
-            log.info("Found messages for channel {}, returning: {}", preferredChannel, filteredMessages);
+            log.debug("Found messages for channel {}, returning: {}", preferredChannel, filteredMessages);
             return filteredMessages;
         } else {
             List<CampaignMessage> defaultMsgs = messages.stream()
                     .filter(message -> defaultChannel == null || defaultChannel.equals(message.getChannel())).collect(Collectors.toList());
-            log.info("found for default channel {}, messages {}", defaultChannel, defaultMsgs);
+            log.debug("found for default channel {}, messages {}", defaultChannel, defaultMsgs);
             return defaultMsgs;
         }
     }
@@ -615,9 +618,9 @@ public class CampaignBrokerImpl implements CampaignBroker {
             }
         }
 
-        if (!Objects.equals(landingUrl, campaign.getLandingUrl()) || !Objects.equals(petitionApi, campaign.getPetitionApi())) {
+        if (!Objects.equals(landingUrl, campaign.getLandingUrl()) || !Objects.equals(petitionApi, campaign.getPetitionApiUrl())) {
             campaign.setLandingUrl(landingUrl);
-            campaign.setPetitionApi(petitionApi);
+            campaign.setPetitionApiUrl(petitionApi);
             bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_URLS_CHANGED, campaign, null,
                     landingUrl + "; " + petitionApi));
         }

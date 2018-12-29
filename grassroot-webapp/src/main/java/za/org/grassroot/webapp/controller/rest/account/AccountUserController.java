@@ -8,11 +8,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.GrassrootEmail;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
@@ -24,18 +29,27 @@ import za.org.grassroot.integration.billing.SubscriptionRecordDTO;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.DataSetInfo;
+import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.campaign.CampaignStatsBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
+import za.org.grassroot.webapp.model.rest.CampaignViewDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.AccountWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -55,6 +69,9 @@ public class AccountUserController extends BaseRestController {
     private MessagingServiceBroker messagingServiceBroker;
     private MemberDataExportBroker memberDataExportBroker;
 
+    private CampaignBroker campaignBroker;
+    private CampaignStatsBroker campaignStatsBroker;
+
     @Autowired
     public AccountUserController(JwtService jwtService, UserManagementService userManagementService, AccountBroker accountBroker) {
         super(jwtService, userManagementService);
@@ -71,6 +88,16 @@ public class AccountUserController extends BaseRestController {
     @Autowired(required = false)
     public void setMessagingServiceBroker(MessagingServiceBroker messagingServiceBroker) {
         this.messagingServiceBroker = messagingServiceBroker;
+    }
+
+    @Autowired
+    public void setCampaignBroker(CampaignBroker campaignBroker) {
+        this.campaignBroker = campaignBroker;
+    }
+
+    @Autowired
+    public void setCampaignStatsBroker(CampaignStatsBroker campaignStatsBroker) {
+        this.campaignStatsBroker = campaignStatsBroker;
     }
 
     @Autowired
@@ -221,16 +248,19 @@ public class AccountUserController extends BaseRestController {
     @RequestMapping(value = "/fetch", method = RequestMethod.GET)
     public ResponseEntity<AccountWrapper> getAccountSettings(@RequestParam(required = false) String accountUid,
                                                              HttpServletRequest request) {
-        User user = getUserFromRequest(request);
-        Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadDefaultAccountForUser(user.getUid())
+        final String userUid = getUserIdFromRequest(request);
+        if (accountUid != null) {
+            accountBroker.validateUserCanViewAccount(accountUid, userUid);
+        }
+
+        Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadDefaultAccountForUser(userUid)
                 : accountBroker.loadAccount(accountUid);
 
         if (account == null) {
             return ResponseEntity.ok().build();
         } else {
             long startTime = System.currentTimeMillis();
-            log.info("Fetching account, user entity : {}", user);
-            AccountWrapper accountWrapper = new AccountWrapper(account, user);
+            AccountWrapper accountWrapper = new AccountWrapper(account, userService.load(userUid));
             log.info("Assembled user account wrapper, time : {} msecs", System.currentTimeMillis() - startTime);
             long accountNotifications = accountBroker.countAccountNotifications(account.getUid(),
                     account.getLastBillingDate(), Instant.now());
@@ -273,6 +303,26 @@ public class AccountUserController extends BaseRestController {
                 account.getLastBillingDate(), Instant.now());
         log.info("Counted {} messages, took {} msecs", groupCount, System.currentTimeMillis() - startTime);
         return ResponseEntity.ok(groupCount);
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/fetch/campaign/list", method = RequestMethod.GET)
+    public ResponseEntity<List<CampaignViewDTO>> fetchAccountCampaigns(@RequestParam String accountUid, HttpServletRequest request) {
+        accountBroker.validateUserCanViewAccount(accountUid, getUserIdFromRequest(request));
+        List<Campaign> campaigns = campaignBroker.getCampaignsOnAccount(accountUid, true);
+        log.info("Retrieved {} campaigns for the account", campaigns.size());
+        List<CampaignViewDTO> dtos = campaigns.stream().map(campaign -> new CampaignViewDTO(campaign, null, false))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/fetch/campaign/stats", method = RequestMethod.GET)
+    public ResponseEntity<Map<String, String>> fetchCampaignBillingDetails(@RequestParam String accountUid,
+                                                                           @RequestParam String campaignUid,
+                                                                           HttpServletRequest request) {
+        accountBroker.validateUserCanViewAccount(accountUid, getUserIdFromRequest(request));
+        return ResponseEntity.ok(campaignStatsBroker.getCampaignBillingStatsInPeriod(campaignUid, null, null));
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -40,7 +39,13 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -99,6 +104,14 @@ public class AccountBrokerImpl implements AccountBroker {
         // make a random guess, using most recent non-closed account
 
         return accountRepository.findTopByAdministratorsAndClosedFalse(user, new Sort(Sort.Direction.DESC, "createdDateTime"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void validateUserCanViewAccount(String accountUid, String userUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
+        validateAdmin(user, account);
     }
 
     private void validateAdmin(User user, Account account) {
