@@ -284,8 +284,8 @@ public class USSDMeetingController extends USSDBaseController {
         if (!USSDGroupUtil.isValidGroupName(userResponse) ){
           return  menuBuilder(groupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, groupName));
         } else {
-            Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
-            Group group = groupBroker.create(user.getUid(), userResponse, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, false);
+            MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+            Group group = groupBroker.create(user.getUid(), userResponse, null, Collections.singleton(membershipInfo), GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, false);
             return menuBuilder(groupUtil.addNumbersToGroupPrompt(user, group, thisSection, groupHandlingMenu));
     }
     }

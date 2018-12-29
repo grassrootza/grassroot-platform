@@ -92,9 +92,8 @@ public class GroupModifyController extends GroupBaseController {
         log.info("creating a group, with name {}", name);
         User user = getUserFromRequest(request);
         if (user != null) {
-            HashSet<MembershipInfo> membershipInfos = new HashSet<>();
-            membershipInfos.add(new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER, null));
-            Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true, discoverable, true);
+            MembershipInfo membershipInfo = new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER, null);
+            Group group = groupBroker.create(user.getUid(), name, null, Collections.singleton(membershipInfo), permissionTemplate, description, reminderMinutes, true, discoverable, true);
 
             if (defaultAddToAccount && user.getPrimaryAccount() != null) {
                 accountBroker.addGroupsToAccount(user.getPrimaryAccount().getUid(), Collections.singleton(group.getUid()), user.getUid());

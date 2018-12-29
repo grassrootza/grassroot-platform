@@ -37,6 +37,7 @@ import javax.annotation.PostConstruct;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Collections;
 import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -341,8 +342,8 @@ public class USSDSafetyGroupController extends USSDBaseController {
         } else {
             String groupUid;
             if (!interrupted) {
-                Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
-                Group group = groupBroker.create(user.getUid(), groupName, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false, false);
+                MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+                Group group = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(membershipInfo), GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false, false);
                 groupUid = group.getUid();
                 safetyEventBroker.setSafetyGroup(user.getUid(), groupUid);
             } else {

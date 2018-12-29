@@ -218,18 +218,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.groupRoles.add(new Role(roleName, uid));
     }
 
-    /**
-     * We use this static constructor because no-arg constructor should be only used by JPA
-     *
-     * @return group
-     */
-    public static Group makeEmpty() {
-        Group group = new Group();
-        group.uid = UIDGenerator.generateId();
-        group.active = true;
-        return group;
-    }
-
     public String getUid() {
         return uid;
     }
@@ -345,16 +333,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
         return removed;
     }
-
-    public void removeMemberships(Set<String> phoneNumbers) {
-        Objects.requireNonNull(phoneNumbers);
-        Set<Membership> memberships = this.memberships.stream()
-                .filter(membership -> phoneNumbers.contains(membership.getUser().getPhoneNumber()))
-                .collect(Collectors.toSet());
-
-        this.memberships.removeAll(memberships);
-    }
-
 
     public Membership getMembership(User user) {
         Objects.requireNonNull(user);
