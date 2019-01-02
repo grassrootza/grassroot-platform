@@ -233,13 +233,11 @@ public class UserRepositoryTest {
     public void shouldAddAndRemoveMappedMembership() {
 
         User user = new User("099654", null, null);
-        Role role = new Role("", null);
         Group group = new Group("", user);
-        Membership newMember = new Membership(group, user, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        user.addMappedByMembership(newMember);
+        Membership membership = group.addMember(user, "ROLE_ORDINARY_MEMBER", GroupJoinMethod.SELF_JOINED, null);
         assertThat(user.getMemberships().size(), is(1));
         userRepository.save(user);
-        user.removeMappedByMembership(newMember);
+        group.removeMember(user);
         assertThat(user.getMemberships().size(), is(0));
         userRepository.save(user);
     }
@@ -248,14 +246,12 @@ public class UserRepositoryTest {
     public void shouldFetchMemberships() {
         User userMember = new User("1234", null, null);
         Group group = new Group("Group", userMember);
-        Role role = new Role("", null);
         assertNotNull(userMember.getUid());
         assertTrue(userMember.getMemberships().isEmpty());
 
-        Membership newMember = new Membership(group, userMember, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        assertThat(newMember.getGroup().getGroupName(), is("Group"));
-        assertThat(newMember.getUser().getPhoneNumber(), is("1234"));
-        assertThat(userMember.getMemberships().size(),is(0));
+        Membership membership = group.addMember(userMember, "ROLE_ORDINARY_MEMBER", GroupJoinMethod.SELF_JOINED, null);
+        assertThat(membership.getGroup().getGroupName(), is("Group"));
+        assertThat(membership.getUser().getPhoneNumber(), is("1234"));
     }
 
     @Test

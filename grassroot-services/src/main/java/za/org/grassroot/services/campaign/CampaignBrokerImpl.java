@@ -685,12 +685,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         User user = userManager.load(userUid);
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-        final String masterGroupUid = campaign.getMasterGroup().getUid();
+        final Group masterGroup = campaign.getMasterGroup();
 
-        if (accountFeaturesBroker.hasGroupWelcomeMessages(masterGroupUid))
+        if (accountFeaturesBroker.hasGroupWelcomeMessages(masterGroup.getUid()))
             haltCampaignWelcome(campaign, user);
 
-        groupBroker.addMemberViaCampaign(user.getUid(), masterGroupUid, campaign.getCampaignCode());
+        groupBroker.addMemberViaCampaign(user, masterGroup, campaign.getCampaignCode());
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP, campaign, channel, null);
         persistCampaignLog(campaignLog);
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);

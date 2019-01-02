@@ -282,14 +282,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         Objects.requireNonNull(newMembers);
 
         Role role = getRole(roleName);
-        Set<Membership> memberships = new HashSet<>();
+        Set<Membership> addedMemberships = new HashSet<>();
         for (User newMember : newMembers) {
             Membership membership = addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
             if (membership != null) {
-                memberships.add(membership);
+                addedMemberships.add(membership);
             }
         }
-        return memberships;
+        return addedMemberships;
     }
 
 

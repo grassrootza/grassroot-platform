@@ -129,10 +129,13 @@ public interface GroupBroker {
 
     /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/
 
-    void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode);
+    void addMemberViaCampaign(User user, Group hgroup, String campaignCode);
 
     void sendGroupJoinCodeNotification(String userUid, String groupUid);
 
     void sendAllGroupJoinCodesNotification(String userUid);
 
+	void testMembersFetch(long groupId);
+
+	void testMembersFetchViaJoinCode(String joinCode);
 }

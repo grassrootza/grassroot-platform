@@ -1,5 +1,6 @@
 package za.org.grassroot.services.group;
 
+import com.google.common.base.Stopwatch;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
@@ -37,7 +39,6 @@ import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.*;
 import za.org.grassroot.services.user.GcmRegistrationBroker;
@@ -52,6 +53,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -801,7 +803,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             triggerWelcomeMessagesAfterCommit(initiator.getUid(), group.getUid(), addedUserUids);
 
         if (group.getParent() != null)
-            triggerAddMembersToParentGroup(initiator, group.getParent(), membershipInfos, joinMethod);
+            addMembersToParentGroupAfterCommit(initiator, group.getParent(), membershipInfos, joinMethod);
 
         if (!taskTeamMembers.isEmpty())
             addMembersToSubgroupsAfterCommit(initiator.getUid(), group.getUid(), taskTeamMembers);
@@ -875,8 +877,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
     }
 
-    private void triggerAddMembersToParentGroup(User initiator, Group group, Set<MembershipInfo> membershipInfos,
-                                                GroupJoinMethod joinMethod) {
+    private void addMembersToParentGroupAfterCommit(User initiator, Group group, Set<MembershipInfo> membershipInfos,
+                                                    GroupJoinMethod joinMethod) {
         AfterTxCommitTask afterTxCommitTask = () -> applicationContext.getBean(GroupBroker.class)
                     .asyncAddMemberships(initiator.getUid(), group.getUid(), membershipInfos, joinMethod, null, false, false);
         applicationEventPublisher.publishEvent(afterTxCommitTask);
@@ -1639,11 +1641,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     @Override
-    @Transactional
-    public void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode) {
-        User user = userRepository.findOneByUid(userUidToAdd);
-        Group group = groupRepository.findOneByUid(groupUid);
-
+    public void addMemberViaCampaign(User user, Group group, String campaignCode) {
         logger.info("Adding a member via campaign add request: group={}, user={}, code={}", group, user, campaignCode);
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
         Group parentGroup = group.getParent();
@@ -1655,7 +1653,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN,
                 user, null, null, "Member joined via campaign code: " + campaignCode);
         bundle.addLog(groupLog);
-        bundle.addLog(new UserLog(userUidToAdd, UserLogType.USED_A_CAMPAIGN, groupUid, UNKNOWN));
+        bundle.addLog(new UserLog(user.getUid(), UserLogType.USED_A_CAMPAIGN, group.getUid(), UNKNOWN));
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
         storeBundleAfterCommit(bundle);
     }
@@ -1702,6 +1700,27 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             logger.info("MSG....={}",s);
             logger.info("Length....={}",s.length());
         }
+    }
+
+    @Override
+    @Transactional()
+    public void testMembersFetch(long groupId) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        final Group group = this.groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Not found group udner ID: " + groupId));
+//        System.out.println("Fetch by ID lasted " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+        stopwatch.reset();
+        stopwatch.start();
+        group.getMembers().iterator().hasNext();
+        System.out.println("### Fetch members lasted " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    @Override
+    @Transactional()
+    public void testMembersFetchViaJoinCode(String joinCode) {
+        final Group group = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode)).orElseThrow(() -> new RuntimeException("Not found group under join code : " + joinCode));
+        boolean hasNext = group.getMembers().iterator().hasNext();
+        System.out.println("### hasNext = " + hasNext);
     }
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {

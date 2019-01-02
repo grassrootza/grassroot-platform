@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
@@ -31,7 +30,6 @@ import za.org.grassroot.webapp.util.USSDCampaignConstants;
 
 import javax.annotation.PostConstruct;
 import java.net.URISyntaxException;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,14 +50,15 @@ public class USSDCampaignController extends USSDBaseController {
 
     private final CampaignBroker campaignBroker;
     private final AddressBroker addressBroker;
+    private final UssdCampaignService ussdCampaignService;
 
     // needed because of Java locale hell
     private Map<String, Locale> localeMap;
 
-    @Autowired
-    public USSDCampaignController(CampaignBroker campaignBroker, AddressBroker addressBroker) {
+    public USSDCampaignController(CampaignBroker campaignBroker, AddressBroker addressBroker, UssdCampaignService ussdCampaignService) {
         this.campaignBroker = campaignBroker;
         this.addressBroker = addressBroker;
+        this.ussdCampaignService = ussdCampaignService;
     }
 
     @PostConstruct
@@ -139,9 +138,8 @@ public class USSDCampaignController extends USSDBaseController {
     public Request processTagMeRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                        @RequestParam String messageUid,
                                        @RequestParam String parentMsgUid)  throws URISyntaxException{
-        User user = userManager.findByInputNumber(inputNumber);
-        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
-        updateMembership(user, message, campaignBroker.loadCampaignMessage(parentMsgUid, user.getUid()));
+
+        final CampaignMessage message = this.ussdCampaignService.tagMembership(inputNumber, messageUid, parentMsgUid);
         return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
@@ -300,28 +298,5 @@ public class USSDCampaignController extends USSDBaseController {
             menu.setFreeText(false);
         }
         return menu;
-    }
-
-    private void updateMembership(User user, CampaignMessage thisMessage, CampaignMessage parentMessage) {
-        Campaign campaign = thisMessage.getCampaign();
-        Group masterGroup = campaign.getMasterGroup();
-        if (parentMessage != null && parentMessage.getTagList() != null && parentMessage.getTagList().isEmpty()){
-            Membership membership = user.getGroupMembership(masterGroup.getUid());
-            if(membership != null) {
-                addTagsOnMembership(membership, parentMessage.getTagList());
-            } else {
-                membership = new Membership(campaign.getMasterGroup(), user, new Role(BaseRoles.ROLE_ORDINARY_MEMBER, null),
-                        Instant.now(), GroupJoinMethod.SELF_JOINED, null);
-                addTagsOnMembership(membership, parentMessage.getTagList());
-                user.getMemberships().add(membership);
-                userManager.createUserProfile(user);
-            }
-        }
-    }
-
-    private void addTagsOnMembership(Membership membership, List<String> tags){
-        for(String tag :tags) {
-            membership.addTag(tag);
-        }
     }
 }

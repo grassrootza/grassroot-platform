@@ -795,6 +795,10 @@ public class GroupRepositoryTest {
         assertThat(groupRepository.count(), is(0L));
         User user1 = new User("56789", null, null);
         User user2 = new User("12345", null, null);
+
+        userRepository.save(user1);
+        userRepository.save(user2);
+
         Group group1 = new Group("test", user1);
         group1.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group1.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);

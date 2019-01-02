@@ -109,46 +109,4 @@ public class RoleRepositoryTest {
         assertNotNull(roleFromDb);
         assertThat(roleFromDb.getId(), is(role.getId()));
     }
-
-    @Test
-    @Rollback
-    public void testSaveWithGroupReference() throws Exception {
-        assertThat(roleRepository.count(), is(0L));
-        String roleName = "ADD_MEMBER";
-        User user = userRepository.save(new User("0812223456", null, null));
-        Group group = groupRepository.save(new Group("testGroup", user));
-        Role role = roleRepository.save(new Role(roleName, group.getUid()));
-        Role roleFromDb = roleRepository.findByNameAndGroupUid(roleName, group.getUid());
-        assertNotNull(roleFromDb);
-        assertThat(roleFromDb.getId(), is(role.getId()));
-        assertThat(roleFromDb.getName(), is(role.getName()));
-        assertThat(roleFromDb.getGroupUid(), is(role.getGroupUid()));
-    }
-
-    @Test
-    @Rollback
-    public void testGroupAssignment() throws Exception {
-        assertThat(roleRepository.count(), is(0L));
-        User user = userRepository.save(new User("0801110000", null, null));
-        Group group1 = groupRepository.save(new Group("gc1", user));
-
-        Set<Role> group1roles = roleRepository.findByGroupUid(group1.getUid());
-
-        assertThat(group1roles.size(), is(3));
-    }
-
-    @Test
-    @Rollback
-    public void testGroupAssignmentAfterConstruction() throws Exception {
-        assertThat(roleRepository.count(), is(0L));
-
-        User user = userRepository.save(new User("0811110001", null, null));
-        Group group = groupRepository.save(new Group("test Group", user));
-
-        assertThat(roleRepository.count(), is(3L)); // check doesn't duplicate
-
-        Role roleFromDb = roleRepository.findByNameAndGroupUid(BaseRoles.ROLE_GROUP_ORGANIZER, group.getUid());
-        assertNotNull(roleFromDb);
-        assertThat(roleFromDb.getGroupUid(), is(group.getUid()));
-    }
 }

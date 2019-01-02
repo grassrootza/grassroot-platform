@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -32,10 +33,8 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 public class USSDHomeController extends USSDBaseController {
 
-//    @Setter(AccessLevel.PACKAGE) private USSDVoteController voteController;
-//    @Setter(AccessLevel.PACKAGE) private USSDMeetingController meetingController;
-
     private final UssdHomeService ussdHomeService;
+    private final GroupBroker groupBroker;
 
     @Value("${grassroot.ussd.code.length:9}")
     private int hashPosition;
@@ -55,16 +54,16 @@ public class USSDHomeController extends USSDBaseController {
     @Value("${grassroot.geo.apis.enabled:false}")
     private boolean geoApisEnabled;
 
-    @Autowired
-    public USSDHomeController(UssdHomeService ussdHomeService) {
+    public USSDHomeController(UssdHomeService ussdHomeService, GroupBroker groupBroker) {
         this.ussdHomeService = ussdHomeService;
+        this.groupBroker = groupBroker;
     }
 
     private final ExecutorService starttestExecutors = Executors.newFixedThreadPool(4);
 
     @RequestMapping(value = homePath + "startTest")
     public void startMenuTest() throws InterruptedException, ExecutionException {
-        final List<Callable<Void>> callables = constructTestCallables();
+        final List<Callable<Void>> callables = constructTestCallables(2);
         log.info("### Starting start test");
 
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -75,6 +74,19 @@ public class USSDHomeController extends USSDBaseController {
         log.info("### Lasted secs: " + stopwatch.elapsed(TimeUnit.SECONDS));
     }
 
+    @RequestMapping(value = homePath + "startMembersTest")
+    public void startMembersFetch() {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        for (int i = 0; i < 10; i++) {
+            System.out.println("### -------------- Iteration nr." + i);
+            Stopwatch txStopwatch = Stopwatch.createStarted();
+            this.groupBroker.testMembersFetch(1L);
+//            this.groupBroker.testMembersFetchViaJoinCode("2446");
+            System.out.println("### TX lasted ms: " + txStopwatch.elapsed(TimeUnit.MILLISECONDS));
+        }
+        log.info("### Complete startMembersTest lasted ms: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
     @RequestMapping(value = homePath + "startTestSingle")
     public void startMenuTestSingle(@RequestParam(value = phoneNumber) String inputNumber) throws InterruptedException, ExecutionException, URISyntaxException {
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -82,8 +94,8 @@ public class USSDHomeController extends USSDBaseController {
         log.info("### TX outer lasted ms: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    private List<Callable<Void>> constructTestCallables() {
-        int amount = 250; // cannot be larger than 900
+    private List<Callable<Void>> constructTestCallables(int amount ) {
+        // amount cannot be larger than 900
 
         final Random random = new Random(System.currentTimeMillis());
         final long startNumber = 100000 + random.nextInt(900000);
