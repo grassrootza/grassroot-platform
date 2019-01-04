@@ -15,7 +15,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
@@ -315,9 +314,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (!adminUserCalling) {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
-            if (!checkGroupSizeLimit(group, membershipInfos.size())) {
-                throw new GroupSizeLimitExceededException();
-            }
+            validateGroupSizeLimit(group, membershipInfos.size());
         } else {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
@@ -437,9 +434,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         Set<User> userSet = fromGroup.getMembers();
 
-        if (!checkGroupSizeLimit(toGroup, userSet.size())) {
-            throw new GroupSizeLimitExceededException();
-        }
+        validateGroupSizeLimit(toGroup, userSet.size());
 
         final String fromGroupName = fromGroup.getName();
         toGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupName);
@@ -1723,8 +1718,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         System.out.println("### hasNext = " + hasNext);
     }
 
-    private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
-        return accountFeaturesBroker.numberMembersLeftForGroup(group, null) > numberOfMembersAdding;
+    private void validateGroupSizeLimit(Group group, int numberOfMembersAdding) {
+        int numberOfMembersLeft = accountFeaturesBroker.numberMembersLeftForGroup(group, null);
+        if (!(numberOfMembersLeft > numberOfMembersAdding)) {
+            throw new GroupSizeLimitExceededException();
+        }
     }
 
 }

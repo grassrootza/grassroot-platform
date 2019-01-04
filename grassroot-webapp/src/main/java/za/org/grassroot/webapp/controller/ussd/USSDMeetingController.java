@@ -77,6 +77,7 @@ public class USSDMeetingController extends USSDBaseController {
     private final EventLogBroker eventLogBroker;
     private final AccountFeaturesBroker accountFeaturesBroker;
     private final GeoLocationBroker geoLocationBroker;
+    private final UssdMeetingService ussdMeetingService;
 
     private USSDEventUtil eventUtil;
     private USSDGroupUtil groupUtil;
@@ -115,7 +116,7 @@ public class USSDMeetingController extends USSDBaseController {
     }
 
     @Autowired
-    public USSDMeetingController(EventBroker eventBroker, GroupBroker groupBroker, TaskBroker taskBroker, EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, AccountFeaturesBroker accountFeaturesBroker, GeoLocationBroker geoLocationBroker) {
+    public USSDMeetingController(EventBroker eventBroker, GroupBroker groupBroker, TaskBroker taskBroker, EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, AccountFeaturesBroker accountFeaturesBroker, GeoLocationBroker geoLocationBroker, UssdMeetingService ussdMeetingService) {
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;
@@ -123,6 +124,7 @@ public class USSDMeetingController extends USSDBaseController {
         this.eventLogBroker = eventLogBroker;
         this.accountFeaturesBroker = accountFeaturesBroker;
         this.geoLocationBroker = geoLocationBroker;
+        this.ussdMeetingService = ussdMeetingService;
     }
 
     @Autowired
@@ -135,40 +137,12 @@ public class USSDMeetingController extends USSDBaseController {
         this.groupUtil = groupUtil;
     }
 
-    /*
-    RSVP menu
-     */
-    protected USSDMenu assembleRsvpMenu(User user, EntityForUserResponse entity) {
-        Event meeting = (Event) entity;
-
-        // do this so various bits of assembly are guaranteed to happen in a TX
-        TaskMinimalDTO mtgDetails = taskBroker.fetchDescription(user.getUid(), meeting.getUid(), TaskType.MEETING);
-        String[] meetingDetails = new String[]{mtgDetails.getAncestorGroupName(),
-                mtgDetails.getCreatedByUserName(), mtgDetails.getTitle(),
-                meeting.getEventDateTimeAtSAST().format(dateTimeFormat)};
-
-        // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
-        String defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp", meetingDetails, user);
-        if (defaultPrompt.length() > 120)
-            defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp.short", meetingDetails, user);
-
-        String optionUri = meetingMenus + "rsvp" + entityUidUrlSuffix + meeting.getUid();
-        USSDMenu openingMenu = new USSDMenu(defaultPrompt);
-        openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(user, optionUri, optionUri)));
-
-        if (!StringUtils.isEmpty(meeting.getDescription())) {
-            openingMenu.addMenuOption(meetingMenus + "description?mtgUid=" + meeting.getUid() + "&back=respond", getMessage("home.generic.moreinfo", user));
-        }
-
-        return openingMenu;
-    }
-
     @RequestMapping(value = path + "respond")
     public Request respondToMtg(@RequestParam(value = phoneNumber) String inputNumber,
                                 @RequestParam String mtgUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         Meeting mtg = eventBroker.loadMeeting(mtgUid);
-        return menuBuilder(assembleRsvpMenu(user, mtg));
+        return menuBuilder(this.ussdMeetingService.assembleRsvpMenu(user, mtg));
     }
 
     @RequestMapping(value = path + "description")

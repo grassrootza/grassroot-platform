@@ -88,32 +88,6 @@ public class USSDTodoController extends USSDBaseController {
         this.accountFeaturesBroker = accountFeaturesBroker;
     }
 
-    public USSDMenu respondToTodo(User user, EntityForUserResponse entity) {
-        Todo todo = (Todo) entity;
-        log.info("Generating response menu for entity: {}", entity);
-        switch (todo.getType()) {
-            case INFORMATION_REQUIRED:
-                final String infoPrompt = messageAssembler.getMessage("todo.info.prompt",
-                        new String[] { todo.getCreatorAlias(), todo.getMessage() }, user);
-                return new USSDMenu(infoPrompt, REL_PATH + "/respond/info?todoUid=" + todo.getUid());
-            case VOLUNTEERS_NEEDED:
-                final String volunteerPrompt = messageAssembler.getMessage("todo.volunteer.prompt",
-                        new String[] { todo.getCreatorAlias(), todo.getMessage() }, user);
-                log.info("volunteer todo assembled, prompt: {}", volunteerPrompt);
-                return new USSDMenu(volunteerPrompt, optionsYesNo(user, "todo/respond/volunteer?todoUid=" + todo.getUid()));
-            case VALIDATION_REQUIRED:
-                final String confirmationPrompt = messageAssembler.getMessage("todo.validate.prompt",
-                        new String[] { todo.getCreatorAlias(), todo.getMessage() }, user);
-                USSDMenu menu = new USSDMenu(confirmationPrompt);
-                menu.addMenuOptions(optionsYesNo(user, "todo/respond/validate?todoUid=" + todo.getUid()));
-                menu.addMenuOption(REL_PATH + "/respond/validate?todoUid=" + todo.getUid() + "&" + yesOrNoParam + "=unsure",
-                        messageAssembler.getMessage("todo.validate.option.unsure", user));
-                return menu;
-            default:
-                throw new TodoTypeMismatchException();
-        }
-    }
-
     @RequestMapping(value = FULL_PATH + "/respond/volunteer", method = RequestMethod.GET)
     public Request volunteerResponse(@RequestParam(value = phoneNumber) String msisdn,
                                      @RequestParam String todoUid,

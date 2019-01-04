@@ -63,6 +63,7 @@ public class USSDSafetyGroupController extends USSDBaseController {
     private final GroupBroker groupBroker;
     private final GroupQueryBroker groupQueryBroker;
     private final SafetyEventBroker safetyEventBroker;
+    private final UssdSafetyGroupService ussdSafetyGroupService;
 
     private UssdLocationServicesBroker locationServicesBroker;
     private USSDGroupUtil groupUtil;
@@ -86,11 +87,12 @@ public class USSDSafetyGroupController extends USSDBaseController {
     private static final String groupUidParam = "groupUid";
 
     @Autowired
-    public USSDSafetyGroupController(AddressBroker addressBroker, GroupBroker groupBroker, GroupQueryBroker groupQueryBroker, SafetyEventBroker safetyEventBroker) {
+    public USSDSafetyGroupController(AddressBroker addressBroker, GroupBroker groupBroker, GroupQueryBroker groupQueryBroker, SafetyEventBroker safetyEventBroker, UssdSafetyGroupService ussdSafetyGroupService) {
         this.addressBroker = addressBroker;
         this.groupBroker = groupBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.safetyEventBroker = safetyEventBroker;
+        this.ussdSafetyGroupService = ussdSafetyGroupService;
     }
 
     @Autowired
@@ -106,32 +108,6 @@ public class USSDSafetyGroupController extends USSDBaseController {
     @PostConstruct
     private void init() {
         safetyTriggerString = String.format(ussdCodeFormat, safetyCode);
-    }
-
-    protected USSDMenu assemblePanicButtonActivationMenu(User user) {
-        USSDMenu menu;
-        if (user.hasSafetyGroup()) {
-            boolean isBarred = safetyEventBroker.isUserBarred(user.getUid());
-            String message = (!isBarred) ? getMessage(USSDSection.HOME, "safety.activated", promptKey, user)
-                    : getMessage(USSDSection.HOME, "safety.barred", promptKey, user);
-            if (!isBarred) safetyEventBroker.create(user.getUid(), user.getSafetyGroup().getUid());
-            menu = new USSDMenu(message);
-        } else {
-            menu = new USSDMenu(getMessage(USSDSection.HOME, "safety.not-activated", promptKey, user));
-            if (groupQueryBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
-                menu.addMenuOption(safetyMenus + "pick-group", getMessage(USSDSection.HOME, "safety", optionsKey + "existing", user));
-            }
-            menu.addMenuOption(safetyMenus + "new-group", getMessage(USSDSection.HOME, "safety", optionsKey + "new", user));
-            menu.addMenuOption(startMenu, getMessage(optionsKey + "back.main", user));
-        }
-        return menu;
-    }
-
-    protected USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
-        String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
-        USSDMenu menu = new USSDMenu(getMessage(USSDSection.HOME, "safety.responder", promptKey, activateByDisplayName, user));
-        menu.addMenuOptions(optionsYesNo(user, USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid())));
-        return menu;
     }
 
     @RequestMapping(value = safetyGroupPath + startMenu)

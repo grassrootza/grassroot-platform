@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,9 @@ import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.integration.location.LocationInfoBroker;
@@ -38,6 +42,7 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 import javax.annotation.PostConstruct;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
 
@@ -65,18 +70,19 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	// since this controller in effect routes responses, needs access to the other primary ones
 	// setters are for testing (since we need this controller in the tests of the handler)
 	private final USSDLiveWireController liveWireController;
-	private final USSDSafetyGroupController safetyController;
+	private final UssdGeoApiService ussdGeoApiService;
+
+	private final UssdTodoService ussdTodoService;
+	private final UssdSafetyGroupService ussdSafetyGroupService;
+	private final UssdVoteService ussdVoteService;
+	private final UssdMeetingService ussdMeetingService;
 	private final LocationInfoBroker locationInfoBroker;
-	private final USSDGeoApiController geoApiController;
 	private final UserManagementService userManager;
 	private final CampaignBroker campaignBroker;
 	private final CampaignTextBroker campaignTextBroker;
 	private final AsyncUserLogger userLogger;
 	private final UssdSupport ussdSupport;
 	private final CacheUtilService cacheManager;
-	private final USSDTodoController todoController;
-	private final USSDVoteController voteController;
-	private final USSDMeetingController meetingController;
 	private final UserResponseBroker userResponseBroker;
 
 	private final GroupQueryBroker groupQueryBroker;
@@ -86,20 +92,20 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	private static final USSDSection thisSection = HOME;
 
 
-	public UssdHomeServiceImpl(USSDLiveWireController liveWireController, USSDSafetyGroupController safetyController, LocationInfoBroker locationInfoBroker, @Autowired(required = false) USSDGeoApiController geoApiController, UserManagementService userManager, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, AsyncUserLogger userLogger, UssdSupport ussdSupport, CacheUtilService cacheManager, USSDTodoController todoController, USSDVoteController voteController, USSDMeetingController meetingController, UserResponseBroker userResponseBroker, GroupQueryBroker groupQueryBroker, AccountFeaturesBroker accountFeaturesBroker, GroupBroker groupBroker) {
+	public UssdHomeServiceImpl(USSDLiveWireController liveWireController, LocationInfoBroker locationInfoBroker, @Autowired(required = false) UssdGeoApiService ussdGeoApiService, UserManagementService userManager, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, AsyncUserLogger userLogger, UssdSupport ussdSupport, CacheUtilService cacheManager, UssdTodoService ussdTodoService, UssdVoteService ussdVoteService, UssdMeetingService ussdMeetingService, UserResponseBroker userResponseBroker, GroupQueryBroker groupQueryBroker, AccountFeaturesBroker accountFeaturesBroker, GroupBroker groupBroker, UssdSafetyGroupService ussdSafetyGroupService) {
 		this.liveWireController = liveWireController;
-		this.safetyController = safetyController;
+		this.ussdSafetyGroupService = ussdSafetyGroupService;
 		this.locationInfoBroker = locationInfoBroker;
-		this.geoApiController = geoApiController;
+		this.ussdGeoApiService = ussdGeoApiService;
 		this.userManager = userManager;
 		this.campaignBroker = campaignBroker;
 		this.campaignTextBroker = campaignTextBroker;
 		this.userLogger = userLogger;
 		this.ussdSupport = ussdSupport;
 		this.cacheManager = cacheManager;
-		this.todoController = todoController;
-		this.voteController = voteController;
-		this.meetingController = meetingController;
+		this.ussdTodoService = ussdTodoService;
+		this.ussdVoteService = ussdVoteService;
+		this.ussdMeetingService = ussdMeetingService;
 		this.userResponseBroker = userResponseBroker;
 		this.groupQueryBroker = groupQueryBroker;
 		this.accountFeaturesBroker = accountFeaturesBroker;
@@ -120,34 +126,42 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	@Override
 	@Transactional
 	public Request processStartMenu(String inputNumber, String enteredUSSD) throws URISyntaxException {
-		Long startTime = System.currentTimeMillis();
+		final Stopwatch stopwatch = Stopwatch.createStarted();
 
-		final boolean trailingDigitsPresent = codeHasTrailingDigits(enteredUSSD);
-		log.debug("Initiating USSD, trailing digits present: {}", trailingDigitsPresent);
+		log.info("entered USSD = {}, hashPosition = {}", enteredUSSD, hashPosition);
+		final Optional<String> trailingDigits = parseTrailingDigits(enteredUSSD);
+		log.debug("Initiating USSD, trailing digits present: {}", trailingDigits.isPresent());
 
-		if (!trailingDigitsPresent && userInterrupted(inputNumber)) {
-			return ussdSupport.menuBuilder(interruptedPrompt(inputNumber, null));
+		if (!trailingDigits.isPresent() && userInterrupted(inputNumber)) {
+			USSDMenu ussdMenu = interruptedPrompt(inputNumber, null);
+			return ussdSupport.menuBuilder(ussdMenu);
+		} else {
+			final User sessionUser = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
+			userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
+
+			final USSDMenu openingMenu = trailingDigits.isPresent() ?
+					handleTrailingDigits(trailingDigits.get(), inputNumber, sessionUser) :
+					checkForResponseOrDefault(sessionUser);
+
+			log.info("Generating home menu, time taken: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+			return ussdSupport.menuBuilder(openingMenu, true);
 		}
-
-		final User sessionUser = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
-		userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
-
-		USSDMenu openingMenu = trailingDigitsPresent ?
-				handleTrailingDigits(enteredUSSD, inputNumber, sessionUser) :
-				checkForResponseOrDefault(sessionUser);
-
-		Long endTime = System.currentTimeMillis();
-		log.info(String.format("Generating home menu, time taken: %d msecs", endTime - startTime));
-		return ussdSupport.menuBuilder(openingMenu, true);
 	}
 
+	private Optional<String> parseTrailingDigits(String enteredUSSD) {
+		if (enteredUSSD != null && enteredUSSD.length() > hashPosition + 1) {
+			final String digits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
+			return Optional.of(digits);
+		}
+		return Optional.empty();
+	}
 
 	private USSDMenu directBasedOnTrailingDigits(final String trailingDigits, final User user) {
 		USSDMenu returnMenu;
 		log.info("Processing trailing digits ..." + trailingDigits);
 		boolean sendWelcomeIfNew = false;
 		if (safetyCode.equals(trailingDigits)) {
-			returnMenu = safetyController.assemblePanicButtonActivationMenu(user);
+			returnMenu = ussdSafetyGroupService.assemblePanicButtonActivationMenu(user);
 		} else if (livewireSuffix.equals(trailingDigits)) {
 			returnMenu = liveWireController.assembleLiveWireOpening(user, 0);
 			sendWelcomeIfNew = true;
@@ -155,10 +169,9 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 			returnMenu = assembleSendMeAndroidLinkMenu(user);
 			sendWelcomeIfNew = true;
 		} else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
-			returnMenu = geoApiController.openingMenu(ussdSupport.convert(user), geoApiSuffixes.get(trailingDigits));
-			sendWelcomeIfNew = false;
+			returnMenu = ussdGeoApiService.openingMenu(ussdSupport.convert(user), geoApiSuffixes.get(trailingDigits));
 		} else {
-			returnMenu = ussdJoinGroupViaToken(user, trailingDigits);
+			returnMenu = joinGroupViaToken(user, trailingDigits);
 			if (returnMenu != null) { // if group joined
 				sendWelcomeIfNew = true;
 			} else {
@@ -171,10 +184,10 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		return returnMenu;
 	}
 
-	private USSDMenu handleTrailingDigits(final String enteredUSSD, final String inputNumber, User user) {
-		String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
+	private USSDMenu handleTrailingDigits(final String trailingDigits, final String inputNumber, User user) {
 		return userInterrupted(inputNumber) && !safetyCode.equals(trailingDigits) ?
-				interruptedPrompt(inputNumber, trailingDigits) : directBasedOnTrailingDigits(trailingDigits, user);
+				interruptedPrompt(inputNumber, trailingDigits) :
+				directBasedOnTrailingDigits(trailingDigits, user);
 	}
 
 	private USSDMenu checkForResponseOrDefault(final User user) throws URISyntaxException {
@@ -186,12 +199,12 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 				: requestUserResponse(user, neededResponse, entity);
 	}
 
-
 	@Override
 	@Transactional
 	public Request processForceStartMenu(String inputNumber, String trailingDigits) throws URISyntaxException {
 		final User user = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
-		return ussdSupport.menuBuilder(trailingDigits != null ? directBasedOnTrailingDigits(trailingDigits, user) : defaultStartMenu(user));
+		final USSDMenu ussdMenu = trailingDigits != null ? directBasedOnTrailingDigits(trailingDigits, user) : defaultStartMenu(user);
+		return ussdSupport.menuBuilder(ussdMenu);
 	}
 
 	private void recordInitiatedAndSendWelcome(User user, boolean sendWelcome) {
@@ -292,11 +305,6 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 				userManager.needsToSetName(user, false) ? USSDResponseTypes.RENAME_SELF : USSDResponseTypes.NONE;
 	}
 
-	private boolean codeHasTrailingDigits(String enteredUSSD) {
-		log.info("entered USSD = {}, hashPosition = {}", enteredUSSD, hashPosition);
-		return (enteredUSSD != null && enteredUSSD.length() > hashPosition + 1);
-	}
-
 	private USSDMenu defaultStartMenu(User sessionUser) {
 		String welcomeMessage = sessionUser.hasName() ?
 				ussdSupport.getMessage(thisSection, ussdSupport.startMenu, ussdSupport.promptKey + "-named", sessionUser.getName(""), sessionUser) :
@@ -307,13 +315,13 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	private USSDMenu requestUserResponse(User user, USSDResponseTypes response, EntityForUserResponse entity) throws URISyntaxException {
 		switch (response) {
 			case RESPOND_SAFETY:
-				return safetyController.assemblePanicButtonActivationResponse(user, (SafetyEvent) entity);
+				return ussdSafetyGroupService.assemblePanicButtonActivationResponse(user, (SafetyEvent) entity);
 			case VOTE:
-				return voteController.assembleVoteMenu(user, entity);
+				return ussdVoteService.assembleVoteMenu(user, (Vote) entity);
 			case MTG_RSVP:
-				return meetingController.assembleRsvpMenu(user, entity);
+				return ussdMeetingService.assembleRsvpMenu(user, (Event) entity);
 			case RESPOND_TODO:
-				return todoController.respondToTodo(user, entity);
+				return ussdTodoService.respondToTodo(user, (Todo) entity);
 			case RENAME_SELF:
 				return new USSDMenu(ussdSupport.getMessage(thisSection, USSDBaseController.startMenu, ussdSupport.promptKey + "-rename", user),
 						"rename-start");
@@ -322,23 +330,24 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		}
 	}
 
-	public USSDMenu ussdJoinGroupViaToken(final User user, final String trailingDigits) {
+	private USSDMenu joinGroupViaToken(final User user, final String trailingDigits) {
 		final String token = trailingDigits.trim();
 		final Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(token);
 		if (searchResult.isPresent()) {
 			final Group group = searchResult.get();
 			log.debug("adding user via join code ... {}", token);
-			if (accountFeaturesBroker.numberMembersLeftForGroup(group, GroupJoinMethod.USSD_JOIN_CODE) == 0) {
+			boolean groupLimitReached = accountFeaturesBroker.numberMembersLeftForGroup(group, GroupJoinMethod.USSD_JOIN_CODE) == 0;
+			if (groupLimitReached) {
 				return notifyGroupLimitReached(user, group);
-			}
-
-			final Membership membership = groupBroker.addMemberViaJoinCode(user, group, token, UserInterfaceType.USSD);
-			if (!group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
-				return askForJoinTopics(group, user);
 			} else {
-				String promptStart = group.hasName() ? ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.token.named", group.getGroupName(), user) :
-						ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.token.unnamed", user);
-				return ussdSupport.setUserProfile(user, promptStart);
+				final Membership membership = groupBroker.addMemberViaJoinCode(user, group, token, UserInterfaceType.USSD);
+				if (!group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
+					return askForJoinTopics(group, user);
+				} else {
+					String promptStart = group.hasName() ? ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.token.named", group.getGroupName(), user) :
+							ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.token.unnamed", user);
+					return ussdSupport.setUserProfile(user, promptStart);
+				}
 			}
 		} else {
 			return null;

@@ -134,7 +134,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         // todo : write a test in group controller too
         when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
         // todo: VJERAN: fix?
-//        when(groupJoinControllerMock.ussdJoinGroupViaToken(testUser, "111")).thenReturn(new USSDMenu("Found the code"));
+//        when(groupJoinControllerMock.joinGroupViaToken(testUser, "111")).thenReturn(new USSDMenu("Found the code"));
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests).param("request", "*134*1994*111#"))
                 .andExpect(status().isOk());
