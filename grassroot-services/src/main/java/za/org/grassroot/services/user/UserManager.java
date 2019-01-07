@@ -24,6 +24,8 @@ import za.org.grassroot.core.domain.UserCreateRequest;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.EventNotification;
@@ -34,12 +36,14 @@ import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.specifications.GroupSpecifications;
@@ -95,6 +99,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired private LogsAndNotificationsBroker logsAndNotificationsBroker;
     @Autowired private MessageAssemblingService messageAssemblingService;
     @Autowired private MessagingServiceBroker messagingServiceBroker;
+    @Autowired private UserLocationLogRepository userLocationLogRepository;
+
     @Autowired(required = false) private GraphBroker graphBroker;
 
     private RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder().withinRange('a', 'z').build();
@@ -286,6 +292,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(noRollbackFor = InvalidOtpException.class)
     public boolean updateUser(String userUid, String displayName, String phoneNumber, String emailAddress,
+
                               Province province, AlertPreference alertPreference, Locale locale, String validationOtp,
                               boolean whatsappOptIn, UserInterfaceType channel) {
         Objects.requireNonNull(userUid);// added whatsapp opt in field to the updateUser method
@@ -304,7 +311,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         boolean emailChanged = !StringUtils.isEmpty(user.getEmailAddress()) && !user.getEmailAddress().equals(emailAddress);
         boolean whatsAppChanged = whatsappOptIn != user.isWhatsAppOptedIn();
         boolean otherChanged = false;
-//        boolean subscribeWhatsapp = whatsappOptIn;// whatsapp subscribtion log boolean
 
         user.setWhatsAppOptedIn(whatsappOptIn);
 
@@ -373,6 +379,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         //Storing a log for whats app subscription after changes have been altered.
+
         if (whatsAppChanged){
             user.setWhatsAppOptedIn(whatsappOptIn);
             logs.add(new UserLog(userUid,UserLogType.USER_SUBSCRIBED_WHATSAPP,"Subscribed for whats app notifications",
@@ -942,14 +949,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
     }
 
-    /*
-    SECTION: methods to return a masked user entity, for analytics
-     */
-
     @Override
     public UserDTO loadUserCreateRequest(String phoneNumber) {
         UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         return (new UserDTO(userCreateRequest));
+    }
+
+    @Override
+    public void saveUserLocation(String userUid, GeoLocation geoLocation,UserInterfaceType userInterfaceType) {
+        userLocationLogRepository.save(new UserLocationLog(Instant.now(), userUid, geoLocation, LocationSource.convertFromInterface(userInterfaceType)));
     }
 
     private UserMinimalProjection convertUser(User user) {

@@ -63,5 +63,4 @@ public interface GeoLocationBroker {
 			throws InvalidParameterException;
 
 	GeoLocation fetchBestGuessUserLocation(String userUid);
-
 }

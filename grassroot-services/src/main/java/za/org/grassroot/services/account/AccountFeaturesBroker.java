@@ -1,6 +1,7 @@
 package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 
@@ -13,6 +14,9 @@ import java.util.Set;
  * Created by luke on 2016/10/25.
  */
 public interface AccountFeaturesBroker {
+
+    // duplicates in normal broker but we sometimes need this in users, and better than a whole extra dependency in client or breaking ID/entity pattern
+    Account load(String accountUid);
 
     int numberMembersLeftForGroup(String groupUid, GroupJoinMethod joinMethod);
 

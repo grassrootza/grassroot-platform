@@ -242,7 +242,7 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         addRow(sheet, 2, new String[] {"", ""});
 
         addRow(sheet, 3, new String[] { "Total USSD sessions", billingCounts.get("total_sessions")});
-        addRow(sheet, 4, new String[] { "Campaign welcome SMSs", billingCounts.get("total_shares")});
+        addRow(sheet, 4, new String[] { "Campaign welcome SMSs", billingCounts.get("total_welcomes")});
         addRow(sheet, 5, new String[] { "Sharing SMSs", billingCounts.get("total_shares")});
 
         return workbook;

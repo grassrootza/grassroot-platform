@@ -22,6 +22,7 @@ import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -251,9 +252,15 @@ public class USSDCampaignController extends USSDBaseController {
                            @RequestParam(value = userInputParam) String userInput,
                            @RequestParam String campaignUid) throws URISyntaxException {
         UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
-        final String shareDefault = getMessage("campaign.share.send.generic", user);
-        campaignBroker.sendShareMessage(campaignUid, user.getUid(), userInput, shareDefault, UserInterfaceType.USSD);
-        return menuBuilder(genericPositiveExit(campaignUid, user, user.getLocale()));
+        final String shareNumber = userInput.trim();
+        if (!PhoneNumberUtil.testInputNumber(shareNumber)) {
+            final String prompt = getMessage("campaign.share.invalid", new String[] { shareNumber }, user);
+            return menuBuilder(new USSDMenu(prompt, "campaign/share/do?campaignUid=" + campaignUid));
+        } else {
+            final String shareDefault = getMessage("campaign.share.send.generic", user);
+            campaignBroker.sendShareMessage(campaignUid, user.getUid(), shareNumber, shareDefault, UserInterfaceType.USSD);
+            return menuBuilder(genericPositiveExit(campaignUid, user, user.getLocale()));
+        }
     }
 
     private USSDMenu buildCampaignUSSDMenu(CampaignMessage campaignMessage){

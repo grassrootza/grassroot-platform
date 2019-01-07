@@ -1,11 +1,16 @@
 package za.org.grassroot.services.user;
 
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.dto.UserMinimalProjection;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
@@ -121,5 +126,7 @@ public interface UserManagementService {
     List<User> findUsersThatRsvpForEvent(Event event, EventRSVPResponse response);
 
     List<User> findUsersNotifiedAboutEvent(Event event, Class<? extends EventNotification> notificationClass);
+
+    void saveUserLocation(String userUid, GeoLocation geoLocation,UserInterfaceType userInterfaceType);
 
 }
