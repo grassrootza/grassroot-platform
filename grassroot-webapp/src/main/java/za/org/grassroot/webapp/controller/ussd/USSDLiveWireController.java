@@ -81,7 +81,7 @@ public class USSDLiveWireController extends USSDBaseController {
 
         USSDMenu menu;
 
-        if(!liveWireAlertBroker.isUserBlocked(user.getUid())){
+        if(liveWireAlertBroker.isUserBlocked(user.getUid())){
             log.info("User is blocked ---------->>>>>>>>>>>>>>>>>");
             menu = new USSDMenu(getMessage(LIVEWIRE,startMenu,"prompt.blocked",user));
             menu.addMenuOption(startMenu, "Main menu");

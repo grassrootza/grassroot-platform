@@ -552,7 +552,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     public boolean isUserBlocked(String userUid){
         User user = userRepository.findOneByUid(userUid);
-        boolean canCreate = true;
+        boolean canCreate = false;
 
         Optional<ConfigVariable> timesConfigVariable = configRepository.findOneByKey("times.livewire.user.blocked");
         Integer timesUserBlocked = timesConfigVariable.map(var -> Integer.parseInt(var.getValue())).orElse(null);
@@ -563,7 +563,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         if(blockPeriod != null && timesUserBlocked != null){
             log.info("User was blocked {} times,and config var value is {}",countNumberOfTimesUserAlertWasBlocked(user,blockPeriod),blockPeriod);
             if(countNumberOfTimesUserAlertWasBlocked(user,blockPeriod) >= timesUserBlocked){
-                canCreate = false;
+                canCreate = true;
             }
         }
         return canCreate;
