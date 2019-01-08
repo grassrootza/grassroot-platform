@@ -69,9 +69,9 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 
 	// since this controller in effect routes responses, needs access to the other primary ones
 	// setters are for testing (since we need this controller in the tests of the handler)
-	private final USSDLiveWireController liveWireController;
-	private final UssdGeoApiService ussdGeoApiService;
 
+	private final UssdLiveWireService ussdLiveWireService;
+	private final UssdGeoApiService ussdGeoApiService;
 	private final UssdTodoService ussdTodoService;
 	private final UssdSafetyGroupService ussdSafetyGroupService;
 	private final UssdVoteService ussdVoteService;
@@ -92,8 +92,8 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	private static final USSDSection thisSection = HOME;
 
 
-	public UssdHomeServiceImpl(USSDLiveWireController liveWireController, LocationInfoBroker locationInfoBroker, @Autowired(required = false) UssdGeoApiService ussdGeoApiService, UserManagementService userManager, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, AsyncUserLogger userLogger, UssdSupport ussdSupport, CacheUtilService cacheManager, UssdTodoService ussdTodoService, UssdVoteService ussdVoteService, UssdMeetingService ussdMeetingService, UserResponseBroker userResponseBroker, GroupQueryBroker groupQueryBroker, AccountFeaturesBroker accountFeaturesBroker, GroupBroker groupBroker, UssdSafetyGroupService ussdSafetyGroupService) {
-		this.liveWireController = liveWireController;
+	public UssdHomeServiceImpl(UssdLiveWireService ussdLiveWireService, LocationInfoBroker locationInfoBroker, @Autowired(required = false) UssdGeoApiService ussdGeoApiService, UserManagementService userManager, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, AsyncUserLogger userLogger, UssdSupport ussdSupport, CacheUtilService cacheManager, UssdTodoService ussdTodoService, UssdVoteService ussdVoteService, UssdMeetingService ussdMeetingService, UserResponseBroker userResponseBroker, GroupQueryBroker groupQueryBroker, AccountFeaturesBroker accountFeaturesBroker, GroupBroker groupBroker, UssdSafetyGroupService ussdSafetyGroupService) {
+		this.ussdLiveWireService = ussdLiveWireService;
 		this.ussdSafetyGroupService = ussdSafetyGroupService;
 		this.locationInfoBroker = locationInfoBroker;
 		this.ussdGeoApiService = ussdGeoApiService;
@@ -163,7 +163,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		if (safetyCode.equals(trailingDigits)) {
 			returnMenu = ussdSafetyGroupService.assemblePanicButtonActivationMenu(user);
 		} else if (livewireSuffix.equals(trailingDigits)) {
-			returnMenu = liveWireController.assembleLiveWireOpening(user, 0);
+			returnMenu = ussdLiveWireService.assembleLiveWireOpening(user, 0);
 			sendWelcomeIfNew = true;
 		} else if (sendMeLink.equals(trailingDigits)) {
 			returnMenu = assembleSendMeAndroidLinkMenu(user);

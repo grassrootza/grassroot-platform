@@ -2,7 +2,6 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.base.Stopwatch;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,40 +58,43 @@ public class USSDHomeController extends USSDBaseController {
         this.groupBroker = groupBroker;
     }
 
-    private final ExecutorService starttestExecutors = Executors.newFixedThreadPool(4);
+    /**
+     * TEST METHODS --------------------------------------------------------------
+     */
 
-    @RequestMapping(value = homePath + "startTest")
-    public void startMenuTest() throws InterruptedException, ExecutionException {
+    @RequestMapping(value = homePath + "startSingleThreadTest")
+    public void startSingleThreadTest() {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        for (int i = 0; i < 10; i++) {
+            System.out.println("### -------------- Iteration nr." + i);
+            Stopwatch txStopwatch = Stopwatch.createStarted();
+            this.groupBroker.testMembersFetch(1L);
+            System.out.println("### TX lasted ms: " + txStopwatch.elapsed(TimeUnit.MILLISECONDS));
+        }
+        log.info("### Complete startMembersTest lasted ms: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    @RequestMapping(value = homePath + "startSingleNumberTest")
+    public void startSingleNumberTest(@RequestParam(value = phoneNumber) String inputNumber) throws InterruptedException, ExecutionException, URISyntaxException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        startMenu(inputNumber, "*134*19940*2446#");
+        log.info("### TX outer lasted ms: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    @RequestMapping(value = homePath + "startMultiThreadTest")
+    public void startMultiThreadTest() throws InterruptedException, ExecutionException {
         final List<Callable<Void>> callables = constructTestCallables(2);
         log.info("### Starting start test");
 
         Stopwatch stopwatch = Stopwatch.createStarted();
-        List<Future<Void>> futures = starttestExecutors.invokeAll(callables);
+        List<Future<Void>> futures = startTestExecutors.invokeAll(callables);
         for (Future<Void> future : futures) {
             future.get();
         }
         log.info("### Lasted secs: " + stopwatch.elapsed(TimeUnit.SECONDS));
     }
 
-    @RequestMapping(value = homePath + "startMembersTest")
-    public void startMembersFetch() {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        for (int i = 0; i < 10; i++) {
-            System.out.println("### -------------- Iteration nr." + i);
-            Stopwatch txStopwatch = Stopwatch.createStarted();
-            this.groupBroker.testMembersFetch(1L);
-//            this.groupBroker.testMembersFetchViaJoinCode("2446");
-            System.out.println("### TX lasted ms: " + txStopwatch.elapsed(TimeUnit.MILLISECONDS));
-        }
-        log.info("### Complete startMembersTest lasted ms: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-    }
-
-    @RequestMapping(value = homePath + "startTestSingle")
-    public void startMenuTestSingle(@RequestParam(value = phoneNumber) String inputNumber) throws InterruptedException, ExecutionException, URISyntaxException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        startMenu(inputNumber, "*134*19940*2446#");
-        log.info("### TX outer lasted ms: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-    }
+    private final ExecutorService startTestExecutors = Executors.newFixedThreadPool(4);
 
     private List<Callable<Void>> constructTestCallables(int amount ) {
         // amount cannot be larger than 900
@@ -121,6 +123,12 @@ public class USSDHomeController extends USSDBaseController {
         }
         return callables;
     }
+
+
+    /**
+     * -------------------------------------------------------------
+     */
+
 
     @RequestMapping(value = homePath + startMenu)
     @ResponseBody
