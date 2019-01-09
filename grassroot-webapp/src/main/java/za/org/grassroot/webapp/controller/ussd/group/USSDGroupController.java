@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -176,7 +176,7 @@ public class USSDGroupController extends USSDBaseController {
             if (interrupted) {
                 createdGroup = groupBroker.load(groupUid);
             } else {
-                MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+                MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                 createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
                         GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, true);
             }

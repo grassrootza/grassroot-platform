@@ -25,7 +25,8 @@ public class Role implements GrantedAuthority, Comparable<Role> {
     protected Long id;
 
     @Column(name = "role_name", nullable = false, length = 50)
-    private String name;
+    @Enumerated(EnumType.STRING)
+    private RoleName name;
 
     @Column(name = "group_uid", length = 50)
     private String groupUid;
@@ -44,7 +45,7 @@ public class Role implements GrantedAuthority, Comparable<Role> {
         // for JPA
     }
 
-    public Role(String name, String groupUid) {
+    public Role(RoleName name, String groupUid) {
         this.name = Objects.requireNonNull(name);
         this.roleType = groupUid == null ? RoleType.STANDARD : RoleType.GROUP;
         this.groupUid = groupUid;
@@ -54,7 +55,7 @@ public class Role implements GrantedAuthority, Comparable<Role> {
         return id;
     }
 
-    public String getName() {
+    public RoleName getName() {
         return name;
     }
 
@@ -126,7 +127,7 @@ public class Role implements GrantedAuthority, Comparable<Role> {
 
     @Override
     public String getAuthority() {
-        return getName();
+        return getName().name();
     }
 
     /* Logic here:
@@ -137,8 +138,7 @@ public class Role implements GrantedAuthority, Comparable<Role> {
      */
     @Override
     public int compareTo(Role r) {
-        String thatName = r.getName();
-        return compareRoleNames(this.name, thatName);
+        return compareRoleNames(this.name, r.getName());
     }
 
     /* Logic here:
@@ -148,14 +148,14 @@ public class Role implements GrantedAuthority, Comparable<Role> {
     member and the other is organizer
      */
 
-    public static int compareRoleNames(String roleFirst, String roleSecond) {
+    public static int compareRoleNames(RoleName roleFirst, RoleName roleSecond) {
         Objects.requireNonNull(roleFirst);
         Objects.requireNonNull(roleSecond);
         if (roleFirst.equals(roleSecond)) {
             return 0;
-        } else if (roleFirst.equals(BaseRoles.ROLE_ORDINARY_MEMBER)) {
+        } else if (roleFirst.equals(RoleName.ROLE_ORDINARY_MEMBER)) {
             return -1;
-        } else if (roleFirst.equals(BaseRoles.ROLE_COMMITTEE_MEMBER) && roleSecond.equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
+        } else if (roleFirst.equals(RoleName.ROLE_COMMITTEE_MEMBER) && roleSecond.equals(RoleName.ROLE_GROUP_ORGANIZER)) {
             return -1;
         } else {
             return 1;

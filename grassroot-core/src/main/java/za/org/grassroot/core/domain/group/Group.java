@@ -203,12 +203,12 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
 
         // automatically add 3 default roles
-        addRole(BaseRoles.ROLE_GROUP_ORGANIZER);
-        addRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
-        addRole(BaseRoles.ROLE_ORDINARY_MEMBER);
+        addRole(RoleName.ROLE_GROUP_ORGANIZER);
+        addRole(RoleName.ROLE_COMMITTEE_MEMBER);
+        addRole(RoleName.ROLE_ORDINARY_MEMBER);
     }
 
-    private void addRole(String roleName) {
+    private void addRole(RoleName roleName) {
         Objects.requireNonNull(roleName);
         for (Role role : groupRoles) {
             if (role.getName().equals(roleName)) {
@@ -277,7 +277,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-    public Set<Membership> addMembers(Collection<User> newMembers, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    public Set<Membership> addMembers(Collection<User> newMembers, RoleName roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(roleName);
         Objects.requireNonNull(newMembers);
 
@@ -293,7 +293,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
 
-    public Membership addMember(User newMember, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    public Membership addMember(User newMember, RoleName roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(roleName);
         Role role = getRole(roleName);
         return addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
@@ -351,7 +351,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return null;
     }
 
-    public Role getRole(String roleName) {
+    public Role getRole(RoleName roleName) {
         Objects.requireNonNull(roleName);
         return groupRoles.stream()
                 .filter(role -> role.getName().equals(roleName))

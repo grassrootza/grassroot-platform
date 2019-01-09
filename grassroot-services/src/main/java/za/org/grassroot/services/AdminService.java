@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
@@ -23,7 +24,7 @@ public interface AdminService {
     void addSystemRole(String adminUserUid, String userUid, String systemRole);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void removeStdRole(String adminUserUid, String userUid, String systemRole);
+    void removeStdRole(String adminUserUid, String userUid, RoleName systemRole);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     String createUserWithSystemRole(String adminUserUid, String displayName, String phoneNumber,

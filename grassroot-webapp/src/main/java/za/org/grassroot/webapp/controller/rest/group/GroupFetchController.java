@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -330,17 +331,17 @@ public class GroupFetchController extends BaseRestController {
     }
 
     @RequestMapping(value = "/permissions/{groupUid}", method = RequestMethod.POST)
-    public ResponseEntity<HashMap<String, List<PermissionDTO>>> fetchPermissions(@PathVariable String groupUid,
-                                                                @RequestParam Set<String> roleNames,
-                                                                HttpServletRequest request) {
+    public ResponseEntity<Map<RoleName, List<PermissionDTO>>> fetchPermissions(@PathVariable String groupUid,
+																			   @RequestParam Set<RoleName> roleNames,
+																			   HttpServletRequest request) {
 
         User user = getUserFromRequest(request);
-        HashMap<String, List<PermissionDTO>> permissions = new HashMap<>();
+        Map<RoleName, List<PermissionDTO>> permissions = new HashMap<>();
         if (user != null) {
             Group group = groupBroker.load(groupUid);
 
             List<PermissionDTO> permissionsDTO = new ArrayList<>();
-            for (String roleName : roleNames) {
+            for (RoleName roleName : roleNames) {
                 Set<Permission> permissionsEnabled = group.getRole(roleName).getPermissions();
                 permissionsDTO = permissionsDisplayed.keySet().stream()
                         .map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))

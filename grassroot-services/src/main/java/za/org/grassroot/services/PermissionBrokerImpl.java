@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
@@ -139,9 +139,9 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Override
     public void setRolePermissionsFromTemplate(Group group, GroupPermissionTemplate template) {
-        Role organizer = group.getRole(BaseRoles.ROLE_GROUP_ORGANIZER);
-        Role committee = group.getRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
-        Role member = group.getRole(BaseRoles.ROLE_ORDINARY_MEMBER);
+        Role organizer = group.getRole(RoleName.ROLE_GROUP_ORGANIZER);
+        Role committee = group.getRole(RoleName.ROLE_COMMITTEE_MEMBER);
+        Role member = group.getRole(RoleName.ROLE_ORDINARY_MEMBER);
 
         switch (template) {
             case DEFAULT_GROUP:
@@ -225,13 +225,13 @@ public class PermissionBrokerImpl implements PermissionBroker {
     @Override
     @Transactional(readOnly = true)
     public boolean isSystemAdmin(User user) {
-        List<Role> systemRoles = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_SYSTEM_ADMIN, Role.RoleType.STANDARD);
+        List<Role> systemRoles = roleRepository.findByNameAndRoleType(RoleName.ROLE_SYSTEM_ADMIN, Role.RoleType.STANDARD);
         Set<Role> userRoles = user.getStandardRoles();
         return userRoles.containsAll(systemRoles);
     }
 
     @Override
-    public void validateSystemRole(User user, String roleName) {
+    public void validateSystemRole(User user, RoleName roleName) {
         log.info("attempting to validate system role, with name: " + roleName);
         List<Role> systemRoles = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD);
         log.info("system role for name: {}, found: {}", roleName, systemRoles);
@@ -249,14 +249,14 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Override
     @Transactional
-    public void addSystemRole(User user, String roleName) {
+    public void addSystemRole(User user, RoleName roleName) {
         Role systemRole = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD).get(0);
         user.addStandardRole(systemRole);
     }
 
     @Override
     @Transactional
-    public void removeSystemRole(User user, String roleName) {
+    public void removeSystemRole(User user, RoleName roleName) {
         Role systemRole = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD).get(0);
         user.removeStandardRole(systemRole);
     }

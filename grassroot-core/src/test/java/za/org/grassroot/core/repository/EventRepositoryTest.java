@@ -11,7 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
@@ -249,9 +249,9 @@ public class EventRepositoryTest {
         User users2 = userRepository.save(new User("0763423", null, null));
 
         Group groups = groupRepository.save(new Group("Events Test", users));
-        groups.addMember(users, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        groups.addMember(users1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        groups.addMember(users2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        groups.addMember(users, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        groups.addMember(users1, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        groups.addMember(users2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         groups = groupRepository.save(groups);
         Instant startTime = Instant.now().plus(10, ChronoUnit.MINUTES);
@@ -468,14 +468,14 @@ public class EventRepositoryTest {
         User user2 = userRepository.save(new User("0831111116", null, null));
 
         Group group = groupRepository.save(new Group("tg1", user1));
-        group.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(user1, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(user2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
 
         Event event1 = eventRepository.save(new MeetingBuilder().setName("test").setStartDateTime(Instant.now()).setUser(user2).setParent(group).setEventLocation("someLoc").createMeeting());
 
         Group group2 = groupRepository.save(new Group("tg2", user2));
-        group2.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group2.addMember(user2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group2 = groupRepository.save(group2);
         Event event2 = eventRepository.save(new MeetingBuilder().setName("test2").setStartDateTime(Instant.now()).setUser(user2).setParent(group2).setEventLocation("someLoc").createMeeting());
 
@@ -503,7 +503,7 @@ public class EventRepositoryTest {
         assertThat(eventRepository.count(), is(0L));
         User user = userRepository.save(new User("0831111115", null, null));
         Group group = groupRepository.save(new Group("tg1", user));
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
 
         Event event1 = eventRepository.save(new MeetingBuilder().setName("test").setStartDateTime(Instant.now().plus(7, DAYS)).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
@@ -538,12 +538,12 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("0710001111", null, null));
         User user2 = userRepository.save(new User("0810001111", null, null));
         Group group = groupRepository.save(new Group("tg1", user));
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
         Group group2 = groupRepository.save(new Group("tg2", user2));
 
-        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        group2.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group2.addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group2.addMember(user2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group2 = groupRepository.save(group2);
 
         Event event1 = new MeetingBuilder().setName("count check").setStartDateTime(Instant.now().plus(2, DAYS)).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting();
@@ -571,11 +571,11 @@ public class EventRepositoryTest {
 	    User user2 = userRepository.save(new User("0810001111", null, null));
 
 	    Group group = groupRepository.save(new Group("tg1", user));
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
 	    Group group2 = groupRepository.save(new Group("tg2", user2));
-        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        group2.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group2.addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group2.addMember(user2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group2 = groupRepository.save(group2);
 
 	    Instant intervalStart1 = Instant.now().minus(1, ChronoUnit.MINUTES);

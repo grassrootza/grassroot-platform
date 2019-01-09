@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
@@ -97,7 +97,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void meetingRsvpShouldWorkInAllLanguages() throws Exception {
         User testUser = new User(testUserPhone, null, null);
         Group testGroup = new Group(testGroupName, testUser);
-        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(testUser, RoleName.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Meeting meeting = new MeetingBuilder().setName("Meeting about testing").setStartDateTime(Instant.now()).setUser(testUser).setParent(testGroup).setEventLocation("someLocation").createMeeting();
 
         List<User> groupMembers = new ArrayList<>(languageUsers);
@@ -152,7 +152,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<Group> existingGroupList = Arrays.asList(new Group("gc1", testUser),
                                                       new Group("gc2", testUser),
                                                       new Group("gc3", testUser));
-        existingGroupList.forEach(g -> g.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null));
+        existingGroupList.forEach(g -> g.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);

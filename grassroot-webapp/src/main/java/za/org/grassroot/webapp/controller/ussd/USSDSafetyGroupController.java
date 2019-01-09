@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
@@ -38,7 +36,6 @@ import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Collections;
-import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
@@ -318,7 +315,7 @@ public class USSDSafetyGroupController extends USSDBaseController {
         } else {
             String groupUid;
             if (!interrupted) {
-                MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+                MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                 Group group = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(membershipInfo), GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false, false);
                 groupUid = group.getUid();
                 safetyEventBroker.setSafetyGroup(user.getUid(), groupUid);

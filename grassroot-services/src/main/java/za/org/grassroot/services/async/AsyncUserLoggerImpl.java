@@ -6,7 +6,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
@@ -71,7 +71,7 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
 
         if (!user.isHasInitiatedSession()) {
             user.setHasInitiatedSession(true);
-            Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+            Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
             user.addStandardRole(fullUserRole);
         }
 

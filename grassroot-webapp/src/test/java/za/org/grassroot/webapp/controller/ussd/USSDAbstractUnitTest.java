@@ -14,7 +14,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -203,10 +203,10 @@ public abstract class USSDAbstractUnitTest {
 
     // helper method to generate a set of membership info ... used often
     protected Set<MembershipInfo> ordinaryMember(String phoneNumber) {
-        return Sets.newHashSet(new MembershipInfo(phoneNumber, BaseRoles.ROLE_ORDINARY_MEMBER, null));
+        return Sets.newHashSet(new MembershipInfo(phoneNumber, RoleName.ROLE_ORDINARY_MEMBER, null));
     }
 
     protected Set<MembershipInfo> organizer(User user) {
-        return Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
+        return Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
     }
 }

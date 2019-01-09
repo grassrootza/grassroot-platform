@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;
@@ -114,7 +114,7 @@ public class WhatsAppJoinFlowController extends BaseController {
 
         CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.MSGING_CLIENT);
         tokenRequest.addClaim(JwtService.USER_UID_KEY, userId);
-        tokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_FULL_USER);
+        tokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, RoleName.ROLE_FULL_USER.name());
         userLogger.logUserLogin(userId, UserInterfaceType.WHATSAPP); // keep an eye on how often this gets called (may become redundant)
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }

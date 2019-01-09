@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
@@ -340,7 +340,7 @@ public class USSDGroupUtil extends USSDUtil {
     private Set<MembershipInfo> turnNumbersIntoMembers(List<String> validNumbers) {
         Set<MembershipInfo> newMembers = new HashSet<>();
         for (String validNumber : validNumbers)
-            newMembers.add(new MembershipInfo(validNumber, BaseRoles.ROLE_ORDINARY_MEMBER, null));
+            newMembers.add(new MembershipInfo(validNumber, RoleName.ROLE_ORDINARY_MEMBER, null));
         return newMembers;
     }
 

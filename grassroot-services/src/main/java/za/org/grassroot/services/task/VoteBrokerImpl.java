@@ -9,11 +9,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.UserLanguageNotification;
 import za.org.grassroot.core.domain.notification.VoteResultsNotification;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -23,10 +20,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.VoteRepository;
-import za.org.grassroot.core.specifications.EventSpecifications;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
@@ -35,7 +29,6 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
-import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -44,8 +37,6 @@ import static za.org.grassroot.core.enums.EventLogType.CHANGE;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
-import static za.org.grassroot.core.util.StringArrayUtil.joinStringList;
-import static za.org.grassroot.core.util.StringArrayUtil.listToArray;
 
 /**
  * Created by luke on 2017/05/31.

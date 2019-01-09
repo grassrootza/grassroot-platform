@@ -13,7 +13,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
@@ -428,7 +428,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional(readOnly = true)
     public Page<LiveWireAlert> loadAlerts(String userUid, boolean unreviewedOnly, Pageable pageable) {
-        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), BaseRoles.ROLE_LIVEWIRE_USER);
+        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), RoleName.ROLE_LIVEWIRE_USER);
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(pageable);
 
@@ -457,7 +457,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional
     public void setTagsForAlert(String userUid, String alertUid, List<String> tags) {
-        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), BaseRoles.ROLE_ALPHA_TESTER);
+        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), RoleName.ROLE_ALPHA_TESTER);
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
@@ -491,7 +491,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         if (!canUserRelease(userUid)) {
             log.info("Looks like user isn't a subscriber admin, so check for system role");
-            permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), BaseRoles.ROLE_LIVEWIRE_USER);
+            permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), RoleName.ROLE_LIVEWIRE_USER);
         }
 
         log.info("User can release alert, proceeding ...");

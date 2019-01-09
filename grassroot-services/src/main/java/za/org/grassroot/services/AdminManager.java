@@ -120,7 +120,7 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     public void addSystemRole(String adminUserUid, String userUid, String systemRole) {
         validateAdminRole(adminUserUid);
         User user = userRepository.findOneByUid(userUid);
-        Role role = roleRepository.findByName(BaseRoles.ROLE_ALPHA_TESTER).get(0);
+        Role role = roleRepository.findByName(RoleName.ROLE_ALPHA_TESTER).get(0);
         user.addStandardRole(role);
         userLogRepository.save(new UserLog(userUid, UserLogType.GRANTED_SYSTEM_ROLE,
                 systemRole + " granted by admin. uid::" + adminUserUid, UserInterfaceType.WEB));
@@ -128,7 +128,7 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
     @Override
     @Transactional
-    public void removeStdRole(String adminUserUid, String userUid, String systemRole) {
+    public void removeStdRole(String adminUserUid, String userUid, RoleName systemRole) {
         validateAdminRole(adminUserUid);
         User user = userRepository.findOneByUid(userUid);
         Role role = roleRepository.findByNameAndRoleType(systemRole, Role.RoleType.STANDARD).get(0);
@@ -312,7 +312,7 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
     private void validateAdminRole(String adminUserUid) {
         User admin = userRepository.findOneByUid(adminUserUid);
-        Role adminRole = roleRepository.findByName(BaseRoles.ROLE_SYSTEM_ADMIN).get(0);
+        Role adminRole = roleRepository.findByName(RoleName.ROLE_SYSTEM_ADMIN).get(0);
         if (!admin.getStandardRoles().contains(adminRole)) {
             throw new AccessDeniedException("Error! User does not have admin role");
         }

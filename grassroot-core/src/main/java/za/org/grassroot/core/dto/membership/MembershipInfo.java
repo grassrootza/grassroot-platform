@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Membership;
@@ -32,7 +33,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     protected String phoneNumber;
 
     @ApiModelProperty(allowEmptyValue = true)
-    protected String roleName; // optional
+    protected RoleName roleName; // optional
 
     protected String displayName; // optional
     protected String firstName;
@@ -52,7 +53,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     @JsonCreator
     public MembershipInfo(@JsonProperty("phoneNumber") String phoneNumber,
-                          @JsonProperty("roleName") String roleName,
+                          @JsonProperty("roleName") RoleName roleName,
                           @JsonProperty("displayName") String displayName) {
         this.phoneNumber = phoneNumber;
         this.roleName = roleName;
@@ -61,7 +62,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     }
 
     // constructor to create a membership info with an empty role
-    public MembershipInfo(User user, String displayName, String roleName, List<String> assignedTopics) {
+    public MembershipInfo(User user, String displayName, RoleName roleName, List<String> assignedTopics) {
         this.phoneNumber = user.getPhoneNumber();
         this.memberEmail = user.getEmailAddress();
         this.displayName = displayName;
@@ -180,8 +181,8 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     @Override
     public int compareTo(MembershipInfo m) {
-        String otherRole = m.getRoleName();
-        if (!StringUtils.isEmpty(roleName) && !roleName.equals(otherRole)) {
+        RoleName otherRole = m.getRoleName();
+        if (roleName != null && !roleName.equals(otherRole)) {
             return Role.compareRoleNames(roleName, otherRole);
         } else {
             return StringUtils.isEmpty(displayName) ? -1 :

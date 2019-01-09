@@ -1,5 +1,6 @@
 package za.org.grassroot.services.group;
 
+import com.google.common.base.Stopwatch;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -60,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -83,6 +85,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     private final PermissionBroker permissionBroker;
     private final LogsAndNotificationsBroker logsBroker;
 
+    // todo: VJERAN: try to remove EntityManager here
     private final EntityManager entityManager;
 
     @Autowired
@@ -157,26 +160,20 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Override
     @Transactional(readOnly = true)
     public GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid, boolean includeAllMembers, boolean includeAllSubgroups, boolean includeMemberHistory) {
-        long startTime = System.currentTimeMillis();
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+
+        final User user = userRepository.findOneByUid(userUid);
+        final Group group = groupRepository.findOneByUid(groupUid);
 
         log.debug("fetching heavy group, group uid = {}, user = {}", groupUid, user.getName());
 
-        List<GroupFullDTO> dtoResults = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupFullDTO(g, m) " +
-                "from Group g inner join g.memberships m " +
-                "where g.uid = :groupUid and m.user = :user", GroupFullDTO.class)
-                .setParameter("groupUid", groupUid)
-                .setParameter("user", user)
-                .getResultList();
-
-        if (dtoResults.isEmpty()) {
+        final Membership membership = group.getMembership(user);
+        if (membership == null) {
             log.error("Error! Non existent group or membership passed to query: group UID: {}", groupUid);
             return null;
         }
+        final GroupFullDTO groupFullDTO = new GroupFullDTO(group, membership);
 
-        GroupFullDTO groupFullDTO = dtoResults.get(0);
         boolean hasMemberDetailsPerm = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
         if (includeAllMembers && hasMemberDetailsPerm) {
@@ -200,7 +197,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
 
         log.info("heavy group info fetch, for group {}, members: {}, subgroups: {}, m history: {}, took {} msecs",
-                group.getName(), includeAllMembers, includeAllSubgroups, includeMemberHistory, System.currentTimeMillis() - startTime);
+                group.getName(), includeAllMembers, includeAllSubgroups, includeMemberHistory, stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return groupFullDTO;
     }
 

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
@@ -73,7 +73,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 
 /**
  * @author Lesetse Kimwaga
@@ -199,7 +198,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         userToSave.setHasInitiatedSession(true);
-        Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+        Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
         userToSave.addStandardRole(fullUserRole);
 
         if (passwordEncoder != null) {
@@ -235,7 +234,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         boolean userExists = userExist(phoneNumber);
-        Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+        Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
 
         if (userExists) {
 
@@ -732,7 +731,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public void setHasInitiatedUssdSession(User sessionUser, boolean sendWelcomeMessage) {
         sessionUser.setHasInitiatedSession(true);
 
-        Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+        Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
         sessionUser.addStandardRole(fullUserRole);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -868,7 +867,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
         if (!callingUserUid.equals(userToUpdateUid)) {
             User callingUser = userRepository.findOneByUid(callingUserUid);
-            Role adminRole = roleRepository.findByName(BaseRoles.ROLE_SYSTEM_ADMIN).get(0);
+            Role adminRole = roleRepository.findByName(RoleName.ROLE_SYSTEM_ADMIN).get(0);
             if (!callingUser.getStandardRoles().contains(adminRole)) {
                 throw new AccessDeniedException("Error! Only user or admin can perform this update");
             }

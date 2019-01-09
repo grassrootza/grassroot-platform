@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.EntityForUserResponse;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -22,10 +20,8 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingRequest;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
@@ -258,7 +254,7 @@ public class USSDMeetingController extends USSDBaseController {
         if (!USSDGroupUtil.isValidGroupName(userResponse) ){
           return  menuBuilder(groupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, groupName));
         } else {
-            MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+            MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName());
             Group group = groupBroker.create(user.getUid(), userResponse, null, Collections.singleton(membershipInfo), GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, false);
             return menuBuilder(groupUtil.addNumbersToGroupPrompt(user, group, thisSection, groupHandlingMenu));
     }

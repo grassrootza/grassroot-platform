@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.webapp.model.http.AuthorizationHeader;
@@ -43,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenValid(token)) {
             String userId = jwtService.getUserIdFromJwtToken(token);
             log.debug("User ID: {}", userId);
-            Set<Role> userRoles = jwtService.getStandardRolesFromJwtToken(token).stream().map(name -> new Role(name, null))
+            Set<Role> userRoles = jwtService.getStandardRolesFromJwtToken(token).stream().map(name -> new Role(RoleName.valueOf(name), null))
                     .collect(Collectors.toSet());
             log.debug("and user roles = {}", userRoles);
             JwtBasedAuthentication auth = new JwtBasedAuthentication(userRoles, token, userId);

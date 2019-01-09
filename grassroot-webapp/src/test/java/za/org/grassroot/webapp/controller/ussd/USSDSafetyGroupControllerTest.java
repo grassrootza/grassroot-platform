@@ -6,7 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
@@ -71,7 +71,7 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
         testGroup = new Group("test group", testUser);
         testGroup.setGroupTokenCode(joinCode);
         safetyEvent = new SafetyEvent(testUser2,testGroup);
-        testMembers.add(new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null));
+        testMembers.add(new MembershipInfo(testUserPhone, RoleName.ROLE_GROUP_ORGANIZER, null));
     }
 
     @Test

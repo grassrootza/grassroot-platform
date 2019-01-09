@@ -12,7 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -91,7 +91,7 @@ public class GroupRestController extends GroupAbstractRestController {
                 if (!membersToAdd.isEmpty() && (invalidNumbers.size() == membersToAdd.size())) {
                     throw new InvalidPhoneNumberException(String.join(",", invalidNumbers));
                 } else {
-                    MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+                    MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                     membersToAdd.add(creator);
                     Group created = groupBroker.create(user.getUid(), groupName, null, membersToAdd,
                             GroupPermissionTemplate.DEFAULT_GROUP, description, null, true, false, true);
@@ -287,7 +287,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
     @RequestMapping(value = "/edit/fetch_permissions/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> fetchPermissions(@PathVariable String phoneNumber, @PathVariable String code,
-                                                            @RequestParam String groupUid, @RequestParam String roleName) {
+                                                            @RequestParam String groupUid, @RequestParam RoleName roleName) {
 
         Group group = groupBroker.load(groupUid);
         ResponseEntity<ResponseWrapper> response;
@@ -306,7 +306,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
     @RequestMapping(value = "/edit/update_permissions/{phoneNumber}/{code}/{groupUid}/{roleName}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String phoneNumber, @PathVariable String code,
-                                                             @PathVariable String groupUid, @PathVariable String roleName,
+                                                             @PathVariable String groupUid, @PathVariable RoleName roleName,
                                                              @RequestBody List<PermissionDTO> updatedPermissions) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
@@ -325,7 +325,7 @@ public class GroupRestController extends GroupAbstractRestController {
     @RequestMapping(value = "/edit/change_role/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> changeMemberRole(@PathVariable String phoneNumber, @PathVariable String code,
                                                             @RequestParam String groupUid, @RequestParam String memberUid,
-                                                            @RequestParam String roleName) {
+                                                            @RequestParam RoleName roleName) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         ResponseEntity<ResponseWrapper> response;
@@ -386,7 +386,7 @@ public class GroupRestController extends GroupAbstractRestController {
         return groupBroker.checkForDuplicate(creatingUserUid, groupName.trim());
     }
 
-    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
+    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, RoleName roleName, List<PermissionDTO> permissionDTOs) {
         Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
         Set<Permission> permissionsAdded = new HashSet<>();
         Set<Permission> permissionsRemoved = new HashSet<>();

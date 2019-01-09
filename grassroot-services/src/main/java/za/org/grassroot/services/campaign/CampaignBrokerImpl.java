@@ -12,13 +12,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Notification_;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.Role_;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.campaign.Campaign;
@@ -234,7 +231,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             Join<Membership, Role> roleJoin = memberJoin.join(Membership_.role);
             query.distinct(true);
             return cb.and(cb.equal(memberJoin.get(Membership_.user), user),
-                    cb.equal(roleJoin.get(Role_.name), BaseRoles.ROLE_GROUP_ORGANIZER));
+                    cb.equal(roleJoin.get(Role_.name), RoleName.ROLE_GROUP_ORGANIZER));
         };
 
         return campaignRepository.findAll(Specification.where(createdByUser).or(userIsOrganizerInGroup), Sort.by("createdDateTime"));

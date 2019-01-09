@@ -3,6 +3,7 @@ package za.org.grassroot.core.dto.membership;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.Province;
@@ -15,7 +16,7 @@ public class MembershipStdDTO {
 
     private final String userUid;
     private final String displayName;
-    private final String roleName;
+    private final RoleName roleName;
     private final Province province;
     private final String phoneNumber;
     private final String emailAddress;

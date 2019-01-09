@@ -9,13 +9,9 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.group.Group;
-
-import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -42,7 +38,7 @@ public class RoleRepositoryTest {
     @Test
     @Rollback
     public void testSaveRole() throws Exception {
-        Role role = new Role("CREATE_USER", null);
+        Role role = new Role(RoleName.ROLE_FULL_USER, null);
         role = roleRepository.save(role);
         assertThat(role.getId(), notNullValue());
     }
@@ -50,7 +46,7 @@ public class RoleRepositoryTest {
     @Test
     @Rollback
     public void testSaveWithPermissions() throws Exception {
-        Role role = new Role("MANAGE_GROUPS", null);
+        Role role = new Role(RoleName.ROLE_FULL_USER, null);
         role.addPermission(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
 
         role = roleRepository.save(role);
@@ -63,7 +59,7 @@ public class RoleRepositoryTest {
     @Rollback
     public void testRemovePermission() throws Exception {
 
-        Role role = new Role("MANAGE_GROUPS", null);
+        Role role = new Role(RoleName.ROLE_FULL_USER, null);
         role.addPermission(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
         role = roleRepository.save(role);
         assertNotNull(role.getId());
@@ -80,7 +76,7 @@ public class RoleRepositoryTest {
     @Rollback
     public void testDeleteRote() throws Exception {
         assertThat(roleRepository.count(), is(0L));
-        Role role = roleRepository.save(new Role("CREATE_USER", null));
+        Role role = roleRepository.save(new Role(RoleName.ROLE_FULL_USER, null));
         assertThat(roleRepository.count(), is(1L));
         roleRepository.delete(role);
         assertThat(roleRepository.count(), is(0L));
@@ -90,10 +86,10 @@ public class RoleRepositoryTest {
     @Rollback
     public void testSaveWithType() throws Exception {
         assertThat(roleRepository.count(), is(0L));
-        Role role = new Role("ROLE_ACCOUNT_ADMIN", null);
+        Role role = new Role(RoleName.ROLE_ACCOUNT_ADMIN, null);
         roleRepository.save(role);
         assertThat(roleRepository.count(), is(1L));
-        Role roleFromDb = roleRepository.findByNameAndRoleType("ROLE_ACCOUNT_ADMIN", Role.RoleType.STANDARD).get(0);
+        Role roleFromDb = roleRepository.findByNameAndRoleType(RoleName.ROLE_ACCOUNT_ADMIN, Role.RoleType.STANDARD).get(0);
         assertNotNull(roleFromDb);
         assertThat(roleFromDb.getName(), is(role.getName()));
     }
@@ -102,10 +98,9 @@ public class RoleRepositoryTest {
     @Rollback
     public void testFindByName() throws Exception {
         assertThat(roleRepository.count(), is(0L));
-        String roleName = "CREATE_USER";
-        Role role = new Role(roleName, null);
+        Role role = new Role(RoleName.ROLE_FULL_USER, null);
         role = roleRepository.save(role);
-        Role roleFromDb = roleRepository.findByName(roleName).get(0);
+        Role roleFromDb = roleRepository.findByName(RoleName.ROLE_FULL_USER).get(0);
         assertNotNull(roleFromDb);
         assertThat(roleFromDb.getId(), is(role.getId()));
     }

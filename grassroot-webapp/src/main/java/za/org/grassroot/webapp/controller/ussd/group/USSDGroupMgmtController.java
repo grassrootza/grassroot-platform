@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -418,7 +418,7 @@ public class USSDGroupMgmtController extends USSDBaseController {
             menu = new USSDMenu(getMessage("group.organizer.add.error", user),
                     groupMenuWithId("organizer/complete", groupUid));
         } else {
-            MembershipInfo memberInfo = new MembershipInfo(organizerPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null);
+            MembershipInfo memberInfo = new MembershipInfo(organizerPhone, RoleName.ROLE_GROUP_ORGANIZER, null);
             groupBroker.addMembers(user.getUid(), groupUid, Collections.singleton(memberInfo), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
             menu = new USSDMenu(getMessage("group.organizer.add.done", user),
                     groupMenuWithId("organizer/complete", groupUid));
