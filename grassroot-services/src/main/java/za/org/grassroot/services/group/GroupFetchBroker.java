@@ -38,7 +38,7 @@ public interface GroupFetchBroker {
                                     boolean includeAllSubgroups,
                                     boolean includeMemberHistory);
 
-    GroupFullDTO fetchSubGroupDetails(String userUid, String parentUid, String taskTeamUid);
+    GroupFullDTO fetchSubGroupDetails(String userUid, String parentGroupUid, String childGroupUid);
 
     List<MembershipRecordDTO> fetchRecentMembershipChanges(String userUid, String groupUid, Instant fromDate);
 

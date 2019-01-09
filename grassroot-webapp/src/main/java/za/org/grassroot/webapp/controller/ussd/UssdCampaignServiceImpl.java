@@ -12,6 +12,8 @@ import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManager;
 
+import java.util.Optional;
+
 @Service
 public class UssdCampaignServiceImpl implements UssdCampaignService {
 	private final CampaignBroker campaignBroker;
@@ -32,14 +34,15 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 		final Campaign campaign = message.getCampaign();
 		final Group masterGroup = campaign.getMasterGroup();
 		if (parentMessage != null && parentMessage.getTagList() != null && parentMessage.getTagList().isEmpty()) {
-			Membership membership = user.getGroupMembership(masterGroup.getUid());
-			if (membership == null) {
-				// todo: VJERAN: - Is this bug in commented old line where Role's group UID is null? Test this new code!!!
-				membership = campaign.getMasterGroup().addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
-				//                membership = new Membership(campaign.getMasterGroup(), user, new Role(RoleName.ROLE_ORDINARY_MEMBER, null), Instant.now(), GroupJoinMethod.SELF_JOINED, null);
-				//                user.getMemberships().add(membership);
-				//                userManager.createUserProfile(user);
-			}
+			final Membership membership = user.getGroupMembership(masterGroup.getUid())
+					.orElseGet(() -> {
+						// todo: VJERAN: - Is this bug in commented old line where Role's group UID is null? Test this new code!!!
+						return campaign.getMasterGroup().addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
+						//                membership = new Membership(campaign.getMasterGroup(), user, new Role(RoleName.ROLE_ORDINARY_MEMBER, null), Instant.now(), GroupJoinMethod.SELF_JOINED, null);
+						//                user.getMemberships().add(membership);
+						//                userManager.createUserProfile(user);
+					}
+			);
 			for (String tag : parentMessage.getTagList()) {
 				membership.addTag(tag);
 			}

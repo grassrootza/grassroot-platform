@@ -16,7 +16,8 @@ public class GroupMembersDTO extends GroupRefDTO {
         super(group.getUid(), group.getName(), 0);
 
         this.members = group.getMemberships().stream()
-                .map(MembershipDTO::new).collect(Collectors.toSet());
+                .map(MembershipDTO::new)
+                .collect(Collectors.toSet());
         this.memberCount = this.members.size();
     }
 }

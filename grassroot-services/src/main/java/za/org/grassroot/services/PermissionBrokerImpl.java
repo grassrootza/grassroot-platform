@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
@@ -170,9 +171,8 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     public boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission) {
-        return user.getMemberships().stream().anyMatch(membership ->
-                membership.getGroup().equals(group) &&
-                        (requiredPermission == null || membership.getRole().getPermissions().contains(requiredPermission)));
+        final Optional<Membership> membershipOptional = user.getGroupMembership(group.getUid());
+        return membershipOptional.isPresent() && (requiredPermission == null || membershipOptional.get().getRole().getPermissions().contains(requiredPermission));
     }
 
     @Override

@@ -103,8 +103,10 @@ public class Membership implements Serializable, TagHolder {
     }
 
     public List<String> getAffiliations() {
-        return this.getTagList().stream().filter(s -> s.startsWith(AFFILITATION_TAG))
-                .map(s -> s.substring(AFFILITATION_TAG.length())).collect(Collectors.toList());
+        return this.getTagList().stream()
+                .filter(s -> s.startsWith(AFFILITATION_TAG))
+                .map(s -> s.substring(AFFILITATION_TAG.length()))
+                .collect(Collectors.toList());
     }
 
     public void setRole(Role role) {

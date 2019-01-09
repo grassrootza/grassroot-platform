@@ -52,15 +52,7 @@ import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -85,14 +77,11 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     private final PermissionBroker permissionBroker;
     private final LogsAndNotificationsBroker logsBroker;
 
-    // todo: VJERAN: try to remove EntityManager here
-    private final EntityManager entityManager;
-
     @Autowired
     public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository,
                                 GroupLogRepository groupLogRepository, MembershipRepository membershipRepository,
                                 CampaignLogRepository campaignLogRepository, LogsAndNotificationsBroker logsBroker,
-                                PermissionBroker permissionBroker, EntityManager entityManager) {
+                                PermissionBroker permissionBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.groupLogRepository = groupLogRepository;
@@ -100,20 +89,22 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         this.campaignLogRepository = campaignLogRepository;
         this.permissionBroker = permissionBroker;
         this.logsBroker = logsBroker;
-        this.entityManager = entityManager;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Set<GroupTimeChangedDTO> findNewlyChangedGroups(String userUid, Map<String, Long> excludedGroupsByTimeChanged) {
+        Objects.requireNonNull(excludedGroupsByTimeChanged);
+
         User user = userRepository.findOneByUid(userUid);
         Specification<Group> specifications = Specification
                 .where(GroupSpecifications.isActive())
                 .and(GroupSpecifications.userIsMember(user));
 
-        if (excludedGroupsByTimeChanged != null && !excludedGroupsByTimeChanged.isEmpty()) {
+        final Set<String> excludedGroupUids = excludedGroupsByTimeChanged.keySet();
+        if (!excludedGroupsByTimeChanged.isEmpty()) {
             specifications = specifications.and(
-                    Specification.not(GroupSpecifications.uidIn(excludedGroupsByTimeChanged.keySet())));
+                    Specification.not(GroupSpecifications.uidIn(excludedGroupUids)));
         }
 
         Set<String> newGroupUids = groupRepository.findAll(specifications)
@@ -121,16 +112,15 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .map(Group::getUid)
                 .collect(Collectors.toSet());
 
-        Set<String> uidsToLookUp = new HashSet<>(excludedGroupsByTimeChanged.keySet());
+        Set<String> uidsToLookUp = new HashSet<>(excludedGroupUids);
         uidsToLookUp.addAll(newGroupUids);
 
-        TypedQuery<GroupTimeChangedDTO> changedGroupQuery = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupTimeChangedDTO(g, g.lastGroupChangeTime) " +
-                "from Group g where g.uid in :groupUids", GroupTimeChangedDTO.class)
-                .setParameter("groupUids", uidsToLookUp);
+        final Set<Group> groups = this.groupRepository.findByUidIn(uidsToLookUp);
+        final List<GroupTimeChangedDTO> groupTimeChangedDTOS = groups.stream()
+                .map(group -> new GroupTimeChangedDTO(group, group.getLastGroupChangeTime()))
+                .collect(Collectors.toList());
 
-        return changedGroupQuery.getResultList()
-                .stream()
+        return groupTimeChangedDTOS.stream()
                 .filter(gl -> {
                     Instant storedLastChange = excludedGroupsByTimeChanged.containsKey(gl.getGroupUid()) ?
                             Instant.ofEpochMilli(excludedGroupsByTimeChanged.get(gl.getGroupUid())) : Instant.MIN;
@@ -145,16 +135,12 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         if (groupUids == null || groupUids.isEmpty()) {
             return new HashSet<>();
         }
-        User user = userRepository.findOneByUid(userUid);
-        List<GroupMinimalDTO> dtoList = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, m) " +
-                "from Group g inner join g.memberships m " +
-                "where g.uid in :groupUids and m.user = :user", GroupMinimalDTO.class)
-                .setParameter("groupUids", groupUids)
-                .setParameter("user", user)
-                .getResultList();
+        final User user = userRepository.findOneByUid(userUid);
 
-        return new HashSet<>(dtoList);
+        return user.getMemberships().stream()
+                .filter(membership -> groupUids.contains(membership.getGroup().getUid()))
+                .map(membership -> new GroupMinimalDTO(membership.getGroup(), membership))
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -167,33 +153,37 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         log.debug("fetching heavy group, group uid = {}, user = {}", groupUid, user.getName());
 
-        final Membership membership = group.getMembership(user);
-        if (membership == null) {
+        final Optional<Membership> membership = user.getGroupMembership(groupUid);
+        if (!membership.isPresent()) {
             log.error("Error! Non existent group or membership passed to query: group UID: {}", groupUid);
             return null;
         }
-        final GroupFullDTO groupFullDTO = new GroupFullDTO(group, membership);
+        final GroupFullDTO groupFullDTO = new GroupFullDTO(group, membership.get());
 
-        boolean hasMemberDetailsPerm = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        final boolean hasMemberDetailsPerm = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
         if (includeAllMembers && hasMemberDetailsPerm) {
-            Pageable page = PageRequest.of(0, MAX_DTO_MEMBERS, Sort.Direction.DESC, "joinTime");
-            List<Membership> members = membershipRepository.findByGroupUid(group.getUid(), page).getContent();
-            groupFullDTO.setMembers(members.stream().map(MembershipDTO::new).collect(Collectors.toSet()));
+            final Pageable page = PageRequest.of(0, MAX_DTO_MEMBERS, Sort.Direction.DESC, "joinTime");
+            final List<Membership> members = membershipRepository.findByGroupUid(group.getUid(), page).getContent();
+            final Set<MembershipDTO> membershipDTOS = members.stream().map(MembershipDTO::new).collect(Collectors.toSet());
+            groupFullDTO.setMembers(membershipDTOS);
         }
 
         if (includeMemberHistory && hasMemberDetailsPerm) {
-            groupFullDTO.setMemberHistory(fetchRecentMembershipChanges(user.getUid(), group.getUid(),
-                    Instant.now().minus(180L, ChronoUnit.DAYS)));
+            final Instant sinceInstant = Instant.now().minus(180L, ChronoUnit.DAYS);
+            final List<MembershipRecordDTO> membershipRecordDTOS = fetchRecentMembershipChanges(user.getUid(), group.getUid(), sinceInstant);
+            groupFullDTO.setMemberHistory(membershipRecordDTOS);
         }
 
         if (includeAllSubgroups) {
-            groupFullDTO.setSubGroups(groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()))
-                    .stream().map(GroupMembersDTO::new).collect(Collectors.toList()));
+            final List<Group> subgroups = groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()));
+            final List<GroupMembersDTO> groupMembersDTOS = subgroups.stream().map(GroupMembersDTO::new).collect(Collectors.toList());
+            groupFullDTO.setSubGroups(groupMembersDTOS);
         }
 
         if (hasMemberDetailsPerm) {
-            groupFullDTO.setHasInboundMessages(groupLogRepository.count(GroupLogSpecifications.forInboundMessages(group, group.getCreatedDateTime(), Instant.now(), null)) > 0);
+            long groupLogCount = groupLogRepository.count(GroupLogSpecifications.forInboundMessages(group, group.getCreatedDateTime(), Instant.now(), null));
+            groupFullDTO.setHasInboundMessages(groupLogCount > 0);
         }
 
         log.info("heavy group info fetch, for group {}, members: {}, subgroups: {}, m history: {}, took {} msecs",
@@ -202,33 +192,27 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     }
 
     @Override
-    public GroupFullDTO fetchSubGroupDetails(String userUid, String parentUid, String taskTeamUid) {
-        Group parent = entityManager.createQuery("" +
-                "select g " +
-                "from Group g inner join g.memberships m " +
-                "where g.uid = :groupUid and m.user.uid = :userUid", Group.class)
-                .setParameter("groupUid", parentUid)
-                .setParameter("userUid", userUid)
-                .getSingleResult();
+    @Transactional(readOnly = true)
+    public GroupFullDTO fetchSubGroupDetails(String userUid, String parentGroupUid, String childGroupUid) {
+        final User user = userRepository.findOneByUid(userUid);
 
-        User user = userRepository.findOneByUid(userUid);
-        Group child = groupRepository.findOneByUid(taskTeamUid);
+        final Membership parentGroupMembership = user.getGroupMembership(parentGroupUid)
+                .orElseThrow(() -> new IllegalArgumentException("No membership group under UID " + parentGroupUid + " for user " + user));
 
-        if (!parent.equals(child.getParent())) {
+        final Group parentGroup = parentGroupMembership.getGroup();
+        final Group childGroup = groupRepository.findOneByUid(childGroupUid);
+
+        if (!parentGroup.equals(childGroup.getParent())) {
             throw new IllegalArgumentException("Error! Parent/child mismatch");
         }
 
-        if (!permissionBroker.isGroupPermissionAvailable(user, parent, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS) &&
-                !permissionBroker.isGroupPermissionAvailable(user, child, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+        if (permissionBroker.isGroupPermissionAvailable(user, parentGroup, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS) ||
+                permissionBroker.isGroupPermissionAvailable(user, childGroup, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+            final Membership membership = user.getGroupMembership(childGroupUid).orElse(parentGroupMembership);
+            return new GroupFullDTO(childGroup, membership);
+        } else {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
-
-        Membership membership = membershipRepository.findByGroupUidAndUserUid(taskTeamUid, userUid);
-        if (membership == null) {
-            membership = membershipRepository.findByGroupUidAndUserUid(parentUid, userUid);
-        }
-
-        return new GroupFullDTO(child, membership);
     }
 
     @Override
