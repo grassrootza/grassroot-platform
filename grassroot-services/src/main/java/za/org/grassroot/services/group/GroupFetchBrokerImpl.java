@@ -47,7 +47,6 @@ import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 
-import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -164,8 +163,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         if (includeAllMembers && hasMemberDetailsPerm) {
             final Pageable page = PageRequest.of(0, MAX_DTO_MEMBERS, Sort.Direction.DESC, "joinTime");
-            final List<Membership> members = membershipRepository.findByGroupUid(group.getUid(), page).getContent();
-            final Set<MembershipDTO> membershipDTOS = members.stream().map(MembershipDTO::new).collect(Collectors.toSet());
+            final List<Membership> memberships = membershipRepository.findByGroupUid(group.getUid(), page).getContent();
+            final Set<MembershipDTO> membershipDTOS = memberships.stream().map(MembershipDTO::new).collect(Collectors.toSet());
             groupFullDTO.setMembers(membershipDTOS);
         }
 
@@ -234,10 +233,11 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         // a little bit circuitous, but doing this to avoid possibly hundreds of separate calls
         // to group.getMembership (triggering single SQL calls) -- and in any case, keep profiling
-        List<Membership> memberships = membershipRepository.findByGroupAndUserIn(group, groupLogs.stream()
+        final Set<User> targetUsers = groupLogs.stream()
                 .filter(GroupLog::hasTargetUser)
                 .map(GroupLog::getTargetUser)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toSet());
+        final List<Membership> memberships = membershipRepository.findByGroupAndUserIn(group, targetUsers);
         Map<Long, Membership> membershipMap = memberships.stream()
                 .collect(Collectors.toMap(m -> m.getUser().getId(), Function.identity()));
 

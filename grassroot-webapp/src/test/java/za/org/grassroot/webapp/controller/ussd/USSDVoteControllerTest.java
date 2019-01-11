@@ -37,8 +37,6 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
  */
 public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
-    // private static final Logger log = LoggerFactory.getLogger(USSDVoteControllerTest.class);
-
     private static final String testUserPhone = "27701110000";
     private static final String phoneParam = "msisdn";
     private static final String path = "/ussd/vote/";
@@ -64,13 +62,13 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
         wireUpHomeController(ussdHomeController);
-        wireUpMessageSourceAndGroupUtil(ussdVoteController);
-
         // todo: VJERAN fix this dep
+//        wireUpMessageSourceAndGroupUtil(ussdVoteController);
+
 //        ussdHomeController.setVoteController(ussdVoteController);
         ussdEventUtil.setMessageSource(messageSource());
-        ussdVoteController.setEventUtil(ussdEventUtil);
-        ussdVoteController.setGroupUtil(ussdGroupUtil);
+//        ussdVoteController.setEventUtil(ussdEventUtil);
+//        ussdVoteController.setGroupUtil(ussdGroupUtil);
         testUser = new User(testUserPhone, null, null);
     }
 

@@ -207,6 +207,20 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		return ussdSupport.menuBuilder(ussdMenu);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public Request processExitScreen(String inputNumber) throws URISyntaxException {
+		User user = userManager.findByInputNumber(inputNumber, null);
+		String exitMessage = ussdSupport.getMessage("exit." + ussdSupport.promptKey, user);
+		return ussdSupport.menuBuilder(new USSDMenu(exitMessage));
+	}
+
+	@Override
+	public Request processNotBuilt(String inputNumber) throws URISyntaxException {
+		String errorMessage = ussdSupport.messageAssembler.getMessage("ussd.error", "en");
+		return ussdSupport.menuBuilder(new USSDMenu(errorMessage, ussdSupport.optionsHomeExit(userManager.findByInputNumber(inputNumber), false)));
+	}
+
 	private void recordInitiatedAndSendWelcome(User user, boolean sendWelcome) {
 		if (!user.isHasInitiatedSession()) {
 			userManager.setHasInitiatedUssdSession(user, sendWelcome);

@@ -25,7 +25,8 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
 
     private User testUser;
 
-    @Mock private UserResponseBroker userResponseBrokerMock;
+    @Mock
+    private UserResponseBroker userResponseBrokerMock;
 
     @InjectMocks
     USSDHomeController ussdHomeController;

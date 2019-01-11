@@ -2,15 +2,12 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.base.Stopwatch;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -23,6 +20,8 @@ import java.util.Random;
 import java.util.concurrent.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static za.org.grassroot.webapp.controller.ussd.UssdSupport.homePath;
+import static za.org.grassroot.webapp.controller.ussd.UssdSupport.phoneNumber;
 
 /**
  * Controller for the USSD menu
@@ -30,35 +29,18 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @Slf4j
 @RestController
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
-public class USSDHomeController extends USSDBaseController {
-
+public class USSDHomeController {
     private final UssdHomeService ussdHomeService;
+    private final UssdSupport ussdSupport;
     private final GroupBroker groupBroker;
 
-    @Value("${grassroot.ussd.code.length:9}")
-    private int hashPosition;
+	public USSDHomeController(UssdHomeService ussdHomeService, UssdSupport ussdSupport, GroupBroker groupBroker) {
+		this.ussdHomeService = ussdHomeService;
+		this.ussdSupport = ussdSupport;
+		this.groupBroker = groupBroker;
+	}
 
-    @Value("${grassroot.ussd.safety.suffix:911}")
-    private String safetyCode;
-
-    @Value("${grassroot.ussd.sendlink.suffix:123}")
-    private String sendMeLink;
-
-    @Value("${grassroot.ussd.promotion.suffix:44}")
-    private String promotionSuffix;
-
-    @Value("${grassroot.ussd.livewire.suffix:411}")
-    private String livewireSuffix;
-
-    @Value("${grassroot.geo.apis.enabled:false}")
-    private boolean geoApisEnabled;
-
-    public USSDHomeController(UssdHomeService ussdHomeService, GroupBroker groupBroker) {
-        this.ussdHomeService = ussdHomeService;
-        this.groupBroker = groupBroker;
-    }
-
-    /**
+	/**
      * TEST METHODS --------------------------------------------------------------
      */
 
@@ -130,17 +112,17 @@ public class USSDHomeController extends USSDBaseController {
      */
 
 
-    @RequestMapping(value = homePath + startMenu)
+    @RequestMapping(value = homePath + UssdSupport.startMenu)
     @ResponseBody
     public Request startMenu(@RequestParam(value = phoneNumber) String inputNumber,
-                             @RequestParam(value = userInputParam, required = false) String enteredUSSD) throws URISyntaxException {
+                             @RequestParam(value = UssdSupport.userInputParam, required = false) String enteredUSSD) throws URISyntaxException {
 		return this.ussdHomeService.processStartMenu(inputNumber, enteredUSSD);
 	}
 
     /*
     Method to go straight to start menu, over-riding prior interruptions, and/or any responses, etc.
      */
-    @RequestMapping(value = homePath + startMenu + "_force")
+    @RequestMapping(value = homePath + UssdSupport.startMenu + "_force")
     @ResponseBody
     public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber,
                                   @RequestParam(required = false) String trailingDigits) throws URISyntaxException {
@@ -151,19 +133,16 @@ public class USSDHomeController extends USSDBaseController {
     /*
     Menus to process responses to votes and RSVPs,
      */
-    @RequestMapping(value = homePath + U404)
+    @RequestMapping(value = homePath + UssdSupport.U404)
     @ResponseBody
     public Request notBuilt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-        String errorMessage = messageAssembler.getMessage("ussd.error", "en");
-        return menuBuilder(new USSDMenu(errorMessage, optionsHomeExit(userManager.findByInputNumber(inputNumber), false)));
-    }
+		return ussdHomeService.processNotBuilt(inputNumber);
+	}
 
-    @RequestMapping(value = homePath + "exit")
+	@RequestMapping(value = homePath + "exit")
     @ResponseBody
     public Request exitScreen(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, null);
-        String exitMessage = getMessage("exit." + promptKey, user);
-        return menuBuilder(new USSDMenu(exitMessage));
+        return ussdHomeService.processExitScreen(inputNumber);
     }
 
     @RequestMapping(value = homePath + "test_question")
@@ -176,6 +155,6 @@ public class USSDHomeController extends USSDBaseController {
     @RequestMapping(value = homePath + "too_long")
     @ResponseBody
     public Request tooLong() throws URISyntaxException {
-        return tooLongError;
+        return ussdSupport.tooLongError;
     }
 }

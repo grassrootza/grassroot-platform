@@ -125,6 +125,9 @@ public abstract class USSDAbstractUnitTest {
     @InjectMocks
     protected USSDMenuUtil ussdMenuUtil;
 
+    @InjectMocks
+    UssdHomeServiceImpl ussdHomeService;
+
     protected static final String base = "/ussd/";
     protected static final String userChoiceParam = "request";
     protected static final String interruptedChoice = "1";
@@ -184,12 +187,16 @@ public abstract class USSDAbstractUnitTest {
     }
 
     protected void wireUpHomeController(USSDHomeController ussdHomeController) {
-        wireUpMessageSourceAndGroupUtil(ussdHomeController);
+        if (2 < 3) {
+            throw new UnsupportedOperationException("Following line has to be fixed ");
+        }
+//        wireUpMessageSourceAndGroupUtil(ussdHomeController);
         ReflectionTestUtils.setField(ussdHomeController, "safetyCode", "911");
         ReflectionTestUtils.setField(ussdHomeController, "livewireSuffix", "411");
         ReflectionTestUtils.setField(ussdHomeController, "sendMeLink", "123");
         ReflectionTestUtils.setField(ussdHomeController, "hashPosition", 9);
         ReflectionTestUtils.setField(ussdHomeController, "promotionSuffix", "44");
+        ReflectionTestUtils.setField(ussdHomeController, "ussdHomeService", ussdHomeService);
 
         /* We use these quite often */
         testUserZu.setLanguageCode("zu");

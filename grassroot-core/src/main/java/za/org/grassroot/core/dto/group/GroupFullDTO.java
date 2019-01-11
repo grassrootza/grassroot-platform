@@ -32,7 +32,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
     @Setter private List<GroupMembersDTO> subGroups = new ArrayList<>();
     @Setter private List<String> topics = new ArrayList<>();
     @Setter private List<String> joinTopics = new ArrayList<>();
-    @Setter private List<String> affiliations = new ArrayList<>();
+    @Setter private Set<String> affiliations = new HashSet<>();
     @Setter private List<JoinWordDTO> joinWords = new ArrayList<>();
     @Setter private int joinWordsLeft;
     @Setter private boolean hasInboundMessages;
@@ -46,15 +46,16 @@ public class GroupFullDTO extends GroupHeavyDTO {
         this.joinTopics.addAll(group.getJoinTopics());
         this.paidFor = group.isPaidFor();
         this.reminderMinutes = group.getReminderMinutes();
-        this.joinWords.addAll(group.getGroupJoinCodes().stream()
+        this.joinWords = group.getGroupJoinCodes().stream()
                 .filter(GroupJoinCode::isActive)
                 .filter(g -> JoinCodeType.JOIN_WORD.equals(g.getType()))
                 .map(w -> new JoinWordDTO(w.getCode(), w.getShortUrl()))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
 
         this.joinWordsLeft = MAX_JOIN_WORDS - this.joinWords.size();
-        this.affiliations = group.getMemberships().stream().flatMap(m -> m.getAffiliations().stream())
-                .distinct().collect(Collectors.toList());
+        this.affiliations = group.getMemberships().stream()
+                .flatMap(m -> m.getAffiliations().stream())
+                .collect(Collectors.toSet());
 
         this.members = new HashSet<>();
         this.hasInboundMessages = false;

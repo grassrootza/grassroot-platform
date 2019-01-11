@@ -59,7 +59,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                 .build();
 
         wireUpHomeController(ussdHomeController);
-        wireUpMessageSourceAndGroupUtil(voteController);
+        // todo: VJERAN: fix this?
+//        wireUpMessageSourceAndGroupUtil(voteController);
 
     }
 
