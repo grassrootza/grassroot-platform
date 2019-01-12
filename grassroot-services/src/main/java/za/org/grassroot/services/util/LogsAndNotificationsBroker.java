@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.CampaignLogType;
 
 import java.time.Instant;
@@ -24,6 +25,8 @@ public interface LogsAndNotificationsBroker {
 	<T extends Notification> long countNotifications(Specification<T> specs, Class<T> notificationType);
 
 	List<ActionLog> fetchMembershipLogs(Membership membership);
+
+	<T extends ActionLog> long countLogs(Specification<T> specs, ActionLogType logType);
 
 	long countCampaignLogs(Specification<CampaignLog> specs);
 

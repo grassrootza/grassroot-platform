@@ -10,7 +10,12 @@ import org.springframework.context.ApplicationEventPublisher;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.ConfigRepository;
+import za.org.grassroot.core.repository.DataSubscriberRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.LiveWireAlertRepository;
+import za.org.grassroot.core.repository.MeetingRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBrokerImpl;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -53,19 +58,21 @@ public class LiveWireAlertBrokerTest {
     @Mock
     private TypedQuery<LiveWireAlert> mockQuery;
 
+    @Mock
+    private ConfigRepository configRepositoryMock;
+
     private User testUser;
     private Integer testRadius = 5;
     private GeoLocation testLocation;
-    private double testLat = -11.00,testLong = 11.0;
 
     @Before
     public void setUp () {
         liveWireAlertBroker = new LiveWireAlertBrokerImpl(alertRepositoryMock,userRepositoryMock,
                 groupRepositoryMock,meetingRepositoryMock,entityManagerMock,dataSubscriberRepositoryMock,
-                applicationEventPublisherMock,logsAndNotificationsBrokerMock, permissionBrokerMock);
+                applicationEventPublisherMock,logsAndNotificationsBrokerMock, permissionBrokerMock, configRepositoryMock);
 
         testUser = new User("1234567899","Testing", null);
-        testLocation = new GeoLocation(testLat,testLong);
+        testLocation = new GeoLocation(-11.00, 11.0);
         given(mockQuery.setParameter(anyString(),any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(l -> Arrays.asList());
         given(entityManagerMock.createQuery(anyString(),eq(LiveWireAlert.class))).willReturn(mockQuery);

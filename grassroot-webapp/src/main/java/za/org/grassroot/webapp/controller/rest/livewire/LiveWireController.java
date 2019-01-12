@@ -88,6 +88,10 @@ public class LiveWireController extends BaseRestController{
                                                                @RequestParam(required = false) String contactNumber,
                                                                @PathVariable String userUid, HttpServletRequest request) {
         User creatingUser = userManagementService.load(getUserIdFromRequest(request));
+
+        log.info("Creating a new LiveWire alert, alert type = {}, dest type = {}, has location? : {}, has media files? : {}",
+                type, destType, addLocation, mediaFileKeys);
+
         LiveWireAlert.Builder builder = LiveWireAlert.newBuilder();
 
         builder.creatingUser(creatingUser)
@@ -98,14 +102,10 @@ public class LiveWireController extends BaseRestController{
                 .contactNumber(contactNumber)
                 .type(type);
 
-        log.info("Dest type....###########{}",destType);
-
-        log.info("do we have mediaFiles? {}, task uid {}", mediaFileKeys,taskUid);
-
         if (LiveWireAlertType.INSTANT.equals(type)) {
             builder.group(groupBroker.load(groupUid));
         } else if (LiveWireAlertType.MEETING.equals(type)) {
-            log.info("meeting entity: {}", eventBroker.loadMeeting(taskUid));
+            log.info("Public meeting alert, for meeting: {}", eventBroker.loadMeeting(taskUid));
             builder.meeting(eventBroker.loadMeeting(taskUid));
         }
 
