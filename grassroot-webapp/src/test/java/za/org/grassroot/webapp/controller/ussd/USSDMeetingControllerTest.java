@@ -126,24 +126,24 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         }
     }
 
-    @Test
-    public void meetingStartMenuNoUpcomingMeetingsAndNoGroups() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
-        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(0);
-
-        mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
-        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING);
-        verifyNoMoreInteractions(eventBrokerMock);
-
-    }
+//    @Test
+//    public void meetingStartMenuNoUpcomingMeetingsAndNoGroups() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+//        when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
+//        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(0);
+//
+//        mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
+//        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING);
+//        verifyNoMoreInteractions(eventBrokerMock);
+//
+//    }
 
     @Test
     public void meetingStartMenuNoUpcomingMeetingsAndExistingGroups() throws Exception {
@@ -194,85 +194,85 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
     }
 
-    @Test
-    public void newGroupPromptShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        String urlToSave = USSDSection.MEETINGS.toPath() + "newgroup";
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-
-        mockMvc.perform(get(path + "newgroup").param(phoneParam, testUserPhone)).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyZeroInteractions(groupBrokerMock);
-        verifyZeroInteractions(eventBrokerMock);
-
-    }
-
-    /*
-    Series of tests, for a single method, the one in the guts of the meeting menu, which handles the creation of a group
-    and addition of numbers to it.
-
-    */
-
-    @Test
-    public void addingNumbersToNewGroupMenuShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group("", testUser);
-        String firstUrlToSave = saveMenuUrlWithInput(thisSection, "group", "", "0801112345");
-        Set<MembershipInfo> members = ordinaryMember("0801112345");
-        members.addAll(organizer(testUser));
-        String secondUrlToSave = saveMenuUrlWithInput(thisSection, "group", "?groupUid=" + testGroup.getUid(), "0801112345");
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, firstUrlToSave)).thenReturn(testUser);
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, secondUrlToSave)).thenReturn(testUser);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("request", "0801112345")).
-                andExpect(status().isOk());
-        mockMvc.perform(get(base + secondUrlToSave).param(phoneParam, testUserPhone).param("request", "1")).
-                andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, firstUrlToSave);
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, secondUrlToSave);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"),
-                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
-       // verifyNoMoreInteractions(groupBrokerMock);
-
-    }
-
-    @Test
-    public void addingNumbersToExistingGroupMenuShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group("", testUser);
-        String numbersToInput = "0801112345 080111234";
-        String urlToSave = saveMenuUrlWithInput(thisSection, "group", "?groupUid=" + testGroup.getUid(), numbersToInput);
-        log.info("Testing adding numbers to existing group, with this Url to save ..." + urlToSave);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-
-        // note: deliberately pass a badly formed number and then check that only the well-formed one is passed to services
-        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid()).
-                param("request", numbersToInput)).andExpect(status().isOk());
-        // note: this call simulates interruption -- it may add number a second time (hence 2 calls below), but better safe
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
-                andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(2)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"),
-                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
-        verifyNoMoreInteractions(groupBrokerMock);
-        verifyZeroInteractions(eventRequestBrokerMock);
-        verifyZeroInteractions(eventBrokerMock);
-
-    }
+//    @Test
+//    public void newGroupPromptShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        String urlToSave = USSDSection.MEETINGS.toPath() + "newgroup";
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+//
+//        mockMvc.perform(get(path + "newgroup").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+//        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verifyZeroInteractions(groupBrokerMock);
+//        verifyZeroInteractions(eventBrokerMock);
+//
+//    }
+//
+//    /*
+//    Series of tests, for a single method, the one in the guts of the meeting menu, which handles the creation of a group
+//    and addition of numbers to it.
+//
+//    */
+//
+//    @Test
+//    public void addingNumbersToNewGroupMenuShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        Group testGroup = new Group("", testUser);
+//        String firstUrlToSave = saveMenuUrlWithInput(thisSection, "group", "", "0801112345");
+//        Set<MembershipInfo> members = ordinaryMember("0801112345");
+//        members.addAll(organizer(testUser));
+//        String secondUrlToSave = saveMenuUrlWithInput(thisSection, "group", "?groupUid=" + testGroup.getUid(), "0801112345");
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, firstUrlToSave)).thenReturn(testUser);
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, secondUrlToSave)).thenReturn(testUser);
+//        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
+//        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("request", "0801112345")).
+//                andExpect(status().isOk());
+//        mockMvc.perform(get(base + secondUrlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+//                andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, firstUrlToSave);
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, secondUrlToSave);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"),
+//                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
+//       // verifyNoMoreInteractions(groupBrokerMock);
+//
+//    }
+//
+//    @Test
+//    public void addingNumbersToExistingGroupMenuShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        Group testGroup = new Group("", testUser);
+//        String numbersToInput = "0801112345 080111234";
+//        String urlToSave = saveMenuUrlWithInput(thisSection, "group", "?groupUid=" + testGroup.getUid(), numbersToInput);
+//        log.info("Testing adding numbers to existing group, with this Url to save ..." + urlToSave);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+//        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
+//
+//        // note: deliberately pass a badly formed number and then check that only the well-formed one is passed to services
+//        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid()).
+//                param("request", numbersToInput)).andExpect(status().isOk());
+//        // note: this call simulates interruption -- it may add number a second time (hence 2 calls below), but better safe
+//        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+//                andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(groupBrokerMock, times(2)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"),
+//                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
+//        verifyNoMoreInteractions(groupBrokerMock);
+//        verifyZeroInteractions(eventRequestBrokerMock);
+//        verifyZeroInteractions(eventBrokerMock);
+//
+//    }
 
    /* @Test
     public void enteringZeroToStopGroupCreationShouldWork() throws Exception {
@@ -305,191 +305,191 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
     }*/
 
-    @Test
-    public void enteringNoValidNumbersShouldGiveError() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        String urlToSave = saveMenuUrlWithInput(thisSection, "group", "", "0");
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-
-        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("request", "0")).
-                andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
-                andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyZeroInteractions(groupBrokerMock);
-        verifyZeroInteractions(eventBrokerMock);
-
-    }
-
-    @Test
-    public void returningToComplexGroupMenuShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group("gc1", testUser);
-
-        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-
-        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid())
-                                .param("prior_input", "0801112345 080111234")).andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"),
-                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
-        verifyNoMoreInteractions(groupBrokerMock);
-        verifyZeroInteractions(eventBrokerMock);
-
-    }
-
-    @Test
-    public void settingSubjectShouldWork() throws Exception {
-
-        // todo: make sure to cover the full range of cases, e.g., revising then interrupted then returned
-        User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group("gc1", testUser);
-        MeetingRequest testMeeting = MeetingRequest.makeEmpty(testUser, testGroup);
-
-        String urlToCheck = saveMeetingMenu("subject", testMeeting.getUid(), false);
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventRequestBrokerMock.createEmptyMeetingRequest(testUser.getUid(), testGroup.getUid())).thenReturn(testMeeting);
-        when(eventRequestBrokerMock.load(testMeeting.getUid())).thenReturn(testMeeting);
-
-        mockMvc.perform(get(path + "subject").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid())
-                                .param("prior_menu", "group")).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToCheck).param(phoneParam, testUserPhone).param("request", "1"))
-                .andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(cacheUtilManagerMock, times(2)).putUssdMenuForUser(testUserPhone, urlToCheck);
-        verifyNoMoreInteractions(cacheUtilManagerMock);
-        verify(eventRequestBrokerMock, times(1)).createEmptyMeetingRequest(testUser.getUid(), testGroup.getUid());
-        verify(eventRequestBrokerMock, times(1)).load(testMeeting.getUid());
-        verifyNoMoreInteractions(eventRequestBrokerMock);
-    }
-
-    @Test
-    public void settingLocationShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group("test", testUser);
-        MeetingRequest dummyRequest = MeetingRequest.makeEmpty(testUser, testGroup);
-        String urlToSave = saveMeetingMenu("place", dummyRequest.getUid(), false);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(eventRequestBrokerMock.load(dummyRequest.getUid())).thenReturn(dummyRequest);
-
-        mockMvc.perform(get(path + "place").param(phoneParam, testUserPhone).param("entityUid", dummyRequest.getUid()).
-                param("prior_menu", "subject").param("request", "unit test")).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
-                andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventRequestBrokerMock, times(2)).load(dummyRequest.getUid());
-        verify(eventBrokerMock, times(2)).getMostFrequentLocation(testGroup.getUid());
-        verify(eventRequestBrokerMock, times(1)).updateName(testUser.getUid(), dummyRequest.getUid(), "unit test");
-        verifyNoMoreInteractions(eventRequestBrokerMock);
-        verifyZeroInteractions(groupBrokerMock);
-    }
-
-    @Test
-    public void settingDateTimeShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        String requestUid = MeetingRequest.makeEmpty().getUid();
-        String urlToSave = saveMeetingMenu("time", requestUid, false);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-
-        mockMvc.perform(get(path + "time").param(phoneParam, testUserPhone).param("entityUid", requestUid).
-                param("prior_menu", "place").param("request", "JoziHub")).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
-                andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventRequestBrokerMock, times(1)).updateMeetingLocation(testUser.getUid(), requestUid, "JoziHub");
-        verifyNoMoreInteractions(eventBrokerMock);
-        verifyZeroInteractions(groupBrokerMock);
-    }
-
-    // major todo: test revise and return
-
-    @Test
-    public void confirmationMenuShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group("gc1", testUser);
-        MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
-        String requestUid = meetingForTest.getUid();
-
-        LocalDateTime forTimestamp = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(7, 0));
-        meetingForTest.setEventStartDateTime(convertToSystemTime(forTimestamp, getSAST()));
-        String urlToSave = saveMeetingMenu("confirm", requestUid, false);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(eventRequestBrokerMock.load(requestUid)).thenReturn(meetingForTest);
-        when(learningServiceMock.parse("Tomorrow 7am"))
-                .thenReturn(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(7,0)));
-
-        mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
-                param("prior_menu", "time").param("request", "Tomorrow 7am")).andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventRequestBrokerMock, times(1)).updateEventDateTime(testUser.getUid(), requestUid, forTimestamp);
-        verify(eventRequestBrokerMock, times(1)).load(requestUid);
-        verifyNoMoreInteractions(eventRequestBrokerMock);
-        verifyZeroInteractions(groupBrokerMock);
-
-    }
-
-    @Test
-    public void meetingChangeTimeShouldWork() throws Exception {
-        User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group("someGroup", testUser);
-        MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
-        meetingForTest.setEventStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS));
-
-        String urlToSave = saveMeetingMenu("time_only", meetingForTest.getUid(), false);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(eventRequestBrokerMock.load(meetingForTest.getUid())).thenReturn(meetingForTest);
-
-        mockMvc.perform(get(path + "time_only").param(phoneParam, testUserPhone).param("entityUid", meetingForTest.getUid()))
-                .andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventRequestBrokerMock, times(1)).load(meetingForTest.getUid());
-        verifyNoMoreInteractions(eventRequestBrokerMock);
-    }
-
-    @Test
-    public void meetingChangeDateShouldWork() throws Exception {
-        User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group("someGroup", testUser);
-        MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
-        meetingForTest.setEventStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS));
-        String urlToSave = saveMeetingMenu("date_only", meetingForTest.getUid(), false);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(eventRequestBrokerMock.load(meetingForTest.getUid())).thenReturn(meetingForTest);
-
-        mockMvc.perform(get(path + "date_only").param(phoneParam, testUserPhone).param("entityUid", meetingForTest.getUid()))
-                .andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventRequestBrokerMock, times(1)).load(meetingForTest.getUid());
-        verifyNoMoreInteractions(eventRequestBrokerMock);
-    }
+//    @Test
+//    public void enteringNoValidNumbersShouldGiveError() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        String urlToSave = saveMenuUrlWithInput(thisSection, "group", "", "0");
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+//
+//        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("request", "0")).
+//                andExpect(status().isOk());
+//        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+//                andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verifyZeroInteractions(groupBrokerMock);
+//        verifyZeroInteractions(eventBrokerMock);
+//
+//    }
+//
+//    @Test
+//    public void returningToComplexGroupMenuShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        Group testGroup = new Group("gc1", testUser);
+//
+//        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
+//        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
+//
+//        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid())
+//                                .param("prior_input", "0801112345 080111234")).andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"),
+//                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
+//        verifyNoMoreInteractions(groupBrokerMock);
+//        verifyZeroInteractions(eventBrokerMock);
+//
+//    }
+//
+//    @Test
+//    public void settingSubjectShouldWork() throws Exception {
+//
+//        // todo: make sure to cover the full range of cases, e.g., revising then interrupted then returned
+//        User testUser = new User(testUserPhone, null, null);
+//        Group testGroup = new Group("gc1", testUser);
+//        MeetingRequest testMeeting = MeetingRequest.makeEmpty(testUser, testGroup);
+//
+//        String urlToCheck = saveMeetingMenu("subject", testMeeting.getUid(), false);
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+//        when(eventRequestBrokerMock.createEmptyMeetingRequest(testUser.getUid(), testGroup.getUid())).thenReturn(testMeeting);
+//        when(eventRequestBrokerMock.load(testMeeting.getUid())).thenReturn(testMeeting);
+//
+//        mockMvc.perform(get(path + "subject").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid())
+//                                .param("prior_menu", "group")).andExpect(status().isOk());
+//        mockMvc.perform(get(base + urlToCheck).param(phoneParam, testUserPhone).param("request", "1"))
+//                .andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(cacheUtilManagerMock, times(2)).putUssdMenuForUser(testUserPhone, urlToCheck);
+//        verifyNoMoreInteractions(cacheUtilManagerMock);
+//        verify(eventRequestBrokerMock, times(1)).createEmptyMeetingRequest(testUser.getUid(), testGroup.getUid());
+//        verify(eventRequestBrokerMock, times(1)).load(testMeeting.getUid());
+//        verifyNoMoreInteractions(eventRequestBrokerMock);
+//    }
+//
+//    @Test
+//    public void settingLocationShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        Group testGroup = new Group("test", testUser);
+//        MeetingRequest dummyRequest = MeetingRequest.makeEmpty(testUser, testGroup);
+//        String urlToSave = saveMeetingMenu("place", dummyRequest.getUid(), false);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+//        when(eventRequestBrokerMock.load(dummyRequest.getUid())).thenReturn(dummyRequest);
+//
+//        mockMvc.perform(get(path + "place").param(phoneParam, testUserPhone).param("entityUid", dummyRequest.getUid()).
+//                param("prior_menu", "subject").param("request", "unit test")).andExpect(status().isOk());
+//        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+//                andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(eventRequestBrokerMock, times(2)).load(dummyRequest.getUid());
+//        verify(eventBrokerMock, times(2)).getMostFrequentLocation(testGroup.getUid());
+//        verify(eventRequestBrokerMock, times(1)).updateName(testUser.getUid(), dummyRequest.getUid(), "unit test");
+//        verifyNoMoreInteractions(eventRequestBrokerMock);
+//        verifyZeroInteractions(groupBrokerMock);
+//    }
+//
+//    @Test
+//    public void settingDateTimeShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        String requestUid = MeetingRequest.makeEmpty().getUid();
+//        String urlToSave = saveMeetingMenu("time", requestUid, false);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+//
+//        mockMvc.perform(get(path + "time").param(phoneParam, testUserPhone).param("entityUid", requestUid).
+//                param("prior_menu", "place").param("request", "JoziHub")).andExpect(status().isOk());
+//        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+//                andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(eventRequestBrokerMock, times(1)).updateMeetingLocation(testUser.getUid(), requestUid, "JoziHub");
+//        verifyNoMoreInteractions(eventBrokerMock);
+//        verifyZeroInteractions(groupBrokerMock);
+//    }
+//
+//    // major todo: test revise and return
+//
+//    @Test
+//    public void confirmationMenuShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        Group testGroup = new Group("gc1", testUser);
+//        MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
+//        String requestUid = meetingForTest.getUid();
+//
+//        LocalDateTime forTimestamp = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(7, 0));
+//        meetingForTest.setEventStartDateTime(convertToSystemTime(forTimestamp, getSAST()));
+//        String urlToSave = saveMeetingMenu("confirm", requestUid, false);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+//        when(eventRequestBrokerMock.load(requestUid)).thenReturn(meetingForTest);
+//        when(learningServiceMock.parse("Tomorrow 7am"))
+//                .thenReturn(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(7,0)));
+//
+//        mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
+//                param("prior_menu", "time").param("request", "Tomorrow 7am")).andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(eventRequestBrokerMock, times(1)).updateEventDateTime(testUser.getUid(), requestUid, forTimestamp);
+//        verify(eventRequestBrokerMock, times(1)).load(requestUid);
+//        verifyNoMoreInteractions(eventRequestBrokerMock);
+//        verifyZeroInteractions(groupBrokerMock);
+//
+//    }
+//
+//    @Test
+//    public void meetingChangeTimeShouldWork() throws Exception {
+//        User testUser = new User(testUserPhone, null, null);
+//        Group testGroup = new Group("someGroup", testUser);
+//        MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
+//        meetingForTest.setEventStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS));
+//
+//        String urlToSave = saveMeetingMenu("time_only", meetingForTest.getUid(), false);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+//        when(eventRequestBrokerMock.load(meetingForTest.getUid())).thenReturn(meetingForTest);
+//
+//        mockMvc.perform(get(path + "time_only").param(phoneParam, testUserPhone).param("entityUid", meetingForTest.getUid()))
+//                .andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(eventRequestBrokerMock, times(1)).load(meetingForTest.getUid());
+//        verifyNoMoreInteractions(eventRequestBrokerMock);
+//    }
+//
+//    @Test
+//    public void meetingChangeDateShouldWork() throws Exception {
+//        User testUser = new User(testUserPhone, null, null);
+//        Group testGroup = new Group("someGroup", testUser);
+//        MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
+//        meetingForTest.setEventStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS));
+//        String urlToSave = saveMeetingMenu("date_only", meetingForTest.getUid(), false);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+//        when(eventRequestBrokerMock.load(meetingForTest.getUid())).thenReturn(meetingForTest);
+//
+//        mockMvc.perform(get(path + "date_only").param(phoneParam, testUserPhone).param("entityUid", meetingForTest.getUid()))
+//                .andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(eventRequestBrokerMock, times(1)).load(meetingForTest.getUid());
+//        verifyNoMoreInteractions(eventRequestBrokerMock);
+//    }
 
     @Test
     public void timeProcessingShouldWork() throws Exception {
@@ -653,116 +653,116 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
     }
 
-    @Test
-    public void changeTimeOnlyShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
-        MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
-        String urlToSave = editingMtgMenuUrl("new_time", testMeeting.getUid(), changeRequest.getUid(), null);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventRequestBrokerMock.createChangeRequest(testUser.getUid(), testMeeting.getUid())).thenReturn(changeRequest);
-        when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
-
-        mockMvc.perform(get(path + "new_time").param(phoneParam, testUserPhone).param("entityUid", "" + testMeeting.getUid()).
-                param("next_menu", "changeDateTime")).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
-                .andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(cacheUtilManagerMock, times(2)).putUssdMenuForUser(testUserPhone, urlToSave);
-        verifyNoMoreInteractions(cacheUtilManagerMock);
-        verify(eventRequestBrokerMock, times(1)).createChangeRequest(testUser.getUid(), testMeeting.getUid());
-        verify(eventRequestBrokerMock, times(1)).load(changeRequest.getUid());
-        verifyNoMoreInteractions(eventBrokerMock);
-        verifyZeroInteractions(groupBrokerMock);
-
-    }
-
-    @Test
-    public void changeDateAndTimeShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        LocalDateTime original = LocalDateTime.of(testYear.getValue(), 06, 15, 10, 0);
-        LocalDateTime changedDate = original.plusDays(1L);
-        LocalDateTime changedTime = original.minusHours(1L);
-        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(convertToSystemTime(original, getSAST())).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
-        MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
-
-        String dateUrlToSave = editingMtgMenuUrl("modify", testMeeting.getUid(), changeRequest.getUid(), "new_date")
-                + "&prior_input=" + encodeParameter("16-06");
-        String timeUrlToSave = editingMtgMenuUrl("modify", testMeeting.getUid(), changeRequest.getUid(), "new_time")
-                + "&prior_input=" + encodeParameter("09 00");
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
-
-        mockMvc.perform(get(path + "modify").param(phoneParam, testUserPhone).param("entityUid", "" + testMeeting.getUid()).
-                param("requestUid", changeRequest.getUid()).param("action", "new_date").param("request", "16-06")).
-                andExpect(status().isOk());
-
-        mockMvc.perform(get(path + "modify").param(phoneParam, testUserPhone).param("entityUid", "" + testMeeting.getUid()).
-                param("requestUid", changeRequest.getUid()).param("action", "new_time").param("request", "09 00")).
-                andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, dateUrlToSave);
-        verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, timeUrlToSave);
-        verify(eventRequestBrokerMock, times(4)).load(changeRequest.getUid());
-//        verify(eventRequestBrokerMock, times(1)).updateEventDateTime(testUser.getUid(), changeRequest.getUid(), changedDate);
-        verify(eventRequestBrokerMock, times(1)).updateEventDateTime(testUser.getUid(), changeRequest.getUid(), changedTime);
+//    @Test
+//    public void changeTimeOnlyShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
+//        MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
+//        String urlToSave = editingMtgMenuUrl("new_time", testMeeting.getUid(), changeRequest.getUid(), null);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+//        when(eventRequestBrokerMock.createChangeRequest(testUser.getUid(), testMeeting.getUid())).thenReturn(changeRequest);
+//        when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
+//
+//        mockMvc.perform(get(path + "new_time").param(phoneParam, testUserPhone).param("entityUid", "" + testMeeting.getUid()).
+//                param("next_menu", "changeDateTime")).andExpect(status().isOk());
+//        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
+//                .andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(cacheUtilManagerMock, times(2)).putUssdMenuForUser(testUserPhone, urlToSave);
+//        verifyNoMoreInteractions(cacheUtilManagerMock);
+//        verify(eventRequestBrokerMock, times(1)).createChangeRequest(testUser.getUid(), testMeeting.getUid());
+//        verify(eventRequestBrokerMock, times(1)).load(changeRequest.getUid());
+//        verifyNoMoreInteractions(eventBrokerMock);
+//        verifyZeroInteractions(groupBrokerMock);
+//
+//    }
+//
+//    @Test
+//    public void changeDateAndTimeShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        LocalDateTime original = LocalDateTime.of(testYear.getValue(), 06, 15, 10, 0);
+//        LocalDateTime changedDate = original.plusDays(1L);
+//        LocalDateTime changedTime = original.minusHours(1L);
+//        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(convertToSystemTime(original, getSAST())).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
+//        MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
+//
+//        String dateUrlToSave = editingMtgMenuUrl("modify", testMeeting.getUid(), changeRequest.getUid(), "new_date")
+//                + "&prior_input=" + encodeParameter("16-06");
+//        String timeUrlToSave = editingMtgMenuUrl("modify", testMeeting.getUid(), changeRequest.getUid(), "new_time")
+//                + "&prior_input=" + encodeParameter("09 00");
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+//        when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
+//
+//        mockMvc.perform(get(path + "modify").param(phoneParam, testUserPhone).param("entityUid", "" + testMeeting.getUid()).
+//                param("requestUid", changeRequest.getUid()).param("action", "new_date").param("request", "16-06")).
+//                andExpect(status().isOk());
+//
+//        mockMvc.perform(get(path + "modify").param(phoneParam, testUserPhone).param("entityUid", "" + testMeeting.getUid()).
+//                param("requestUid", changeRequest.getUid()).param("action", "new_time").param("request", "09 00")).
+//                andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, dateUrlToSave);
+//        verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, timeUrlToSave);
+//        verify(eventRequestBrokerMock, times(4)).load(changeRequest.getUid());
+////        verify(eventRequestBrokerMock, times(1)).updateEventDateTime(testUser.getUid(), changeRequest.getUid(), changedDate);
+//        verify(eventRequestBrokerMock, times(1)).updateEventDateTime(testUser.getUid(), changeRequest.getUid(), changedTime);
+////        verifyNoMoreInteractions(eventRequestBrokerMock);
+//    }
+//
+//    @Test
+//    public void modifyDateTimeSendShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
+//        MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
+//
+//        mockMvc.perform(get(path + "modify-do").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid()).
+//                param("requestUid", changeRequest.getUid())).andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(eventRequestBrokerMock, times(1)).finishEdit(testUser.getUid(), testMeeting.getUid(), changeRequest.getUid());
 //        verifyNoMoreInteractions(eventRequestBrokerMock);
-    }
-
-    @Test
-    public void modifyDateTimeSendShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
-        MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-
-        mockMvc.perform(get(path + "modify-do").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid()).
-                param("requestUid", changeRequest.getUid())).andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventRequestBrokerMock, times(1)).finishEdit(testUser.getUid(), testMeeting.getUid(), changeRequest.getUid());
-        verifyNoMoreInteractions(eventRequestBrokerMock);
-    }
-
-    @Test
-    public void changeLocationPromptShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("JoziHub").createMeeting();
-        MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
-        String urlToSave = editingMtgMenuUrl("changeLocation", testMeeting.getUid(), changeRequest.getUid(), null);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventRequestBrokerMock.createChangeRequest(testUser.getUid(), testMeeting.getUid())).thenReturn(changeRequest);
-        when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
-
-        mockMvc.perform(get(path + "changeLocation").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid()))
-                .andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
-                .andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verify(cacheUtilManagerMock, times(2)).putUssdMenuForUser(testUserPhone, urlToSave);
-        verifyNoMoreInteractions(cacheUtilManagerMock);
-        verify(eventRequestBrokerMock, times(1)).createChangeRequest(testUser.getUid(), testMeeting.getUid());
-        verify(eventRequestBrokerMock, times(1)).load(changeRequest.getUid());
-        verifyNoMoreInteractions(eventRequestBrokerMock);
-        verifyZeroInteractions(groupBrokerMock);
-
-    }
+//    }
+//
+//    @Test
+//    public void changeLocationPromptShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("JoziHub").createMeeting();
+//        MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
+//        String urlToSave = editingMtgMenuUrl("changeLocation", testMeeting.getUid(), changeRequest.getUid(), null);
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+//        when(eventRequestBrokerMock.createChangeRequest(testUser.getUid(), testMeeting.getUid())).thenReturn(changeRequest);
+//        when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
+//
+//        mockMvc.perform(get(path + "changeLocation").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid()))
+//                .andExpect(status().isOk());
+//        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
+//                .andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
+//        verifyNoMoreInteractions(userManagementServiceMock);
+//        verify(cacheUtilManagerMock, times(2)).putUssdMenuForUser(testUserPhone, urlToSave);
+//        verifyNoMoreInteractions(cacheUtilManagerMock);
+//        verify(eventRequestBrokerMock, times(1)).createChangeRequest(testUser.getUid(), testMeeting.getUid());
+//        verify(eventRequestBrokerMock, times(1)).load(changeRequest.getUid());
+//        verifyNoMoreInteractions(eventRequestBrokerMock);
+//        verifyZeroInteractions(groupBrokerMock);
+//
+//    }
 
     @Test
     public void meetingModificationConfirmationScreenShouldWork() throws Exception {
@@ -821,19 +821,19 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
     }
 
-    @Test
-    public void cancelMeetingPromptShouldWork() throws Exception {
-
-        User testUser = new User(testUserPhone, null, null);
-        Event testMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        mockMvc.perform(get(path + "cancel").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid())).
-                andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
-        // note: not verifying interaction times with other services, until have permissions / filters in place
-    }
+//    @Test
+//    public void cancelMeetingPromptShouldWork() throws Exception {
+//
+//        User testUser = new User(testUserPhone, null, null);
+//        Event testMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
+//
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+//        mockMvc.perform(get(path + "cancel").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid())).
+//                andExpect(status().isOk());
+//
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
+//        // note: not verifying interaction times with other services, until have permissions / filters in place
+//    }
 
     @Test
     public void cancelMeetingDoShouldWork() throws Exception {

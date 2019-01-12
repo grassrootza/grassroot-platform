@@ -112,20 +112,20 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
         verifyZeroInteractions(eventBrokerMock);
     }
 
-    @Test
-    public void changeLanguageMenuShouldWork() throws Exception {
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        // todo : restore this ...
-        verifyZeroInteractions(groupBrokerMock);
-        verifyZeroInteractions(eventBrokerMock);
-    }
-
-    @Test
-    public void changeLanguageConfirmShouldWork() throws Exception {
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-
-        verifyZeroInteractions(groupBrokerMock);
-        verifyZeroInteractions(eventBrokerMock);
-    }
+//    @Test
+//    public void changeLanguageMenuShouldWork() throws Exception {
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+//        // todo : restore this ...
+//        verifyZeroInteractions(groupBrokerMock);
+//        verifyZeroInteractions(eventBrokerMock);
+//    }
+//
+//    @Test
+//    public void changeLanguageConfirmShouldWork() throws Exception {
+//        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+//
+//        verifyZeroInteractions(groupBrokerMock);
+//        verifyZeroInteractions(eventBrokerMock);
+//    }
 
 }
