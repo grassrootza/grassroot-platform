@@ -91,7 +91,7 @@ public class ScheduledGeoCalculations {
     public void cacheMunicipalitiesForUsersWithLocation() {
         if (municipalFilteringBroker != null) {
             log.info("Caching municipalities for users with location");
-//            municipalFilteringBroker.fetchMunicipalitiesForUsersWithLocations(null);
+            municipalFilteringBroker.fetchMunicipalitiesForUsersWithLocations(null);
         } else {
             log.info("Municipal filtering not enabled, skipping logging");
         }

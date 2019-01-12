@@ -81,16 +81,14 @@ public class USSDLiveWireController extends USSDBaseController {
 
         USSDMenu menu;
 
-        if(liveWireAlertBroker.isUserBlocked(user.getUid())){
-            log.info("User is blocked ---------->>>>>>>>>>>>>>>>>");
-            menu = new USSDMenu(getMessage(LIVEWIRE,startMenu,"prompt.blocked",user));
-            menu.addMenuOption(startMenu, "Main menu");
-            menu.addMenuOption("exit", "Exit");
-        }else if (groupsForInstant == 0L && meetingList.isEmpty()) {
+        if(liveWireAlertBroker.isUserBlocked(user.getUid())) {
+            log.info("User is blocked from issuing LiveWire alerts ---------->>>>>>>>>>>>>>>>>");
+            menu = new USSDMenu(getMessage(LIVEWIRE, startMenu,"prompt.blocked", user));
+            menu.addMenuOptions(optionsHomeExit(user, false));
+        } else if (groupsForInstant == 0L && meetingList.isEmpty()) {
             menu = new USSDMenu(getMessage(LIVEWIRE, startMenu, "prompt.nomeetings", user));
             menu.addMenuOption(meetingMenus + startMenu + "?newMtg=1", "Create a meeting");
-            menu.addMenuOption(startMenu, "Main menu");
-            menu.addMenuOption("exit", "Exit");
+            menu.addMenuOptions(optionsHomeExit(user, true));
         } else if (meetingList.isEmpty()) {
             menu = new USSDMenu(getMessage(LIVEWIRE, startMenu, "prompt.instant.only", user));
             menu.addMenuOption("livewire/instant", getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
