@@ -6,9 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 
-import java.time.Instant;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Created by luke on 2017/05/07.
@@ -17,15 +15,9 @@ public interface LiveWireAlertRepository extends JpaRepository<LiveWireAlert, Lo
 
     LiveWireAlert findOneByUid(String alertUid);
 
-    List<LiveWireAlert> findBySendTimeBetweenAndSentFalse(Instant start, Instant end);
-
     Page<LiveWireAlert> findByCompleteTrue(Pageable pageable);
 
     Page<LiveWireAlert> findByCompleteTrueAndReviewedFalse(Pageable pageable);
 
-    Page<LiveWireAlert> findByCompleteTrueAndReviewedTrueAndSentTrueAndDestinationTypeIn(Collection<LiveWireAlertDestType> destTypes,
-                                                                                         Pageable pageable);
-
-    long countByCreationTimeBetween(Instant start, Instant end);
-
+    Page<LiveWireAlert> findByCompleteTrueAndReviewedTrueAndSentTrueAndDestinationTypeIn(Collection<LiveWireAlertDestType> destTypes, Pageable pageable);
 }

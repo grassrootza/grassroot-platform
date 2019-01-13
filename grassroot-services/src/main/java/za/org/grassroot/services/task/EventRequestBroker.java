@@ -12,8 +12,6 @@ public interface EventRequestBroker {
 
 	MeetingRequest createEmptyMeetingRequest(String userUid, String groupUid);
 
-	VoteRequest createEmptyVoteRequest(String userUid, String groupUid);
-
 	String createNewStyleEmptyVote(String userUid, String subject);
 
 	void updateName(String userUid, String eventRequestUid, String name);

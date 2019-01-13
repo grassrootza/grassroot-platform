@@ -76,21 +76,6 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 
 	@Override
 	@Transactional
-	public VoteRequest createEmptyVoteRequest(String userUid, String groupUid) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(groupUid);
-
-		User user = userRepository.findOneByUid(userUid);
-		Group group = groupRepository.findOneByUid(groupUid);
-
-		permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
-		VoteRequest request = VoteRequest.makeEmpty(user, group);
-
-		return eventRequestRepository.save(request);
-	}
-
-	@Override
-	@Transactional
 	public String createNewStyleEmptyVote(String userUid, String subject) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(subject);

@@ -43,14 +43,6 @@ public interface AsyncUserLogger {
     void recordUserLocation(String userUid, GeoLocation location, LocationSource locationSource, UserInterfaceType channel);
 
     /**
-     * Records the user accessing a USSD menu
-     * @param userUid The user's UID
-     * @param ussdSection The section of the USSD menus accessed
-     * @param ussdMenu The menu that was accessed
-     */
-    void recordUssdMenuAccessed(String userUid, String ussdSection, String ussdMenu);
-
-    /**
      * Records if a user was interrupted on a menu (one of those which stores the URL...), and, if so, on which menu
      * (just the relative URL, stripping out params and host name)
      * @param userUid The user who was interrupted
@@ -89,8 +81,6 @@ public interface AsyncUserLogger {
     boolean hasSkippedProvince(String userUid);
 
     boolean hasChangedLanguage(String userUid);
-
-    boolean hasUsedJoinCodeRecently(String userUid);
 
     void removeAllUserInfoLogs(String userUid);
 }

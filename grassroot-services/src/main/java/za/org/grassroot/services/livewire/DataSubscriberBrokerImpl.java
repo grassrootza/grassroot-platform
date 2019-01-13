@@ -160,14 +160,6 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
     @Override
     @Transactional
-    public void removeEmailFromAllSubscribers(String pushEmail) {
-        logger.info("removing email from subscribers: {}", pushEmail);
-        // note: probably need some form of logging
-        dataSubscriberRepository.removeEmailFromAllSubscribers(pushEmail);
-    }
-
-    @Override
-    @Transactional
     public void addUsersWithViewAccess(String adminUid, String subscriberUid, Set<String> userUids) {
         Objects.requireNonNull(adminUid);
         Objects.requireNonNull(subscriberUid);

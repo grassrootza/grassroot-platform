@@ -9,6 +9,4 @@ public interface UidIdentifiableRepository {
 	<T extends UidIdentifiable> T findOneByUid(Class<T> returnClass, JpaEntityType entityType, String uid);
 
 	<T extends UidIdentifiable> Set<T> findByUidIn(Class<T> returnClass, JpaEntityType entityType, Set<String> uids);
-
-	UidIdentifiable save(UidIdentifiable entity);
 }

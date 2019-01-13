@@ -19,8 +19,6 @@ public interface AnalyticalService {
 
     int countUsersThatHaveWebProfile();
 
-    int countUsersWithGeoLocationData();
-
     int countGroupsWithGeoLocationData();
 
     int countUsersThatHaveAndroidProfile();

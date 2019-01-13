@@ -123,18 +123,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Async
     @Override
     @Transactional
-    public void recordUssdMenuAccessed(String userUid, String ussdSection, String ussdMenu) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(ussdSection);
-        Objects.requireNonNull(ussdMenu);
-
-        String urlToSave = ussdSection + ":" + ussdMenu;
-        userLogRepository.save(new UserLog(userUid, UserLogType.USSD_MENU_ACCESSED, urlToSave, USSD));
-    }
-
-    @Async
-    @Override
-    @Transactional
     public void recordUssdInterruption(String userUid, String savedUrl) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(savedUrl);
@@ -196,15 +184,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     public boolean hasChangedLanguage(String userUid) {
         return userLogRepository.count(where(forUser(userUid))
                 .and(ofType(UserLogType.CHANGED_LANGUAGE))) > 0;
-    }
-
-    @Override
-    public boolean hasUsedJoinCodeRecently(String userUid) {
-        Instant end = Instant.now();
-        Instant start = end.minus(5, ChronoUnit.MINUTES);
-        return userLogRepository.count(where(forUser(userUid))
-                .and(ofType(UserLogType.USED_A_JOIN_CODE))
-                .and(creationTimeBetween(start, end))) > 0;
     }
 
     @Override

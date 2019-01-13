@@ -20,11 +20,9 @@ import static za.org.grassroot.webapp.controller.ussd.UssdSupport.phoneNumber;
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
 public class USSDVoteController {
+	private static final String path = UssdSupport.homePath + UssdSupport.voteMenus;
 
-    private final UssdVoteService ussdVoteService;
-
-
-    private static final String path = UssdSupport.homePath + UssdSupport.voteMenus;
+	private final UssdVoteService ussdVoteService;
 
     @Autowired
     public USSDVoteController(UssdVoteService ussdVoteService) {

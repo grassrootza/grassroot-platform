@@ -389,12 +389,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         createAndStoreCampaignLog(campaignLog);
     }
 
-    long countCampaignShares(Campaign campaign) {
-        Specification<Notification> spec = Specification.where(NotificationSpecifications.sharedForCampaign(campaign))
-                .and(NotificationSpecifications.wasDelivered());
-        return logsAndNotificationsBroker.countNotifications(spec);
-    }
-
     @Override
     @Transactional(readOnly = true)
     public boolean isUserInCampaignMasterGroup(String campaignUid, String userUid) {

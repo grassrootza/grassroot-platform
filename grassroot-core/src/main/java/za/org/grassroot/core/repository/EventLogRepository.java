@@ -17,8 +17,6 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long>, JpaSp
 
     EventLog findByEventAndUserAndEventLogType(Event event, User user, EventLogType eventLogType);
 
-    EventLog findOneByUid(String uid);
-
     List<EventLog> findByEventAndEventLogType(Event event, EventLogType type);
 
     List<EventLog> findByEventLogTypeAndEventType(EventLogType logType, EventType eventType, Pageable pageable);

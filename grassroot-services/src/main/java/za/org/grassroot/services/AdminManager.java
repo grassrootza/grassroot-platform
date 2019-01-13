@@ -5,18 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-//import sun.security.krb5.Config;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.group.*;
-import za.org.grassroot.core.domain.notification.SystemInfoNotification;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -24,11 +17,9 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.events.AlterConfigVariableEvent;
 import za.org.grassroot.core.events.RemoveConfigVariableEvent;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.specifications.UserSpecifications;
-import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.util.LogsAndNotificationsBroker;
-import za.org.grassroot.services.util.LogsAndNotificationsBundle;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.group.*;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -51,13 +42,12 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
 
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ConfigRepository configRepository;
 
     private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
-    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, MembershipRepository membershipRepository, PasswordEncoder passwordEncoder) {
+    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.roleRepository = roleRepository;
@@ -65,11 +55,6 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
         this.passwordEncoder = passwordEncoder;
-    }
-
-    @Autowired
-    public void setLogsAndNotificationsBroker(LogsAndNotificationsBroker logsAndNotificationsBroker) {
-        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
     }
 
     @Autowired
@@ -117,66 +102,6 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
     @Override
     @Transactional
-    public void addSystemRole(String adminUserUid, String userUid, String systemRole) {
-        validateAdminRole(adminUserUid);
-        User user = userRepository.findOneByUid(userUid);
-        Role role = roleRepository.findByName(RoleName.ROLE_ALPHA_TESTER).get(0);
-        user.addStandardRole(role);
-        userLogRepository.save(new UserLog(userUid, UserLogType.GRANTED_SYSTEM_ROLE,
-                systemRole + " granted by admin. uid::" + adminUserUid, UserInterfaceType.WEB));
-    }
-
-    @Override
-    @Transactional
-    public void removeStdRole(String adminUserUid, String userUid, RoleName systemRole) {
-        validateAdminRole(adminUserUid);
-        User user = userRepository.findOneByUid(userUid);
-        Role role = roleRepository.findByNameAndRoleType(systemRole, Role.RoleType.STANDARD).get(0);
-        logger.info("found a role? : {}, and a user : {}", role, user);
-        user.removeStandardRole(role);
-        userLogRepository.save(new UserLog(userUid, UserLogType.REVOKED_SYSTEM_ROLE,
-                systemRole + " removed by admin. uid::" + userUid, UserInterfaceType.WEB));
-    }
-
-    @Override
-    @Transactional
-    public String createUserWithSystemRole(String adminUserUid, String displayName, String phoneNumber, String emailAddress, String systemRole) {
-        validateAdminRole(adminUserUid);
-        if (StringUtils.isEmpty(phoneNumber) && StringUtils.isEmpty(emailAddress)) {
-            throw new IllegalArgumentException("Error! One of email or phone number must be non-empty");
-        }
-        String msisdn = StringUtils.isEmpty(phoneNumber) ? null : PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-        User user = msisdn != null && userRepository.existsByPhoneNumber(msisdn) ? userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn) :
-                userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress);
-        if (user == null) {
-            user = new User(msisdn, displayName, emailAddress);
-            userRepository.saveAndFlush(user);
-            userLogRepository.save(new UserLog(user.getUid(), UserLogType.CREATED_IN_DB,
-                    "created by admin, uid : " + adminUserUid, UserInterfaceType.WEB));
-        } else {
-            if (!StringUtils.isEmpty(displayName)) {
-                user.setDisplayName(displayName);
-            }
-            if (!StringUtils.isEmpty(msisdn)) {
-                user.setPhoneNumber(msisdn);
-            }
-            if (!StringUtils.isEmpty(emailAddress)) {
-                user.setEmailAddress(emailAddress);
-            }
-        }
-        addSystemRole(adminUserUid, user.getUid(), systemRole);
-        return user.getUid();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<User> getUsersWithStdRole(String adminUserUid, String systemRole) {
-        validateAdminRole(adminUserUid);
-        return userRepository.findAll(UserSpecifications.hasStandardRole(systemRole));
-    }
-
-    @Override
-    @Transactional
     public void updateUserPassword(String adminUserUid, String userUid, String newPassword) {
         Objects.requireNonNull(adminUserUid);
         Objects.requireNonNull(userUid);
@@ -194,41 +119,6 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
     @Override
     @Transactional
-    public long sendBatchOfAndroidLinks(String adminUserUid, int batchSize) {
-        validateAdminRole(Objects.requireNonNull(adminUserUid));
-
-        Specification<UserLog> hasBeenSentLink = (root, query, cb) -> cb.equal(root.get(UserLog_.userLogType),
-                UserLogType.RECEIVED_ANDROID_BROADCAST);
-        Set<String> alreadySentUids = userLogRepository.findAll(hasBeenSentLink).stream()
-                .map(UserLog::getUserUid).collect(Collectors.toSet());
-
-        PageRequest pageRequest = PageRequest.of(0, batchSize);
-        Specification<User> hasInitiatedSession =  (root, query, cb) -> cb.isTrue(root.get(User_.hasInitiatedSession));
-        Specification<User> notOnAndroid = (root, query, cb) -> cb.isFalse(root.get(User_.hasAndroidProfile));
-        Specification<User> notWithUidIn = (root, query, cb) -> cb.not(root.get(User_.uid).in(alreadySentUids));
-        Specification<User> hasPhoneNumber = (root, query, cb) -> cb.isNotNull(root.get(User_.phoneNumber));
-
-        Page<User> usersToReceive = userRepository.findAll(hasInitiatedSession.and(notOnAndroid).and(hasPhoneNumber)
-                .and(notWithUidIn), pageRequest);
-
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-        usersToReceive.forEach(user -> {
-            UserLog log = new UserLog(user.getUid(), UserLogType.RECEIVED_ANDROID_BROADCAST, null, UserInterfaceType.SYSTEM);
-            SystemInfoNotification notification = new SystemInfoNotification(user, "We have Android! Link: ", log);
-            bundle.addLog(log);
-            bundle.addNotification(notification);
-        });
-
-        logger.info("Done processing, found {} users, storing {} notifications and logs", usersToReceive.getSize(), bundle.getNotifications().size());
-        logsAndNotificationsBroker.storeBundle(bundle);
-
-        return usersToReceive.getTotalElements();
-
-    }
-
-    @Override
-    //@Transactional
     public void updateConfigVariable(String key, String newValue,String description) {
         ConfigVariable var = configRepository.findOneByKey(key)
                 .orElseThrow(() -> new IllegalArgumentException("Error! Trying to update non-existent var"));

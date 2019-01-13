@@ -704,37 +704,6 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void sendManualReminder(String userUid, String eventUid) {
-		Objects.requireNonNull(eventUid);
-
-		User user = userService.load(userUid);
-
-		Event event = eventRepository.findOneByUid(eventUid);
-		if (event.isCanceled()) {
-			throw new IllegalStateException("Event is canceled: " + event);
-		}
-
-		log.info("Sending manual reminder for event {} with message {}", event);
-		event.setNoRemindersSent(event.getNoRemindersSent() + 1);
-
-		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-		EventLog eventLog = new EventLog(user, event, MANUAL_REMINDER);
-		bundle.addLog(eventLog);
-
-		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
-		for (User member : getAllEventMembers(event)) {
-			if (!excludedMembers.contains(member)) {
-				Notification notification = new EventReminderNotification(member, "manually triggered reminder", eventLog);
-				bundle.addNotification(notification);
-			}
-		}
-
-		logsAndNotificationsBroker.storeBundle(bundle);
-	}
-
-	@Override
-	@Transactional
 	public void sendMeetingRSVPsToDate(String meetingUid) {
 		Objects.requireNonNull(meetingUid);
 

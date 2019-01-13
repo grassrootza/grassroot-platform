@@ -8,9 +8,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -38,7 +38,6 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import javax.annotation.PostConstruct;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,8 +50,6 @@ import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAs
  */
 @Service @Slf4j
 public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, ApplicationListener<AlterConfigVariableEvent> {
-
-    private Instant eventLimitStart;
 
     private static final int LARGE_EVENT_LIMIT = 99;
     private static final long WELCOME_MSG_INTERVAL = 60 * 1000; // 1 minute
@@ -128,8 +125,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         if(configVariables.containsKey(configVariable.getKey())){
             configVariables.put(configVariable.getKey(), configVariable.getValue());
         }
-
-        setEventLimitStart();
     }
 
     private int getConfigVarIntegerSafe(String configKey, int defaultValue) {
@@ -139,18 +134,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
             log.error("Error parsing config var: {}, error message: {}", configKey, e.getMessage());
             return defaultValue;
         }
-    }
-
-    private void setEventLimitStart() {
-        LocalDate ldEventLimitStart;
-        try {
-            String eventLimitStarting = (String) configVariables.getOrDefault("grassroot.events.limit.started","2017-04-01");
-            ldEventLimitStart = LocalDate.parse(eventLimitStarting, DateTimeFormatter.ISO_LOCAL_DATE);
-        } catch (DateTimeParseException e) {
-            log.error("Error parsing! {}", e);
-            ldEventLimitStart = LocalDate.of(2017, 4, 1);
-        }
-        eventLimitStart = ldEventLimitStart.atStartOfDay().toInstant(ZoneOffset.UTC);
     }
 
     private void validateAdmin(User user, Account account) {
