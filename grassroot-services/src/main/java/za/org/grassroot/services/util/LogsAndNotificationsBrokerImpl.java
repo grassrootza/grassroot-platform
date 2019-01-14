@@ -350,7 +350,27 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 				.collect(Collectors.toList());
 	}
 
-	@Override
+    @Override
+	@SuppressWarnings("unchecked")
+    public <T extends ActionLog> long countLogs(Specification<T> specs, ActionLogType logType) {
+        switch (logType) {
+			case LIVEWIRE_LOG: return liveWireLogRepository.count((Specification<LiveWireLog>) specs);
+			case USER_LOG:
+			case GROUP_LOG:
+			case EVENT_LOG:
+			case TODO_LOG:
+			case ACCOUNT_LOG:
+			case CAMPAIGN_LOG:
+			case ADDRESS_LOG:
+			case TASK_LOG:
+			default:
+				// fill in as and when needed
+				log.info("Bad invocation of generic log counting method");
+				return 0;
+		}
+    }
+
+    @Override
 	@Transactional(readOnly = true)
 	public long countCampaignLogs(Specification<CampaignLog> specs) {
 		return campaignLogRepository.count(specs);
