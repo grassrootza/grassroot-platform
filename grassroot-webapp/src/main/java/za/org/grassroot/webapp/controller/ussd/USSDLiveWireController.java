@@ -11,7 +11,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
-import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -72,69 +71,6 @@ public class USSDLiveWireController extends USSDBaseController {
     public Request liveWirePageMenu(@RequestParam String msisdn, @RequestParam int page) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
         return menuBuilder(ussdLiveWireService.assembleLiveWireOpening(user, page));
-        return menuBuilder(assembleLiveWireOpening(user, page));
-    }
-
-    protected USSDMenu assembleLiveWireOpening(User user, int page) {
-        long startTime = System.currentTimeMillis();
-        long groupsForInstant = liveWireAlertBroker.countGroupsForInstantAlert(user.getUid());
-        List<Meeting> meetingList = liveWireAlertBroker.meetingsForAlert(user.getUid());
-
-        log.info("Generating LiveWire menu, groups for instant alert {}, meetings {}, took {} msecs",
-                groupsForInstant, meetingList.size(), System.currentTimeMillis() - startTime);
-
-        USSDMenu menu;
-
-        if(liveWireAlertBroker.isUserBlocked(user.getUid())) {
-            log.info("User is blocked from issuing LiveWire alerts ---------->>>>>>>>>>>>>>>>>");
-            menu = new USSDMenu(getMessage(LIVEWIRE, startMenu,"prompt.blocked", user));
-            menu.addMenuOptions(optionsHomeExit(user, false));
-        } else if (groupsForInstant == 0L && meetingList.isEmpty()) {
-            menu = new USSDMenu(getMessage(LIVEWIRE, startMenu, "prompt.nomeetings", user));
-            menu.addMenuOption(meetingMenus + startMenu + "?newMtg=1", "Create a meeting");
-            menu.addMenuOptions(optionsHomeExit(user, true));
-        } else if (meetingList.isEmpty()) {
-            menu = new USSDMenu(getMessage(LIVEWIRE, startMenu, "prompt.instant.only", user));
-            menu.addMenuOption("livewire/instant", getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
-            menu.addMenuOption(meetingMenus + startMenu + "?newMtg=1", getMessage(LIVEWIRE, startMenu, optionsKey + "mtg.create", user));
-            menu.addMenuOption(startMenu, getMessage(LIVEWIRE, startMenu, optionsKey + "home", user));
-        } else {
-            final String prompt = groupsForInstant != 0L ?
-                    getMessage(LIVEWIRE, startMenu, "prompt.meetings.only", user) :
-                    getMessage(LIVEWIRE, startMenu, "prompt.both", user);
-            menu = new USSDMenu(prompt);
-
-            int pageLimit = page == 0 ? 2 : (page + 1) * 3 - 1; // because of opening page lower chars
-            int pageStart = page == 0 ? 0 : (page * 3) - 1;
-            for (int i = pageStart; i < pageLimit && i < meetingList.size(); i++) {
-                Meeting meeting = meetingList.get(i);
-                String[] fields = new String[] {
-                        trimMtgName(meeting.getName()),
-                        meeting.getEventDateTimeAtSAST().format(shortDateFormat) };
-                menu.addMenuOption("livewire/mtg?mtgUid=" + meeting.getUid(),
-                        getMessage(LIVEWIRE, startMenu, optionsKey + "meeting", fields, user));
-            }
-
-            if (pageLimit < meetingList.size()) {
-                menu.addMenuOption(startMenu + "_livewire?page=" + (page + 1), getMessage("options.more", user));
-            }
-
-            if (page > 0) {
-                menu.addMenuOption(startMenu + "_livewire?page=" + (page - 1), getMessage("options.back", user));
-            }
-        }
-
-        if (groupsForInstant != 0L) {
-            menu.addMenuOption("livewire/instant", getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
-            if (!user.isLiveWireContact()) {
-                menu.addMenuOption("livewire/register", getMessage(LIVEWIRE, startMenu, optionsKey + "register", user));
-            }
-        }
-        return menu;
-    }
-
-    private String trimMtgName(String name) {
-        return name.length() < 20 ? name : name.substring(0, 20) + "...";
     }
 
     @RequestMapping("mtg")

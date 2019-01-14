@@ -10,7 +10,7 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 
 import java.util.List;
 
-import static za.org.grassroot.webapp.controller.ussd.UssdSupport.shortDateFormat;
+import static za.org.grassroot.webapp.controller.ussd.UssdSupport.*;
 import static za.org.grassroot.webapp.enums.USSDSection.LIVEWIRE;
 
 @Service
@@ -35,20 +35,24 @@ public class UssdLiveWireServiceImpl implements UssdLiveWireService {
 				groupsForInstant, meetingList.size(), System.currentTimeMillis() - startTime);
 
 		USSDMenu menu;
-		if (groupsForInstant == 0L && meetingList.isEmpty()) {
-			menu = new USSDMenu(ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, "prompt.nomeetings", user));
-			menu.addMenuOption(ussdSupport.meetingMenus + ussdSupport.startMenu + "?newMtg=1", "Create a meeting");
-			menu.addMenuOption(ussdSupport.startMenu, "Main menu");
-			menu.addMenuOption("exit", "Exit");
+
+		if (liveWireAlertBroker.isUserBlocked(user.getUid())) {
+			log.info("User is blocked from issuing LiveWire alerts ---------->>>>>>>>>>>>>>>>>");
+			menu = new USSDMenu(ussdSupport.getMessage(LIVEWIRE, startMenu, "prompt.blocked", user));
+			menu.addMenuOptions(ussdSupport.optionsHomeExit(user, false));
+		} else if (groupsForInstant == 0L && meetingList.isEmpty()) {
+			menu = new USSDMenu(ussdSupport.getMessage(LIVEWIRE, startMenu, "prompt.nomeetings", user));
+			menu.addMenuOption(meetingMenus + startMenu + "?newMtg=1", "Create a meeting");
+			menu.addMenuOptions(ussdSupport.optionsHomeExit(user, true));
 		} else if (meetingList.isEmpty()) {
-			menu = new USSDMenu(ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, "prompt.instant.only", user));
-			menu.addMenuOption("livewire/instant", ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, ussdSupport.optionsKey + "instant", user));
-			menu.addMenuOption(ussdSupport.meetingMenus + ussdSupport.startMenu + "?newMtg=1", ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, ussdSupport.optionsKey + "mtg.create", user));
-			menu.addMenuOption(ussdSupport.startMenu, ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, ussdSupport.optionsKey + "home", user));
+			menu = new USSDMenu(ussdSupport.getMessage(LIVEWIRE, startMenu, "prompt.instant.only", user));
+			menu.addMenuOption("livewire/instant", ussdSupport.getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
+			menu.addMenuOption(meetingMenus + startMenu + "?newMtg=1", ussdSupport.getMessage(LIVEWIRE, startMenu, optionsKey + "mtg.create", user));
+			menu.addMenuOption(startMenu, ussdSupport.getMessage(LIVEWIRE, startMenu, optionsKey + "home", user));
 		} else {
 			final String prompt = groupsForInstant != 0L ?
-					ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, "prompt.meetings.only", user) :
-					ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, "prompt.both", user);
+					ussdSupport.getMessage(LIVEWIRE, startMenu, "prompt.meetings.only", user) :
+					ussdSupport.getMessage(LIVEWIRE, startMenu, "prompt.both", user);
 			menu = new USSDMenu(prompt);
 
 			int pageLimit = page == 0 ? 2 : (page + 1) * 3 - 1; // because of opening page lower chars
@@ -57,30 +61,30 @@ public class UssdLiveWireServiceImpl implements UssdLiveWireService {
 				Meeting meeting = meetingList.get(i);
 				String[] fields = new String[]{
 						trimMtgName(meeting.getName()),
-						meeting.getEventDateTimeAtSAST().format(ussdSupport.shortDateFormat)};
+						meeting.getEventDateTimeAtSAST().format(shortDateFormat)};
 				menu.addMenuOption("livewire/mtg?mtgUid=" + meeting.getUid(),
-						ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, ussdSupport.optionsKey + "meeting", fields, user));
+						ussdSupport.getMessage(LIVEWIRE, startMenu, optionsKey + "meeting", fields, user));
 			}
 
 			if (pageLimit < meetingList.size()) {
-				menu.addMenuOption(ussdSupport.startMenu + "_livewire?page=" + (page + 1), ussdSupport.getMessage("options.more", user));
+				menu.addMenuOption(startMenu + "_livewire?page=" + (page + 1), ussdSupport.getMessage("options.more", user));
 			}
 
 			if (page > 0) {
-				menu.addMenuOption(ussdSupport.startMenu + "_livewire?page=" + (page - 1), ussdSupport.getMessage("options.back", user));
+				menu.addMenuOption(startMenu + "_livewire?page=" + (page - 1), ussdSupport.getMessage("options.back", user));
 			}
 		}
 
 		if (groupsForInstant != 0L) {
-			menu.addMenuOption("livewire/instant", ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, ussdSupport.optionsKey + "instant", user));
+			menu.addMenuOption("livewire/instant", ussdSupport.getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
 			if (!user.isLiveWireContact()) {
-				menu.addMenuOption("livewire/register", ussdSupport.getMessage(LIVEWIRE, ussdSupport.startMenu, ussdSupport.optionsKey + "register", user));
+				menu.addMenuOption("livewire/register", ussdSupport.getMessage(LIVEWIRE, startMenu, optionsKey + "register", user));
 			}
 		}
 		return menu;
 	}
 
 	private String trimMtgName(String name) {
-		return name.length() < 20 ? name : name.substring(0, 20) + "...";
-	}
+     return name.length() < 20 ? name : name.substring(0, 20) + "...";
+ }
 }
