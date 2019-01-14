@@ -66,9 +66,10 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
         wireUpHomeController(ussdHomeController);
-        wireUpMessageSourceAndGroupUtil(ussdTodoController);
-        ussdTodoController.setGroupUtil(ussdGroupUtil);
-        ussdTodoController.setMessageAssembler(ussdMessageAssembler);
+        // todo: VJERAN: fix?
+//        wireUpMessageSourceAndGroupUtil(ussdTodoController);
+//        ussdTodoController.setGroupUtil(ussdGroupUtil);
+//        ussdTodoController.setMessageAssembler(ussdMessageAssembler);
         testUser = new User(testUserPhone,"Test User", null);
         testGroup = new Group("Test Group",testUser);
         testTodo = new Todo(testUser,testGroup, TodoType.ACTION_REQUIRED,testMessage, Instant.now());
