@@ -42,7 +42,8 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
         wireUpHomeController(ussdHomeController);
-        wireUpMessageSourceAndGroupUtil(ussdUserController);
+        // todo: VJERAN: fix?
+//        wireUpMessageSourceAndGroupUtil(ussdUserController);
         testUser = new User(testUserPhone, null, null);
     }
 
