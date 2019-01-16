@@ -63,8 +63,9 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
 
-        wireUpMessageSourceAndGroupUtil(ussdSafetyGroupController);
-        ussdSafetyGroupController.setGroupUtil(ussdGroupUtil);
+        // todo: VJERAN: fix?
+//        wireUpMessageSourceAndGroupUtil(ussdSafetyGroupController);
+//        ussdSafetyGroupController.setGroupUtil(ussdGroupUtil);
 
         testUser = new User(testUserPhone, null, null);
         testUser2 = new User(testUser2Phone, null, null);
