@@ -18,6 +18,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -125,6 +126,25 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     }
 
     @Override
+    public XSSFWorkbook exportAccountBillingData(List<Campaign> campaigns,Instant start, Instant end) {
+
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("All billing data");
+        generateHeader(workbook, sheet, new String[]{"Campaign name", "Total sessions", "Total welcomes","Total shares"},
+                new int[]{6000, 6000, 6000,6000});
+
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+        int rowIndex = 1;
+        addRowFromCampaigns(campaigns,sheet,rowIndex,start,end);
+
+        return workbook;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public XSSFWorkbook exportGroupErrorReport(String groupUid, String userUid) {
         Group group = groupBroker.load(groupUid);
@@ -189,6 +209,14 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         return workbook;
     }
 
+    /*private XSSFWorkbook exportCampaignsBillingData(List<Campaign> campaigns,Instant start, Instant end){
+        for(Campaign campaign:campaigns){
+            Map<String,String> counts = campaignStatsBroker.getCampaignBillingStatsInPeriod(campaign.getUid(),start,end);
+        }
+
+        return null;
+    }*/
+
     @Override
     @Transactional(readOnly = true)
     public XSSFWorkbook exportCampaignJoinedData(String campaignUid, String userUid) {
@@ -246,6 +274,17 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         addRow(sheet, 5, new String[] { "Sharing SMSs", billingCounts.get("total_shares")});
 
         return workbook;
+    }
+
+
+    private XSSFWorkbook exportCampaignsBillingData(List<Campaign> campaigns,Instant start, Instant end){
+        for(Campaign campaign:campaigns){
+            Map<String,String> counts = campaignStatsBroker.getCampaignBillingStatsInPeriod(campaign.getUid(),start,end);
+
+
+        }
+
+        return null;
     }
 
     @Override
@@ -549,6 +588,20 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
                     user.getPhoneNumber(),
                     STD_FORMATTER.format(userLog.getCreationTime()),
                     userLog.getUserInterface().name()
+            });
+            rowIndex++;
+        }
+    }
+
+    private void addRowFromCampaigns(List<Campaign> campaigns,XSSFSheet sheet, int rowIndex,Instant start, Instant end){
+        for(Campaign campaign:campaigns){
+            Map<String,String> counts = campaignStatsBroker.getCampaignBillingStatsInPeriod(campaign.getUid(),start,end);
+
+            addRow(sheet,rowIndex,new String[]{
+                    campaign.getName(),
+                    counts.get("total_sessions"),
+                    counts.get("total_welcomes"),
+                    counts.get("total_shares")
             });
             rowIndex++;
         }
