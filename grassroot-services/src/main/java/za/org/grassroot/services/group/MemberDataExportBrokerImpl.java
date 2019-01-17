@@ -130,15 +130,15 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("All billing data");
-        generateHeader(workbook, sheet, new String[]{"Campaign name", "Total sessions", "Total welcomes","Total shares"},
-                new int[]{6000, 6000, 6000,6000});
+        generateHeader(workbook, sheet, new String[]{"Campaign name", "Date", "Total sessions", "Total welcomes","Total shares"},
+                new int[]{6000,8000, 4000, 4000,4000});
 
         XSSFCellStyle contentStyle = workbook.createCellStyle();
         XSSFFont contentFont = workbook.createFont();
         contentStyle.setFont(contentFont);
         XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
         contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
-        int rowIndex = 1;
+        int rowIndex = 2;
         addRowFromCampaigns(campaigns,sheet,rowIndex,start,end);
 
         return workbook;
@@ -594,11 +594,15 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     }
 
     private void addRowFromCampaigns(List<Campaign> campaigns,XSSFSheet sheet, int rowIndex,Instant start, Instant end){
+        final DateTimeFormatter df = DateTimeFormatter.ofPattern("d MMMM, yyyy");
+        final String startDate = start.atZone(DateTimeUtil.getSAST()).format(df);
+        final String endDate = end.atZone(DateTimeUtil.getSAST()).format(df);
         for(Campaign campaign:campaigns){
             Map<String,String> counts = campaignStatsBroker.getCampaignBillingStatsInPeriod(campaign.getUid(),start,end);
 
             addRow(sheet,rowIndex,new String[]{
                     campaign.getName(),
+                    "From " + startDate + " to " + endDate,
                     counts.get("total_sessions"),
                     counts.get("total_welcomes"),
                     counts.get("total_shares")
