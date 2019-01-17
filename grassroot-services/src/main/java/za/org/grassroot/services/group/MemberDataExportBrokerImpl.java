@@ -209,14 +209,6 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         return workbook;
     }
 
-    /*private XSSFWorkbook exportCampaignsBillingData(List<Campaign> campaigns,Instant start, Instant end){
-        for(Campaign campaign:campaigns){
-            Map<String,String> counts = campaignStatsBroker.getCampaignBillingStatsInPeriod(campaign.getUid(),start,end);
-        }
-
-        return null;
-    }*/
-
     @Override
     @Transactional(readOnly = true)
     public XSSFWorkbook exportCampaignJoinedData(String campaignUid, String userUid) {
@@ -274,17 +266,6 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         addRow(sheet, 5, new String[] { "Sharing SMSs", billingCounts.get("total_shares")});
 
         return workbook;
-    }
-
-
-    private XSSFWorkbook exportCampaignsBillingData(List<Campaign> campaigns,Instant start, Instant end){
-        for(Campaign campaign:campaigns){
-            Map<String,String> counts = campaignStatsBroker.getCampaignBillingStatsInPeriod(campaign.getUid(),start,end);
-
-
-        }
-
-        return null;
     }
 
     @Override
