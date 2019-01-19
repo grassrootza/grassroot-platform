@@ -407,11 +407,6 @@ public class LiveWireAdminRestController extends BaseRestController {
         return ResponseEntity.ok(jwtService.createJwt(jwtTokenRequest));
     }
 
-    @RequestMapping(value = "/user/blocked",method = RequestMethod.GET)
-    public ResponseEntity<Boolean> isUserBlocked(HttpServletRequest httpServletRequest){
-        return ResponseEntity.ok(liveWireAlertBroker.isUserBlocked(getUserIdFromRequest(httpServletRequest)));
-    }
-
     private List<String> splitEmailInput(String emailsInSingleString) {
         Matcher emailMatcher = emailSplitPattern.matcher(emailsInSingleString);
         List<String> emails = new ArrayList<>();

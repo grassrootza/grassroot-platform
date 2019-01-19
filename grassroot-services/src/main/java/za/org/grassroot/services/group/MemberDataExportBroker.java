@@ -2,6 +2,7 @@ package za.org.grassroot.services.group;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
 
 import java.time.Instant;
@@ -33,5 +34,7 @@ public interface MemberDataExportBroker {
     XSSFWorkbook exportAccountActivityReport(String accountUid, Instant start, Instant end);
 
     XSSFWorkbook exportWhatsappOptedInUsers();
+
+    XSSFWorkbook exportAccountBillingData(List<Campaign> campaigns,Instant start, Instant end);
 
 }

@@ -130,4 +130,11 @@ public class LiveWireController extends BaseRestController{
         return RestUtil.okayResponseWithData(RestMessage.LIVEWIRE_ALERT_CREATED,
                 liveWireAlertBroker.createAsComplete(userUid, builder));
     }
+
+    @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
+    @RequestMapping(value = "/user/blocked",method = RequestMethod.GET)
+    public ResponseEntity<Boolean> isUserBlocked(HttpServletRequest httpServletRequest){
+        log.info("Check if user is blocked or not --->>");
+        return ResponseEntity.ok(liveWireAlertBroker.isUserBlocked(getUserIdFromRequest(httpServletRequest)));
+    }
 }
