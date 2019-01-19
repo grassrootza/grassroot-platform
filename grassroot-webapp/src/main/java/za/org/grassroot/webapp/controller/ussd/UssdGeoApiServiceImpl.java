@@ -5,8 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -15,6 +14,7 @@ import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.integration.location.TownLookupResult;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
@@ -36,13 +36,15 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 	private final AsyncUserLogger userLogger;
 	private final USSDMessageAssembler messageAssembler;
 	private final UserManagementService userManager;
+	private final CacheUtilService cacheManager;
 
-	public UssdGeoApiServiceImpl(UssdSupport ussdSupport, LocationInfoBroker locationInfoBroker, AsyncUserLogger userLogger, USSDMessageAssembler messageAssembler, UserManagementService userManager) {
+	public UssdGeoApiServiceImpl(UssdSupport ussdSupport, LocationInfoBroker locationInfoBroker, AsyncUserLogger userLogger, USSDMessageAssembler messageAssembler, UserManagementService userManager, CacheUtilService cacheManager) {
 		this.ussdSupport = ussdSupport;
 		this.locationInfoBroker = locationInfoBroker;
 		this.userLogger = userLogger;
 		this.messageAssembler = messageAssembler;
 		this.userManager = userManager;
+		this.cacheManager = cacheManager;
 	}
 
 	@Override
@@ -61,6 +63,22 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 		return menu;
 	}
 
+	@Override
+	@Transactional
+	public Request processOpeningMenu(String dataSet, String inputNumber, Boolean forceOpening) throws URISyntaxException {
+		User user = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
+		boolean possiblyInterrupted = forceOpening == null || !forceOpening;
+		if (possiblyInterrupted && cacheManager.fetchUssdMenuForUser(inputNumber) != null) {
+			String returnUrl = cacheManager.fetchUssdMenuForUser(inputNumber);
+			USSDMenu promptMenu = new USSDMenu(ussdSupport.getMessage("home.start.prompt-interrupted", user));
+			promptMenu.addMenuOption(returnUrl, ussdSupport.getMessage("home.start.interrupted.resume", user));
+			promptMenu.addMenuOption("geo/opening/" + dataSet + "?forceOpening=true", ussdSupport.getMessage("home.start.interrupted.start", user));
+			return ussdSupport.menuBuilder(promptMenu);
+		} else {
+			return ussdSupport.menuBuilder(openingMenu(ussdSupport.convert(user), dataSet));
+		}
+	}
+
 	private USSDMenu languageMenu(final String dataSetLabel,
 								  final String subsequentUrl,
 								  final List<Locale> availableLocales,
@@ -73,7 +91,7 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 
 	@Override
 	@Transactional
-	public Request chooseInfoSet(String inputNumber, String dataSet, Locale language, Boolean interrupted) throws URISyntaxException {
+	public Request processChooseInfoSet(String inputNumber, String dataSet, Locale language, Boolean interrupted) throws URISyntaxException {
 		UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, saveUrl("/infoset", dataSet));
 		log.info("locale: {}, interrupted: {}", language, interrupted);
 		if (interrupted == null || !interrupted) {
@@ -106,7 +124,7 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 	}
 
 	@Override
-	public Request chooseProvinceMenu(String inputNumber, String dataSet, String infoSet, Boolean interrupted) throws URISyntaxException {
+	public Request processChooseProvinceMenu(String inputNumber, String dataSet, String infoSet, Boolean interrupted) throws URISyntaxException {
 		UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, saveUrl("/location/place/" + dataSet + "/" + infoSet, null));
 		log.info("infoset: {}, interrupted: {}", infoSet, interrupted);
 		return ussdSupport.menuBuilder(provinceMenu(dataSet, infoSet, user));
@@ -122,7 +140,7 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 	}
 
 	@Override
-	public Request enterTownMenu(String inputNumber, String dataSet, String infoSet) throws URISyntaxException {
+	public Request processEnterTownMenu(String inputNumber, String dataSet, String infoSet) throws URISyntaxException {
 		UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, saveUrl("/location/place/" + dataSet + "/" + infoSet, null));
 		final String prompt = "To send you the closest clinics, please enter the nearest post code, or type a town name:";
 		return ussdSupport.menuBuilder(new USSDMenu(prompt, "geo/location/place/select/" + dataSet + "/" + infoSet));
@@ -130,7 +148,7 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 
 	@Override
 	@Transactional
-	public Request selectTownAndSendMenu(String inputNumber, String dataSet, String infoSet, String userInput) throws URISyntaxException {
+	public Request processSelectTownAndSendMenu(String inputNumber, String dataSet, String infoSet, String userInput) throws URISyntaxException {
 		UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, saveUrl("/location/place/select/" + dataSet + "/" + infoSet, null));
 		List<TownLookupResult> results = locationInfoBroker.lookupPostCodeOrTown(userInput.trim(), null);
 		if (results.isEmpty()) {
@@ -138,7 +156,7 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 			final String currentUrl = "geo/location/place/select/" + dataSet + "/" + infoSet;
 			return ussdSupport.menuBuilder(new USSDMenu(prompt, currentUrl));
 		} else if (results.size() == 1) {
-			return sendInfoForPlace(inputNumber, dataSet, infoSet, results.get(0).getPlaceId());
+			return processSendInfoForPlace(inputNumber, dataSet, infoSet, results.get(0).getPlaceId());
 		} else {
 			final String prompt = ussdSupport.getMessage("user.town.many.prompt", user);
 			final USSDMenu menu = new USSDMenu(prompt);
@@ -152,10 +170,25 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 
 	@Override
 	@Transactional
-	public Request sendInfoForPlace(String inputNumber, String dataSet, String infoSet, String placeId) throws URISyntaxException {
+	public Request processSendInfoForPlace(String inputNumber, String dataSet, String infoSet, String placeId) throws URISyntaxException {
 		UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, null);
 		locationInfoBroker.assembleAndSendForPlace(dataSet, infoSet, placeId, user.getUid());
 		final String prompt = messageAssembler.getMessage(dataSet + ".sent.prompt", new String[]{"5"}, user);
 		return ussdSupport.menuBuilder(new USSDMenu(prompt));
+	}
+
+	@Override
+	@Transactional
+	public Request processSendInfoForProvince(String inputNumber, String dataSet, String infoSet, Province province) throws URISyntaxException {
+		UserMinimalProjection user = userManager.findUserMinimalAndStashMenu(inputNumber, null);
+		return ussdSupport.menuBuilder(sendMessageWithInfo(dataSet, infoSet, province, user));
+	}
+
+	private USSDMenu sendMessageWithInfo(String dataSet, String infoTag, Province province, UserMinimalProjection user) {
+		List<String> records = locationInfoBroker.retrieveRecordsForProvince(dataSet, infoTag, province, user.getLocale());
+		final String prompt = messageAssembler.getMessage(dataSet + ".sent.prompt",
+				new String[]{String.valueOf(records.size())}, user);
+		locationInfoBroker.assembleAndSendRecordMessage(dataSet, infoTag, province, user.getUid());
+		return new USSDMenu(prompt); // todo : include option to send safety alert if they are on? (and v/versa)
 	}
 }

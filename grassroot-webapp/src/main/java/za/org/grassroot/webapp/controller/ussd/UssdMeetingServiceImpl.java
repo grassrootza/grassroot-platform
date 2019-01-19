@@ -67,17 +67,16 @@ public class UssdMeetingServiceImpl implements UssdMeetingService {
 
 	private final TaskBroker taskBroker;
 	private final UssdSupport ussdSupport;
-	protected UserManagementService userManager;
-	private EventBroker eventBroker;
-	private EventRequestBroker eventRequestBroker;
-	private EventLogBroker eventLogBroker;
-	private AccountFeaturesBroker accountFeaturesBroker;
-	private GeoLocationBroker geoLocationBroker;
-	private USSDEventUtil eventUtil;
-	private USSDGroupUtil groupUtil;
-	private GroupBroker groupBroker;
-
-	protected CacheUtilService cacheManager;
+	private final UserManagementService userManager;
+	private final EventBroker eventBroker;
+	private final EventRequestBroker eventRequestBroker;
+	private final EventLogBroker eventLogBroker;
+	private final AccountFeaturesBroker accountFeaturesBroker;
+	private final GeoLocationBroker geoLocationBroker;
+	private final USSDEventUtil eventUtil;
+	private final USSDGroupUtil groupUtil;
+	private final GroupBroker groupBroker;
+	private final CacheUtilService cacheManager;
 
 	private static final List<String> menuSequence =
 			Arrays.asList(startMenu, subjectMenu, placeMenu, timeMenu, confirmMenu, send);
