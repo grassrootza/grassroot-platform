@@ -48,7 +48,6 @@ import static za.org.grassroot.webapp.controller.ussd.UssdSupport.*;
 @Service
 public class UssdTodoServiceImpl implements UssdTodoService {
 	private static final int PAGE_SIZE = 3;
-	private static final String REL_PATH = "todo";
 
 	private final Logger log = LoggerFactory.getLogger(UssdTodoServiceImpl.class);
 

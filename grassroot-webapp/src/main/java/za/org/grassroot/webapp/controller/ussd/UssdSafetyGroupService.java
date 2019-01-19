@@ -8,7 +8,7 @@ import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import java.net.URISyntaxException;
 
 public interface UssdSafetyGroupService {
-	public static final String
+	String
 			createGroupMenu = "create",
 			addRespondents = "add-numbers",
 			safetyGroup = "safety",

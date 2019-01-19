@@ -15,8 +15,7 @@ import static za.org.grassroot.webapp.controller.ussd.UssdSupport.*;
 @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_XML_VALUE)
 public class USSDTodoController {
 
-	private static final String REL_PATH = "todo";
-	private static final String FULL_PATH = homePath + REL_PATH;
+	private static final String FULL_PATH = homePath + UssdTodoService.REL_PATH;
 
 	private final UssdTodoService ussdTodoService;
 

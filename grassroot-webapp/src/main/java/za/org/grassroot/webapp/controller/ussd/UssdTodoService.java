@@ -9,6 +9,8 @@ import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import java.net.URISyntaxException;
 
 public interface UssdTodoService {
+	String REL_PATH = "todo";
+
 	USSDMenu respondToTodo(User user, Todo todo);
 
 	Request processVolunteerResponse(String msisdn, String todoUid, String userResponse) throws URISyntaxException;
