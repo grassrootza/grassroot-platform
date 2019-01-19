@@ -48,7 +48,8 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
 
-        wireUpMessageSourceAndGroupUtil(ussdLiveWireController);
+        // todo: VJERAN
+//        wireUpMessageSourceAndGroupUtil(ussdLiveWireController);
     }
 
     @Test

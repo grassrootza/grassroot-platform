@@ -60,7 +60,8 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        wireUpMessageSourceAndGroupUtil(ussdCampaignController);
+        // todo: VJERAN: fix!
+//        wireUpMessageSourceAndGroupUtil(ussdCampaignController);
 
         testUser = new User(testUserPhone, null, null);
         testUserMin = new UserMinimalProjection(testUser.getUid(), null, null, null);

@@ -1,11 +1,10 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import com.google.common.collect.ImmutableMap;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import com.google.common.collect.ImmutableMap;
-import lombok.extern.slf4j.Slf4j;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.Province;
@@ -22,15 +21,7 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
 import java.time.format.DateTimeFormatter;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,6 +30,7 @@ import static za.org.grassroot.webapp.enums.USSDSection.*;
 @Component
 @Slf4j
 public class UssdSupport {
+
 	@Value("${grassroot.languages.ussd.minsessions:2}")
 	public int preLanguageSessions;
 
@@ -51,12 +43,9 @@ public class UssdSupport {
 	@Autowired
 	public AsyncUserLogger userLogger;
 
-	@Autowired
 	public CacheUtilService cacheManager;
 
-	@Autowired
 	public USSDMessageAssembler messageAssembler;
-	@Autowired
 	public USSDMenuUtil ussdMenuUtil;
 
 	/**
@@ -65,16 +54,45 @@ public class UssdSupport {
 
 	// Constants used in URL mapping and message handling
 	public static final String homePath = USSDUrlUtil.homePath;
-	public static final String meetingMenus = "mtg/", userMenus = "user/", groupMenus = "group/", voteMenus = "vote/", todoMenus = "todo/", safetyMenus = "safety/", moreMenus = "more/", U404 = "error";
+	public static final String
+			meetingMenus = "mtg/",
+			userMenus = "user/",
+			groupMenus = "group/",
+			voteMenus = "vote/",
+			todoMenus = "todo/",
+			safetyMenus = "safety/",
+			moreMenus = "more/",
+			U404 = "error";
 	// referencing these from the Util class so can be common across tests etc, but stating here so not cumbersome in sub-classes
-	public static final String phoneNumber = USSDUrlUtil.phoneNumber, userInputParam = USSDUrlUtil.userInputParam, groupUidParam = USSDUrlUtil.groupUidParam, entityUidParam = USSDUrlUtil.entityUidParam, previousMenu = USSDUrlUtil.previousMenu, yesOrNoParam = USSDUrlUtil.yesOrNoParam, interruptedFlag = USSDUrlUtil.interruptedFlag, interruptedInput = USSDUrlUtil.interruptedInput, revisingFlag = USSDUrlUtil.revisingFlag;
-	public static final String startMenu = "start", groupUidUrlSuffix = USSDUrlUtil.groupUidUrlSuffix, entityUidUrlSuffix = USSDUrlUtil.entityUidUrlSuffix, doSuffix = "-do";
+	public static final String
+			phoneNumber = USSDUrlUtil.phoneNumber,
+			userInputParam = USSDUrlUtil.userInputParam,
+			groupUidParam = USSDUrlUtil.groupUidParam,
+			entityUidParam = USSDUrlUtil.entityUidParam,
+			previousMenu = USSDUrlUtil.previousMenu,
+			yesOrNoParam = USSDUrlUtil.yesOrNoParam,
+			interruptedFlag = USSDUrlUtil.interruptedFlag,
+			interruptedInput = USSDUrlUtil.interruptedInput,
+			revisingFlag = USSDUrlUtil.revisingFlag;
+	public static final String
+			startMenu = "start",
+			groupUidUrlSuffix = USSDUrlUtil.groupUidUrlSuffix,
+			entityUidUrlSuffix = USSDUrlUtil.entityUidUrlSuffix,
+			doSuffix = "-do";
 	// Constants used in i18n and message handling
-	public static final String homeKey = USSDSection.HOME.toString(), mtgKey = USSDSection.MEETINGS
-			.toString(), userKey = USSDSection.USER_PROFILE.toString(), groupKey = USSDSection.GROUP_MANAGER
-			.toString(), voteKey = USSDSection.VOTES.toString(), logKey = USSDSection.TODO
-			.toString(), safetyKey = USSDSection.SAFETY_GROUP_MANAGER.toString(), moreKey = USSDSection.MORE.toString();
-	public static final String promptKey = "prompt", errorPromptKey = "prompt.error", optionsKey = "options.";
+	public static final String
+			homeKey = USSDSection.HOME.toString(),
+			mtgKey = USSDSection.MEETINGS.toString(),
+			userKey = USSDSection.USER_PROFILE.toString(),
+			groupKey = USSDSection.GROUP_MANAGER.toString(),
+			voteKey = USSDSection.VOTES.toString(),
+			logKey = USSDSection.TODO.toString(),
+			safetyKey = USSDSection.SAFETY_GROUP_MANAGER.toString(),
+			moreKey = USSDSection.MORE.toString();
+	public static final String
+			promptKey = "prompt",
+			errorPromptKey = "prompt.error",
+			optionsKey = "options.";
 
 	public static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
 	public static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE d MMM");
@@ -85,18 +103,34 @@ public class UssdSupport {
 
 	private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
 
-	private static final Map<USSDSection, String[]> openingMenuOptions = Collections.unmodifiableMap(
-			Stream.of(new AbstractMap.SimpleEntry<>(MEETINGS, new String[]{meetingMenus + startMenu, openingMenuKey + mtgKey}),
-					new AbstractMap.SimpleEntry<>(VOTES, new String[]{voteMenus + startMenu, openingMenuKey + voteKey}),
-					new AbstractMap.SimpleEntry<>(TODO, new String[]{todoMenus + startMenu, openingMenuKey + logKey}),
-					new AbstractMap.SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
-					new AbstractMap.SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
-					new AbstractMap.SimpleEntry<>(MORE, new String[]{moreMenus + startMenu, openingMenuKey + moreKey})).
-					//new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
-							collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
+	private static final Map<USSDSection, String[]> openingMenuOptions = Collections.unmodifiableMap(Stream.of(
+			new AbstractMap.SimpleEntry<>(MEETINGS, new String[]{meetingMenus + startMenu, openingMenuKey + mtgKey}),
+			new AbstractMap.SimpleEntry<>(VOTES, new String[]{voteMenus + startMenu, openingMenuKey + voteKey}),
+			new AbstractMap.SimpleEntry<>(TODO, new String[]{todoMenus + startMenu, openingMenuKey + logKey}),
+			new AbstractMap.SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
+			new AbstractMap.SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
+			new AbstractMap.SimpleEntry<>(MORE, new String[]{moreMenus + startMenu, openingMenuKey + moreKey})).
+			//new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
+					collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
-	private static final List<USSDSection> openingSequenceWithGroups = Arrays
-			.asList(MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, MORE);
+	private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, MORE);
+
+	/* Field setters */
+
+	@Autowired
+	public void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) {
+		this.ussdMenuUtil = ussdMenuUtil;
+	}
+
+	@Autowired
+	public void setMessageAssembler(USSDMessageAssembler messageAssembler) {
+		this.messageAssembler = messageAssembler;
+	}
+
+	@Autowired
+	public void setCacheManager(CacheUtilService cacheUtilService) {
+		this.cacheManager = cacheUtilService;
+	}
 
  /*
  Methods that form the menu objects
@@ -120,7 +154,8 @@ public class UssdSupport {
 	}
 
 	public USSDMenu promptLanguageMenu(User user) {
-		return new USSDMenu(messageAssembler.getMessage("language.prompt", user), languageOptions(userMenus + "language-do?language="));
+		return new USSDMenu(messageAssembler.getMessage("language.prompt", user),
+				languageOptions(userMenus + "language-do?language="));
 	}
 
 	/*
@@ -147,6 +182,7 @@ public class UssdSupport {
 		return optionsHomeExit(convert(user), shortForm);
 	}
 
+
 	public Map<String, String> optionsYesNo(User sessionUser, String yesUri, String noUri) {
 		return optionsYesNo(convert(sessionUser), yesUri, noUri);
 	}
@@ -167,7 +203,8 @@ public class UssdSupport {
 
 	public Map<String, String> provinceOptions(UserMinimalProjection user, String url) {
 		Map<String, String> options = new LinkedHashMap<>();
-		Province.ZA_CANONICAL.forEach(p -> options.put(url + p, getMessage("province." + p.name().substring("ZA_".length()), user)));
+		Province.ZA_CANONICAL.forEach(p ->
+				options.put(url + p, getMessage("province." + p.name().substring("ZA_".length()), user)));
 		return options;
 	}
 
@@ -210,7 +247,7 @@ public class UssdSupport {
 		return messageAssembler.getMessage(messageKey, language);
 	}
 
-	public String getMessage(String messageKey, String[] params, User user) {
+	public String getMessage(String messageKey, String[] params, UserMinimalProjection user) {
 		return messageAssembler.getMessage(messageKey, params, user);
 	}
 
@@ -231,6 +268,10 @@ public class UssdSupport {
 
 	public String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, User sessionUser) {
 		return getMessage(section, menuKey, messageLocation, parameter, convert(sessionUser));
+	}
+
+	public String getMessage(String messageKey, String[] params, User user) {
+		return messageAssembler.getMessage(messageKey, params, user);
 	}
 
 	public USSDMenu setUserProfile(User user, String promptStart) {

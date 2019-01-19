@@ -77,7 +77,8 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
     @Before
     public void setUp(){
         mockMvc = MockMvcBuilders.standaloneSetup(ussdHomeController,ussdAdvancedHomeController).build();
-        wireUpMessageSourceAndGroupUtil(ussdAdvancedHomeController);
+        // todo: VJERAN: fix?
+//        wireUpMessageSourceAndGroupUtil(ussdAdvancedHomeController);
     }
 
     @Test
