@@ -35,7 +35,7 @@ public class UssdGroupJoinServiceImpl implements UssdGroupJoinService {
 
 	@Override
 	@Transactional
-	public Request setJoinTopics(String inputNumber, String groupUid, String topic) throws URISyntaxException {
+	public Request processSetJoinTopics(String inputNumber, String groupUid, String topic) throws URISyntaxException {
 		User user = userManager.findByInputNumber(inputNumber);
 		groupBroker.setMemberJoinTopics(user.getUid(), groupUid, user.getUid(), Collections.singletonList(topic));
 		String prompt = ussdSupport.getMessage(HOME, ussdSupport.startMenu, "prompt.group.topics.set", topic, user);
@@ -44,7 +44,7 @@ public class UssdGroupJoinServiceImpl implements UssdGroupJoinService {
 
 	@Override
 	@Transactional
-	public Request setUserProfileMenu(String inputNumber, String field, Province province, Locale language, String name) throws URISyntaxException {
+	public Request processSetUserProfileMenu(String inputNumber, String field, Province province, Locale language, String name) throws URISyntaxException {
 		User user = userManager.findByInputNumber(inputNumber);
 
 		if ("PROVINCE".equals(field)) {

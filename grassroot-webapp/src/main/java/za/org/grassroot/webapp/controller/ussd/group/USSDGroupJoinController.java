@@ -7,18 +7,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.webapp.controller.ussd.USSDBaseController;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
 import java.util.Locale;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static za.org.grassroot.webapp.controller.ussd.UssdSupport.*;
 
 @Slf4j
 @RestController
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
-public class USSDGroupJoinController extends USSDBaseController {
+public class USSDGroupJoinController {
 
 	private final UssdGroupJoinService ussdGroupJoinService;
 
@@ -31,7 +31,7 @@ public class USSDGroupJoinController extends USSDBaseController {
 	public Request setJoinTopics(@RequestParam(value = phoneNumber) String inputNumber,
 								 @RequestParam String groupUid,
 								 @RequestParam String topic) throws URISyntaxException {
-		return this.ussdGroupJoinService.setJoinTopics(inputNumber, groupUid, topic);
+		return this.ussdGroupJoinService.processSetJoinTopics(inputNumber, groupUid, topic);
 	}
 
 	@RequestMapping(value = homePath + "group/join/profile")
@@ -41,6 +41,6 @@ public class USSDGroupJoinController extends USSDBaseController {
 									  @RequestParam(value = "province", required = false) Province province,
 									  @RequestParam(value = "language", required = false) Locale language,
 									  @RequestParam(value = userInputParam, required = false) String name) throws URISyntaxException {
-		return this.ussdGroupJoinService.setUserProfileMenu(inputNumber, field, province, language, name);
+		return this.ussdGroupJoinService.processSetUserProfileMenu(inputNumber, field, province, language, name);
 	}
 }

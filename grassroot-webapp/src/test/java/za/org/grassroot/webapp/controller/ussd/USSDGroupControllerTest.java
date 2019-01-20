@@ -66,8 +66,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
 
-        wireUpMessageSourceAndGroupUtil(ussdGroupController);
-        ussdGroupController.setUssdGroupUtil(ussdGroupUtil);
+        // todo: VJERAN: fix?
+//        wireUpMessageSourceAndGroupUtil(ussdGroupController);
+//        ussdGroupController.setUssdGroupUtil(ussdGroupUtil);
 
         wireUpMessageSourceAndGroupUtil(ussdGroupMgmtController);
 
