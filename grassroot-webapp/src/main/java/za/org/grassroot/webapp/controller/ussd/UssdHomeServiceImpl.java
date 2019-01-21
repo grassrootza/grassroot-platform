@@ -44,6 +44,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static za.org.grassroot.webapp.controller.ussd.UssdSupport.startMenu;
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
 
 @Service
@@ -66,9 +67,6 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	private boolean geoApisEnabled;
 
 	private Map<String, String> geoApiSuffixes;
-
-	// since this controller in effect routes responses, needs access to the other primary ones
-	// setters are for testing (since we need this controller in the tests of the handler)
 
 	private final UssdLiveWireService ussdLiveWireService;
 	private final UssdGeoApiService ussdGeoApiService;
@@ -217,7 +215,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 
 	@Override
 	public Request processNotBuilt(String inputNumber) throws URISyntaxException {
-		String errorMessage = ussdSupport.messageAssembler.getMessage("ussd.error", "en");
+		String errorMessage = ussdSupport.getMessage("ussd.error", "en");
 		return ussdSupport.menuBuilder(new USSDMenu(errorMessage, ussdSupport.optionsHomeExit(userManager.findByInputNumber(inputNumber), false)));
 	}
 
@@ -241,7 +239,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		log.info("found a campaign? : {}", campaign);
 		return (campaign != null) ?
 				assembleCampaignMessageResponse(campaign, user) :
-				ussdSupport.welcomeMenu(ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".unknown.request", user), user);
+				ussdSupport.welcomeMenu(ussdSupport.getMessage(HOME, startMenu, ussdSupport.promptKey + ".unknown.request", user), user);
 	}
 
 	private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user) {
@@ -296,12 +294,12 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		log.info("The user was interrupted somewhere: trailing digits: {}, URL: {}", trailingDigits, returnUrl);
 
 		User user = userManager.findByInputNumber(inputNumber);
-		USSDMenu promptMenu = new USSDMenu(ussdSupport.getMessage(thisSection, ussdSupport.startMenu, ussdSupport.promptKey + "-interrupted", user));
-		promptMenu.addMenuOption(returnUrl, ussdSupport.getMessage(thisSection, ussdSupport.startMenu, "interrupted.resume", user));
+		USSDMenu promptMenu = new USSDMenu(ussdSupport.getMessage(thisSection, startMenu, ussdSupport.promptKey + "-interrupted", user));
+		promptMenu.addMenuOption(returnUrl, ussdSupport.getMessage(thisSection, startMenu, "interrupted.resume", user));
 
-		final String startMenuOption = ussdSupport.startMenu + "_force" + (!StringUtils.isEmpty(trailingDigits) ? "?trailingDigits=" + trailingDigits : "");
+		final String startMenuOption = startMenu + "_force" + (!StringUtils.isEmpty(trailingDigits) ? "?trailingDigits=" + trailingDigits : "");
 		log.info("User interrupted, start menu option: {}", startMenuOption);
-		promptMenu.addMenuOption(startMenuOption, ussdSupport.getMessage(thisSection, ussdSupport.startMenu, "interrupted.start", user));
+		promptMenu.addMenuOption(startMenuOption, ussdSupport.getMessage(thisSection, startMenu, "interrupted.start", user));
 
 		// set the user's "last USSD menu" back to null, so avoids them always coming back here
 		userLogger.recordUssdInterruption(user.getUid(), returnUrl);
@@ -321,8 +319,8 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 
 	private USSDMenu defaultStartMenu(User sessionUser) {
 		String welcomeMessage = sessionUser.hasName() ?
-				ussdSupport.getMessage(thisSection, ussdSupport.startMenu, ussdSupport.promptKey + "-named", sessionUser.getName(""), sessionUser) :
-				ussdSupport.getMessage(thisSection, ussdSupport.startMenu, ussdSupport.promptKey, sessionUser);
+				ussdSupport.getMessage(thisSection, startMenu, ussdSupport.promptKey + "-named", sessionUser.getName(""), sessionUser) :
+				ussdSupport.getMessage(thisSection, startMenu, ussdSupport.promptKey, sessionUser);
 		return ussdSupport.welcomeMenu(welcomeMessage, sessionUser);
 	}
 
@@ -337,7 +335,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 			case RESPOND_TODO:
 				return ussdTodoService.respondToTodo(user, (Todo) entity);
 			case RENAME_SELF:
-				return new USSDMenu(ussdSupport.getMessage(thisSection, USSDBaseController.startMenu, ussdSupport.promptKey + "-rename", user),
+				return new USSDMenu(ussdSupport.getMessage(thisSection, startMenu, ussdSupport.promptKey + "-rename", user),
 						"rename-start");
 			default:
 				return defaultStartMenu(user);
@@ -358,8 +356,8 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 				if (!group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
 					return askForJoinTopics(group, user);
 				} else {
-					String promptStart = group.hasName() ? ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.token.named", group.getGroupName(), user) :
-							ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.token.unnamed", user);
+					String promptStart = group.hasName() ? ussdSupport.getMessage(HOME, startMenu, ussdSupport.promptKey + ".group.token.named", group.getGroupName(), user) :
+							ussdSupport.getMessage(HOME, startMenu, ussdSupport.promptKey + ".group.token.unnamed", user);
 					return ussdSupport.setUserProfile(user, promptStart);
 				}
 			}
@@ -375,7 +373,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	}
 
 	private USSDMenu askForJoinTopics(Group group, User user) {
-		final String prompt = ussdSupport.getMessage(HOME, ussdSupport.startMenu, ussdSupport.promptKey + ".group.topics", group.getName(), user);
+		final String prompt = ussdSupport.getMessage(HOME, startMenu, ussdSupport.promptKey + ".group.topics", group.getName(), user);
 		final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
 		USSDMenu menu = new USSDMenu(prompt);
 		group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));

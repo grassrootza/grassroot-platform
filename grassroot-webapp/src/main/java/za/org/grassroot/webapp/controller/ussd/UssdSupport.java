@@ -2,16 +2,12 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
-import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -31,22 +27,12 @@ import static za.org.grassroot.webapp.enums.USSDSection.*;
 @Slf4j
 public class UssdSupport {
 
-	@Value("${grassroot.languages.ussd.minsessions:2}")
-	public int preLanguageSessions;
+	public final int preLanguageSessions = 0;
+	private final ExperimentBroker experimentBroker;
+	private final UserManagementService userManager;
 
-	@Autowired
-	private ExperimentBroker experimentBroker;
-
-	@Autowired
-	public UserManagementService userManager;
-
-	@Autowired
-	public AsyncUserLogger userLogger;
-
-	public CacheUtilService cacheManager;
-
-	public USSDMessageAssembler messageAssembler;
-	public USSDMenuUtil ussdMenuUtil;
+	private final USSDMessageAssembler messageAssembler;
+	private final USSDMenuUtil ussdMenuUtil;
 
 	/**
 	 * SECTION: Constants used throughout the code
@@ -117,22 +103,17 @@ public class UssdSupport {
 
 	/* Field setters */
 
-	@Autowired
-	public void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) {
+	public UssdSupport(
+//			@Value("${grassroot.languages.ussd.minsessions:2}") int preLanguageSessions,
+			ExperimentBroker experimentBroker, UserManagementService userManager, USSDMessageAssembler messageAssembler, USSDMenuUtil ussdMenuUtil) {
+//		this.preLanguageSessions = preLanguageSessions;
+		this.experimentBroker = experimentBroker;
+		this.userManager = userManager;
+		this.messageAssembler = messageAssembler;
 		this.ussdMenuUtil = ussdMenuUtil;
 	}
 
-	@Autowired
-	public void setMessageAssembler(USSDMessageAssembler messageAssembler) {
-		this.messageAssembler = messageAssembler;
-	}
-
-	@Autowired
-	public void setCacheManager(CacheUtilService cacheUtilService) {
-		this.cacheManager = cacheUtilService;
-	}
-
- /*
+/*
  Methods that form the menu objects
   */
 
@@ -286,7 +267,7 @@ public class UssdSupport {
 		} else {
 			promptSuffix = getMessage("home.start.prompt.choose", user);
 			return !userManager.needsToSetName(user, false) ? welcomeMenu(promptStart + " " + promptSuffix, user) :
-					new USSDMenu(getMessage(HOME, USSDBaseController.startMenu, promptKey + "-rename.short", user), "rename-start");
+					new USSDMenu(getMessage(HOME, startMenu, promptKey + "-rename.short", user), "rename-start");
 		}
 	}
 }

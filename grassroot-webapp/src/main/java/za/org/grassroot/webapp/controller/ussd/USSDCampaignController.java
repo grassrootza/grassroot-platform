@@ -14,10 +14,8 @@ import za.org.grassroot.webapp.util.USSDCampaignConstants;
 import java.net.URISyntaxException;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static za.org.grassroot.webapp.controller.ussd.USSDBaseController.phoneNumber;
 import static za.org.grassroot.webapp.controller.ussd.UssdCampaignService.campaignMenus;
-import static za.org.grassroot.webapp.controller.ussd.UssdSupport.homePath;
-import static za.org.grassroot.webapp.controller.ussd.UssdSupport.userInputParam;
+import static za.org.grassroot.webapp.controller.ussd.UssdSupport.*;
 
 @RestController
 @Slf4j
