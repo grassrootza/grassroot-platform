@@ -69,8 +69,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         // todo: VJERAN: fix?
 //        wireUpMessageSourceAndGroupUtil(ussdGroupController);
 //        ussdGroupController.setUssdGroupUtil(ussdGroupUtil);
-
-        wireUpMessageSourceAndGroupUtil(ussdGroupMgmtController);
+//        wireUpMessageSourceAndGroupUtil(ussdGroupMgmtController);
 
         testUser = new User(testUserPhone, null, null);
         testGroup = new Group("test group", testUser);
