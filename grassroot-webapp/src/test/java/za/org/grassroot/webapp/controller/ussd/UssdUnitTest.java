@@ -121,6 +121,7 @@ public class UssdUnitTest {
 	protected USSDEventUtil ussdEventUtil;
 	protected USSDGroupUtil ussdGroupUtil;
 	protected UssdSupport ussdSupport;
+	protected USSDMessageAssembler ussdMessageAssembler;
 
 	protected final static List<User> languageUsers = constructLanguageUsers();
 
@@ -143,9 +144,9 @@ public class UssdUnitTest {
 	@Before
 	public void parentSetUp() {
 		final MessageSource messageSource = newMessageSource();
-		final USSDMessageAssembler ussdMessageAssembler = new USSDMessageAssembler(messageSource);
 		final USSDMenuUtil ussdMenuUtil = new USSDMenuUtil("http://127.0.0.1:8080/ussd/", 140, 160);
 
+		this.ussdMessageAssembler = new USSDMessageAssembler(messageSource);
 		this.ussdSupport = new UssdSupport(experimentBrokerMock, userManagementServiceMock, ussdMessageAssembler, ussdMenuUtil);
 		this.ussdEventUtil = new USSDEventUtil(messageSource, eventBrokerMock, eventRequestBrokerMock, userLoggerMock, learningServiceMock);
 		this.ussdGroupUtil = new USSDGroupUtil(messageSource, groupBrokerMock, groupQueryBrokerMock, permissionBrokerMock, groupJoinRequestBroker);

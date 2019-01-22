@@ -2,12 +2,10 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -24,13 +22,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Created by luke on 2015/12/18.
  */
-public class USSDTodoControllerTest extends USSDAbstractUnitTest {
+public class UssdTodoServiceTest extends UssdUnitTest {
 
     public static final String assignUserID = "assignUserUid";
 
@@ -49,39 +45,26 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
             viewEntryMenu = "view",
             setCompleteMenu = "complete";
 
-    private static final String path = "/ussd/todo/";
-
-    @InjectMocks private USSDHomeController ussdHomeController;
-    @InjectMocks private USSDTodoController ussdTodoController;
-
     private User testUser;
     private Todo testTodo;
     private Group testGroup;
 
+    private UssdTodoService ussdTodoService;
+
     @Before
     public void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdHomeController, ussdTodoController)
-                .setHandlerExceptionResolvers(exceptionResolver())
-                .setValidator(validator())
-                .setViewResolvers(viewResolver())
-                .build();
-        wireUpHomeController(ussdHomeController);
-        // todo: VJERAN: fix?
-//        wireUpMessageSourceAndGroupUtil(ussdTodoController);
-//        ussdTodoController.setGroupUtil(ussdGroupUtil);
-//        ussdTodoController.setMessageAssembler(ussdMessageAssembler);
         testUser = new User(testUserPhone,"Test User", null);
         testGroup = new Group("Test Group",testUser);
         testTodo = new Todo(testUser,testGroup, TodoType.ACTION_REQUIRED,testMessage, Instant.now());
+
+        this.ussdTodoService = new UssdTodoServiceImpl(ussdSupport, ussdMessageAssembler, userManagementServiceMock, todoBrokerMock, todoRequestBrokerMock, cacheUtilManagerMock, ussdGroupUtil, accountFeaturesBrokerMock, learningServiceMock, memberDataExportBrokerMock);
     }
 
     @Test
     public void startMenuShouldWork() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "start")
-                .param(phoneParam, testUserPhone))
-                .andExpect(status().isOk());
+        this.ussdTodoService.processStart(testUserPhone);
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -91,11 +74,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void volunteerResponseShouldWork()throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "/respond/volunteer")
-                .param(phoneParam,testUserPhone)
-                .param(todoUidParam,""+testTodo.getUid())
-                .param("confirmed",""+testUserResponse))
-                .andExpect(status().isOk());
+        this.ussdTodoService.processVolunteerResponse(testUserPhone, testTodo.getUid(), testUserResponse);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
     }
 
@@ -103,11 +83,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void confirmInfoResponseShouldWork()throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 saveUrl("/respond/info", testTodo.getUid(), testUserResponse))).thenReturn(testUser);
-        mockMvc.perform(get(path + "/respond/info")
-                .param(phoneParam,testUserPhone)
-                .param(todoUidParam,testTodo.getUid())
-                .param("request",testUserResponse))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processConfirmInfoResponse(testUserPhone, testTodo.getUid(), testUserResponse, null);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,saveUrl("/respond/info", testTodo.getUid(), testUserResponse));
     }
 
@@ -119,11 +97,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void recordInfoResponseShouldWork()throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "/respond/info/confirmed")
-                .param(phoneParam,testUserPhone)
-                .param(todoUidParam,testTodo.getUid())
-                .param("response",testUserResponse))
-                .andExpect(status().isOk());
+        this.ussdTodoService.processRecordInfoResponse(testUserPhone, testTodo.getUid(), testUserResponse);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
     }
 
@@ -133,11 +108,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 saveUrl("/respond/info/revise", testTodo.getUid(), testUserResponse))).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "/respond/info/revise")
-                .param(phoneParam,testUserPhone)
-                .param(todoUidParam,testTodo.getUid())
-                .param("request",testUserResponse))
-                .andExpect(status().isOk());
+        this.ussdTodoService.processReviseInfoRequest(testUserPhone, testTodo.getUid(), testUserResponse, null);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,saveUrl("/respond/info/revise", testTodo.getUid(), testUserResponse));
     }
 
@@ -145,11 +117,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void validateTodoCompletionShouldWork()throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "/respond/validate")
-                .param(phoneParam,testUserPhone)
-                .param(todoUidParam,testTodo.getUid())
-                .param("confirmed",""+testUserResponse))
-                .andExpect(status().isOk());
+        this.ussdTodoService.processValidateTodoCompletion(testUserPhone, testTodo.getUid(), testUserResponse);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
     }
 
@@ -158,10 +127,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(todoRequestBrokerMock.create(testUser.getUid(),
                 TodoType.ACTION_REQUIRED)).thenReturn(new TodoRequest(testUser,TodoType.ACTION_REQUIRED));
-        mockMvc.perform(get(path + "/create")
-                .param(phoneParam,testUserPhone)
-                .param("type", ""+TodoType.ACTION_REQUIRED))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processCreate(testUserPhone, TodoType.ACTION_REQUIRED, null);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
         verify(todoRequestBrokerMock,times(1)).create(testUser.getUid(),TodoType.ACTION_REQUIRED);
     }
@@ -173,10 +141,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 saveRequestUrl("/create/subject", testStoreUid, null))).thenReturn(testUser);
         TodoRequest testTodoRequest = new TodoRequest(testUser,TodoType.ACTION_REQUIRED);
         when(todoRequestBrokerMock.load(testStoreUid)).thenReturn(testTodoRequest);
-        mockMvc.perform(get(path + "/create/subject")
-                .param(phoneParam,testUserPhone)
-                .param("storedUid",testStoreUid))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processAskForSubject(testUserPhone, testStoreUid, null, null);
 
         verify(userManagementServiceMock,times(1))
                 .findByInputNumber(testUserPhone,saveRequestUrl("/create/subject", testStoreUid, null));
@@ -191,11 +157,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 saveRequestUrl("/create/deadline", testStoreUid, null))).thenReturn(testUser);
 
         when(todoRequestBrokerMock.load(testStoreUid)).thenReturn(testTodoRequest);
-        mockMvc.perform(get(path + "/create/deadline")
-                .param(phoneParam,testUserPhone)
-                .param("storedUid",testStoreUid)
-                .param("request",testUserResponse))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processAskForDeadline(testUserPhone, testStoreUid, testUserResponse, null, false);
 
         verify(userManagementServiceMock,times(1))
                 .findByInputNumber(testUserPhone,saveRequestUrl("/create/deadline", testStoreUid, null));
@@ -207,11 +170,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         String testStoreUid = testTodo.getUid();
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 saveRequestUrl("/create/tag", testStoreUid, null))).thenReturn(testUser);
-        mockMvc.perform(get(path + "/create/tag")
-                .param(phoneParam,testUserPhone)
-                .param("storedUid",testStoreUid)
-                .param("request",testUserResponse))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processAskForResponseTag(testUserPhone, testStoreUid, testUserResponse, null, null);
+
         verify(userManagementServiceMock,times(1))
                 .findByInputNumber(testUserPhone,saveRequestUrl("/create/tag", testStoreUid, null));
     }
@@ -224,11 +185,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 saveRequestUrl("/confirm", testStoreUid, null))).thenReturn(testUser);
         when(todoRequestBrokerMock.load(testStoreUid)).thenReturn(testTodoRequest);
-        mockMvc.perform(get(path + "/create/confirm")
-                .param(phoneParam,testUserPhone)
-                .param("storedUid",testStoreUid)
-                .param("request",testUserResponse))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processConfirmTodoCreation(testUserPhone, testStoreUid, testUserResponse, null, null);
+
         verify(userManagementServiceMock,times(1))
                 .findByInputNumber(testUserPhone,saveRequestUrl("/confirm", testStoreUid, null));
         verify(todoRequestBrokerMock,times(1)).load(testStoreUid);
@@ -238,10 +197,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void finishTodoEntryShouldWork()throws Exception{
         String testStoreUid = testTodo.getUid();
         when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
-        mockMvc.perform(get(path + "/create/complete")
-                .param(phoneParam,testUserPhone)
-                .param("storedUid",testStoreUid))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processFinishTodoEntry(testUserPhone, testStoreUid);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
     }
 
@@ -262,11 +220,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(todoBrokerMock.fetchPageOfTodosForUser(testUser.getUid(),
                 false, testPageRequest)).thenReturn(testPage);
 
-        mockMvc.perform(get(path + "/existing")
-                .param(phoneParam,testUserPhone)
-                .param("fetchAll",""+true)
-                .param("page",""+0))
-                .andExpect(status().isOk());
+        this.ussdTodoService.processViewExistingTodos(testUserPhone, 0, true);
     }
 
     @Test
@@ -281,10 +235,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(todoBrokerMock.load(testTodo.getUid())).thenReturn(testTodo);
         when(todoBrokerMock.fetchAssignedUserResponses(testUser.getUid(),testTodo.getUid(),
                 true,false,false)).thenReturn(todoAssignments);
-        mockMvc.perform(get(path + "/view")
-                .param(phoneParam,testUserPhone)
-                .param("todoUid",testTodo.getUid()))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processViewTodoEntry(testUserPhone, testTodo.getUid());
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
         verify(todoBrokerMock,times(1)).load(testTodo.getUid());
         verify(todoBrokerMock,times(1)).fetchAssignedUserResponses(testUser.getUid(),testTodo.getUid(),
@@ -296,10 +249,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         Todo testTodo = new Todo(testUser, testGroup, TodoType.ACTION_REQUIRED, "Some todo subject", Instant.now());
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 "todo/view/email?todoUid=" + testTodo.getUid())).thenReturn(testUser);
-        mockMvc.perform(get(path + "/view/email")
-                .param(phoneParam,testUserPhone)
-                .param("todoUid",testTodo.getUid()))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processEmailTodoResponses(testUserPhone, testTodo.getUid());
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
                 "todo/view/email?todoUid=" + testTodo.getUid());
     }
@@ -309,44 +261,38 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
         String testEmail = "test@grassroot.org.za";
         testUser.setEmailAddress("testUser@grassroot.org.za");
-        mockMvc.perform(get(path + "/view/email/send")
-                .param(phoneParam,testUserPhone)
-                .param("todoUid",testTodo.getUid())
-                .param("request",testEmail))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processEmailResponseDo(testUserPhone, testTodo.getUid(), testEmail);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
     }
 
     @Test
     public void markTodoCompletePromptShouldWork()throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        mockMvc.perform(get(path + "complete/prompt")
-                .param(phoneParam,testUserPhone)
-                .param("todoUid",testTodo.getUid()))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processMarkTodoCompletePrompt(testUserPhone, testTodo.getUid());
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
     }
 
     @Test
     public void markTodoCompleteDoneShouldWork() throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
-        mockMvc.perform(get(path + "complete/done")
-                .param(phoneParam,testUserPhone)
-                .param("todoUid",testTodo.getUid()))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processMarkTodoCompleteDone(testUserPhone, testTodo.getUid());
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
     }
 
     @Test
     public void alterTodoMenuShouldWork()throws Exception{
-
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 saveModifyUrl("/", testTodo.getUid(), null))).thenReturn(testUser);
         when(todoBrokerMock.load(testTodo.getUid())).thenReturn(testTodo);
-        mockMvc.perform(get(path + "/modify")
-                .param(phoneParam,testUserPhone)
-                .param("todoUid",testTodo.getUid()))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processAlterTodoMenu(testUserPhone, testTodo.getUid());
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
                 saveModifyUrl("/", testTodo.getUid(), null));
         verify(todoBrokerMock,times(1)).load(testTodo.getUid());
@@ -358,10 +304,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 saveModifyUrl("/subject", testTodo.getUid(), null))).thenReturn(testUser);
         when(todoBrokerMock.load(testTodo.getUid())).thenReturn(testTodo);
 
-        mockMvc.perform(get(path + "/modify/subject")
-                .param(phoneParam,testUserPhone)
-                .param("todoUid",testTodo.getUid()))
-                .andExpect(status().isOk());
+        this.ussdTodoService.processAlterTodoSubject(testUserPhone, testTodo.getUid());
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
                 saveModifyUrl("/subject", testTodo.getUid(), null));
         verify(todoBrokerMock,times(1)).load(testTodo.getUid());
@@ -371,11 +315,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void confirmSubjectModificationShouldWork()throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
         String testSubject = "test subject";
-        mockMvc.perform(get(path + "/modify/subject/done")
-                .param(phoneParam,testUserPhone)
-                .param("todoUid",testTodo.getUid())
-                .param("request",testSubject))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processConfirmSubjectModification(testUserPhone, testTodo.getUid(), testSubject);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
     }
 
@@ -384,10 +326,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 saveModifyUrl("/date", testTodo.getUid(), null))).thenReturn(testUser);
         when(todoBrokerMock.load(testTodo.getUid())).thenReturn(testTodo);
-        mockMvc.perform(get(path + "/modify/date")
-                .param("request",testUserPhone)
-                .param("todoUid",testTodo.getUid()))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processAlterTodoDate(testUserPhone, testTodo.getUid());
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
                 saveModifyUrl("/date", testTodo.getUid(), null));
         verify(todoBrokerMock,times(1)).load(testTodo.getUid());
@@ -399,11 +340,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 saveModifyUrl("/date/confirm", testTodo.getUid(), testUserInput))).thenReturn(testUser);
         when(learningServiceMock.parse(testUserInput)).thenReturn(LocalDateTime.now().plusDays(1).plusHours(1));
-        mockMvc.perform(get(path + "/modify/date/confirm")
-                .param(phoneParam,testUserPhone)
-                .param("todoUid",testTodo.getUid())
-                .param("request",testUserInput))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processAlterDateConfirm(testUserPhone, testTodo.getUid(), testUserInput, null);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
                 saveModifyUrl("/date/confirm", testTodo.getUid(), testUserInput));
     }
@@ -411,11 +350,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     @Test
     public void changeEntryConfirmedShouldWork()throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
-        mockMvc.perform(get(path + "/modify/date/complete")
-                .param("msisdn",testUserPhone)
-                .param(todoUidParam,testTodo.getUid())
-                .param("epochMillis",""+Instant.now().toEpochMilli()))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processChangeEntryConfirmed(testUserPhone, testTodo.getUid(), Instant.now().toEpochMilli());
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
     }
 
@@ -424,10 +361,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 saveModifyUrl("/cancel", testTodo.getUid(), null))).thenReturn(testUser);
         when(todoBrokerMock.load(testTodo.getUid())).thenReturn(testTodo);
-        mockMvc.perform(get(path + "/modify/cancel")
-                .param(phoneParam,testUserPhone)
-                .param(todoUidParam,testTodo.getUid()))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processCancelTodo(testUserPhone, testTodo.getUid());
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
                 saveModifyUrl("/cancel", testTodo.getUid(), null));
         verify(todoBrokerMock,times(1)).load(testTodo.getUid());
@@ -436,11 +372,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     @Test
     public void cancelTodoConfirmedShouldWork()throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
-        mockMvc.perform(get(path + "/modify/cancel/confirm")
-                .param(phoneParam,testUserPhone)
-                .param(todoUidParam,testTodo.getUid())
-                .param("confirmed",""+true))
-                .andExpect(status().isOk());
+
+        this.ussdTodoService.processCancelTodoConfirmed(testUserPhone, testTodo.getUid(), true);
+
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
     }
 
