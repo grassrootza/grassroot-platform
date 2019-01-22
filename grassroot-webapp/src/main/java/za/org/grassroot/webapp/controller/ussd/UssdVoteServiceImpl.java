@@ -20,7 +20,7 @@ import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
 import za.org.grassroot.services.task.VoteBroker;
-import za.org.grassroot.services.user.UserManager;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -38,11 +38,10 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
-import static za.org.grassroot.webapp.controller.ussd.UssdSupport.*;
 import static za.org.grassroot.webapp.controller.ussd.UssdSupport.entityUidUrlSuffix;
+import static za.org.grassroot.webapp.controller.ussd.UssdSupport.*;
 import static za.org.grassroot.webapp.enums.VoteTime.*;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
 
 @Service
 public class UssdVoteServiceImpl implements UssdVoteService {
@@ -54,7 +53,7 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 	private final EventBroker eventBroker;
 	private final UssdSupport ussdSupport;
 	private final VoteBroker voteBroker;
-	private final UserManager userManager;
+	private final UserManagementService userManager;
 	private final CacheUtilService cacheManager;
 	private final PermissionBroker permissionBroker;
 	private final USSDEventUtil eventUtil;
@@ -65,7 +64,7 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 
 	private static final USSDSection thisSection = USSDSection.VOTES;
 
-	public UssdVoteServiceImpl(EventBroker eventBroker, UssdSupport ussdSupport, VoteBroker voteBroker, UserManager userManager, CacheUtilService cacheManager, PermissionBroker permissionBroker, USSDEventUtil eventUtil, USSDGroupUtil groupUtil, EventRequestBroker eventRequestBroker, AsyncUserLogger userLogger, AccountFeaturesBroker accountFeaturesBroker) {
+	public UssdVoteServiceImpl(EventBroker eventBroker, UssdSupport ussdSupport, VoteBroker voteBroker, UserManagementService userManager, CacheUtilService cacheManager, PermissionBroker permissionBroker, USSDEventUtil eventUtil, USSDGroupUtil groupUtil, EventRequestBroker eventRequestBroker, AsyncUserLogger userLogger, AccountFeaturesBroker accountFeaturesBroker) {
 		this.eventBroker = eventBroker;
 		this.ussdSupport = ussdSupport;
 		this.voteBroker = voteBroker;
@@ -185,7 +184,8 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 		User user = userManager.findByInputNumber(msisdn, saveVoteMenu("yes_no", requestUid));
 		// if the user only has one group, that gets passed in
 		final String timePrompt = ussdSupport.getMessage(thisSection, "time", promptKey + ".yesno", user);
-		return ussdSupport.menuBuilder(groupMenu(user, timePrompt, requestUid));
+		final USSDMenu ussdMenu = groupMenu(user, timePrompt, requestUid);
+		return ussdSupport.menuBuilder(ussdMenu);
 	}
 
 	@Override
@@ -219,9 +219,11 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 		int numberOptions = eventRequestBroker.load(requestUid).getVoteOptions().size();
 		if (numberOptions > 1 && "0".equals(userInput.trim())) {
 			final String timePrompt = ussdSupport.getMessage(thisSection, "time", promptKey + ".multi", user);
-			return ussdSupport.menuBuilder(groupMenu(user, timePrompt, requestUid));
+			final USSDMenu ussdMenu = groupMenu(user, timePrompt, requestUid);
+			return ussdSupport.menuBuilder(ussdMenu);
 		} else {
-			return ussdSupport.menuBuilder(addOptionAndReturn(user, requestUid, userInput));
+			final USSDMenu ussdMenu = addOptionAndReturn(user, requestUid, userInput);
+			return ussdSupport.menuBuilder(ussdMenu);
 		}
 	}
 
@@ -381,10 +383,10 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 			eventRequestBroker.updateVoteGroup(user.getUid(), requestUid, group.getUid());
 			return timeMenu(user, timePrompt, requestUid);
 		} else {
-			return groupUtil.askForGroup(new USSDGroupUtil
-					.GroupMenuBuilder(user, thisSection)
+			final USSDGroupUtil.GroupMenuBuilder groupMenuBuilder = new USSDGroupUtil.GroupMenuBuilder(user, thisSection)
 					.messageKey("group")
-					.urlForExistingGroup("closing?requestUid=" + requestUid));
+					.urlForExistingGroup("closing?requestUid=" + requestUid);
+			return groupUtil.askForGroup(groupMenuBuilder);
 		}
 	}
 

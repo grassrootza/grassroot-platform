@@ -11,7 +11,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 import static org.mockito.Mockito.*;
 
 
-public class USSDUserControllerTest extends UssdUnitTest {
+public class UssdUserServiceTest extends UssdUnitTest {
 
 	private static final String testUserPhone = "27801115555";
 
@@ -24,8 +24,8 @@ public class USSDUserControllerTest extends UssdUnitTest {
 	public void setUp() {
 		testUser = new User(testUserPhone, null, null);
 
-		this.ussdUserService = new UssdUserServiceImpl(ussdSupport, userManagementServiceMock, userLoggerMock, locationInfoBroker, mock(AddressBroker.class));
-		this.ussdHomeService = new UssdHomeServiceImpl(null, null, null, userManagementServiceMock, campaignBrokerMock, null, mock(AsyncUserLogger.class), ussdSupport, mock(CacheUtilService.class), null, null, null, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock, null);
+		this.ussdUserService = new UssdUserServiceImpl(ussdSupport, userManagementServiceMock, userLoggerMock, locationInfoBrokerMock, mock(AddressBroker.class));
+		this.ussdHomeService = new UssdHomeServiceImpl(null, locationInfoBrokerMock, null, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, ussdSupport, cacheUtilManagerMock, null, null, null, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock, null);
 	}
 
 	/*

@@ -17,6 +17,7 @@ import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
@@ -25,6 +26,8 @@ import za.org.grassroot.services.livewire.LiveWireContactBroker;
 import za.org.grassroot.services.task.*;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
+import za.org.grassroot.webapp.util.USSDEventUtil;
+import za.org.grassroot.webapp.util.USSDGroupUtil;
 import za.org.grassroot.webapp.util.USSDMenuUtil;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -63,7 +66,7 @@ public class UssdUnitTest {
 	protected EventRequestBroker eventRequestBrokerMock;
 
 	@Mock
-	protected LocationInfoBroker locationInfoBroker;
+	protected LocationInfoBroker locationInfoBrokerMock;
 
 	@Mock
 	protected TodoBroker todoBrokerMock;
@@ -98,13 +101,25 @@ public class UssdUnitTest {
 	@Mock
 	protected AsyncUserLogger userLoggerMock;
 
+	@Mock
+	protected VoteBroker voteBrokerMock;
+
+	@Mock
+	protected GroupJoinRequestService groupJoinRequestBroker;
+
+	protected USSDEventUtil ussdEventUtil;
+	protected USSDGroupUtil ussdGroupUtil;
 	protected UssdSupport ussdSupport;
 
 	@Before
 	public void parentSetUp() {
-		final USSDMessageAssembler ussdMessageAssembler = new USSDMessageAssembler(newMessageSource());
+		final MessageSource messageSource = newMessageSource();
+		final USSDMessageAssembler ussdMessageAssembler = new USSDMessageAssembler(messageSource);
 		final USSDMenuUtil ussdMenuUtil = new USSDMenuUtil("http://127.0.0.1:8080/ussd/", 140, 160);
-		ussdSupport = new UssdSupport(null, userManagementServiceMock, ussdMessageAssembler, ussdMenuUtil);
+
+		this.ussdSupport = new UssdSupport(null, userManagementServiceMock, ussdMessageAssembler, ussdMenuUtil);
+		this.ussdEventUtil = new USSDEventUtil(messageSource, eventBrokerMock, eventRequestBrokerMock, userLoggerMock, learningServiceMock);
+		this.ussdGroupUtil = new USSDGroupUtil(messageSource, groupBrokerMock, groupQueryBrokerMock, permissionBrokerMock, groupJoinRequestBroker);
 	}
 
 	private static MessageSource newMessageSource() {

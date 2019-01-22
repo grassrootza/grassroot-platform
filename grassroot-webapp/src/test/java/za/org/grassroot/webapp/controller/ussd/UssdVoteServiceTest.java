@@ -2,9 +2,6 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -12,64 +9,51 @@ import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.domain.task.VoteRequest;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.services.UserResponseBroker;
-import za.org.grassroot.services.task.VoteBroker;
-import za.org.grassroot.webapp.util.USSDEventUtil;
 
-import java.time.*;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
-import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
-import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
 
 
 /**
  * Created by luke on 2015/11/27.
  */
-public class USSDVoteControllerTest extends USSDAbstractUnitTest {
-
+public class UssdVoteServiceTest extends UssdUnitTest {
     private static final String testUserPhone = "27701110000";
-    private static final String phoneParam = "msisdn";
-    private static final String path = "/ussd/vote/";
+
+    private final List<User> languageUsers = constructLanguageUsers();
+
     private User testUser;
-
-    @Mock VoteBroker voteBrokerMock;
-    @Mock UserResponseBroker userResponseBrokerMock;
-
-    @InjectMocks
-    private USSDHomeController ussdHomeController;
-
-    @InjectMocks
-    private USSDVoteController ussdVoteController;
-
-    @InjectMocks
-    private USSDEventUtil ussdEventUtil;
+    private UssdVoteService ussdVoteService;
+    private UssdHomeService ussdHomeService;
 
     @Before
     public void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdHomeController, ussdVoteController)
-                .setHandlerExceptionResolvers(exceptionResolver())
-                .setValidator(validator())
-                .setViewResolvers(viewResolver())
-                .build();
-        wireUpHomeController(ussdHomeController);
-        // todo: VJERAN fix this dep
-//        wireUpMessageSourceAndGroupUtil(ussdVoteController);
-
-//        ussdHomeController.setVoteController(ussdVoteController);
-        ussdEventUtil.setMessageSource(messageSource());
-//        ussdVoteController.setEventUtil(ussdEventUtil);
-//        ussdVoteController.setGroupUtil(ussdGroupUtil);
         testUser = new User(testUserPhone, null, null);
+        this.ussdVoteService = new UssdVoteServiceImpl(eventBrokerMock, ussdSupport, voteBrokerMock, userManagementServiceMock, cacheUtilManagerMock, permissionBrokerMock, ussdEventUtil, ussdGroupUtil, eventRequestBrokerMock, userLoggerMock, accountFeaturesBrokerMock);
+        this.ussdHomeService = new UssdHomeServiceImpl(null, locationInfoBrokerMock, null, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, ussdSupport, cacheUtilManagerMock, null, ussdVoteService, null, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock, null);
+    }
+
+
+    private static List<User> constructLanguageUsers() {
+        /* We use these quite often */
+        String baseForOthers = "2781000111";
+        User testUserZu = new User(baseForOthers + "2", null, null);
+        User testUserTs = new User(baseForOthers + "3", null, null);
+        User testUserNso = new User(baseForOthers + "4", null, null);
+        User testUserSt = new User(baseForOthers + "5", null, null);
+
+        testUserZu.setLanguageCode("zu");
+        testUserTs.setLanguageCode("ts");
+        testUserNso.setLanguageCode("nso");
+        testUserSt.setLanguageCode("st");
+
+        return Arrays.asList(testUserNso, testUserSt, testUserTs, testUserZu);
     }
 
     @Test
@@ -91,17 +75,14 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
             when(userResponseBrokerMock.checkForEntityForUserResponse(user.getUid(), true)).thenReturn(vote);
 
-            mockMvc.perform(get("/ussd/start").param(phoneParam, user.getPhoneNumber())).andExpect(status().isOk());
+            this.ussdHomeService.processStartMenu(user.getPhoneNumber(), null);
             verify(userResponseBrokerMock, times(1)).checkForEntityForUserResponse(user.getUid(), true);
 
             // note: the fact that message source accessor is not wired up may mean this is not actually testing
             when(eventBrokerMock.load(vote.getUid())).thenReturn(vote);
-            mockMvc.perform(get("/ussd/start").param(phoneParam, user.getPhoneNumber()));
-            mockMvc.perform(get("/ussd/vote/record")
-                    .param(phoneParam, user.getPhoneNumber())
-                    .param("voteUid", "" + vote.getUid())
-                    .param("response", "yes")).andExpect(status().isOk());
+            this.ussdHomeService.processStartMenu(user.getPhoneNumber(), null);
 
+            this.ussdVoteService.processVoteAndWelcome(user.getPhoneNumber(), vote.getUid(), "yes");
             verify(voteBrokerMock, times(1)).recordUserVote(user.getUid(), vote.getUid(), "yes");
         }
     }
@@ -119,10 +100,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(3);
         when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3)).thenReturn(testGroups);
 
-        mockMvc.perform(get(path + "yes_no")
-                .param(phoneParam, testUserPhone)
-                .param("requestUid", VoteRequest.makeEmpty().getUid()))
-                .andExpect(status().isOk());
+        this.ussdVoteService.processYesNoSelectGroup(testUserPhone, VoteRequest.makeEmpty().getUid());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(eq(testUserPhone), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -159,10 +137,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(2);
         when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3)).thenReturn(validGroups);
 
-        mockMvc.perform(get(path + "multi_option/add")
-                .param(phoneParam, testUserPhone)
-                .param("requestUid", voteRequest.getUid())
-                .param("request", "0")).andExpect(status().isOk());
+        this.ussdVoteService.processAddVoteOption(testUserPhone, voteRequest.getUid(), "0", null);
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);

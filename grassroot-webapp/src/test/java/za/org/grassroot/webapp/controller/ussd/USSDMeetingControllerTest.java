@@ -89,8 +89,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 //        ussdHomeController.setMeetingController(ussdMeetingController);
 //        ussdMeetingController.setEventUtil(ussdEventUtil);
 //        ussdMeetingController.setGroupUtil(ussdGroupUtil);
-
-        ussdEventUtil.setMessageSource(messageSource());
+//        ussdEventUtil.setMessageSource(messageSource());
     }
 
     @Test

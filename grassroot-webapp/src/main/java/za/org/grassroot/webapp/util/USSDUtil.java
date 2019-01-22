@@ -11,20 +11,21 @@ import java.util.Locale;
 /**
  * Created by luke on 2015/12/04.
  */
-public class USSDUtil {
+abstract class USSDUtil {
 
     // we use this for truncating lists of votes, meetings, etc -- roughly 50 chars for prompt, 5 chars for ellipsis & enum
     private static final int maxSafeListOptionLength = ((160 - 50) / 3) - 5;
 
-    @Autowired
-    protected MessageSource messageSource;
+    protected final MessageSource messageSource;
 
     protected static final Integer PAGE_LENGTH = 3;
     protected static final String
             promptKey = "prompt",
             optionsKey = "options.";
 
-    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
+    protected USSDUtil(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
 
     protected String checkAndTruncateMenuOption(String option) {
         if (option.length() <= maxSafeListOptionLength) return option;
