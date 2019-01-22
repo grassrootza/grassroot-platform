@@ -13,8 +13,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static za.org.grassroot.core.util.DateTimeUtil.getPreferredDateFormat;
-import static za.org.grassroot.core.util.DateTimeUtil.getPreferredTimeFormat;
 import static za.org.grassroot.webapp.controller.ussd.UssdMeetingService.*;
 import static za.org.grassroot.webapp.controller.ussd.UssdSupport.*;
 
@@ -251,14 +249,14 @@ public class USSDMeetingController {
 								  @RequestParam(value = entityUidParam) String eventUid,
 								  @RequestParam(value = requestUidParam, required = false) String requestUid) throws URISyntaxException {
 
-		return ussdMeetingService.processNewMeetingDateTime(inputNumber, eventUid, requestUid, newTime, getPreferredTimeFormat(), "time.");
+		return ussdMeetingService.processNewMeetingTime(inputNumber, eventUid, requestUid);
 	}
 
 	@RequestMapping(path + newDate)
 	public Request newMeetingDate(@RequestParam(value = phoneNumber) String inputNumber,
 								  @RequestParam(value = entityUidParam) String eventUid,
 								  @RequestParam(value = requestUidParam, required = false) String requestUid) throws URISyntaxException {
-		return ussdMeetingService.processNewMeetingDateTime(inputNumber, eventUid, requestUid, newDate, getPreferredDateFormat(), "date.");
+		return ussdMeetingService.processNewMeetingDate(inputNumber, eventUid, requestUid);
 	}
 
 	// note: changing date and time do not come through here, but through a separate menu

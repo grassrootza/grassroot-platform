@@ -6,8 +6,10 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.LearningService;
+import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -29,6 +31,9 @@ import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
 import za.org.grassroot.webapp.util.USSDMenuUtil;
+
+import java.util.Arrays;
+import java.util.List;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UssdUnitTest {
@@ -72,6 +77,12 @@ public class UssdUnitTest {
 	protected TodoBroker todoBrokerMock;
 
 	@Mock
+ 	protected ExperimentBroker experimentBrokerMock;
+
+	@Mock
+	protected TaskBroker taskBrokerMock;
+
+	@Mock
 	protected TodoRequestBroker todoRequestBrokerMock;
 
 	@Mock
@@ -111,13 +122,31 @@ public class UssdUnitTest {
 	protected USSDGroupUtil ussdGroupUtil;
 	protected UssdSupport ussdSupport;
 
+	protected final static List<User> languageUsers = constructLanguageUsers();
+
+	private static List<User> constructLanguageUsers() {
+		/* We use these quite often */
+		String baseForOthers = "2781000111";
+		User testUserZu = new User(baseForOthers + "2", null, null);
+		User testUserTs = new User(baseForOthers + "3", null, null);
+		User testUserNso = new User(baseForOthers + "4", null, null);
+		User testUserSt = new User(baseForOthers + "5", null, null);
+
+		testUserZu.setLanguageCode("zu");
+		testUserTs.setLanguageCode("ts");
+		testUserNso.setLanguageCode("nso");
+		testUserSt.setLanguageCode("st");
+
+		return Arrays.asList(testUserNso, testUserSt, testUserTs, testUserZu);
+	}
+
 	@Before
 	public void parentSetUp() {
 		final MessageSource messageSource = newMessageSource();
 		final USSDMessageAssembler ussdMessageAssembler = new USSDMessageAssembler(messageSource);
 		final USSDMenuUtil ussdMenuUtil = new USSDMenuUtil("http://127.0.0.1:8080/ussd/", 140, 160);
 
-		this.ussdSupport = new UssdSupport(null, userManagementServiceMock, ussdMessageAssembler, ussdMenuUtil);
+		this.ussdSupport = new UssdSupport(experimentBrokerMock, userManagementServiceMock, ussdMessageAssembler, ussdMenuUtil);
 		this.ussdEventUtil = new USSDEventUtil(messageSource, eventBrokerMock, eventRequestBrokerMock, userLoggerMock, learningServiceMock);
 		this.ussdGroupUtil = new USSDGroupUtil(messageSource, groupBrokerMock, groupQueryBrokerMock, permissionBrokerMock, groupJoinRequestBroker);
 	}

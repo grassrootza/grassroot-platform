@@ -22,6 +22,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
@@ -543,16 +544,26 @@ public class UssdMeetingServiceImpl implements UssdMeetingService {
 
 	@Override
 	@Transactional
-	public Request processNewMeetingDateTime(String inputNumber, String eventUid, String requestUid, String newTime, DateTimeFormatter preferredTimeFormat, String msgPrefix) throws URISyntaxException {
+	public Request processNewMeetingDate(String inputNumber, String eventUid, String requestUid) throws URISyntaxException {
+		return processNewMeetingDateTime(inputNumber, eventUid, requestUid, newDate, getPreferredDateFormat(), "date.");
+	}
+
+	@Override
+	@Transactional
+	public Request processNewMeetingTime(String inputNumber, String eventUid, String requestUid) throws URISyntaxException {
+		return processNewMeetingDateTime(inputNumber, eventUid, requestUid, newTime, getPreferredTimeFormat(), "time.");
+	}
+
+	private Request processNewMeetingDateTime(String inputNumber, String eventUid, String requestUid, String action, DateTimeFormatter preferredTimeFormat, String msgPrefix) throws URISyntaxException {
 		User user = userManager.findByInputNumber(inputNumber);
 		MeetingRequest changeRequest = (requestUid == null) ? eventRequestBroker.createChangeRequest(user.getUid(), eventUid) :
 				(MeetingRequest) eventRequestBroker.load(requestUid);
-		cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(newTime, eventUid, changeRequest.getUid(), null));
+		cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(action, eventUid, changeRequest.getUid(), null));
 
 		String existingTime = changeRequest.getEventDateTimeAtSAST().format(preferredTimeFormat);
 		USSDMenu menu = new USSDMenu(ussdSupport.getMessage(thisSection, "change", msgPrefix + promptKey, existingTime, user));
 		menu.setFreeText(true);
-		menu.setNextURI(editingMtgMenuUrl(modifyConfirm, eventUid, changeRequest.getUid(), newTime));
+		menu.setNextURI(editingMtgMenuUrl(modifyConfirm, eventUid, changeRequest.getUid(), action));
 		return ussdSupport.menuBuilder(menu);
 	}
 

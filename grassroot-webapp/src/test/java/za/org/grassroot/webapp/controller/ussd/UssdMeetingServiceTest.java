@@ -2,12 +2,9 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -16,31 +13,22 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.MeetingRequest;
-import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.integration.experiments.ExperimentBroker;
-import za.org.grassroot.services.UserResponseBroker;
-import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.enums.EventListTimeType;
-import za.org.grassroot.webapp.enums.USSDSection;
-import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
@@ -50,46 +38,36 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 /**
  * Created by luke on 2015/11/26.
  */
-public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
+public class UssdMeetingServiceTest extends UssdUnitTest {
 
-    private static final Logger log = LoggerFactory.getLogger(USSDMeetingControllerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(UssdMeetingServiceTest.class);
 
     private static final String testUserPhone = "27601110000";
     private static final String phoneParam = "msisdn";
-
     private static final String path = "/ussd/mtg/";
-    private static final USSDSection thisSection = USSDSection.MEETINGS;
 
-    @Mock private UserResponseBroker userResponseBrokerMock;
-    @Mock private ExperimentBroker experimentBrokerMock;
-    @Mock private TaskBroker taskBrokerMock;
-
-    @InjectMocks
-    private USSDHomeController ussdHomeController;
-
-    @InjectMocks
-    private USSDMeetingController ussdMeetingController;
-
-    @InjectMocks
-    private USSDEventUtil ussdEventUtil;
+    private UssdMeetingService ussdMeetingService;
+    private UssdHomeService ussdHomeService;
 
     @Before
     public void setUp() {
+//        mockMvc = MockMvcBuilders.standaloneSetup(ussdMeetingController, ussdHomeController)
+//                .setHandlerExceptionResolvers(exceptionResolver())
+//                .setValidator(validator())
+//                .setViewResolvers(viewResolver())
+//                .build();
 
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdMeetingController, ussdHomeController)
-                .setHandlerExceptionResolvers(exceptionResolver())
-                .setValidator(validator())
-                .setViewResolvers(viewResolver())
-                .build();
 
-
-        wireUpHomeController(ussdHomeController);
+//        wireUpHomeController(ussdHomeController);
         // todo: VJERAN fix this dep
 //        wireUpMessageSourceAndGroupUtil(ussdMeetingController);
 //        ussdHomeController.setMeetingController(ussdMeetingController);
 //        ussdMeetingController.setEventUtil(ussdEventUtil);
 //        ussdMeetingController.setGroupUtil(ussdGroupUtil);
 //        ussdEventUtil.setMessageSource(messageSource());
+
+        this.ussdMeetingService = new UssdMeetingServiceImpl(false, false, taskBrokerMock, ussdSupport, userManagementServiceMock, eventBrokerMock, eventRequestBrokerMock, eventLogBrokerMock, accountFeaturesBrokerMock, null, ussdEventUtil, ussdGroupUtil, groupBrokerMock, cacheUtilManagerMock);
+        this.ussdHomeService = new UssdHomeServiceImpl(null, locationInfoBrokerMock, null, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, ussdSupport, cacheUtilManagerMock, null, null, ussdMeetingService, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock, null);
     }
 
     @Test
@@ -111,14 +89,13 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
             when(userResponseBrokerMock.checkForEntityForUserResponse(user.getUid(), true)).thenReturn(meeting);
             when(taskBrokerMock.fetchDescription(user.getUid(), meeting.getUid(), TaskType.MEETING)).thenReturn(taskDetails);
 
-            mockMvc.perform(get("/ussd/start").param(phoneParam, user.getPhoneNumber())).andExpect(status().isOk());
+            this.ussdHomeService.processStartMenu(user.getPhoneNumber(), null);
+
             verify(userResponseBrokerMock, times(1)).checkForEntityForUserResponse(user.getUid(), true);
 
             when(eventBrokerMock.loadMeeting(meeting.getUid())).thenReturn(meeting);
-            mockMvc.perform(get("/ussd/mtg/rsvp")
-                    .param(phoneParam, user.getPhoneNumber())
-                    .param("entityUid", "" + meeting.getUid())
-                    .param("confirmed", "yes")).andExpect(status().isOk());
+
+            this.ussdMeetingService.processRsvpAndWelcome(user.getPhoneNumber(), meeting.getUid(), "yes");
 
             verify(eventLogBrokerMock, times(1)).rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
             verify(experimentBrokerMock, times(1)).recordEvent(eq("meeting_response"), eq(user.getUid()), eq(null), any(Map.class));
@@ -158,7 +135,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(1);
         when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3)).thenReturn(existingGroupList);
 
-        mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        this.ussdMeetingService.processMeetingOrg(testUserPhone, false);
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -187,7 +164,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(eventBrokerMock.getEventsUserCanView(testUser, EventType.MEETING, EventListTimeType.FUTURE, 0, 3)).thenReturn(
                 new PageImpl<>(upcomingMeetingList));
 
-        mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        this.ussdMeetingService.processMeetingOrg(testUserPhone, false);
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
@@ -511,13 +488,11 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<String> onePmVariations = Arrays.asList("13:00", "13 00", "13h00", "1:00 pm", "1pm");
 
         for (String time : nineAmVariations) {
-            mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
-                    param("prior_menu", "time_only").param("revising", "1").param("request", time)).andExpect(status().isOk());
+            this.ussdMeetingService.processConfirmDetails(testUserPhone, requestUid, "time_only", time, false);
         }
 
         for (String time : onePmVariations) {
-            mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
-                    param("prior_menu", "time_only").param("revising", "1").param("request", time)).andExpect(status().isOk());
+            this.ussdMeetingService.processConfirmDetails(testUserPhone, requestUid, "time_only", time, false);
         }
 
         // not doing the full range of checks as those are tested above, here just verifying no extraneous calls
@@ -565,8 +540,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         LocalDateTime forTimestamp = LocalDateTime.now().plusDays(1).plusHours(7);
         String confirmedTime = forTimestamp.format(DateTimeFormatter.ofPattern("EEE d MMM, h:mm a"));
 
-        mockMvc.perform(get(path + "send").param(phoneParam, testUserPhone).param("entityUid", requestUid))
-                .andExpect(status().isOk());
+        this.ussdMeetingService.processSendMessage(testUserPhone, requestUid);
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -585,8 +559,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.load(testMeeting.getUid())).thenReturn(testMeeting);
 
-        mockMvc.perform(get(path + "manage").param(phoneParam, testUserPhone).param("entityUid", "" + testMeeting.getUid())).
-                andExpect(status().isOk());
+        this.ussdMeetingService.processMeetingManage(testUserPhone, testMeeting.getUid());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -612,8 +585,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(eventBrokerMock.loadMeeting(testMeeting.getUid())).thenReturn(testMeeting);
         when(eventLogBrokerMock.getResponseCountForEvent(testMeeting)).thenReturn(meetingResults);
 
-        mockMvc.perform(get(path + "details").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid())).
-                andExpect(status().isOk());
+        this.ussdMeetingService.processMeetingDetails(testUserPhone, testMeeting.getUid());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -636,10 +608,9 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(eventRequestBrokerMock.createChangeRequest(testUser.getUid(), testMeeting.getUid())).thenReturn(changeRequest);
         when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
 
-        mockMvc.perform(get(path + "new_date").param(phoneParam, testUserPhone).param("entityUid", "" + testMeeting.getUid()).
-                param("next_menu", "changeDateTime")).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
-                .andExpect(status().isOk());
+
+        this.ussdMeetingService.processNewMeetingDate(testUserPhone, testMeeting.getUid(), null);
+        this.ussdMeetingService.processNewMeetingDate(testUserPhone, testMeeting.getUid(), changeRequest.getUid());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -783,9 +754,9 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         for (String[] actions : actionsAndInputs) {
             urlToSave = editingMtgMenuUrl("modify", testMeeting.getUid(), changeRequest.getUid(), actions[0])
                     + "&prior_input=" + encodeParameter(actions[1]);
-            mockMvc.perform(get(path + "modify").param(phoneParam, testUserPhone).param("entityUid", "" + testMeeting.getUid()).
-                    param("requestUid", changeRequest.getUid()).param("action", actions[0]).param("request", actions[1])).
-                    andExpect(status().isOk());
+
+            this.ussdMeetingService.processModifyMeeting(testUserPhone, testMeeting.getUid(), changeRequest.getUid(), actions[0], actions[1], null);
+
             verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, urlToSave);
         }
 
@@ -809,8 +780,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "modify-do").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid()).
-                param("requestUid", changeRequest.getUid())).andExpect(status().isOk());
+        this.ussdMeetingService.processModifyMeetingSend(testUserPhone, testMeeting.getUid(), changeRequest.getUid());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -841,8 +811,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "cancel-do").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid())).
-                andExpect(status().isOk());
+        this.ussdMeetingService.processMeetingCancelConfirmed(testUserPhone, testMeeting.getUid());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);

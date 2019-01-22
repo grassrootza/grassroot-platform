@@ -1,15 +1,12 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import za.org.grassroot.core.domain.EntityForUserResponse;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.net.URISyntaxException;
-import java.time.format.DateTimeFormatter;
 
 public interface UssdMeetingService {
 	USSDSection thisSection = USSDSection.MEETINGS;
@@ -78,7 +75,9 @@ public interface UssdMeetingService {
 
 	Request processChangeLocation(String inputNumber, String eventUid, String requestUid) throws URISyntaxException;
 
-	Request processNewMeetingDateTime(String inputNumber, String eventUid, String requestUid, String newTime, DateTimeFormatter preferredTimeFormat, String msgPrefix) throws URISyntaxException;
+	Request processNewMeetingDate(String inputNumber, String eventUid, String requestUid) throws URISyntaxException;
+
+	Request processNewMeetingTime(String inputNumber, String eventUid, String requestUid) throws URISyntaxException;
 
 	Request processModifyMeeting(String inputNumber, String eventUid, String requestUid, String action, String passedInput, String priorInput) throws URISyntaxException;
 

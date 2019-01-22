@@ -26,7 +26,6 @@ import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GR
 public class UssdVoteServiceTest extends UssdUnitTest {
     private static final String testUserPhone = "27701110000";
 
-    private final List<User> languageUsers = constructLanguageUsers();
 
     private User testUser;
     private UssdVoteService ussdVoteService;
@@ -37,23 +36,6 @@ public class UssdVoteServiceTest extends UssdUnitTest {
         testUser = new User(testUserPhone, null, null);
         this.ussdVoteService = new UssdVoteServiceImpl(eventBrokerMock, ussdSupport, voteBrokerMock, userManagementServiceMock, cacheUtilManagerMock, permissionBrokerMock, ussdEventUtil, ussdGroupUtil, eventRequestBrokerMock, userLoggerMock, accountFeaturesBrokerMock);
         this.ussdHomeService = new UssdHomeServiceImpl(null, locationInfoBrokerMock, null, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, ussdSupport, cacheUtilManagerMock, null, ussdVoteService, null, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock, null);
-    }
-
-
-    private static List<User> constructLanguageUsers() {
-        /* We use these quite often */
-        String baseForOthers = "2781000111";
-        User testUserZu = new User(baseForOthers + "2", null, null);
-        User testUserTs = new User(baseForOthers + "3", null, null);
-        User testUserNso = new User(baseForOthers + "4", null, null);
-        User testUserSt = new User(baseForOthers + "5", null, null);
-
-        testUserZu.setLanguageCode("zu");
-        testUserTs.setLanguageCode("ts");
-        testUserNso.setLanguageCode("nso");
-        testUserSt.setLanguageCode("st");
-
-        return Arrays.asList(testUserNso, testUserSt, testUserTs, testUserZu);
     }
 
     @Test
