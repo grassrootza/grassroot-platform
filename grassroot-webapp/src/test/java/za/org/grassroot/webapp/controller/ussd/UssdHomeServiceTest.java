@@ -2,7 +2,6 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.test.annotation.Rollback;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -43,7 +42,6 @@ public class UssdHomeServiceTest extends UssdUnitTest {
     }
 
     @Test
-    @Rollback
     public void welcomeMenuShouldWork() throws Exception {
         testUser.setHasInitiatedSession(false);
 
@@ -122,7 +120,6 @@ public class UssdHomeServiceTest extends UssdUnitTest {
 
         verify(userManagementServiceMock, times(1)).loadOrCreateUser(phoneForTests, UserInterfaceType.USSD);
         verify(ussdLiveWireServiceMock, times(1)).assembleLiveWireOpening(testUser, 0);
-
     }
 
     /*

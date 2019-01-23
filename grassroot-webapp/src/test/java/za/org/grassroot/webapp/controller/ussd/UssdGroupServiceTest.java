@@ -1,39 +1,32 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
-import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
-import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.services.MessageAssemblingService;
-import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
-import za.org.grassroot.webapp.controller.ussd.group.USSDGroupController;
-import za.org.grassroot.webapp.controller.ussd.group.USSDGroupMgmtController;
+import za.org.grassroot.webapp.controller.ussd.group.UssdGroupMgmtService;
+import za.org.grassroot.webapp.controller.ussd.group.UssdGroupMgmtServiceImpl;
+import za.org.grassroot.webapp.controller.ussd.group.UssdGroupService;
+import za.org.grassroot.webapp.controller.ussd.group.UssdGroupServiceImpl;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
  * Created by luke on 2015/11/28.
  */
-public class USSDGroupControllerTest extends USSDAbstractUnitTest {
-
-    // private static final Logger log = LoggerFactory.getLogger(USSDGroupControllerTest.class);
+public class UssdGroupServiceTest extends UssdUnitTest {
 
     private static final String testUserPhone = "27801110000";
     private static final String testUserUid = "test-user-unique-id";
@@ -41,40 +34,23 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     private static final String groupParam = "groupUid";
     private String testGroupIdString;
 
-    private static final String path = "/ussd/group/";
-
     private User testUser;
     private Group testGroup;
     private Set<MembershipInfo> testMembers = new HashSet<>();
     private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
 
-    @Mock private GroupJoinRequestService groupJoinRequestServiceMock;
-    @Mock private MessageAssemblingService messageAssemblingServiceMock;
-
-    @InjectMocks
-    private USSDGroupController ussdGroupController;
-
-    @InjectMocks
-    private USSDGroupMgmtController ussdGroupMgmtController;
+    private UssdGroupService ussdGroupService;
+    private UssdGroupMgmtService ussdGroupMgmtService;
 
     @Before
     public void setUp() {
-
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdGroupController, ussdGroupMgmtController)
-                .setHandlerExceptionResolvers(exceptionResolver())
-                .setValidator(validator())
-                .setViewResolvers(viewResolver())
-                .build();
-
-        // todo: VJERAN: fix?
-//        wireUpMessageSourceAndGroupUtil(ussdGroupController);
-//        ussdGroupController.setUssdGroupUtil(ussdGroupUtil);
-//        wireUpMessageSourceAndGroupUtil(ussdGroupMgmtController);
-
         testUser = new User(testUserPhone, null, null);
         testGroup = new Group("test group", testUser);
         testMembers.add(new MembershipInfo(testUserPhone, RoleName.ROLE_GROUP_ORGANIZER, null));
         testGroupIdString = testGroup.getUid();
+
+        this.ussdGroupService = new UssdGroupServiceImpl(false, ussdSupport, groupBrokerMock, permissionBrokerMock, null, groupJoinRequestServiceMock, ussdGroupUtil, userManagementServiceMock, cacheUtilManagerMock);
+        this.ussdGroupMgmtService = new UssdGroupMgmtServiceImpl(groupBrokerMock, groupQueryBrokerMock, permissionBrokerMock, ussdSupport, userManagementServiceMock);
     }
 
     @Test
@@ -89,9 +65,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, null)).thenReturn(4);
         when(permissionBrokerMock.getPageOfGroups(testUser, null, 1, 3)).thenReturn(testGroups);
 
-        mockMvc.perform(get("/ussd/group_page").param(phoneParam, testUserPhone).param("prompt", "Look at pages").
-                param("page", "1").param("existingUri", "/ussd/blank").param("newUri", "/ussd/blank2")).
-                andExpect(status().isOk());
+        this.ussdGroupService.processGroupPaginationHelper(testUserPhone, "Look at pages", 1, "/ussd/blank", null, "/ussd/blank2");
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, null);
@@ -106,7 +80,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         testGroup.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.getActiveGroupsWithPermission(testUser, null)).thenReturn(new HashSet<>());
-        mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+
+        this.ussdGroupService.processGroupList(testUserPhone, false);
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, null);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -117,8 +93,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void createGroupWithInvalidNameShouldWork() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param(userInputParam, "1")).
-                andExpect(status().isOk());
+
+        this.ussdGroupService.processCreateGroupWithName(testUserPhone, "1", false, null);
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, "group/create");
         verifyZeroInteractions(groupBrokerMock);
@@ -139,10 +116,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(permissionBrokerMock.isGroupPermissionAvailable(testUser, testGroup, p1)).thenReturn(true);
         when(permissionBrokerMock.isGroupPermissionAvailable(testUser, testGroup, p2)).thenReturn(true);
 
-        mockMvc.perform(get(path + "menu").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
-                andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
-                andExpect(status().isOk());
+        this.ussdGroupService.processGroupMenu(testUserPhone, testGroupIdString);
+        this.ussdGroupService.processGroupMenu(testUserPhone, testGroup.getUid());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -158,10 +133,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get(path + "rename").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
-                andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
-                andExpect(status().isOk());
+
+        this.ussdGroupMgmtService.processRenamePrompt(testUserPhone, testGroupIdString);
+        this.ussdGroupMgmtService.processRenamePrompt(testUserPhone, testGroup.getUid());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -298,10 +272,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
-        mockMvc.perform(get(path + "addnumber").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
-                andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
-                andExpect(status().isOk());
+        this.ussdGroupService.processAddNumberInput(testUserPhone, testGroupIdString);
+        this.ussdGroupService.processAddNumberInput(testUserPhone, testGroup.getUid());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -314,8 +286,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get(path + "addnumber-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
-                param("request", "0801110001")).andExpect(status().isOk());
+
+        this.ussdGroupService.processAddNumberToGroup(testUserPhone, testGroupIdString, "0801110001");
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801110001"),
@@ -330,10 +303,10 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         String urlToSave = saveGroupMenu("unsubscribe", testGroup.getUid());
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get(path + "unsubscribe").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
-                andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
-                andExpect(status().isOk());
+
+        this.ussdGroupService.processUnsubscribeConfirm(testUserPhone, testGroupIdString);
+        this.ussdGroupService.processUnsubscribeConfirm(testUserPhone, testGroup.getUid());
+
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         // note: not verifying zero testGroup interactions as may add them in future
         verifyZeroInteractions(eventBrokerMock);
@@ -343,8 +316,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void unsubscribeConfirmShouldWork() throws Exception {
         resetTestGroup();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        mockMvc.perform(get(path + "unsubscribe-do").param(phoneParam, testUserPhone).param(groupParam, testGroup.getUid())).
-                andExpect(status().isOk());
+
+        this.ussdGroupService.processUnsubscribeDo(testUserPhone, testGroup.getUid());
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).unsubscribeMember(testUser.getUid(), testGroup.getUid());
@@ -392,7 +366,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         String urlToSave = "group/create";
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        mockMvc.perform(get(path + "create").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+
+        this.ussdGroupService.processCreatePrompt(testUserPhone);
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyZeroInteractions(groupBrokerMock);
@@ -408,8 +384,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(groupBrokerMock.create(testUser.getUid(), nameToPass, null, organizer(testUser), template,
                 null, null, true, false, true)).thenReturn(testGroup);
 
-        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param("request", nameToPass)).
-                andExpect(status().isOk());
+        this.ussdGroupService.processCreateGroupWithName(testUserPhone, nameToPass, false, null);
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -421,17 +397,18 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void newGroupBatchNumbersShouldWork() throws Exception {
-
         resetTestGroup();
         String newNumbersToPass = "0801234567 010111222"; // second number is invalid
+
         Set<MembershipInfo> member = ordinaryMember("0801234567");
+
         String urlToSave = saveGroupMenuWithInput("add-numbers-do", testGroup.getUid(), newNumbersToPass, false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get(path + "add-numbers-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
-                param("request", newNumbersToPass)).andExpect(status().isOk());
+
+        this.ussdGroupService.processAddNumbersToNewlyCreatedGroup(testUserPhone, testGroupIdString, newNumbersToPass, null);
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -441,14 +418,24 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verifyZeroInteractions(eventBrokerMock);
     }
 
+    // helper method to generate a set of membership info ... used often
+    protected Set<MembershipInfo> ordinaryMember(String phoneNumber) {
+        return Sets.newHashSet(new MembershipInfo(phoneNumber, RoleName.ROLE_ORDINARY_MEMBER, null));
+    }
+
+    protected Set<MembershipInfo> organizer(User user) {
+        return Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
+    }
+
     @Test
     public void newGroupFinishingShouldWork() throws Exception {
         resetTestGroup();
         String urlToSave = saveGroupMenuWithInput("add-numbers-do", testGroup.getUid(), "0", false);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get(path + "add-numbers-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
-                param("request", "0")).andExpect(status().isOk());
+
+        this.ussdGroupService.processAddNumbersToNewlyCreatedGroup(testUserPhone, testGroupIdString, "0", null);
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());

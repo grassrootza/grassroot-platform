@@ -116,7 +116,7 @@ public class UssdUnitTest {
 	protected VoteBroker voteBrokerMock;
 
 	@Mock
-	protected GroupJoinRequestService groupJoinRequestBroker;
+	protected GroupJoinRequestService groupJoinRequestServiceMock;
 
 	protected USSDEventUtil ussdEventUtil;
 	protected USSDGroupUtil ussdGroupUtil;
@@ -149,7 +149,7 @@ public class UssdUnitTest {
 		this.ussdMessageAssembler = new USSDMessageAssembler(messageSource);
 		this.ussdSupport = new UssdSupport(experimentBrokerMock, userManagementServiceMock, ussdMessageAssembler, ussdMenuUtil);
 		this.ussdEventUtil = new USSDEventUtil(messageSource, eventBrokerMock, eventRequestBrokerMock, userLoggerMock, learningServiceMock);
-		this.ussdGroupUtil = new USSDGroupUtil(messageSource, groupBrokerMock, groupQueryBrokerMock, permissionBrokerMock, groupJoinRequestBroker);
+		this.ussdGroupUtil = new USSDGroupUtil(messageSource, groupBrokerMock, groupQueryBrokerMock, permissionBrokerMock, groupJoinRequestServiceMock);
 	}
 
 	private static MessageSource newMessageSource() {
