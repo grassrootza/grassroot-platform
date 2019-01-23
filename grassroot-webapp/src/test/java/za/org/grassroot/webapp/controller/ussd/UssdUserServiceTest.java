@@ -4,9 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.geo.AddressBroker;
-import za.org.grassroot.services.util.CacheUtilService;
 
 import static org.mockito.Mockito.*;
 
@@ -25,7 +23,7 @@ public class UssdUserServiceTest extends UssdUnitTest {
 		testUser = new User(testUserPhone, null, null);
 
 		this.ussdUserService = new UssdUserServiceImpl(ussdSupport, userManagementServiceMock, userLoggerMock, locationInfoBrokerMock, mock(AddressBroker.class));
-		this.ussdHomeService = new UssdHomeServiceImpl(null, locationInfoBrokerMock, null, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, ussdSupport, cacheUtilManagerMock, null, null, null, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock, null);
+		this.ussdHomeService = new UssdHomeServiceImpl(ussdSupport, null, null, null, null, null, null, locationInfoBrokerMock, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, cacheUtilManagerMock, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock);
 	}
 
 	/*

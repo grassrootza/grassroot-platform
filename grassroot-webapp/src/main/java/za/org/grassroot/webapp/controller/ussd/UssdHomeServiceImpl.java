@@ -35,11 +35,13 @@ import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
+import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDCampaignConstants;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import javax.annotation.PostConstruct;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -52,19 +54,19 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	private final Logger log = LoggerFactory.getLogger(UssdHomeServiceImpl.class);
 
 	@Value("${grassroot.ussd.code.length:9}")
-	private int hashPosition;
+	private int hashPosition = 9;
 
 	@Value("${grassroot.ussd.safety.suffix:911}")
-	private String safetyCode;
+	private String safetyCode = "911";
 
 	@Value("${grassroot.ussd.livewire.suffix:411}")
-	private String livewireSuffix;
+	private String livewireSuffix = "411";
 
 	@Value("${grassroot.ussd.sendlink.suffix:123}")
-	private String sendMeLink;
+	private String sendMeLink = "123";
 
 	@Value("${grassroot.geo.apis.enabled:false}")
-	private boolean geoApisEnabled;
+	private boolean geoApisEnabled = false;
 
 	private Map<String, String> geoApiSuffixes;
 
@@ -74,13 +76,14 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	private final UssdSafetyGroupService ussdSafetyGroupService;
 	private final UssdVoteService ussdVoteService;
 	private final UssdMeetingService ussdMeetingService;
-	private final LocationInfoBroker locationInfoBroker;
 	private final UserManagementService userManager;
+	private final CacheUtilService cacheManager;
+
+	private final LocationInfoBroker locationInfoBroker;
 	private final CampaignBroker campaignBroker;
 	private final CampaignTextBroker campaignTextBroker;
 	private final AsyncUserLogger userLogger;
 	private final UssdSupport ussdSupport;
-	private final CacheUtilService cacheManager;
 	private final UserResponseBroker userResponseBroker;
 
 	private final GroupQueryBroker groupQueryBroker;
@@ -89,8 +92,9 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 
 	private static final USSDSection thisSection = HOME;
 
-
-	public UssdHomeServiceImpl(UssdLiveWireService ussdLiveWireService, LocationInfoBroker locationInfoBroker, @Autowired(required = false) UssdGeoApiService ussdGeoApiService, UserManagementService userManager, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, AsyncUserLogger userLogger, UssdSupport ussdSupport, CacheUtilService cacheManager, UssdTodoService ussdTodoService, UssdVoteService ussdVoteService, UssdMeetingService ussdMeetingService, UserResponseBroker userResponseBroker, GroupQueryBroker groupQueryBroker, AccountFeaturesBroker accountFeaturesBroker, GroupBroker groupBroker, UssdSafetyGroupService ussdSafetyGroupService) {
+	public UssdHomeServiceImpl(UssdSupport ussdSupport, UssdLiveWireService ussdLiveWireService, @Autowired(required = false) UssdGeoApiService ussdGeoApiService, UssdTodoService ussdTodoService, UssdVoteService ussdVoteService, UssdMeetingService ussdMeetingService,
+							   UssdSafetyGroupService ussdSafetyGroupService, LocationInfoBroker locationInfoBroker, UserManagementService userManager, CampaignBroker campaignBroker, CampaignTextBroker campaignTextBroker, AsyncUserLogger userLogger,
+							   CacheUtilService cacheManager, UserResponseBroker userResponseBroker, GroupQueryBroker groupQueryBroker, AccountFeaturesBroker accountFeaturesBroker, GroupBroker groupBroker) {
 		this.ussdLiveWireService = ussdLiveWireService;
 		this.ussdSafetyGroupService = ussdSafetyGroupService;
 		this.locationInfoBroker = locationInfoBroker;
@@ -217,6 +221,12 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	public Request processNotBuilt(String inputNumber) throws URISyntaxException {
 		String errorMessage = ussdSupport.getMessage("ussd.error", "en");
 		return ussdSupport.menuBuilder(new USSDMenu(errorMessage, ussdSupport.optionsHomeExit(userManager.findByInputNumber(inputNumber), false)));
+	}
+
+	@Override
+	public Request processTestQuestion() throws URISyntaxException {
+		final Option option = new Option("Yes I can!", 1, 1, new URI("http://yourdomain.tld/ussdxml.ashx?file=2"), true);
+		return new Request("Can you answer the question?", Collections.singletonList(option));
 	}
 
 	private void recordInitiatedAndSendWelcome(User user, boolean sendWelcome) {

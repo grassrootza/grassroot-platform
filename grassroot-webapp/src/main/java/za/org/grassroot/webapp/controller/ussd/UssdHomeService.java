@@ -13,4 +13,6 @@ public interface UssdHomeService {
 	Request processExitScreen(String inputNumber) throws URISyntaxException;
 
 	Request processNotBuilt(String inputNumber) throws URISyntaxException;
+
+	Request processTestQuestion() throws URISyntaxException;
 }

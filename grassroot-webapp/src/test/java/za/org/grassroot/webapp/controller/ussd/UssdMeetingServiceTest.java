@@ -67,7 +67,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 //        ussdEventUtil.setMessageSource(messageSource());
 
         this.ussdMeetingService = new UssdMeetingServiceImpl(false, false, taskBrokerMock, ussdSupport, userManagementServiceMock, eventBrokerMock, eventRequestBrokerMock, eventLogBrokerMock, accountFeaturesBrokerMock, null, ussdEventUtil, ussdGroupUtil, groupBrokerMock, cacheUtilManagerMock);
-        this.ussdHomeService = new UssdHomeServiceImpl(null, locationInfoBrokerMock, null, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, ussdSupport, cacheUtilManagerMock, null, null, ussdMeetingService, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock, null);
+        this.ussdHomeService = new UssdHomeServiceImpl(ussdSupport, null, null, null, null, ussdMeetingService, null, locationInfoBrokerMock, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, cacheUtilManagerMock, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock);
     }
 
     @Test

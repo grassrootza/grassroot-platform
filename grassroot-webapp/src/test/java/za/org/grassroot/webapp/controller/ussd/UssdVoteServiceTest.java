@@ -35,7 +35,7 @@ public class UssdVoteServiceTest extends UssdUnitTest {
     public void setUp() {
         testUser = new User(testUserPhone, null, null);
         this.ussdVoteService = new UssdVoteServiceImpl(eventBrokerMock, ussdSupport, voteBrokerMock, userManagementServiceMock, cacheUtilManagerMock, permissionBrokerMock, ussdEventUtil, ussdGroupUtil, eventRequestBrokerMock, userLoggerMock, accountFeaturesBrokerMock);
-        this.ussdHomeService = new UssdHomeServiceImpl(null, locationInfoBrokerMock, null, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, ussdSupport, cacheUtilManagerMock, null, ussdVoteService, null, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock, null);
+        this.ussdHomeService = new UssdHomeServiceImpl(ussdSupport, null, null, null, ussdVoteService, null, null, locationInfoBrokerMock, userManagementServiceMock, campaignBrokerMock, null, userLoggerMock, cacheUtilManagerMock, userResponseBrokerMock, groupQueryBrokerMock, accountFeaturesBrokerMock, groupBrokerMock);
     }
 
     @Test

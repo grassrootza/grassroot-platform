@@ -148,8 +148,7 @@ public class USSDHomeController {
     @RequestMapping(value = homePath + "test_question")
     @ResponseBody
     public Request question1() throws URISyntaxException {
-        final Option option = new Option("Yes I can!", 1, 1, new URI("http://yourdomain.tld/ussdxml.ashx?file=2"), true);
-        return new Request("Can you answer the question?", Collections.singletonList(option));
+        return ussdHomeService.processTestQuestion();
     }
 
     @RequestMapping(value = homePath + "too_long")
