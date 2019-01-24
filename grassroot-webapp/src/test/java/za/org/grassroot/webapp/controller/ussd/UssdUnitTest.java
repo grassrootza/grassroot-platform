@@ -38,7 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @RunWith(MockitoJUnitRunner.class)
-public class UssdUnitTest {
+public abstract class UssdUnitTest {
 	@Mock
 	protected UserManagementService userManagementServiceMock;
 
