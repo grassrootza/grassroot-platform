@@ -11,6 +11,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.integration.location.LocationInfoBroker;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.UserResponseBroker;
@@ -18,6 +19,7 @@ import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.geo.AddressBroker;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupQueryBroker;
@@ -57,6 +59,12 @@ public class UssdUnitTest {
 
 	@Mock
 	protected EventBroker eventBrokerMock;
+
+	@Mock
+	protected GeoLocationBroker geoLocationBrokerMock;
+
+	@Mock
+	protected UssdLocationServicesBroker ussdLocationServicesBrokerMock;
 
 	@Mock
 	protected LiveWireAlertBroker liveWireBrokerMock;

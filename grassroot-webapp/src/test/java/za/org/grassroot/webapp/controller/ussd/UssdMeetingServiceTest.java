@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
-import static za.org.grassroot.webapp.controller.ussd.USSDAdvancedHomeControllerTest.testGroupName;
+import static za.org.grassroot.webapp.controller.ussd.UssdAdvancedHomeServiceTest.testGroupName;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
