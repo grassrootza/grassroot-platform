@@ -9,7 +9,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.user.UserManager;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.ussd.UssdSupport;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -23,11 +23,11 @@ import static za.org.grassroot.webapp.enums.USSDSection.HOME;
 public class UssdGroupJoinServiceImpl implements UssdGroupJoinService {
 	private final Logger log = LoggerFactory.getLogger(UssdGroupJoinServiceImpl.class);
 
-	private final UserManager userManager;
+	private final UserManagementService userManager;
 	private final GroupBroker groupBroker;
 	private final UssdSupport ussdSupport;
 
-	public UssdGroupJoinServiceImpl(UserManager userManager, GroupBroker groupBroker, UssdSupport ussdSupport) {
+	public UssdGroupJoinServiceImpl(UserManagementService userManager, GroupBroker groupBroker, UssdSupport ussdSupport) {
 		this.userManager = userManager;
 		this.groupBroker = groupBroker;
 		this.ussdSupport = ussdSupport;

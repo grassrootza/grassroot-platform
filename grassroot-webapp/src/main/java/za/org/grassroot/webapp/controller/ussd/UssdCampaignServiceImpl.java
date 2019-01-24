@@ -20,7 +20,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.geo.AddressBroker;
-import za.org.grassroot.services.user.UserManager;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDCampaignConstants;
@@ -35,7 +35,7 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 	private final Logger log = LoggerFactory.getLogger(UssdCampaignServiceImpl.class);
 
 	private final CampaignBroker campaignBroker;
-	private final UserManager userManager;
+	private final UserManagementService userManager;
 	private final AddressBroker addressBroker;
 	private final UssdSupport ussdSupport;
 
@@ -55,9 +55,9 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 
 	@Value("${grassroot.campaigns.redirect.main:false}")
 	// controls whether to direct people who sign campaign into general GR capabalities
-	private boolean redirectCampaignCompletionToMain;
+	private boolean redirectCampaignCompletionToMain = false;
 
-	public UssdCampaignServiceImpl(CampaignBroker campaignBroker, UserManager userManager, AddressBroker addressBroker, UssdSupport ussdSupport) {
+	public UssdCampaignServiceImpl(CampaignBroker campaignBroker, UserManagementService userManager, AddressBroker addressBroker, UssdSupport ussdSupport) {
 		this.campaignBroker = campaignBroker;
 		this.userManager = userManager;
 		this.addressBroker = addressBroker;
@@ -77,7 +77,8 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 			userManager.updateUserLanguage(user.getUid(), new Locale(languageCode), UserInterfaceType.USSD);
 		}
 		CampaignMessage campaignMessage = campaignBroker.getOpeningMessage(campaignUid, new Locale(languageCode), UserInterfaceType.USSD, null);
-		return ussdSupport.menuBuilder(buildCampaignUSSDMenu(campaignMessage));
+		USSDMenu ussdMenu = buildCampaignUSSDMenu(campaignMessage);
+		return ussdSupport.menuBuilder(ussdMenu);
 	}
 
 	@Override
@@ -112,7 +113,8 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 			locale = user.getLocale();
 		}
 		Campaign campaign = campaignBroker.addUserToCampaignMasterGroup(campaignUid, user.getUid(), UserInterfaceType.USSD);
-		return ussdSupport.menuBuilder(topicsOrFinalOptionsMenu(campaign, user, promptStart, locale));
+		USSDMenu ussdMenu = topicsOrFinalOptionsMenu(campaign, user, promptStart, locale);
+		return ussdSupport.menuBuilder(ussdMenu);
 	}
 
 	@Override
@@ -147,9 +149,11 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 		UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
 		if (campaignUid == null) {
 			CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
-			return ussdSupport.menuBuilder(buildCampaignUSSDMenu(message));
+			USSDMenu ussdMenu = buildCampaignUSSDMenu(message);
+			return ussdSupport.menuBuilder(ussdMenu);
 		} else {
-			return ussdSupport.menuBuilder(genericPositiveExit(campaignUid, user, user.getLocale()));
+			USSDMenu ussdMenu = genericPositiveExit(campaignUid, user, user.getLocale());
+			return ussdSupport.menuBuilder(ussdMenu);
 		}
 	}
 
