@@ -61,8 +61,6 @@ public interface EventBroker {
 
 	void sendScheduledReminder(String eventUid);
 
-	void sendManualReminder(String userUid, String eventUid);
-
 	void sendMeetingRSVPsToDate(String meetingUid);
 
 	void sendMeetingAcknowledgements(String meetingUid);

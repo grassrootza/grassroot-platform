@@ -259,8 +259,8 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
                 .collect(Collectors.toSet());
     }
 
-    public Membership getGroupMembership(String groupId) {
-        return getMemberships().stream().filter(m -> m.getGroup().getUid().equalsIgnoreCase(groupId)).findFirst().orElse(null);
+    public Optional<Membership> getGroupMembership(String groupId) {
+        return getMemberships().stream().filter(m -> m.getGroup().getUid().equalsIgnoreCase(groupId)).findFirst();
     }
 
     /**

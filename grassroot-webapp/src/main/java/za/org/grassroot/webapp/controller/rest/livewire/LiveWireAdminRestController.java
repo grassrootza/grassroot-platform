@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
@@ -403,13 +403,8 @@ public class LiveWireAdminRestController extends BaseRestController {
         DataSubscriber subscriberAdmin= dataSubscriberBroker.load(subscriberUid);
         CreateJwtTokenRequest jwtTokenRequest = new CreateJwtTokenRequest(JwtType.API_CLIENT);
         jwtTokenRequest.addClaim(JwtService.USER_UID_KEY, subscriberAdmin.getUid());
-        jwtTokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_LIVEWIRE_USER);
+        jwtTokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, RoleName.ROLE_LIVEWIRE_USER.name());
         return ResponseEntity.ok(jwtService.createJwt(jwtTokenRequest));
-    }
-
-    @RequestMapping(value = "/user/blocked",method = RequestMethod.GET)
-    public ResponseEntity<Boolean> isUserBlocked(HttpServletRequest httpServletRequest){
-        return ResponseEntity.ok(liveWireAlertBroker.isUserBlocked(getUserIdFromRequest(httpServletRequest)));
     }
 
     private List<String> splitEmailInput(String emailsInSingleString) {

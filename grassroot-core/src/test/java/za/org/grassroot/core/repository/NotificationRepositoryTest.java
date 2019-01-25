@@ -117,7 +117,7 @@ public class NotificationRepositoryTest {
         User user = userRepository.save(new User("001111115", null, null));
         Group group = groupRepository.save(new Group("test notification 3", user));
         User user2 = userRepository.save(new User("00111116", null, null));
-        group.addMember(user2, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(user2, RoleName.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 3").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         Notification notification = new EventInfoNotification(user, "test meeting called", eventLog);
@@ -142,7 +142,7 @@ public class NotificationRepositoryTest {
         Group group = groupRepository.save(new Group("test notification", user));
 
         User user2 = userRepository.save(new User("0701112345", null, null));
-        group.addMember(user2, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(user2, RoleName.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         UserLog userLog = userLogRepository.save(new UserLog(user2.getUid(), UserLogType.INITIATED_USSD, "welcome to grassroot", UserInterfaceType.USSD));
 
         Event event = eventRepository.save(new Vote("test notifications", Instant.now().plus(1, ChronoUnit.DAYS), user, group));

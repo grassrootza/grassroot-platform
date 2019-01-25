@@ -51,23 +51,12 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     @Query("select u from Membership m " +
             "inner join m.user u " +
             "inner join m.group g " +
-            "where g = :group and (upper(u.displayName) like concat('%', upper(:userInput) ,'%') or u.phoneNumber like :phoneNumber)")
-    List<User> findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
-            @Param("group") Group group, @Param("userInput") String userInput, @Param("phoneNumber") String phoneNumber);
-
-    @Query("select u from Membership m " +
-            "inner join m.user u " +
-            "inner join m.group g " +
             "where g = :group and u.id is not :excludedUserId")
     List<User> findByGroupsPartOfAndIdNot(@Param("group") Group group, @Param("excludedUserId") Long excludedUserId);
 
     User findByUsername(String username);
 
-    /*
-    See if the phone number exists, before adding it
-     */
-    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN 'true' ELSE 'false' END FROM User u WHERE u.phoneNumber = ?1")
-    Boolean existsByPhoneNumber(String phoneNumber);
+    boolean existsByPhoneNumber(String phoneNumber);
 
     @Query("SELECT CASE WHEN COUNT(u) > 0 then 'true' ELSE 'false' END FROM User u where lower(u.emailAddress) = lower(?1)")
     Boolean existsByEmail(String emailAddress);
@@ -93,7 +82,4 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Query("select u.phoneNumber from User u where u.enabled = true")
     Set<String> fetchUserPhoneNumbers();
-
-    Set<User> findByEvents(Event event);
-
 }

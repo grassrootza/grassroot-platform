@@ -12,8 +12,6 @@ public interface GcmRegistrationBroker {
 
     GcmRegistration registerUser(User user, String registrationId);
 
-    void unregisterUser(User user);
-
     void changeTopicSubscription(String userUid, String topicId, boolean subscribe) throws IOException;
 
     boolean hasGcmKey(User user);

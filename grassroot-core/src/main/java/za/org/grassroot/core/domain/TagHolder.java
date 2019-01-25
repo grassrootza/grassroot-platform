@@ -69,9 +69,4 @@ public interface TagHolder {
     default void removeTopics(Collection<String> topics) {
         topics.forEach(topic -> removeTag(TOPIC_PREFIX + topic));
     }
-
-    static String[] convertTopicsToTags(List<String> topics) {
-        return StringArrayUtil.listToArrayRemoveDuplicates(
-                topics.stream().map(s -> TOPIC_PREFIX + s).collect(Collectors.toList()));
-    }
 }

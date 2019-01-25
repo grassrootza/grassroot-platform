@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
@@ -73,14 +73,12 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 
 /**
  * @author Lesetse Kimwaga
  */
 @Slf4j
 @Service
-@Transactional
 public class UserManager implements UserManagementService, UserDetailsService {
 
     @Value("${grassroot.languages.notify.mincount:3}")
@@ -129,15 +127,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional
     public User loadOrCreateUser(String msisdn, UserInterfaceType channel) {
-        String phoneNumber = PhoneNumberUtil.convertPhoneNumber(msisdn);
-        log.debug("Using phone number, formatted: {}", phoneNumber);
+        final String phoneNumber = PhoneNumberUtil.convertPhoneNumber(msisdn);
+        log.info("Using phone number, formatted: {}", phoneNumber);
         User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         if (user == null) {
-            User sessionUser = new User(phoneNumber, null, null);
-            sessionUser.setUsername(phoneNumber);
-            User newUser = userRepository.save(sessionUser);
-            asyncRecordNewUser(newUser.getUid(), "Created via loadOrCreateUser", channel);
-            user = newUser;
+            log.info("Creating new user: msisdn={}", msisdn);
+            user = new User(phoneNumber, null, null);
+            user.setUsername(phoneNumber);
+            user = userRepository.save(user);
+            asyncRecordNewUser(user.getUid(), "Created via loadOrCreateUser", channel);
         }
         UserMinimalProjection userForCache = new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince());
         cacheUtilService.stashUserForMsisdn(msisdn, userForCache);
@@ -200,7 +198,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         userToSave.setHasInitiatedSession(true);
-        Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+        Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
         userToSave.addStandardRole(fullUserRole);
 
         if (passwordEncoder != null) {
@@ -236,7 +234,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         boolean userExists = userExist(phoneNumber);
-        Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+        Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
 
         if (userExists) {
 
@@ -392,6 +390,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional
     public String generateAndroidUserVerifier(String phoneNumber, String displayName, String password) {
         Objects.requireNonNull(phoneNumber);
         phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
@@ -549,7 +548,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public User findByUsernameLoose(String userName) {
-        User user = fetchUserByUsernameStrict(userName);
+        User user = userRepository.findByUsername(userName);;
         if (user == null) {
             if (PhoneNumberUtil.testInputNumber(userName)) {
                 user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(userName));
@@ -558,38 +557,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
             }
         }
         return user;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean doesUserHaveStandardRole(String userName, String roleName) {
-        User user = findByNumberOrEmail(userName, userName);
-        try {
-            Role role = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD).get(0);
-            return user.getStandardRoles().contains(role);
-        } catch (NullPointerException e) {
-            return false;
-        }
-    }
-
-    @Override
-    @Transactional
-    public String create(String phoneNumber, String displayName, String emailAddress) {
-        Objects.requireNonNull(phoneNumber);
-        Objects.requireNonNull(displayName);
-
-        String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-        if (userExist(msisdn)) {
-            throw new UserExistsException("Error! User with that phone number exists!");
-        }
-
-        User user = new User(msisdn, null, null);
-        user.setUsername(msisdn);
-        user.setDisplayName(displayName);
-        user.setEmailAddress(emailAddress);
-        user = userRepository.save(user);
-        asyncRecordNewUser(user.getUid(), "Created via sponsorship request", null);
-        return user.getUid();
     }
 
     @Override
@@ -660,6 +627,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     Method for user to reset password themselves, relies on them being able to access a token
      */
     @Override
+    @Transactional
     public void resetUserPassword(String username, String newPassword, String token) throws InvalidTokenException {
         User user = userRepository.findByUsername(username);
         log.info("Found this user: " + user);
@@ -694,33 +662,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void updatePhoneNumber(String callingUserUid, String userUid, String phoneNumber) {
-        Objects.requireNonNull(callingUserUid);
-        Objects.requireNonNull(userUid);
-
-        validateUserCanAlter(callingUserUid, userUid);
-        User user = userRepository.findOneByUid(userUid);
-
-        if (!StringUtils.isEmpty(phoneNumber)) {
-            String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-            user.setPhoneNumber(msisdn);
-        } else if (!user.hasEmailAddress()) {
-            throw new IllegalArgumentException("Cannot set phone number to empty if no email address");
-        }
-    }
-
-    @Override
-    @Transactional
     public void updateHasImage(String userUid, boolean hasImage) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         user.setHasImage(hasImage);
-    }
-
-    @Override
-    @Transactional
-    public void updateContactError(String userUid, boolean hasContactError) {
-        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
-        user.setContactError(hasContactError);
     }
 
     @Override
@@ -784,19 +728,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    @Transactional
-    public User fetchUserByUsernameStrict(String username) {
-        return userRepository.findByUsername(username);
-    }
-
-    @Override
-    @Transactional
-    public void setHasInitiatedUssdSession(String userUid, boolean sendWelcomeMessage) {
-        User sessionUser = userRepository.findOneByUid(userUid);
-
+    public void setHasInitiatedUssdSession(User sessionUser, boolean sendWelcomeMessage) {
         sessionUser.setHasInitiatedSession(true);
 
-        Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+        Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
         sessionUser.addStandardRole(fullUserRole);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -826,16 +761,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<String[]> findOthersInGraph(User user, String nameFragment) {
-        List<Group> groups = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
-        List<User> records = userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groups));
-
-        return records.stream()
-                .map(u -> new String[] { u.getDisplayName(), u.getPhoneNumber() })
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public List<User> findRelatedUsers(User user, String nameFragment) {
         List<Group> groups = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
         return userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groups));
@@ -942,7 +867,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
         if (!callingUserUid.equals(userToUpdateUid)) {
             User callingUser = userRepository.findOneByUid(callingUserUid);
-            Role adminRole = roleRepository.findByName(BaseRoles.ROLE_SYSTEM_ADMIN).get(0);
+            Role adminRole = roleRepository.findByName(RoleName.ROLE_SYSTEM_ADMIN).get(0);
             if (!callingUser.getStandardRoles().contains(adminRole)) {
                 throw new AccessDeniedException("Error! Only user or admin can perform this update");
             }

@@ -47,13 +47,4 @@ public class TodoHelper {
     public boolean isInformationTodo() {
         return TodoType.INFORMATION_REQUIRED.equals(todoType);
     }
-
-    public boolean hasAssignedMembers() {
-        return assignedMemberUids != null && !assignedMemberUids.isEmpty();
-    }
-
-    public boolean hasConfirmationMembers() {
-        return confirmingMemberUids != null && !confirmingMemberUids.isEmpty();
-    }
-
 }

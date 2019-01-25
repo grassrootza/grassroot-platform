@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.group.Group;
@@ -32,7 +33,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private final String groupUid;
     private final String groupName;
     private final String groupCreator;
-    private final String role;
+    private final RoleName role;
     private final String joinCode;
     private final Integer groupMemberCount;
     private Long lastMajorChangeMillis; // i.e., time last event was created, and/or group modified
@@ -127,7 +128,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         return groupCreator;
     }
 
-    public String getRole() {
+    public RoleName getRole() {
         return role;
     }
 

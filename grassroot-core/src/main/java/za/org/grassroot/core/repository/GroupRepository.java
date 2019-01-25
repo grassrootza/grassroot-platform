@@ -89,13 +89,6 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
     @Query(value = "select groupTokenCode from Group")
     List<String> findAllTokenCodes();
 
-    /* find a group by id and return it and all it's subgroups (native query as uses recursive function)
-     */
-    @Query(value = "WITH RECURSIVE tree(id, created_date_time, name, group_token_code, token_code_expiry, created_by_user, parent, version, reminderminutes) " +
-            "AS ( SELECT pg.* FROM group_profile pg WHERE pg.id = ?1 UNION ALL SELECT sg.* FROM group_profile sg, tree as nodes WHERE sg.parent = nodes.id ) " +
-            "SELECT * FROM tree",nativeQuery = true)
-    List<Group> findGroupAndSubGroupsById(Long groupId);
-
     @Query(value = "SELECT g FROM Group g WHERE g.active = true AND g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")
     List<Group> findGroupsWhereJoinCodeUsedBetween(Instant periodStart, Instant periodEnd);
 

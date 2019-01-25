@@ -20,8 +20,6 @@ public class UidIdentifiableRepositoryImpl implements UidIdentifiableRepository 
 	private EventRepository eventRepository;
 	@Autowired
 	private TodoRepository todoRepository;
-	@Autowired
-	private EntityManager entityManager;
 
 	@Override
 	public <T extends UidIdentifiable> T findOneByUid(Class<T> returnClass, JpaEntityType entityType, String uid) {
@@ -78,11 +76,5 @@ public class UidIdentifiableRepositoryImpl implements UidIdentifiableRepository 
 			default:
 				throw new UnsupportedOperationException("Unsupported entity type: " + entityType);
 		}
-	}
-
-	@Override
-	@Transactional
-	public UidIdentifiable save(UidIdentifiable entity) {
-		return entityManager.merge(entity);
 	}
 }

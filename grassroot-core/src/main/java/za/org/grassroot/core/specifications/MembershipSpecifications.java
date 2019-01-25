@@ -3,7 +3,7 @@ package za.org.grassroot.core.specifications;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Role_;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.User_;
@@ -135,7 +135,7 @@ public class MembershipSpecifications {
 
     }
 
-    private static Specification<Membership> hasRole(String roleName) {
+    private static Specification<Membership> hasRole(RoleName roleName) {
         return (root, query, cb) -> cb.equal(root.get(Membership_.role).get(Role_.name), roleName);
     }
 
@@ -152,7 +152,7 @@ public class MembershipSpecifications {
     }
 
     public static Specification<Membership> groupOrganizers(Group group) {
-        return Specification.where(hasRole(BaseRoles.ROLE_GROUP_ORGANIZER)).and(forGroup(group));
+        return Specification.where(hasRole(RoleName.ROLE_GROUP_ORGANIZER)).and(forGroup(group));
     }
 
     public static Specification<Membership> membersJoinedBefore(Instant time) {

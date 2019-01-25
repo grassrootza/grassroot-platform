@@ -65,18 +65,6 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Autowired
     private GeoLocationBroker geoLocationBroker;
 
-    @Autowired
-    private PermissionBroker permissionBroker;
-
-    @Autowired
-    private MembershipRepository membershipRepository;
-
-    @Override
-    @Transactional(readOnly = true)
-    public Group load(String groupUid) {
-        return groupRepository.findOneByUid(groupUid);
-    }
-
     @Override
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @Transactional(readOnly = true)
@@ -130,8 +118,9 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Override
     public Optional<Group> findGroupFromJoinCode(String joinCode) {
         Optional<Group> groupToReturn = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode));
-        if (!groupToReturn.isPresent()) return Optional.empty();
-        if (groupToReturn.get().getTokenExpiryDateTime().isBefore(Instant.now())) return Optional.empty();
+        if (!groupToReturn.isPresent() || groupToReturn.get().getTokenExpiryDateTime().isBefore(Instant.now())) {
+            return Optional.empty();
+        }
         return groupToReturn;
     }
 
@@ -193,34 +182,6 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
             }
         }
 
-        return false;
-    }
-
-    /*
-    Values
-     */
-
-    private List<Group> parentChain(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        List<Group> parentGroups = new ArrayList<>();
-        recursiveParentGroups(group, parentGroups);
-        return parentGroups;
-    }
-
-    // todo: watch & verify this method
-    private void recursiveParentGroups(Group childGroup, List<Group> parentGroups) {
-        parentGroups.add(childGroup);
-        if (childGroup.getParent() != null && childGroup.getParent().getId() != 0) {
-            recursiveParentGroups(childGroup.getParent(),parentGroups);
-        }
-    }
-
-    // if this returns true, then the group being passed as child is already in the parent chain of the desired
-    // parent, which will create an infinite loop, hence prevent it
-    private boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup) {
-        for (Group g : parentChain(possibleParentGroup.getUid())) {
-            if (g.getId().equals(possibleChildGroup.getId())) return true;
-        }
         return false;
     }
 

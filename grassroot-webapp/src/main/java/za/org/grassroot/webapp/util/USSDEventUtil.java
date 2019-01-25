@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.util;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -68,7 +69,8 @@ public class USSDEventUtil extends USSDUtil {
 
     private static final DateTimeFormatter mtgFormat = DateTimeFormatter.ofPattern("d MMM H:mm");
 
-    public USSDEventUtil(EventBroker eventBroker, EventRequestBroker eventRequestBroker, AsyncUserLogger userLogger, LearningService learningService) {
+    public USSDEventUtil(MessageSource messageSource, EventBroker eventBroker, EventRequestBroker eventRequestBroker, AsyncUserLogger userLogger, LearningService learningService) {
+        super(messageSource);
         this.eventBroker = eventBroker;
         this.eventRequestBroker = eventRequestBroker;
         this.userLogger = userLogger;

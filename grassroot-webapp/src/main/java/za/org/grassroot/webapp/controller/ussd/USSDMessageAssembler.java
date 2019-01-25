@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
@@ -14,15 +13,9 @@ import java.util.Locale;
 @Component
 public class USSDMessageAssembler {
 
-    private MessageSource messageSource;
+    private final MessageSource messageSource;
 
-    @Autowired
     public USSDMessageAssembler(@Qualifier("messageSource") MessageSource messageSource) {
-        this.messageSource = messageSource;
-    }
-
-    // for tests, where we have to hand-wire
-    protected void setMessageSource(MessageSource messageSource) {
         this.messageSource = messageSource;
     }
 

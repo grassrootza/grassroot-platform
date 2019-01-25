@@ -41,21 +41,13 @@ public interface UserManagementService {
     // if can't find by username itself, tries phone number or email
     User findByUsernameLoose(String userName);
 
-    // only checks the username property alone
-    User fetchUserByUsernameStrict(String username);
-
     boolean userExist(String phoneNumber);
 
     boolean emailTaken(String userUid, String email);
 
-    // username can be msisdn or pwd
-    boolean doesUserHaveStandardRole(String userName, String roleName);
-
     /*
     Methods to create a user, for various interfaces
      */
-    String create(String phoneNumber, String displayName, String emailAddress);
-
     User createUserProfile(User userProfile);
 
     UserDTO loadUserCreateRequest(String phoneNumber);
@@ -89,17 +81,13 @@ public interface UserManagementService {
 
     void setMessagingPreference(String userUid, DeliveryRoute preference);
 
-    void setHasInitiatedUssdSession(String userUid, boolean sendWelcomeMessage);
+    void setHasInitiatedUssdSession(User user, boolean sendWelcomeMessage);
 
     void resetUserPassword(String username, String newPassword, String token);
 
     void updateEmailAddress(String callingUserUid, String userUid, String emailAddress);
 
-    void updatePhoneNumber(String callingUserUid, String userUid, String phoneNumber);
-
     void updateHasImage(String userUid, boolean hasImage);
-
-    void updateContactError(String userUid, boolean hasContactError);
 
     void deleteUser(String userUid, String validationOtp);
 
@@ -116,8 +104,6 @@ public interface UserManagementService {
     boolean shouldSendLanguageText(User sessionUser);
 
     void sendAndroidLinkSms(String userUid);
-
-    List<String[]> findOthersInGraph(User user, String nameFragment);
 
     List<User> findRelatedUsers(User user, String nameFragment);
 

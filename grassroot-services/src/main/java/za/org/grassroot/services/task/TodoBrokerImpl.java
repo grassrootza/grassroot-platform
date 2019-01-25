@@ -348,27 +348,6 @@ public class TodoBrokerImpl implements TodoBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean canUserViewResponses(String userUid, String todoUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(todoUid);
-
-        User user = userService.load(userUid);
-        Todo todo = todoRepository.findOneByUid(todoUid);
-
-        return todo.getCreatedByUser().equals(user) || todoAssignmentRepository.count(TodoSpecifications.userAssignment(user, todo)) != 0;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean canUserModify(String userUid, String todoUid) {
-        // for the moment, trivial, but we are likely to alter in future
-        User user = userService.load(userUid);
-        Todo todo = todoRepository.findOneByUid(todoUid);
-        return todo.getCreatedByUser().equals(user);
-    }
-
-    @Override
     @Transactional
     public void recordResponse(String userUid, String todoUid, String response, boolean confirmRecorded) {
         Objects.requireNonNull(userUid);
@@ -422,93 +401,6 @@ public class TodoBrokerImpl implements TodoBroker {
         todo.setReminderActive(false);
 
         todo.setCompleted(completed);
-    }
-
-    @Override
-    @Transactional
-    public void addAssignments(String addingUserUid, String todoUid, Set<String> addedMemberUids) {
-        Objects.requireNonNull(addingUserUid);
-        Objects.requireNonNull(todoUid);
-        Objects.requireNonNull(addedMemberUids);
-
-        User user = userService.load(addingUserUid);
-        Todo todo = todoRepository.findOneByUid(todoUid);
-        validateUserCanModify(user, todo);
-
-        Set<String> priorMembers = todo.getAssignments().stream().map(a -> a.getUser().getUid()).collect(Collectors.toSet());
-
-        addedMemberUids.removeAll(priorMembers);
-        List<User> newUsers = userService.load(addedMemberUids);
-        todo.addAssignments(newUsers.stream().map(u -> new TodoAssignment(todo, u, true, false,
-                shouldAssignedUsersRespond(todo.getType()))).collect(Collectors.toSet()));
-
-        if (!addedMemberUids.isEmpty()) {
-            TodoLog newLog = new TodoLog(TodoLogType.ASSIGNED_ADDED, user, todo, "Assigned " + addedMemberUids.size() +
-                    " new members to todo");
-            Set<Notification> notifications = newUsers.stream()
-                    .map(t -> generateTodoAssignedNotification(todo, t, newLog)).collect(Collectors.toSet());
-            logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), notifications));
-        }
-    }
-
-    @Override
-    @Transactional
-    public void addValidators(String addingUserUid, String todoUid, Set<String> validatingMemberUids) {
-        Objects.requireNonNull(addingUserUid);
-        Objects.requireNonNull(todoUid);
-        Objects.requireNonNull(validatingMemberUids);
-
-        User user = userService.load(addingUserUid);
-        Todo todo = todoRepository.findOneByUid(todoUid);
-
-        validateUserCanModify(user, todo);
-
-        Set<String> existingAssignments = new HashSet<>();
-        todo.getAssignments().stream()
-                .filter(a -> validatingMemberUids.contains(a.getUser().getUid()))
-                .forEach(a -> {
-                    a.setValidator(true);
-                    existingAssignments.add(a.getUser().getUid());
-                });
-
-        Set<String> newAssignmentUids = new HashSet<>(validatingMemberUids);
-        newAssignmentUids.removeAll(existingAssignments);
-
-        List<User> newValidators = userService.load(newAssignmentUids);
-        todo.addAssignments(newValidators.stream().map(u -> new TodoAssignment(todo, u, false, true, true)).collect(Collectors.toSet()));
-
-        if (!validatingMemberUids.isEmpty()) {
-            TodoLog newLog = new TodoLog(TodoLogType.VALIDATORS_ADDED, user, todo, "Added " + validatingMemberUids.size() +
-                    " new validators to todo");
-            Set<Notification> notifications = newValidators.stream() // watch this, may want to also do the switched users...
-                    .map(t -> generateNotificationForConfirmingUsers(todo, t, newLog)).collect(Collectors.toSet());
-            logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), notifications));
-        }
-    }
-
-    @Override
-    @Transactional
-    public void removeUsers(String removingUserUid, String todoUid, Set<String> memberUidsToRemove) {
-        Objects.requireNonNull(removingUserUid);
-        Objects.requireNonNull(todoUid);
-        Objects.requireNonNull(memberUidsToRemove);
-
-        User user = userService.load(removingUserUid);
-        Todo todo = todoRepository.findOneByUid(todoUid);
-        validateUserCanModify(user, todo);
-
-        List<User> users = userService.load(memberUidsToRemove);
-        // to preserve records, we set them to non-assigned, rather than delete
-        todoAssignmentRepository.findAll(TodoSpecifications.userInAndForTodo(new HashSet<>(users), todo))
-                .forEach(ta -> {
-                    ta.setAssignedAction(false);
-                    ta.setValidator(false);
-                });
-
-        if (!memberUidsToRemove.isEmpty()) {
-            TodoLog newLog = new TodoLog(TodoLogType.ASSIGNED_REMOVED, user, todo, "Removed " + memberUidsToRemove.size() + " from todo");
-            logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));
-        }
     }
 
     @Override
@@ -603,17 +495,6 @@ public class TodoBrokerImpl implements TodoBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public TodoAssignment fetchUserTodoDetails(String userUid, String todoUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(todoUid);
-
-        User user = userService.load(userUid);
-        Todo todo = todoRepository.findOneByUid(todoUid);
-        return todoAssignmentRepository.findOne(TodoSpecifications.userAssignment(user, todo)).orElse(null);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<TaskTimeChangedDTO> fetchUserTodosWithTimeChanged(String userUid) {
         Objects.requireNonNull(userUid);
         User user = userService.load(userUid);
@@ -691,12 +572,6 @@ public class TodoBrokerImpl implements TodoBroker {
 
         logsAndNotificationsBroker.storeBundle(bundle);
 
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Todo> loadAllTodos() {
-        return todoRepository.findAll(TodoSpecifications.notCancelled());
     }
 
     private Set<Notification> recordInformationResponse(TodoAssignment assignment, String response, TodoLog todoLog, boolean sendConfirmation) {

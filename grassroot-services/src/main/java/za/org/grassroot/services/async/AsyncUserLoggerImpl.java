@@ -6,7 +6,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
@@ -71,7 +71,7 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
 
         if (!user.isHasInitiatedSession()) {
             user.setHasInitiatedSession(true);
-            Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
+            Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
             user.addStandardRole(fullUserRole);
         }
 
@@ -118,18 +118,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         UserLocationLog locationLog = new UserLocationLog(Instant.now(), userUid, location, locationSource);
         userLocationLogRepository.save(locationLog);
         log.info("Completed log recording");
-    }
-
-    @Async
-    @Override
-    @Transactional
-    public void recordUssdMenuAccessed(String userUid, String ussdSection, String ussdMenu) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(ussdSection);
-        Objects.requireNonNull(ussdMenu);
-
-        String urlToSave = ussdSection + ":" + ussdMenu;
-        userLogRepository.save(new UserLog(userUid, UserLogType.USSD_MENU_ACCESSED, urlToSave, USSD));
     }
 
     @Async
@@ -196,15 +184,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     public boolean hasChangedLanguage(String userUid) {
         return userLogRepository.count(where(forUser(userUid))
                 .and(ofType(UserLogType.CHANGED_LANGUAGE))) > 0;
-    }
-
-    @Override
-    public boolean hasUsedJoinCodeRecently(String userUid) {
-        Instant end = Instant.now();
-        Instant start = end.minus(5, ChronoUnit.MINUTES);
-        return userLogRepository.count(where(forUser(userUid))
-                .and(ofType(UserLogType.USED_A_JOIN_CODE))
-                .and(creationTimeBetween(start, end))) > 0;
     }
 
     @Override

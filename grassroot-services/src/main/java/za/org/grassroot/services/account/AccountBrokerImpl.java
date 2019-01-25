@@ -11,7 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -119,7 +119,7 @@ public class AccountBrokerImpl implements AccountBroker {
         Objects.requireNonNull(account);
 
         if (account.getAdministrators() == null || !account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+            permissionBroker.validateSystemRole(user, RoleName.ROLE_SYSTEM_ADMIN);
         }
     }
 
@@ -145,7 +145,7 @@ public class AccountBrokerImpl implements AccountBroker {
         else
             account.setPrimaryBillingEmail(billedUser.getEmailAddress());
 
-        permissionBroker.addSystemRole(billedUser, BaseRoles.ROLE_ACCOUNT_ADMIN);
+        permissionBroker.addSystemRole(billedUser, RoleName.ROLE_ACCOUNT_ADMIN);
 
         log.info("Created account, now looks like: " + account);
 
@@ -219,7 +219,7 @@ public class AccountBrokerImpl implements AccountBroker {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
 
-        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        permissionBroker.validateSystemRole(user, RoleName.ROLE_SYSTEM_ADMIN);
 
         Instant priorDate = account.getLastBillingDate();
         account.setLastBillingDate(newLastBillingDate);
@@ -238,7 +238,7 @@ public class AccountBrokerImpl implements AccountBroker {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        permissionBroker.validateSystemRole(user, RoleName.ROLE_SYSTEM_ADMIN);
 
         account.setEnabled(true);
         account.setEnabledByUser(user);
@@ -315,7 +315,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         account.addAdministrator(administrator);
         administrator.addAccountAdministered(account);
-        permissionBroker.addSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
+        permissionBroker.addSystemRole(administrator, RoleName.ROLE_ACCOUNT_ADMIN);
 
         if (administrator.getPrimaryAccount() == null) {
             administrator.setPrimaryAccount(account);
@@ -355,7 +355,7 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         if (administrator.getAccountsAdministered() == null || administrator.getAccountsAdministered().isEmpty()) {
-            permissionBroker.removeSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
+            permissionBroker.removeSystemRole(administrator, RoleName.ROLE_ACCOUNT_ADMIN);
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
@@ -453,7 +453,7 @@ public class AccountBrokerImpl implements AccountBroker {
             User user = userRepository.findOneByUid(removingUserUid);
 
             if (!account.getAdministrators().contains(user)) {
-                permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+                permissionBroker.validateSystemRole(user, RoleName.ROLE_SYSTEM_ADMIN);
             }
 
             account.removePaidGroup(group);
@@ -541,7 +541,7 @@ public class AccountBrokerImpl implements AccountBroker {
                 admin.setPrimaryAccount(null);
 
             if (admin.getAccountsAdministered() == null || admin.getAccountsAdministered().isEmpty())
-                permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
+                permissionBroker.removeSystemRole(admin, RoleName.ROLE_ACCOUNT_ADMIN);
         });
 
         removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
@@ -570,7 +570,6 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     @Transactional(readOnly = true)
     public long countChargedNotificationsForGroup(String accountUid, String groupUid, Instant start, Instant end) {
-        Account account = accountRepository.findOneByUid(accountUid);
         Group group = groupRepository.findOneByUid(groupUid);
         return countAllForGroups(Collections.singleton(group), start, end);
     }
@@ -630,7 +629,7 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     public void updateDataSetLabels(String userUid, String accountUid, String dataSetLabels, boolean updateReferenceTables) {
         User admin = userRepository.findOneByUid(Objects.requireNonNull(userUid));
-        permissionBroker.validateSystemRole(admin, BaseRoles.ROLE_SYSTEM_ADMIN);
+        permissionBroker.validateSystemRole(admin, RoleName.ROLE_SYSTEM_ADMIN);
 
         Account account = accountRepository.findOneByUid(Objects.requireNonNull(accountUid));
 

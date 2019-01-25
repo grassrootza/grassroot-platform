@@ -10,7 +10,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
@@ -55,13 +55,13 @@ public class AccountBrokerTest {
         testAdmin.setEmailAddress(billingEmail);
         userRepository.save(testAdmin);
 
-        Role systemAdmin = new Role(BaseRoles.ROLE_SYSTEM_ADMIN, null);
+        Role systemAdmin = new Role(RoleName.ROLE_SYSTEM_ADMIN, null);
         log.info("systemAdmin role: " + systemAdmin.describe());
         testUser.addStandardRole(systemAdmin);
         roleRepository.save(systemAdmin);
         userRepository.save(testUser);
 
-        Role accountAdmin = new Role(BaseRoles.ROLE_ACCOUNT_ADMIN, null);
+        Role accountAdmin = new Role(RoleName.ROLE_ACCOUNT_ADMIN, null);
         roleRepository.save(accountAdmin);
     }
 

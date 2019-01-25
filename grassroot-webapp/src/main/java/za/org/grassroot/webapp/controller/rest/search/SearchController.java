@@ -49,7 +49,6 @@ public class SearchController extends BaseRestController {
     private final GroupJoinRequestService groupJoinRequestService;
     private final GroupBroker groupBroker;
     private final CacheUtilService cacheUtilService;
-    private int attemptsCounter = 0;
 
     @Autowired
     public SearchController(TaskBroker taskBroker,

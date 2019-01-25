@@ -203,12 +203,12 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
 
         // automatically add 3 default roles
-        addRole(BaseRoles.ROLE_GROUP_ORGANIZER);
-        addRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
-        addRole(BaseRoles.ROLE_ORDINARY_MEMBER);
+        addRole(RoleName.ROLE_GROUP_ORGANIZER);
+        addRole(RoleName.ROLE_COMMITTEE_MEMBER);
+        addRole(RoleName.ROLE_ORDINARY_MEMBER);
     }
 
-    private void addRole(String roleName) {
+    private void addRole(RoleName roleName) {
         Objects.requireNonNull(roleName);
         for (Role role : groupRoles) {
             if (role.getName().equals(roleName)) {
@@ -216,18 +216,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
             }
         }
         this.groupRoles.add(new Role(roleName, uid));
-    }
-
-    /**
-     * We use this static constructor because no-arg constructor should be only used by JPA
-     *
-     * @return group
-     */
-    public static Group makeEmpty() {
-        Group group = new Group();
-        group.uid = UIDGenerator.generateId();
-        group.active = true;
-        return group;
     }
 
     public String getUid() {
@@ -289,23 +277,23 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-    public Set<Membership> addMembers(Collection<User> newMembers, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    public Set<Membership> addMembers(Collection<User> newMembers, RoleName roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(roleName);
         Objects.requireNonNull(newMembers);
 
         Role role = getRole(roleName);
-        Set<Membership> memberships = new HashSet<>();
+        Set<Membership> addedMemberships = new HashSet<>();
         for (User newMember : newMembers) {
             Membership membership = addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
             if (membership != null) {
-                memberships.add(membership);
+                addedMemberships.add(membership);
             }
         }
-        return memberships;
+        return addedMemberships;
     }
 
 
-    public Membership addMember(User newMember, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    public Membership addMember(User newMember, RoleName roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(roleName);
         Role role = getRole(roleName);
         return addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
@@ -319,8 +307,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         if (!getGroupRoles().contains(role)) {
             throw new IllegalArgumentException("Role " + role + " is not one of roles belonging to group: " + this);
         }
-        Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod,
-                joinMethodDescriptor);
+        final Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod, joinMethodDescriptor);
         boolean added = this.memberships.add(membership);
         if (added) {
             newMember.addMappedByMembership(membership);
@@ -347,16 +334,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return removed;
     }
 
-    public void removeMemberships(Set<String> phoneNumbers) {
-        Objects.requireNonNull(phoneNumbers);
-        Set<Membership> memberships = this.memberships.stream()
-                .filter(membership -> phoneNumbers.contains(membership.getUser().getPhoneNumber()))
-                .collect(Collectors.toSet());
-
-        this.memberships.removeAll(memberships);
-    }
-
-
     public Membership getMembership(User user) {
         Objects.requireNonNull(user);
 
@@ -374,7 +351,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return null;
     }
 
-    public Role getRole(String roleName) {
+    public Role getRole(RoleName roleName) {
         Objects.requireNonNull(roleName);
         return groupRoles.stream()
                 .filter(role -> role.getName().equals(roleName))
@@ -638,6 +615,16 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
         return new HashSet<>(groupRoles);
     }
+
+    public Set<GroupJoinCode> getJoinCodes() {
+        return new HashSet<>(this.groupJoinCodes);
+    }
+
+    public Optional<GroupJoinCode> getActiveJoinCode(String code) {
+		return this.groupJoinCodes.stream()
+				.filter(groupJoinCode -> groupJoinCode.isActive() && groupJoinCode.getCode().equalsIgnoreCase(code))
+				.findAny();
+	}
 
     @PreUpdate
     @PrePersist

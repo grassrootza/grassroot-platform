@@ -5,10 +5,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
@@ -82,8 +83,8 @@ public class USSDGroupUtil extends USSDUtil {
     private final PermissionBroker permissionBroker;
     private final GroupJoinRequestService groupJoinRequestService;
 
-    @Autowired
-    public USSDGroupUtil(GroupBroker groupBroker, GroupQueryBroker groupQueryBroker, PermissionBroker permissionBroker, GroupJoinRequestService groupJoinRequestService) {
+    public USSDGroupUtil(MessageSource messageSource, GroupBroker groupBroker, GroupQueryBroker groupQueryBroker, PermissionBroker permissionBroker, GroupJoinRequestService groupJoinRequestService) {
+        super(messageSource);
         this.groupBroker = groupBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.permissionBroker = permissionBroker;
@@ -340,7 +341,7 @@ public class USSDGroupUtil extends USSDUtil {
     private Set<MembershipInfo> turnNumbersIntoMembers(List<String> validNumbers) {
         Set<MembershipInfo> newMembers = new HashSet<>();
         for (String validNumber : validNumbers)
-            newMembers.add(new MembershipInfo(validNumber, BaseRoles.ROLE_ORDINARY_MEMBER, null));
+            newMembers.add(new MembershipInfo(validNumber, RoleName.ROLE_ORDINARY_MEMBER, null));
         return newMembers;
     }
 

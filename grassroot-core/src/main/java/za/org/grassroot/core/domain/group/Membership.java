@@ -2,7 +2,7 @@ package za.org.grassroot.core.domain.group;
 
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NonNull;
+//import lombok.NonNull;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Getter
 @Entity
 @Table(name = "group_user_membership",
         uniqueConstraints = @UniqueConstraint(name = "uk_membership_group_user", columnNames = {"group_id", "user_id"}))
@@ -36,7 +35,8 @@ public class Membership implements Serializable, TagHolder {
     @JoinColumn(name = "group_id", nullable = false)
     private Group group;
 
-    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
+//    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
+    @ManyToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -69,8 +69,7 @@ public class Membership implements Serializable, TagHolder {
         // for JPA
     }
 
-    public Membership(Group group, User user, Role role, Instant joinTime, GroupJoinMethod joinMethod,
-                      String joinMethodDescriptor) {
+    Membership(Group group, User user, Role role, Instant joinTime, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         this.group = Objects.requireNonNull(group);
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
@@ -104,8 +103,10 @@ public class Membership implements Serializable, TagHolder {
     }
 
     public List<String> getAffiliations() {
-        return this.getTagList().stream().filter(s -> s.startsWith(AFFILITATION_TAG))
-                .map(s -> s.substring(AFFILITATION_TAG.length())).collect(Collectors.toList());
+        return this.getTagList().stream()
+                .filter(s -> s.startsWith(AFFILITATION_TAG))
+                .map(s -> s.substring(AFFILITATION_TAG.length()))
+                .collect(Collectors.toList());
     }
 
     public void setRole(Role role) {
@@ -116,11 +117,43 @@ public class Membership implements Serializable, TagHolder {
         return alias == null || alias.trim().isEmpty() ? user.getName() : alias;
     }
 
-    public boolean hasAnyTopic(@NonNull Collection<String> topics) {
+    public boolean hasAnyTopic(Collection<String> topics) {
         return getTopics().stream().anyMatch(topics::contains);
     }
 
-    @Override
+	public Group getGroup() {
+		return group;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public Role getRole() {
+		return role;
+	}
+
+	public Instant getJoinTime() {
+		return joinTime;
+	}
+
+	public GroupJoinMethod getJoinMethod() {
+		return joinMethod;
+	}
+
+	public String getAlias() {
+		return alias;
+	}
+
+	public GroupViewPriority getViewPriority() {
+		return viewPriority;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	@Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;

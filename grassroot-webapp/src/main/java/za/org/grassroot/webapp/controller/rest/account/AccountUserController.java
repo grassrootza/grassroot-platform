@@ -337,6 +337,24 @@ public class AccountUserController extends BaseRestController {
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/fetch/campaign/billing/download",method = RequestMethod.GET)
+    public ResponseEntity<byte[]> downloadCampaignBillingData(@RequestParam(required = false) String accountUid,
+                                                              @RequestParam long startDateMillis,
+                                                              @RequestParam long endDateMillis,
+                                                              HttpServletRequest request){
+
+        Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid)
+                : accountBroker.loadDefaultAccountForUser(getUserIdFromRequest(request));
+
+        List<Campaign> campaigns = campaignBroker.getCampaignsOnAccount(accountUid,true);
+
+        log.info("Total campaigns on account = {}",campaigns.size());
+
+        return RestUtil.convertWorkbookToDownload(account.getName() + " billing data.xlsx",
+                memberDataExportBroker.exportAccountBillingData(campaigns,Instant.ofEpochMilli(startDateMillis),Instant.ofEpochMilli(endDateMillis)));
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/primary/set/{accountUid}", method = RequestMethod.POST)
     public ResponseEntity<AccountWrapper> setAccountPrimary(@PathVariable String accountUid, HttpServletRequest request) {
         accountBroker.setAccountPrimary(getUserIdFromRequest(request), accountUid);

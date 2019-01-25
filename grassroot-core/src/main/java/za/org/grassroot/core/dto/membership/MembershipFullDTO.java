@@ -1,6 +1,7 @@
 package za.org.grassroot.core.dto.membership;
 
 import lombok.Getter;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.UserFullDTO;
@@ -14,7 +15,7 @@ public class MembershipFullDTO {
     private final String displayName;
     private final UserFullDTO user;
     private final GroupMinimalDTO group;
-    private final String roleName;
+    private final RoleName roleName;
     private final List<String> topics;
     private final GroupJoinMethod joinMethod;
     private final String joinMethodDescriptor;

@@ -2,12 +2,7 @@ package za.org.grassroot.services.group;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-import org.apache.poi.xssf.usermodel.XSSFFont;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
@@ -18,6 +13,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -46,13 +42,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
@@ -125,6 +115,25 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     }
 
     @Override
+    public XSSFWorkbook exportAccountBillingData(List<Campaign> campaigns,Instant start, Instant end) {
+
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("All billing data");
+        generateHeader(workbook, sheet, new String[]{"Campaign name", "Date", "Total sessions", "Total welcomes","Total shares"},
+                new int[]{6000,8000, 4000, 4000,4000});
+
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+        int rowIndex = 2;
+        addRowFromCampaigns(campaigns,sheet,rowIndex,start,end);
+
+        return workbook;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public XSSFWorkbook exportGroupErrorReport(String groupUid, String userUid) {
         Group group = groupBroker.load(groupUid);
@@ -192,7 +201,6 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     @Override
     @Transactional(readOnly = true)
     public XSSFWorkbook exportCampaignJoinedData(String campaignUid, String userUid) {
-        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         List<CampaignLog> campaignLogs = campaignStatsBroker.getCampaignJoinedAndBetter(Objects.requireNonNull(campaignUid));
 
         XSSFWorkbook workbook = new XSSFWorkbook();
@@ -549,6 +557,24 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
                     user.getPhoneNumber(),
                     STD_FORMATTER.format(userLog.getCreationTime()),
                     userLog.getUserInterface().name()
+            });
+            rowIndex++;
+        }
+    }
+
+    private void addRowFromCampaigns(List<Campaign> campaigns,XSSFSheet sheet, int rowIndex,Instant start, Instant end){
+        final DateTimeFormatter df = DateTimeFormatter.ofPattern("d MMMM, yyyy");
+        final String startDate = start.atZone(DateTimeUtil.getSAST()).format(df);
+        final String endDate = end.atZone(DateTimeUtil.getSAST()).format(df);
+        for(Campaign campaign:campaigns){
+            Map<String,String> counts = campaignStatsBroker.getCampaignBillingStatsInPeriod(campaign.getUid(),start,end);
+
+            addRow(sheet,rowIndex,new String[]{
+                    campaign.getName(),
+                    "From " + startDate + " to " + endDate,
+                    counts.get("total_sessions"),
+                    counts.get("total_welcomes"),
+                    counts.get("total_shares")
             });
             rowIndex++;
         }

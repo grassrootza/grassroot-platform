@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -176,7 +176,7 @@ public class AdminRestController extends BaseRestController{
 
     @RequestMapping(value = "/groups/member/add",method = RequestMethod.POST)
     public ResponseEntity addMemberToGroup(@RequestParam String groupUid, @RequestParam String displayName,
-                                                        @RequestParam String phoneNumber, @RequestParam String roleName,
+                                                        @RequestParam String phoneNumber, @RequestParam RoleName roleName,
                                                         @RequestParam String email, @RequestParam String province,
                                                         HttpServletRequest request){
         User user;
@@ -220,7 +220,7 @@ public class AdminRestController extends BaseRestController{
     public ResponseEntity<String> createApiToken() {
         CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.API_CLIENT);
         Map<String, Object> claims = tokenRequest.getClaims();
-        claims.put(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_SYSTEM_CALL);
+        claims.put(JwtService.SYSTEM_ROLE_KEY, RoleName.ROLE_SYSTEM_CALL);
         tokenRequest.setClaims(claims);
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }

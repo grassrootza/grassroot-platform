@@ -326,27 +326,6 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
 
     @Override
-    public String createReplyFailureMessage(User user) {
-        return messageSourceAccessor.getMessage("sms.reply.failure", "", user.getLocale());
-
-    }
-
-    @Override
-    public String createGroupJoinCodeUseMessage(User user, String groupName, int numberJoined, List<String> namesJoined) {
-        String message;
-        String[] fields;
-        if (namesJoined == null) {
-            fields = new String[]{groupName, String.valueOf(numberJoined)};
-            message = messageSourceAccessor.getMessage("sms.group.join.number", fields, user.getLocale());
-        } else {
-            String numbers = String.join(", ", namesJoined);
-            fields = new String[]{groupName, numbers};
-            message = messageSourceAccessor.getMessage("sms.group.join.named", fields, user.getLocale());
-        }
-        return message;
-    }
-
-    @Override
     public String createAndroidLinkSms(User user) {
         return messageSourceAccessor.getMessage("sms.link.android", user.getLocale());
     }
@@ -397,21 +376,6 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
         return eventVariables;
 
-    }
-
-    private String[] populateTodoFields(Todo todo) {
-        Group group = todo.getAncestorGroup();
-        String salutation = (group.hasName()) ? group.getGroupName() : "Grassroot";
-        String dateString = sdf.format(todo.getActionByDateAtSAST());
-        String assignment = (todo.getAssignedMembers().size() == 1) ?
-                todo.getAssignedMembers().iterator().next().getDisplayName() : String.valueOf(todo.getAssignedMembers().size());
-
-        return new String[]{
-                salutation,
-                todo.getMessage(),
-                dateString,
-                assignment
-        };
     }
 
     @Override
