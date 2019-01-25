@@ -27,7 +27,7 @@ public class USSDMenuUtil {
     private static final int enumLength = ("1. ").length();
 
     public USSDMenuUtil(
-            @Value("${grassroot.ussd.return.url:http://127.0.0.1:8080/ussd/") String baseURI,
+            @Value("${grassroot.ussd.return.url:http://127.0.0.1:8080/ussd/}") String baseURI,
             @Value("${grassroot.ussd.menu.length.opening:140}") int maxOpeningMenuLength,
             @Value("${grassroot.ussd.menu.length.standard:160}") int maxMenuLength
     ) {
