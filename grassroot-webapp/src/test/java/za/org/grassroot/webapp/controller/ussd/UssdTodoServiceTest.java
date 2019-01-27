@@ -17,6 +17,7 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -178,10 +179,27 @@ public class UssdTodoServiceTest extends UssdUnitTest {
     }
 
     @Test
+    public void creationDateInPastShouldReturnNoticeToUser()throws Exception{
+        String testStoreUid = testTodo.getUid();
+        TodoRequest testTodoRequest = new TodoRequest(testUser,TodoType.ACTION_REQUIRED);
+        testTodoRequest.setActionByDate(Instant.now().minus(1, ChronoUnit.DAYS));
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,
+                saveRequestUrl("/confirm", testStoreUid, null))).thenReturn(testUser);
+        when(todoRequestBrokerMock.load(testStoreUid)).thenReturn(testTodoRequest);
+
+        this.ussdTodoService.processConfirmTodoCreation(testUserPhone, testStoreUid, testUserResponse, null, null);
+
+        verify(userManagementServiceMock,times(1))
+                .findByInputNumber(testUserPhone,saveRequestUrl("/confirm", testStoreUid, null));
+        verify(todoRequestBrokerMock,times(1)).load(testStoreUid);
+    }
+
+    @Test
     public void confirmTodoCreationShouldWork()throws Exception{
         String testStoreUid = testTodo.getUid();
         TodoRequest testTodoRequest = new TodoRequest(testUser,TodoType.ACTION_REQUIRED);
-        testTodoRequest.setActionByDate(Instant.now());
+        testTodoRequest.setActionByDate(Instant.now().plus(1, ChronoUnit.DAYS));
+        testTodoRequest.setParent(testGroup);
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
                 saveRequestUrl("/confirm", testStoreUid, null))).thenReturn(testUser);
         when(todoRequestBrokerMock.load(testStoreUid)).thenReturn(testTodoRequest);

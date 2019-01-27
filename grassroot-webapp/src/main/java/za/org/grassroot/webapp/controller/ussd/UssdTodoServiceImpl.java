@@ -264,9 +264,10 @@ public class UssdTodoServiceImpl implements UssdTodoService {
 
 		TodoRequest request = todoRequestBroker.load(storedUid);
 
-		String formattedDueDate = ussdSupport.dateTimeFormat.format(convertToUserTimeZone(request.getActionByDate(), getSAST()));
+		String formattedDueDate = UssdSupport.dateTimeFormat.format(convertToUserTimeZone(request.getActionByDate(), getSAST()));
 
 		if (request.getActionByDate() != null && request.getActionByDate().isBefore(Instant.now())) {
+			log.info("Action by date is in past, returning error");
 			return ussdSupport.menuBuilder(errorMenuTimeInPast(user, request, formattedDueDate));
 		} else {
 			String[] promptFields = new String[]{request.getMessage(),

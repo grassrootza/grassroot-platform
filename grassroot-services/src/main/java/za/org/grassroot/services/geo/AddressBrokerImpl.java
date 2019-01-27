@@ -261,7 +261,6 @@ public class AddressBrokerImpl implements AddressBroker {
                 address.setLocation(new GeoLocation(place.getLatitude(), place.getLongitude()));
                 address.setLocationSource(locationAccuracy);
             }
-
             storeAddressRawAfterDuplicateCheck(address, UserInterfaceType.USSD);
         }
     }

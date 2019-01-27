@@ -155,7 +155,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         Map<Long, CampaignLog> lastStageMap = new LinkedHashMap<>();
         matchingLogs.stream().filter(log -> !lastStageMap.containsKey(log.getUser().getId()))
                 .forEach(log -> lastStageMap.put(log.getUser().getId(), log));
-        log.debug("latest stage map: {}", lastStageMap);
+        log.debug("Latest stage map: {}", lastStageMap);
 
         int currentMemberCount = 0; // replace with count of group at start
 
@@ -215,12 +215,12 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         // step 2: divide into a map, for each user, of their latest engagement status (hence sorting above imporant)
         Map<Long, CampaignLogType> lastStageMap = new LinkedHashMap<>();
         allEngagementLogs.forEach(log -> lastStageMap.put(log.getUser().getId(), log.getCampaignLogType()));
-        log.info("latest stage map: {}", lastStageMap);
+        log.debug("latest stage map: {}", lastStageMap);
 
         // step 3: count the number of users in a particular stage
         Map<String, Long> result = lastStageMap.entrySet().stream()
                 .collect(Collectors.groupingBy(entry -> entry.getValue().toString(), Collectors.counting()));
-        log.info("okay and the collected map = {}", result);
+        log.debug("okay and the collected map = {}", result);
 
         cache.put(new Element(cacheKey, result));
         return result;
@@ -237,7 +237,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
 
         Map<Long, CampaignLog> lastStageMap = new LinkedHashMap<>();
         allEngagementLogs.forEach(log -> lastStageMap.put(log.getUser().getId(), log));
-        log.info("latest stage map: {}", lastStageMap);
+        log.debug("latest stage map: {}", lastStageMap);
 
         return new ArrayList<>(lastStageMap.values());
     }
