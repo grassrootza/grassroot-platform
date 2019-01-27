@@ -148,18 +148,6 @@ public class JwtServiceImpl implements JwtService {
                 Arrays.asList(permissionList.split(","));
     }
 
-    @Override
-    public List<String> getSystemRolesFromToken(String token) {
-        String rolesList = extractFromToken(SYSTEM_ROLE_KEY, token);
-        return StringUtils.isEmpty(rolesList) ? new ArrayList<>() :
-                Arrays.asList(rolesList.split(","));
-    }
-
-    @Override
-    public JwtType getJwtType(String token) {
-        return JwtType.valueOf(extractFromToken(TYPE_KEY, token));
-    }
-
     private String extractFromToken(String key, String token) {
         try {
             Claims claims = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
@@ -174,7 +162,7 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public List<String> getStandardRolesFromJwtToken(String token) {
         String joinedRoles = extractClaims(token).get(SYSTEM_ROLE_KEY, String.class);
-        return !StringUtils.isEmpty(joinedRoles) ? Arrays.asList(joinedRoles.split(",")) : new ArrayList<>();
+        return StringUtils.isEmpty(joinedRoles) ? new ArrayList<>() : Arrays.asList(joinedRoles.split(","));
     }
 
     private Claims extractClaims(String token) {

@@ -11,7 +11,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.domain.RoleName;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
@@ -50,9 +50,6 @@ public class UserRepositoryTest {
 
     @Autowired
     private EventLogRepository eventLogRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
 
     private static final String number = "0821234560";
 
@@ -449,29 +446,27 @@ public class UserRepositoryTest {
     @Rollback
     public void shouldSaveAddedRole() {
         User user = userRepository.save(new User(number, null, null));
-        Role role = roleRepository.save(new Role(RoleName.ROLE_FULL_USER, null));
-        user.addStandardRole(role);
+        user.addStandardRole(StandardRole.ROLE_FULL_USER);
         userRepository.save(user);
         User userFromDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull(number);
         assertNotNull(userFromDb);
         assertEquals(userFromDb.getId(), user.getId());
-        assertTrue(userFromDb.getStandardRoles().contains(role));
+        assertTrue(userFromDb.getStandardRoles().contains(StandardRole.ROLE_FULL_USER));
     }
 
     @Test
     @Rollback
     public void shouldRemoveRole() {
         User user = userRepository.save(new User(number, null, null));
-        Role role = roleRepository.save(new Role(RoleName.ROLE_FULL_USER, null));
-        user.addStandardRole(role);
+        user.addStandardRole(StandardRole.ROLE_FULL_USER);
         user = userRepository.save(user);
-        assertTrue(user.getStandardRoles().contains(role));
-        user.removeStandardRole(role);
+        assertTrue(user.getStandardRoles().contains(StandardRole.ROLE_FULL_USER));
+        user.removeStandardRole(StandardRole.ROLE_FULL_USER);
         userRepository.save(user);
         User userfromDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull(number);
         assertNotNull(userfromDb);
         assertEquals(userfromDb.getId(), user.getId());
-        assertFalse(userfromDb.getStandardRoles().contains(role));
+        assertFalse(userfromDb.getStandardRoles().contains(StandardRole.ROLE_FULL_USER));
     }
 
     @Test

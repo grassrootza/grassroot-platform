@@ -316,7 +316,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
             validateGroupSizeLimit(group, membershipInfos.size());
         } else {
-            permissionBroker.validateSystemRole(user, RoleName.ROLE_SYSTEM_ADMIN);
+            permissionBroker.validateSystemRole(user, StandardRole.ROLE_SYSTEM_ADMIN);
         }
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);

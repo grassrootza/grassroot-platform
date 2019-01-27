@@ -36,7 +36,6 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
-    private final RoleRepository roleRepository;
     private final GroupBroker groupBroker;
     private final GroupLogRepository groupLogRepository;
     private final UserLogRepository userLogRepository;
@@ -47,10 +46,9 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
-    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, RoleRepository roleRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
+    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
-        this.roleRepository = roleRepository;
         this.groupBroker = groupBroker;
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
@@ -202,8 +200,7 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
 
     private void validateAdminRole(String adminUserUid) {
         User admin = userRepository.findOneByUid(adminUserUid);
-        Role adminRole = roleRepository.findByName(RoleName.ROLE_SYSTEM_ADMIN).get(0);
-        if (!admin.getStandardRoles().contains(adminRole)) {
+        if (!admin.getStandardRoles().contains(StandardRole.ROLE_SYSTEM_ADMIN)) {
             throw new AccessDeniedException("Error! User does not have admin role");
         }
     }

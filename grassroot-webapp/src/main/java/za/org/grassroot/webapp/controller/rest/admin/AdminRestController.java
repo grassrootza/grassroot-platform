@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.ConfigVariable;
+import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -220,7 +221,7 @@ public class AdminRestController extends BaseRestController{
     public ResponseEntity<String> createApiToken() {
         CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.API_CLIENT);
         Map<String, Object> claims = tokenRequest.getClaims();
-        claims.put(JwtService.SYSTEM_ROLE_KEY, RoleName.ROLE_SYSTEM_CALL);
+        claims.put(JwtService.SYSTEM_ROLE_KEY, StandardRole.ROLE_SYSTEM_CALL);
         tokenRequest.setClaims(claims);
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }

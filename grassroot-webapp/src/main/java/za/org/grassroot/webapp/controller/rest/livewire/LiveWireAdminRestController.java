@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
@@ -403,7 +404,7 @@ public class LiveWireAdminRestController extends BaseRestController {
         DataSubscriber subscriberAdmin= dataSubscriberBroker.load(subscriberUid);
         CreateJwtTokenRequest jwtTokenRequest = new CreateJwtTokenRequest(JwtType.API_CLIENT);
         jwtTokenRequest.addClaim(JwtService.USER_UID_KEY, subscriberAdmin.getUid());
-        jwtTokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, RoleName.ROLE_LIVEWIRE_USER.name());
+        jwtTokenRequest.addClaim(JwtService.SYSTEM_ROLE_KEY, StandardRole.ROLE_LIVEWIRE_USER.name());
         return ResponseEntity.ok(jwtService.createJwt(jwtTokenRequest));
     }
 

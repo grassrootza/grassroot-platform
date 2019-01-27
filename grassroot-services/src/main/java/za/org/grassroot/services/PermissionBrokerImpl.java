@@ -6,14 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.RoleName;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 
 import javax.persistence.EntityManager;
@@ -26,8 +22,6 @@ public class PermissionBrokerImpl implements PermissionBroker {
     private static final Logger log = LoggerFactory.getLogger(PermissionBrokerImpl.class);
 
     private final GroupRepository groupRepository;
-
-    private final RoleRepository roleRepository;
 
     private final EntityManager entityManager;
 
@@ -104,9 +98,8 @@ public class PermissionBrokerImpl implements PermissionBroker {
                     Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
 
     @Autowired
-    public PermissionBrokerImpl(GroupRepository groupRepository, RoleRepository roleRepository, EntityManager entityManager) {
+    public PermissionBrokerImpl(GroupRepository groupRepository, EntityManager entityManager) {
         this.groupRepository = groupRepository;
-        this.roleRepository = roleRepository;
         this.entityManager = entityManager;
     }
 
@@ -225,40 +218,28 @@ public class PermissionBrokerImpl implements PermissionBroker {
     @Override
     @Transactional(readOnly = true)
     public boolean isSystemAdmin(User user) {
-        List<Role> systemRoles = roleRepository.findByNameAndRoleType(RoleName.ROLE_SYSTEM_ADMIN, Role.RoleType.STANDARD);
-        Set<Role> userRoles = user.getStandardRoles();
-        return userRoles.containsAll(systemRoles);
+        return user.getStandardRoles().contains(StandardRole.ROLE_SYSTEM_ADMIN);
     }
 
     @Override
-    public void validateSystemRole(User user, RoleName roleName) {
-        log.info("attempting to validate system role, with name: " + roleName);
-        List<Role> systemRoles = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD);
-        log.info("system role for name: {}, found: {}", roleName, systemRoles);
-        if (systemRoles == null || systemRoles.isEmpty()) {
-            throw new UnsupportedOperationException("Error! Attempt to check invalid role");
-        }
-        log.info("user system roles: {}", user.getStandardRoles());
-        for (Role role : systemRoles) {
-            if (!user.getStandardRoles().contains(role)) {
-                throw new AccessDeniedException("Error! User " + user.getDisplayName() + " does not have the role " + roleName);
-            }
+    public void validateSystemRole(User user, StandardRole role) {
+        log.info("attempting to validate system role, with name: " + role);
+        if (!user.getStandardRoles().contains(role)) {
+            throw new AccessDeniedException("Error! User " + user.getDisplayName() + " does not have the role " + role);
         }
         log.info("user has requisite role, returning");
     }
 
     @Override
     @Transactional
-    public void addSystemRole(User user, RoleName roleName) {
-        Role systemRole = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD).get(0);
-        user.addStandardRole(systemRole);
+    public void addSystemRole(User user, StandardRole role) {
+        user.addStandardRole(role);
     }
 
     @Override
     @Transactional
-    public void removeSystemRole(User user, RoleName roleName) {
-        Role systemRole = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD).get(0);
-        user.removeStandardRole(systemRole);
+    public void removeSystemRole(User user, StandardRole role) {
+        user.removeStandardRole(role);
     }
 
 }

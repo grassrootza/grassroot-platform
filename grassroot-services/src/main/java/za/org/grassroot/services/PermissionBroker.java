@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.springframework.security.access.AccessDeniedException;
 import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
@@ -72,10 +73,10 @@ public interface PermissionBroker {
 
     boolean isSystemAdmin(User user);
 
-    void validateSystemRole(User user, RoleName roleName);
+    void validateSystemRole(User user, StandardRole roleName);
 
-    void addSystemRole(User user, RoleName roleName);
+    void addSystemRole(User user, StandardRole role);
 
-    void removeSystemRole(User user, RoleName roleName);
+    void removeSystemRole(User user, StandardRole role);
 
 }
