@@ -2,16 +2,15 @@ package za.org.grassroot.webapp.interceptor;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.StandardRole;
 
 import java.util.Collection;
 
 public class JwtUserDetailsDTO implements UserDetails {
-
     private final String userId;
-    private final Collection<Role> userSystemRoles;
+    private final Collection<StandardRole> userSystemRoles;
 
-    public JwtUserDetailsDTO(String userId, Collection<Role> userSystemRoles) {
+    public JwtUserDetailsDTO(String userId, Collection<StandardRole> userSystemRoles) {
         this.userId = userId;
         this.userSystemRoles = userSystemRoles;
     }

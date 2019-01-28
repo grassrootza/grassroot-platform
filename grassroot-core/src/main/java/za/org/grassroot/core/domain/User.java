@@ -110,7 +110,8 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     private Integer version;
 
     @ElementCollection
-    @CollectionTable(name = "user_standrd_role", joinColumns = @JoinColumn(name = "user_id"))
+    @CollectionTable(name = "user_standard_role", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
     private Set<StandardRole> standardRoles = new HashSet<>();
 
     @OneToMany(mappedBy = "user")

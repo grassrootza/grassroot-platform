@@ -29,7 +29,7 @@ public class CreateJwtTokenRequest {
     public CreateJwtTokenRequest(JwtType jwtType, User user) {
         this(jwtType);
         claims.put(JwtService.USER_UID_KEY, user.getUid());
-        claims.put(JwtService.SYSTEM_ROLE_KEY, user.getStandardRoles().stream().map(role -> role.name()).collect(Collectors.joining(",")));
+        claims.put(JwtService.SYSTEM_ROLE_KEY, user.getStandardRoles().stream().map(Enum::name).collect(Collectors.joining(",")));
     }
 
     // NB: never insert roles in here, this is exclusively for minimal scope tokens
