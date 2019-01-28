@@ -236,12 +236,8 @@ public class AccountUserController extends BaseRestController {
     public String closeAccount(@RequestParam String accountUid,
                                HttpServletRequest request) {
         User user = getUserFromRequest(request);
-        try {
-            accountBroker.closeAccount(user.getUid(), accountUid, "Closed by user");
-            return "closed";
-        } catch (AccessDeniedException e) {
-            throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
-        }
+        accountBroker.closeAccount(user.getUid(), accountUid, "Closed by user");
+        return "closed";
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
@@ -367,13 +363,9 @@ public class AccountUserController extends BaseRestController {
                                                             @RequestParam String accountName,
                                                             HttpServletRequest request) {
         User user = getUserFromRequest(request);
-        try {
-            accountBroker.renameAccount(user.getUid(), accountUid, accountName);
-            Account account = accountBroker.loadAccount(accountUid);
-            return ResponseEntity.ok(new AccountWrapper(account, user));
-        }catch (AccessDeniedException e) {
-            throw new MemberLacksPermissionException(Permission.PERMISSION_VIEW_ACCOUNT_DETAILS);
-        }
+        accountBroker.renameAccount(user.getUid(), accountUid, accountName);
+        Account account = accountBroker.loadAccount(accountUid);
+        return ResponseEntity.ok(new AccountWrapper(account, user));
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
