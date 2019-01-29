@@ -109,25 +109,28 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         staticCache.remove(campaignUid + "_engagement");
     }
 
+    // something in staging DB has made this method a complete nightmare, and it is proving impossible to replciate the null pointer.
+    // hence, overriding.
     @Override
     public CampaignLogsDataCollection getCampaignLogData(String campaignUid) {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         // trying one route, then the other
         long startTime = System.currentTimeMillis();
         Map<String, BigInteger> otherCollection = campaignLogRepository.selectCampaignLogCounts(campaign.getId());
-        if (otherCollection == null) {
+        // at some point maybe we remove even that final query, but for now it already strips it way down
+        try {
+            CampaignLogsDataCollection collection2 = CampaignLogsDataCollection.builder()
+                    .totalEngaged(otherCollection.getOrDefault("total_engaged", BigInteger.ZERO).longValue())
+                    .totalSigned(otherCollection.getOrDefault("total_signed", BigInteger.ZERO).longValue())
+                    .totalJoined(otherCollection.getOrDefault("total_joined", BigInteger.ZERO).longValue())
+                    .lastActivityEpochMilli(campaignLogRepository.findFirstByCampaignOrderByCreationTimeDesc(campaign).getCreationTime().toEpochMilli())
+                    .build();
+            log.info("Collecting campaign counts took {} msecs to assemble", System.currentTimeMillis() - startTime);
+            return collection2;
+        } catch (NullPointerException e) {
             log.error("Mangled campaigns returning null collections, campaign uid = {}", campaignUid); // in time, should deactivate or remove
             return CampaignLogsDataCollection.builder().build();
         }
-        // at some point maybe we remove even that final query, but for now it already strips it way down
-        CampaignLogsDataCollection collection2 = CampaignLogsDataCollection.builder()
-                .totalEngaged(otherCollection.getOrDefault("total_engaged", BigInteger.ZERO).longValue())
-                .totalSigned(otherCollection.getOrDefault("total_signed", BigInteger.ZERO).longValue())
-                .totalJoined(otherCollection.getOrDefault("total_joined", BigInteger.ZERO).longValue())
-                .lastActivityEpochMilli(campaignLogRepository.findFirstByCampaignOrderByCreationTimeDesc(campaign).getCreationTime().toEpochMilli())
-                .build();
-        log.info("Collecting campaign counts took {} msecs to assemble", System.currentTimeMillis() - startTime);
-        return collection2;
     }
 
     @Override
