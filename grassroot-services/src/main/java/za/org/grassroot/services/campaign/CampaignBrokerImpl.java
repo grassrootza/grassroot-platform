@@ -266,7 +266,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         if (campaignUid != null) {
             Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-            log.info("well, we're looking for campaign, it has code = {}, proposed = {}, is active = {}",
+            log.debug("well, we're looking for campaign, it has code = {}, proposed = {}, is active = {}",
                     campaign.getCampaignCode(), proposedCode, campaign.isActive());
             if (campaign.isActive() && proposedCode.equals(campaign.getCampaignCode())) {
                 return false; // because it's not taken by another campaign
@@ -578,8 +578,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         validateUserCanModifyCampaign(user, campaign);
 
-        log.info("campaign account: ", campaign.getAccount());
-
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         if (!StringUtils.isEmpty(name) && !campaign.getName().trim().equalsIgnoreCase(name)) {
             campaign.setName(name);
@@ -597,6 +595,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
         } else if (removeImage) {
             campaign.setCampaignImage(null);
             bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_IMG_REMOVED, campaign, null, null));
+        }
+
+        if (!StringUtils.isEmpty(newCode) && !isCodeTaken(newCode, campaignUid)) {
+            final String changeLog = "Campaign code from " + campaign.getCampaignCode() + " to " + newCode;
+            bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_MODIFIED, campaign, null, changeLog));
+            campaign.setCampaignCode(newCode);
         }
 
         if (endDate != null) {

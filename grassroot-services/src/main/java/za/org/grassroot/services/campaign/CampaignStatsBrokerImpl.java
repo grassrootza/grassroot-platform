@@ -117,9 +117,9 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         Map<String, BigInteger> otherCollection = campaignLogRepository.selectCampaignLogCounts(campaign.getId());
         // at some point maybe we remove even that final query, but for now it already strips it way down
         CampaignLogsDataCollection collection2 = CampaignLogsDataCollection.builder()
-                .totalEngaged(otherCollection.get("total_engaged").longValue())
-                .totalSigned(otherCollection.get("total_signed").longValue())
-                .totalJoined(otherCollection.get("total_joined").longValue())
+                .totalEngaged(otherCollection.getOrDefault("total_engaged", BigInteger.ZERO).longValue())
+                .totalSigned(otherCollection.getOrDefault("total_signed", BigInteger.ZERO).longValue())
+                .totalJoined(otherCollection.getOrDefault("total_joined", BigInteger.ZERO).longValue())
                 .lastActivityEpochMilli(campaignLogRepository.findFirstByCampaignOrderByCreationTimeDesc(campaign).getCreationTime().toEpochMilli())
                 .build();
         log.info("Collecting campaign counts took {} msecs to assemble", System.currentTimeMillis() - startTime);
