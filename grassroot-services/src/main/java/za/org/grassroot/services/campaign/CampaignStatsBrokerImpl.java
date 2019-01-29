@@ -115,6 +115,10 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         // trying one route, then the other
         long startTime = System.currentTimeMillis();
         Map<String, BigInteger> otherCollection = campaignLogRepository.selectCampaignLogCounts(campaign.getId());
+        if (otherCollection == null) {
+            log.error("Mangled campaigns returning null collections, campaign uid = {}", campaignUid); // in time, should deactivate or remove
+            return CampaignLogsDataCollection.builder().build();
+        }
         // at some point maybe we remove even that final query, but for now it already strips it way down
         CampaignLogsDataCollection collection2 = CampaignLogsDataCollection.builder()
                 .totalEngaged(otherCollection.getOrDefault("total_engaged", BigInteger.ZERO).longValue())
