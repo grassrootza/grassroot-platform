@@ -190,14 +190,22 @@ public class CampaignManagerController extends BaseRestController {
     public Boolean isCodeAvailable(@RequestParam String code,
                                    @RequestParam(required = false) String currentCampaignUid) {
         log.info("is this code available: {}, for campaign uid: {}", code, currentCampaignUid);
-        return !campaignBroker.isCodeTaken(code, currentCampaignUid);
+        return nullCheckIncludingString(code) || !campaignBroker.isCodeTaken(code, currentCampaignUid);
     }
 
     @RequestMapping(value = "/words/check", method = RequestMethod.GET)
     @ApiOperation(value = "Check if a campaign join word is available")
     public Boolean isJoinWordAvailable(@RequestParam String word, @RequestParam(required = false) String currentCampaignUid) {
         log.info("is this join word available: {}, for campaign uid: {}", word, currentCampaignUid);
-        return !campaignBroker.isTextJoinWordTaken(word.trim(), currentCampaignUid);
+        return nullCheckIncludingString(word) || !campaignBroker.isTextJoinWordTaken(word.trim(), currentCampaignUid);
+    }
+
+    private boolean nullCheckIncludingString(String word) {
+        if (StringUtils.isEmpty(word) || "null".equals(word)) {
+            log.info("Received null join word, returning true");
+            return true;
+        }
+        return false;
     }
 
     @RequestMapping(value = "/messages/set/{campaignUid}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -238,8 +246,8 @@ public class CampaignManagerController extends BaseRestController {
                                                       @RequestParam(required = false) List<String> joinTopics,
                                                       @RequestParam(required = false) String newMasterGroupUid) {
         String userUid = getUserIdFromRequest(request);
-        log.info("altering campaign, setting fields: name = {}, desc = {}, image = {}, endDate = {}, landing = {}, petition = {}",
-                name, description, mediaFileUid, endDateMillis, landingUrl, petitionApi);
+        log.info("altering campaign, setting fields: name = {}, code ={}, desc = {}, image = {}, endDate = {}, landing = {}, petition = {}",
+                name, newCode, description, mediaFileUid, endDateMillis, landingUrl, petitionApi);
 
         Instant endDate = endDateMillis != null ? Instant.ofEpochMilli(endDateMillis) : null;
         log.info("and end date instant = {}", endDate);
