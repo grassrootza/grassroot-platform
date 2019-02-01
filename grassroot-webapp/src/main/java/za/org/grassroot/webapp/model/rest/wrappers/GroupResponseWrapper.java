@@ -2,8 +2,8 @@ package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.task.Event;
@@ -32,7 +32,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private final String groupUid;
     private final String groupName;
     private final String groupCreator;
-    private final RoleName role;
+    private final GroupRole role;
     private final String joinCode;
     private final Integer groupMemberCount;
     private Long lastMajorChangeMillis; // i.e., time last event was created, and/or group modified
@@ -58,7 +58,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     private String language;
 
-    private GroupResponseWrapper(Group group, RoleName role, boolean hasTasks) {
+    private GroupResponseWrapper(Group group, GroupRole role, boolean hasTasks) {
         Objects.requireNonNull(group);
         Objects.requireNonNull(role);
 
@@ -92,7 +92,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.invalidNumbers = new ArrayList<>();
     }
 
-    public GroupResponseWrapper(Group group, Event event, RoleName role, boolean hasTasks){
+    public GroupResponseWrapper(Group group, Event event, GroupRole role, boolean hasTasks){
         this(group, role, hasTasks);
         this.lastChangeType = GroupChangeType.getChangeType(event);
         this.lastChangeDescription = event.getName();
@@ -100,7 +100,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.lastMajorChangeMillis = group.getLatestChangeOrTaskTime().toEpochMilli();
     }
 
-    public GroupResponseWrapper(Group group, GroupLog groupLog, RoleName role, boolean hasTasks){
+    public GroupResponseWrapper(Group group, GroupLog groupLog, GroupRole role, boolean hasTasks){
         this(group, role, hasTasks);
         this.lastChangeType = GroupChangeType.getChangeType(groupLog);
         this.lastChangeDescription = (groupLog != null && groupLog.getDescription()!=null) ?
@@ -127,7 +127,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         return groupCreator;
     }
 
-    public RoleName getRole() {
+    public GroupRole getRole() {
         return role;
     }
 

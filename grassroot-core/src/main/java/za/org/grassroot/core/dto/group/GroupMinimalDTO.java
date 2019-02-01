@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Getter;
 import lombok.Setter;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -25,7 +25,7 @@ import java.util.Set;
 public class GroupMinimalDTO extends GroupTimeChangedDTO {
 
     protected String description;
-    private final RoleName userRole;
+    private final GroupRole userRole;
     protected Instant nextEventTime;
     protected TaskType nextEventType;
     private final Set<Permission> userPermissions;

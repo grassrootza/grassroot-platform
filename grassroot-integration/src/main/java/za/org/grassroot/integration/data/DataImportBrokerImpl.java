@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
@@ -245,7 +245,7 @@ public class DataImportBrokerImpl implements DataImportBroker {
         }
         info.setMemberEmail(emailCol != null ? email : null);
 
-        info.setRoleName(roleCol != null ? convertRoleName(getValue(row, roleCol)) : RoleName.ROLE_ORDINARY_MEMBER);
+        info.setRoleName(roleCol != null ? convertRoleName(getValue(row, roleCol)) : GroupRole.ROLE_ORDINARY_MEMBER);
 
         if (!info.hasValidPhoneOrEmail()) {
             logger.info("don't have a valid phone or email, exiting");
@@ -290,14 +290,14 @@ public class DataImportBrokerImpl implements DataImportBroker {
         }
     }
 
-    private RoleName convertRoleName(final String cellValue) {
+    private GroupRole convertRoleName(final String cellValue) {
         if (cellValue.toLowerCase().contains("organizer")) {
-            return RoleName.ROLE_GROUP_ORGANIZER;
+            return GroupRole.ROLE_GROUP_ORGANIZER;
         }
         if (cellValue.toLowerCase().contains("committee")) {
-            return RoleName.ROLE_COMMITTEE_MEMBER;
+            return GroupRole.ROLE_COMMITTEE_MEMBER;
         }
-        return RoleName.ROLE_ORDINARY_MEMBER;
+        return GroupRole.ROLE_ORDINARY_MEMBER;
     }
 
 }

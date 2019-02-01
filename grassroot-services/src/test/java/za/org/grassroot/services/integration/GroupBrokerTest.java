@@ -93,9 +93,9 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
 //    public void shouldAddMultipleNumbersToGroup() {
 //        User user = userManagementService.loadOrCreateUser("0810001111");
 //        Set<MembershipInfo> organizer = Sets.newHashSet(
-//                new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, null));
+//                new MembershipInfo(user.getPhoneNumber(), GroupRole.ROLE_GROUP_ORGANIZER, null));
 //        Group group = groupBroker.create(user.getUid(), "testGroup", null, organizer, DEFAULT_GROUP, null, null, false);
-//        String ordinaryRole = RoleName.ROLE_ORDINARY_MEMBER;
+//        String ordinaryRole = GroupRole.ROLE_ORDINARY_MEMBER;
 //        log.info("ZOG: Group created ..." + group.toString());
 //        Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo("0810001111", ordinaryRole, ""),
 //                                                      new MembershipInfo("0810001112", ordinaryRole, ""),
@@ -131,13 +131,13 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
 //        assertThat(groupRepository.count(), is(0L));
 //        User user1 = userManagementService.loadOrCreateUser(testUserBase + "1");
 //        User user2 = userManagementService.loadOrCreateUser(testUserBase + "2");
-//        MembershipInfo member1 = new MembershipInfo(user1.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER,
+//        MembershipInfo member1 = new MembershipInfo(user1.getPhoneNumber(), GroupRole.ROLE_GROUP_ORGANIZER,
 //                                                    user1.getDisplayName());
-//        MembershipInfo member1a = new MembershipInfo(user1.getPhoneNumber(), RoleName.ROLE_ORDINARY_MEMBER,
+//        MembershipInfo member1a = new MembershipInfo(user1.getPhoneNumber(), GroupRole.ROLE_ORDINARY_MEMBER,
 //                                                     user1.getDisplayName());
-//        MembershipInfo member2 = new MembershipInfo(user2.getPhoneNumber(), RoleName.ROLE_ORDINARY_MEMBER,
+//        MembershipInfo member2 = new MembershipInfo(user2.getPhoneNumber(), GroupRole.ROLE_ORDINARY_MEMBER,
 //                                                    user2.getDisplayName());
-//        MembershipInfo member2a = new MembershipInfo(user2.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER,
+//        MembershipInfo member2a = new MembershipInfo(user2.getPhoneNumber(), GroupRole.ROLE_GROUP_ORGANIZER,
 //                                                     user2.getDisplayName());
 //
 //        Group group1 = groupBroker.create(user1.getUid(), testGroupBase + "1", null, Sets.newHashSet(member1, member2), DEFAULT_GROUP, null, null, false);

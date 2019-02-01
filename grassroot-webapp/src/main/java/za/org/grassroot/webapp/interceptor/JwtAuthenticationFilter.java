@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
-import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.webapp.model.http.AuthorizationHeader;

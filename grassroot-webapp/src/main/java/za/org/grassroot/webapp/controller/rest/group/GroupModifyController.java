@@ -13,7 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
@@ -94,7 +94,7 @@ public class GroupModifyController extends GroupBaseController {
         log.info("creating a group, with name {}", name);
         User user = getUserFromRequest(request);
         if (user != null) {
-            MembershipInfo membershipInfo = new MembershipInfo(user, user.getDisplayName(), RoleName.ROLE_GROUP_ORGANIZER, null);
+            MembershipInfo membershipInfo = new MembershipInfo(user, user.getDisplayName(), GroupRole.ROLE_GROUP_ORGANIZER, null);
             Group group = groupBroker.create(user.getUid(), name, null, Collections.singleton(membershipInfo), permissionTemplate, description, reminderMinutes, true, discoverable, true);
 
             if (defaultAddToAccount && user.getPrimaryAccount() != null) {
@@ -300,7 +300,7 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "/members/modify/role/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Modify the role of a member in the group", notes = "Requires GROUP_PERMISSION_UPDATE_GROUP_DETAILS")
     public ResponseEntity<MembershipFullDTO> changeMemberRole(HttpServletRequest request, @PathVariable String groupUid,
-                                                              @RequestParam String memberUid, @RequestParam RoleName roleName) {
+                                                              @RequestParam String memberUid, @RequestParam GroupRole roleName) {
         try {
             String userId = getUserIdFromRequest(request);
             groupBroker.updateMembershipRole(userId, groupUid, memberUid, roleName);
@@ -466,14 +466,14 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "/permissions/update/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Update group permissions")
     public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String groupUid,
-                                                             @RequestBody Map<RoleName, List<PermissionDTO>> updatedPermissionsByRole,
+                                                             @RequestBody Map<GroupRole, List<PermissionDTO>> updatedPermissionsByRole,
                                                              HttpServletRequest request) {
         User user = getUserFromRequest(request);
         Group group = groupBroker.load(groupUid);
         ResponseEntity<ResponseWrapper> response;
 
         try {
-            for (RoleName roleName : updatedPermissionsByRole.keySet()) {
+            for (GroupRole roleName : updatedPermissionsByRole.keySet()) {
                 Map<String, Set<Permission>> analyzedPerms = processUpdatedPermissions(group, roleName, updatedPermissionsByRole.get(roleName));
                 groupBroker.updateGroupPermissionsForRole(user.getUid(), groupUid, roleName, analyzedPerms.get("ADDED"), analyzedPerms.get("REMOVED"));
             }
@@ -535,7 +535,7 @@ public class GroupModifyController extends GroupBaseController {
                 .collect(Collectors.toList());
     }
 
-    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, RoleName roleName, List<PermissionDTO> permissionDTOs) {
+    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, GroupRole roleName, List<PermissionDTO> permissionDTOs) {
         Set<Permission> currentPermissions = group.getPermissions(roleName);
         Set<Permission> permissionsAdded = new HashSet<>();
         Set<Permission> permissionsRemoved = new HashSet<>();

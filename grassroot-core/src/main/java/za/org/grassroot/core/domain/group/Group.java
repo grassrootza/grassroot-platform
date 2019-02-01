@@ -200,12 +200,12 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
 
         // for each role, add initial permissions based on given template
-        for (RoleName role : RoleName.values()) {
+        for (GroupRole role : GroupRole.values()) {
             setInitialPermissions(permissionTemplate, role);
         }
     }
 
-    private void setInitialPermissions(GroupPermissionTemplate permissionTemplate, RoleName role) {
+    private void setInitialPermissions(GroupPermissionTemplate permissionTemplate, GroupRole role) {
         Set<Permission> permissions = GroupPermissionTemplate.CLOSED_GROUP.equals(permissionTemplate) ?
                 role.getClosedGroupPermissions() : role.getDefaultGroupPermissions();
         setPermissions(role, permissions);
@@ -270,7 +270,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-    public Set<Membership> addMembers(Collection<User> newMembers, RoleName role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    public Set<Membership> addMembers(Collection<User> newMembers, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(role);
         Objects.requireNonNull(newMembers);
 
@@ -285,7 +285,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
 
-    public Membership addMember(User newMember, RoleName role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    public Membership addMember(User newMember, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(newMember);
         Objects.requireNonNull(role);
 
@@ -293,7 +293,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
 
-    private Membership addMemberInternal(User newMember, RoleName role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    private Membership addMemberInternal(User newMember, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(newMember);
         Objects.requireNonNull(role);
 
@@ -649,14 +649,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return todos;
     }
 
-    public Set<Permission> getPermissions(RoleName role) {
+    public Set<Permission> getPermissions(GroupRole role) {
         return this.rolePermissions.stream()
                 .filter(groupRolePermission -> groupRolePermission.getRole().equals(role))
                 .map(GroupRolePermission::getPermission)
                 .collect(Collectors.toSet());
     }
 
-    public void setPermissions(RoleName role, Set<Permission> permissions) {
+    public void setPermissions(GroupRole role, Set<Permission> permissions) {
         final Set<GroupRolePermission> oldGroupRolePermissions = this.rolePermissions.stream()
                 .filter(groupRolePermission -> groupRolePermission.getRole().equals(role))
                 .collect(Collectors.toSet());

@@ -2,7 +2,6 @@ package za.org.grassroot.integration.authentication;
 
 import lombok.Getter;
 import lombok.Setter;
-import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 

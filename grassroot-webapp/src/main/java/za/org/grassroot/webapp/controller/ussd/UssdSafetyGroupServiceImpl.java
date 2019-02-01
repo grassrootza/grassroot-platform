@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
@@ -249,7 +249,7 @@ public class UssdSafetyGroupServiceImpl implements UssdSafetyGroupService {
 		} else {
 			String groupUid;
 			if (!interrupted) {
-				MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+				MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), GroupRole.ROLE_GROUP_ORGANIZER, user.getDisplayName());
 				Group group = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(membershipInfo), GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false, false);
 				groupUid = group.getUid();
 				safetyEventBroker.setSafetyGroup(user.getUid(), groupUid);

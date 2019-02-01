@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
@@ -233,8 +233,8 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 			final Membership membership = user.getGroupMembership(masterGroup.getUid())
 					.orElseGet(() -> {
 								// todo: VJERAN: - Is this bug in commented old line where Role's group UID is null? Test this new code!!!
-								return campaign.getMasterGroup().addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
-								//                membership = new Membership(campaign.getMasterGroup(), user, new Role(RoleName.ROLE_ORDINARY_MEMBER, null), Instant.now(), GroupJoinMethod.SELF_JOINED, null);
+								return campaign.getMasterGroup().addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
+								//                membership = new Membership(campaign.getMasterGroup(), user, new Role(GroupRole.ROLE_ORDINARY_MEMBER, null), Instant.now(), GroupJoinMethod.SELF_JOINED, null);
 								//                user.getMemberships().add(membership);
 								//                userManager.createUserProfile(user);
 							}

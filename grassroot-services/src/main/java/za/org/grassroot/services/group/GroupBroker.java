@@ -1,7 +1,7 @@
 package za.org.grassroot.services.group;
 
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.*;
@@ -75,7 +75,7 @@ public interface GroupBroker {
 
     void unsubscribeMember(String userUid, String groupUid);
 
-    void updateMembershipRole(String userUid, String groupUid, String memberUid, RoleName roleName);
+    void updateMembershipRole(String userUid, String groupUid, String memberUid, GroupRole roleName);
 
     void updateMembershipDetails(String userUid, String groupUid, String memberUid, String name, String phone, String email,
                                  Province province);
@@ -91,7 +91,7 @@ public interface GroupBroker {
 
     boolean updateViewPriority(String userUid, String groupUid, GroupViewPriority priority);
 
-    void updateGroupPermissionsForRole(String userUid, String groupUid, RoleName roleName, Set<Permission> permissionsToAdd,
+    void updateGroupPermissionsForRole(String userUid, String groupUid, GroupRole roleName, Set<Permission> permissionsToAdd,
 									   Set<Permission> permissionsToRemove);
 
     void updateMemberAlias(String userUid, String groupUid, String alias);

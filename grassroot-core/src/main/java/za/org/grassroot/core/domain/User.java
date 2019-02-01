@@ -351,7 +351,6 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
 
         for (StandardRole standardRole : standardRoles) {
             authorities.add(standardRole);
-            authorities.addAll(standardRole.getPermissions());
         }
         for (Membership membership : getMemberships()) {
             authorities.add(membership.getRole());

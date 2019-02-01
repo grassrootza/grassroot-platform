@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignType;
@@ -146,7 +146,7 @@ public class CampaignManagerController extends BaseRestController {
         String masterGroupUid = createCampaignRequest.getGroupUid();
         if (StringUtils.isEmpty(masterGroupUid)) {
             User groupCreator = userManager.load(userUid);
-            MembershipInfo creator = new MembershipInfo(groupCreator, groupCreator.getName(), RoleName.ROLE_GROUP_ORGANIZER, null);
+            MembershipInfo creator = new MembershipInfo(groupCreator, groupCreator.getName(), GroupRole.ROLE_GROUP_ORGANIZER, null);
             Group createdGroup = groupBroker.create(userUid, createCampaignRequest.getGroupName(), null, Collections.singleton(creator),
                     GroupPermissionTemplate.CLOSED_GROUP, null, null, false, false, true);
 

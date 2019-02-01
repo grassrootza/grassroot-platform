@@ -1,12 +1,11 @@
 package za.org.grassroot.core.domain.group;
 
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.GroupViewPriority;
@@ -42,7 +41,7 @@ public class Membership implements Serializable, TagHolder {
 
     @Column(name = "role", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
-    private RoleName role;
+    private GroupRole role;
 
     @Column(name = "join_time", nullable = false)
     private Instant joinTime;
@@ -69,7 +68,7 @@ public class Membership implements Serializable, TagHolder {
         // for JPA
     }
 
-    Membership(Group group, User user, RoleName role, Instant joinTime, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    Membership(Group group, User user, GroupRole role, Instant joinTime, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         this.group = Objects.requireNonNull(group);
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
@@ -117,7 +116,7 @@ public class Membership implements Serializable, TagHolder {
                 .collect(Collectors.toList());
     }
 
-    public void updateRole(RoleName role) {
+    public void updateRole(GroupRole role) {
         this.role = Objects.requireNonNull(role);
     }
 
@@ -137,7 +136,7 @@ public class Membership implements Serializable, TagHolder {
 		return user;
 	}
 
-    public RoleName getRole() {
+    public GroupRole getRole() {
         return role;
     }
 

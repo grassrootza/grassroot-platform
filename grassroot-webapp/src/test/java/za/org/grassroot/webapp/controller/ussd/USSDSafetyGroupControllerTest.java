@@ -54,7 +54,7 @@ public class USSDSafetyGroupControllerTest
         testGroup = new Group("test group", testUser);
         testGroup.setGroupTokenCode(joinCode);
         safetyEvent = new SafetyEvent(testUser2,testGroup);
-        testMembers.add(new MembershipInfo(testUserPhone, RoleName.ROLE_GROUP_ORGANIZER, null));
+        testMembers.add(new MembershipInfo(testUserPhone, GroupRole.ROLE_GROUP_ORGANIZER, null));
     }
 
     @Test

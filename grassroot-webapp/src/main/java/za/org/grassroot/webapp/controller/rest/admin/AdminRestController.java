@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.ConfigVariable;
 import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
@@ -177,7 +177,7 @@ public class AdminRestController extends BaseRestController{
 
     @RequestMapping(value = "/groups/member/add",method = RequestMethod.POST)
     public ResponseEntity addMemberToGroup(@RequestParam String groupUid, @RequestParam String displayName,
-                                                        @RequestParam String phoneNumber, @RequestParam RoleName roleName,
+                                                        @RequestParam String phoneNumber, @RequestParam GroupRole roleName,
                                                         @RequestParam String email, @RequestParam String province,
                                                         HttpServletRequest request){
         User user;

@@ -1,8 +1,8 @@
 package za.org.grassroot.core.domain.group;
 
 import org.hibernate.annotations.Immutable;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.RoleName;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -19,7 +19,7 @@ import java.util.StringJoiner;
 public class GroupRolePermission {
 	@Column(name = "role", nullable = false, length = 50)
 	@Enumerated(EnumType.STRING)
-	private RoleName role;
+	private GroupRole role;
 
 	@Column(name = "permission", nullable = false, length = 100)
 	@Enumerated(EnumType.STRING)
@@ -29,12 +29,12 @@ public class GroupRolePermission {
 		// for JPA
 	}
 
-	public GroupRolePermission(RoleName role, Permission permission) {
+	public GroupRolePermission(GroupRole role, Permission permission) {
 		this.role = role;
 		this.permission = permission;
 	}
 
-	public RoleName getRole() {
+	public GroupRole getRole() {
 		return role;
 	}
 

@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
@@ -59,13 +59,13 @@ public class EventBrokerTest {
         User user = userRepository.save(new User("0825555511", null, null));
         Group grouplevel1 = groupRepository.save(new Group("rsvp level1", GroupPermissionTemplate.DEFAULT_GROUP, user));
         User userl1 = userRepository.save(new User("0825555512", null, null));
-        grouplevel1.addMember(userl1, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        grouplevel1.addMember(userl1, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         grouplevel1 = groupRepository.save(grouplevel1);
         Group grouplevel2 = groupRepository.save(new Group("rsvp level2", GroupPermissionTemplate.DEFAULT_GROUP, user, grouplevel1));
 
         grouplevel2 = groupRepository.save(grouplevel2);
         User userl2 = userRepository.save(new User("0825555521", null, null));
-        grouplevel2.addMember(userl2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        grouplevel2.addMember(userl2, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         grouplevel2 = groupRepository.save(grouplevel2);
         List<Event> outstanding =  eventBroker.getEventsNeedingResponseFromUser(userl2);
         assertNotNull(outstanding);

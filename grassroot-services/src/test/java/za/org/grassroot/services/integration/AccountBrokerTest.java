@@ -52,7 +52,7 @@ public class AccountBrokerTest {
 
         testUser.addStandardRole(StandardRole.ROLE_SYSTEM_ADMIN);
         userRepository.save(testUser);
-//        Role accountAdmin = new Role(RoleName.ROLE_ACCOUNT_ADMIN, null);
+//        Role accountAdmin = new Role(GroupRole.ROLE_ACCOUNT_ADMIN, null);
 //        roleRepository.save(accountAdmin);
     }
 
