@@ -47,7 +47,6 @@ import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 
-import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -402,8 +401,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
     @Override
     public Page<Membership> fetchUserGroupsNewMembers(User user, Instant from, Pageable pageable) {
-        List<Group> groupsWhereUserCanSeeMemberDetails = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
-        if (groupsWhereUserCanSeeMemberDetails != null && !groupsWhereUserCanSeeMemberDetails.isEmpty()) {
+        List<Long> groupsWhereUserCanSeeMemberDetails = groupRepository.findGroupIdsWhereMemberHasPermission(user, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        if (!groupsWhereUserCanSeeMemberDetails.isEmpty()) {
             Specification<Membership> spec = MembershipSpecifications
                     .recentMembershipsInGroups(groupsWhereUserCanSeeMemberDetails, from, user);
             return membershipRepository.findAll(spec, pageable);

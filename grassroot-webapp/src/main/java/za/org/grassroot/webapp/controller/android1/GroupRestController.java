@@ -24,7 +24,7 @@ import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
@@ -292,7 +292,7 @@ public class GroupRestController extends GroupAbstractRestController {
         Group group = groupBroker.load(groupUid);
         ResponseEntity<ResponseWrapper> response;
         try {
-            Set<Permission> permissionsEnabled = group.getRole(roleName).getPermissions();
+            Set<Permission> permissionsEnabled = group.getPermissions(roleName);
             List<PermissionDTO> permissionsDTO = permissionsDisplayed.stream()
                     .map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
                     .sorted()
@@ -387,7 +387,7 @@ public class GroupRestController extends GroupAbstractRestController {
     }
 
     private Map<String, Set<Permission>> processUpdatedPermissions(Group group, RoleName roleName, List<PermissionDTO> permissionDTOs) {
-        Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
+        Set<Permission> currentPermissions = group.getPermissions(roleName);
         Set<Permission> permissionsAdded = new HashSet<>();
         Set<Permission> permissionsRemoved = new HashSet<>();
         for (PermissionDTO p : permissionDTOs) {

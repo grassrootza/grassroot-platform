@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
@@ -73,7 +74,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
     @Test
     public void meetingRsvpShouldWorkInAllLanguages() throws Exception {
         User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group(testGroupName, testUser);
+        Group testGroup = new Group(testGroupName, GroupPermissionTemplate.DEFAULT_GROUP, testUser);
         testGroup.addMember(testUser, RoleName.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Meeting meeting = new MeetingBuilder().setName("Meeting about testing").setStartDateTime(Instant.now()).setUser(testUser).setParent(testGroup).setEventLocation("someLocation").createMeeting();
 
@@ -125,9 +126,9 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
     public void meetingStartMenuNoUpcomingMeetingsAndExistingGroups() throws Exception {
 
         User testUser = new User(testUserPhone, null, null);
-        List<Group> existingGroupList = Arrays.asList(new Group("gc1", testUser),
-                                                      new Group("gc2", testUser),
-                                                      new Group("gc3", testUser));
+        List<Group> existingGroupList = Arrays.asList(new Group("gc1", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                                                      new Group("gc2", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                                                      new Group("gc3", GroupPermissionTemplate.DEFAULT_GROUP, testUser));
         existingGroupList.forEach(g -> g.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
@@ -151,7 +152,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
     public void meetingStartWithUpcomingMeetings() throws Exception {
 
         User testUser = new User(testUserPhone, null, null);
-        Group group = new Group("someGroup", testUser);
+        Group group = new Group("someGroup", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
         Instant startTime = Instant.now();
 
         List<Event> upcomingMeetingList = Arrays.asList(
@@ -471,7 +472,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
     public void timeProcessingShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone, null, null);
-        Group testGroup = new Group("tg1", testUser);
+        Group testGroup = new Group("tg1", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
 
         LocalDateTime timestamp = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(9, 0));
 
@@ -553,7 +554,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
     public void manageMeetingMenuShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone, null, null);
-        Group somegroup = new Group("somegroup", testUser);
+        Group somegroup = new Group("somegroup", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
         Event testMeeting = new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(somegroup).setEventLocation("someLoc").createMeeting();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
@@ -570,7 +571,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
     public void viewMeetingDetailsShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone, null, null);
-        Group somegroup = new Group("somegroup", testUser);
+        Group somegroup = new Group("somegroup", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
         Meeting testMeeting = new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(somegroup).setEventLocation("someLoc").createMeeting();
         testMeeting.setRsvpRequired(true);
 
@@ -600,7 +601,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
     public void changeDateOnlyShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone, null, null);
-        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", GroupPermissionTemplate.DEFAULT_GROUP, testUser)).setEventLocation("someloc").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
         String urlToSave = editingMtgMenuUrl("new_date", testMeeting.getUid(), changeRequest.getUid(), null);
 
@@ -744,7 +745,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
                                                         new String[]{ "new_date", "09:00"});
 
         String urlToSave;
-        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", GroupPermissionTemplate.DEFAULT_GROUP, testUser)).setEventLocation("someloc").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
@@ -775,7 +776,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
     public void meetingModificationSendShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone, null, null);
-        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("JoziHub").createMeeting();
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", GroupPermissionTemplate.DEFAULT_GROUP, testUser)).setEventLocation("JoziHub").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
@@ -807,7 +808,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
     @Test
     public void cancelMeetingDoShouldWork() throws Exception {
         User testUser = new User(testUserPhone, null, null);
-        Event testMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
+        Event testMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", GroupPermissionTemplate.DEFAULT_GROUP, testUser)).setEventLocation("someloc").createMeeting();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 

@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.Province;
@@ -42,7 +43,7 @@ public class UssdCampaignServiceTest extends UssdUnitTest {
 	public void setUp() {
 		testUser = new User(testUserPhone, null, null);
 		testUserMin = new UserMinimalProjection(testUser.getUid(), null, null, null);
-		testGroup = new Group("test group", testUser);
+		testGroup = new Group("test group", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
 		testCampaign = createTestCampaign();
 
 		this.ussdCampaignService = new UssdCampaignServiceImpl(campaignBrokerMock, userManagementServiceMock, addressBrokerMock, ussdSupport);

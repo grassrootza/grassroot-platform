@@ -2,9 +2,8 @@ package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.task.Event;
@@ -59,7 +58,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     private String language;
 
-    private GroupResponseWrapper(Group group, Role role, boolean hasTasks) {
+    private GroupResponseWrapper(Group group, RoleName role, boolean hasTasks) {
         Objects.requireNonNull(group);
         Objects.requireNonNull(role);
 
@@ -67,8 +66,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.groupName = group.getName("");
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.groupMemberCount = group.getMemberships().size();
-        this.role = role.getName();
-        this.permissions = RestUtil.filterPermissions(role.getPermissions());
+        this.role = role;
+        this.permissions = RestUtil.filterPermissions(group.getPermissions(role));
         this.hasTasks = hasTasks;
         this.discoverable = group.isDiscoverable();
         this.imageUrl = group.getImageUrl();
@@ -93,7 +92,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.invalidNumbers = new ArrayList<>();
     }
 
-    public GroupResponseWrapper(Group group, Event event, Role role, boolean hasTasks){
+    public GroupResponseWrapper(Group group, Event event, RoleName role, boolean hasTasks){
         this(group, role, hasTasks);
         this.lastChangeType = GroupChangeType.getChangeType(event);
         this.lastChangeDescription = event.getName();
@@ -101,7 +100,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.lastMajorChangeMillis = group.getLatestChangeOrTaskTime().toEpochMilli();
     }
 
-    public GroupResponseWrapper(Group group, GroupLog groupLog, Role role, boolean hasTasks){
+    public GroupResponseWrapper(Group group, GroupLog groupLog, RoleName role, boolean hasTasks){
         this(group, role, hasTasks);
         this.lastChangeType = GroupChangeType.getChangeType(groupLog);
         this.lastChangeDescription = (groupLog != null && groupLog.getDescription()!=null) ?
@@ -191,7 +190,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
                 return dateTime.compareTo(otherDateTime);
             } else {
                 // this is very low probability, as date time is to the second, but ...
-                return Role.compareRoleNames(this.getRole(), g.getRole());
+                return this.getRole().compareTo(g.getRole());
             }
         }
 

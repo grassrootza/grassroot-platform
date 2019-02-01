@@ -112,6 +112,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @ElementCollection
     @CollectionTable(name = "user_standard_role", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
+    @Column(name = "role", length = 50, nullable = false)
     private Set<StandardRole> standardRoles = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
@@ -354,7 +355,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         }
         for (Membership membership : getMemberships()) {
             authorities.add(membership.getRole());
-            authorities.addAll(membership.getRole().getPermissions());
+            authorities.addAll(membership.getRolePermissions());
         }
         return authorities;
     }

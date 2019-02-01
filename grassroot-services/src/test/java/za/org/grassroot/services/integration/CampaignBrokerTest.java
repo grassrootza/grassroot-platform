@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.AccountRepository;
@@ -58,7 +59,7 @@ public class CampaignBrokerTest {
         testUser = new User(userNumber, "test user", null);
         userRepository.save(testUser);
         String groupName = "testGroup";
-        testGroup = groupRepository.save(new Group(groupName, testUser));
+        testGroup = groupRepository.save(new Group(groupName, GroupPermissionTemplate.DEFAULT_GROUP, testUser));
         testAccount = accountRepository.save(new Account(testUser, "test", AccountType.ENTERPRISE, testUser));
         testUser.setPrimaryAccount(testAccount);
         userRepository.save(testUser);

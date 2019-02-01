@@ -149,21 +149,17 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(membershipInfos);
         Objects.requireNonNull(groupPermissionTemplate);
 
-        User user = userRepository.findOneByUid(userUid);
+        final User user = userRepository.findOneByUid(userUid);
 
-        Group parent = null;
-        if (parentGroupUid != null) {
-            parent = groupRepository.findOneByUid(parentGroupUid);
-        }
+        final Group parent = (parentGroupUid == null) ? null : groupRepository.findOneByUid(parentGroupUid);
 
         logger.info("Creating new group: name={}, add to account={}, description={}, membershipInfos={}, groupPermissionTemplate={},  parent={}, user={}, openJoinToken=",
                 name, addToAccountIfPresent, description, membershipInfos, groupPermissionTemplate, parent, user, openJoinToken);
 
-        Group group = new Group(name, user);
+        Group group = new Group(name, groupPermissionTemplate, user, parent);
         // last: set some advanced features, with defaults in case null passed
         group.setDescription((description == null) ? "" : description);
         group.setReminderMinutes((reminderMinutes == null) ? (24 * 60) : reminderMinutes);
-        group.setParent(parent);
         group.setDiscoverable(discoverable);
 
         LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos,
@@ -174,7 +170,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             bundle.addLog(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, null, group, null, "Subgroup added"));
         }
 
-        permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
 
         logger.info("Group created under UID {}", group.getUid());
@@ -999,7 +994,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         Membership membership = group.getMembership(user);
 
-        if (membership.getRole().getName().equals(RoleName.ROLE_GROUP_ORGANIZER)) {
+        if (membership.getRole().equals(RoleName.ROLE_GROUP_ORGANIZER)) {
             if (membershipRepository.count(MembershipSpecifications.groupOrganizers(group)) == 1) {
                 throw new SoleOrganizerUnsubscribeException();
             }
@@ -1011,12 +1006,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void updateMembershipRole(String userUid, String groupUid, String memberUid, RoleName roleName) {
+    public void updateMembershipRole(String userUid, String groupUid, String memberUid, RoleName role) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(memberUid);
 
-        logger.info("changing member to this role: " + roleName);
+        logger.info("changing member to this role: " + role);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -1034,9 +1029,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("There is no member under UID " + memberUid + " in group " + group));
 
-        logger.info("Updating membership role: membership={}, roleName={}, user={}", membership, roleName, user);
+        logger.info("Updating membership role: membership={}, role={}, user={}", membership, role, user);
 
-        Set<ActionLog> actionLogs = changeMembersToRole(user, group, Collections.singleton(memberUid), group.getRole(roleName));
+        Set<ActionLog> actionLogs = changeMembersToRole(user, group, Collections.singleton(memberUid), role);
         logActionLogsAfterCommit(actionLogs);
     }
 
@@ -1209,11 +1204,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         return false;
     }
 
-    private Set<ActionLog> changeMembersToRole(User user, Group group, Set<String> memberUids, Role newRole) {
+    private Set<ActionLog> changeMembersToRole(User user, Group group, Set<String> memberUids, RoleName newRole) {
         return group.getMemberships().stream()
                 .filter(m -> memberUids.contains(m.getUser().getUid()))
-                .peek(m -> m.setRole(newRole))
-                .map(m -> new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ROLE_CHANGED, m.getUser(), null, null, newRole.getName().name()))
+                .peek(m -> m.updateRole(newRole))
+                .map(m -> new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ROLE_CHANGED, m.getUser(), null, null, newRole.name()))
                 .collect(Collectors.toSet());
     }
 
@@ -1226,24 +1221,26 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(permissionsToAdd);
         Objects.requireNonNull(permissionsToRemove);
 
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+        if (permissionsToAdd.isEmpty() && permissionsToRemove.isEmpty()) {
+            logger.info("No permission to add or remove to group " + groupUid + " under role " + roleName);
+        } else {
+            User user = userRepository.findOneByUid(userUid);
+            Group group = groupRepository.findOneByUid(groupUid);
 
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
 
-        Role roleToUpdate = group.getRole(roleName);
-        Set<Permission> updatedPermissions = new HashSet<>(roleToUpdate.getPermissions());
-        updatedPermissions.removeAll(permissionsToRemove);
-        updatedPermissions.addAll(permissionsToAdd);
-	    if (roleName.equals(RoleName.ROLE_GROUP_ORGANIZER)) {
-		    updatedPermissions.addAll(permissionBroker.getProtectedOrganizerPermissions());
-	    }
+            Set<Permission> newRolePermissions = group.getPermissions(roleName);
+            newRolePermissions.removeAll(permissionsToRemove);
+            newRolePermissions.addAll(permissionsToAdd);
+            if (roleName.equals(RoleName.ROLE_GROUP_ORGANIZER)) {
+                final Set<Permission> protectedOrganizerPermissions = PermissionSets.protectedOrganizerPermissions;
+                newRolePermissions.addAll(protectedOrganizerPermissions);
+            }
 
-        roleToUpdate.setPermissions(updatedPermissions);
+            group.setPermissions(roleName, newRolePermissions);
 
-        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user,
-                GroupLogType.PERMISSIONS_CHANGED, "Changed permissions assigned to " + roleName)));
-
+            logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, "Changed permissions assigned to " + roleName)));
+        }
     }
 
     @Override
@@ -1314,7 +1311,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         if (organizersToAdd != null && !organizersToAdd.isEmpty()) {
-            groupLogs.addAll(changeMembersToRole(user, group, organizersToAdd, group.getRole(RoleName.ROLE_GROUP_ORGANIZER)));
+			Set<ActionLog> actionLogs = changeMembersToRole(user, group, organizersToAdd, RoleName.ROLE_GROUP_ORGANIZER);
+			groupLogs.addAll(actionLogs);
         }
 
         if(group.getReminderMinutes() != reminderMinutes){

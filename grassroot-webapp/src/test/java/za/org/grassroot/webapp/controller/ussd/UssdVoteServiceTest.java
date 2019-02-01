@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.domain.task.VoteRequest;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -41,7 +42,7 @@ public class UssdVoteServiceTest extends UssdUnitTest {
     @Test
     public void voteRequestScreenShouldWorkInAllLanguages() throws Exception {
         testUser = new User(testUserPhone, "test user", null);
-        Group testGroup = new Group("test group", testUser);
+        Group testGroup = new Group("test group", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
         testGroup.addMember(testUser, RoleName.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Vote vote = new Vote("are unit tests working?", Instant.now().plus(1, ChronoUnit.HOURS), testUser, testGroup);
 
@@ -72,9 +73,9 @@ public class UssdVoteServiceTest extends UssdUnitTest {
     @Test
     public void yesNoVoteMenuShouldReturnGroupList() throws Exception {
 
-        List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
-                                               new Group("tg2", testUser),
-                                               new Group("tg3", testUser));
+        List<Group> testGroups = Arrays.asList(new Group("tg1", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                                               new Group("tg2", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                                               new Group("tg3", GroupPermissionTemplate.DEFAULT_GROUP, testUser));
 
         testGroups.forEach(tg -> tg.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null));
 
@@ -111,7 +112,7 @@ public class UssdVoteServiceTest extends UssdUnitTest {
         VoteRequest voteRequest = VoteRequest.makeEmpty();
         voteRequest.setVoteOptions(Arrays.asList("Option 1", "Option 2"));
         String urlToSave = "vote/multi_option/add?requestUid=" + voteRequest.getUid() + "&interrupted=1&priorInput=0";
-        List<Group> validGroups = Arrays.asList(new Group("tg1", testUser), new Group("tg2", testUser));
+        List<Group> validGroups = Arrays.asList(new Group("tg1", GroupPermissionTemplate.DEFAULT_GROUP, testUser), new Group("tg2", GroupPermissionTemplate.DEFAULT_GROUP, testUser));
 
         // todo : add test for user with just one group
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);

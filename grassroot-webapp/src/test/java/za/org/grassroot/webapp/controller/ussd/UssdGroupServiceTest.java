@@ -9,7 +9,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.ussd.group.UssdGroupMgmtService;
 import za.org.grassroot.webapp.controller.ussd.group.UssdGroupMgmtServiceImpl;
 import za.org.grassroot.webapp.controller.ussd.group.UssdGroupService;
@@ -45,7 +45,7 @@ public class UssdGroupServiceTest extends UssdUnitTest {
     @Before
     public void setUp() {
         testUser = new User(testUserPhone, null, null);
-        testGroup = new Group("test group", testUser);
+        testGroup = new Group("test group", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
         testMembers.add(new MembershipInfo(testUserPhone, RoleName.ROLE_GROUP_ORGANIZER, null));
         testGroupIdString = testGroup.getUid();
 
@@ -56,10 +56,10 @@ public class UssdGroupServiceTest extends UssdUnitTest {
     @Test
     public void groupSecondPageShouldWork() throws Exception {
         resetTestGroup();
-        List<Group> testGroups = Arrays.asList(new Group("gc1", testUser),
-                new Group("gc2", testUser),
-                new Group("gc3", testUser),
-                new Group("gc4", testUser));
+        List<Group> testGroups = Arrays.asList(new Group("gc1", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                new Group("gc2", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                new Group("gc3", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                new Group("gc4", GroupPermissionTemplate.DEFAULT_GROUP, testUser));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, null)).thenReturn(4);

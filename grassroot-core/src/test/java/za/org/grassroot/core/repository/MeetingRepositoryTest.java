@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.EventLogType;
 
@@ -56,8 +57,8 @@ public class MeetingRepositoryTest {
 
         assertThat(meetingRepository.count(), is(0L));
         User user = userRepository.save(new User("0813330000", null, null));
-        Group group1 = groupRepository.save(new Group("tg1", user));
-        Group group2 = groupRepository.save(new Group("tg2", user));
+        Group group1 = groupRepository.save(new Group("tg1", GroupPermissionTemplate.DEFAULT_GROUP, user));
+        Group group2 = groupRepository.save(new Group("tg2", GroupPermissionTemplate.DEFAULT_GROUP, user));
 
         Event event1 = meetingRepository.save(new MeetingBuilder().setName("test").setStartDateTime(Instant.now().minus(7, DAYS)).setUser(user).setParent(group1).setEventLocation("someLoc").createMeeting());
         Event event2 = meetingRepository.save(new MeetingBuilder().setName("test2").setStartDateTime(Instant.now().minus(5 * 7, DAYS)).setUser(user).setParent(group1).setEventLocation("someLoc").createMeeting());
@@ -97,7 +98,7 @@ public class MeetingRepositoryTest {
         log.info("Finding meeting responses ...");
 
         User user = userRepository.save(new User("0710001111", null, null));
-        Group group = groupRepository.save(new Group("tg1", user));
+        Group group = groupRepository.save(new Group("tg1", GroupPermissionTemplate.DEFAULT_GROUP, user));
         group.addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 
@@ -133,7 +134,7 @@ public class MeetingRepositoryTest {
         assertThat(meetingRepository.count(), is(0L));
 
         User user = userRepository.save(new User("0710001111", null, null));
-        Group group = groupRepository.save(new Group("tg2", user));
+        Group group = groupRepository.save(new Group("tg2", GroupPermissionTemplate.DEFAULT_GROUP, user));
         group.addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 

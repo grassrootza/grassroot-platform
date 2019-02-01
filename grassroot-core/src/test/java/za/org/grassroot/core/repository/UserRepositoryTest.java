@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -71,7 +72,7 @@ public class UserRepositoryTest {
     @Test
     public void shouldHaveSafetyGroup() {
         User newUser = new User("0111222", null, null);
-        Group newGroup = new Group("test Group", newUser);
+        Group newGroup = new Group("test Group", GroupPermissionTemplate.DEFAULT_GROUP, newUser);
         assertNotNull(newUser.getUid());
         newUser.setSafetyGroup(newGroup);
         assertTrue(newUser.hasSafetyGroup());
@@ -230,7 +231,7 @@ public class UserRepositoryTest {
     public void shouldAddAndRemoveMappedMembership() {
 
         User user = new User("099654", null, null);
-        Group group = new Group("", user);
+        Group group = new Group("", GroupPermissionTemplate.DEFAULT_GROUP, user);
         Membership membership = group.addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
         assertThat(user.getMemberships().size(), is(1));
         userRepository.save(user);
@@ -242,7 +243,7 @@ public class UserRepositoryTest {
     @Test
     public void shouldFetchMemberships() {
         User userMember = new User("1234", null, null);
-        Group group = new Group("Group", userMember);
+        Group group = new Group("Group", GroupPermissionTemplate.DEFAULT_GROUP, userMember);
         assertNotNull(userMember.getUid());
         assertTrue(userMember.getMemberships().isEmpty());
 
@@ -415,7 +416,7 @@ public class UserRepositoryTest {
     public void shouldReturnUserThatRSVPYes() {
         User u1 = userRepository.save(new User("0821234560", null, null));
         User u2 = userRepository.save(new User("0821234561", null, null));
-        Group group = groupRepository.save(new Group("rsvp yes",u1));
+        Group group = groupRepository.save(new Group("rsvp yes", GroupPermissionTemplate.DEFAULT_GROUP, u1));
         group.addMember(u2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new MeetingBuilder().setName("rsvp event").setStartDateTime(Instant.now()).setUser(u1).setParent(group).setEventLocation("someLocation").setIncludeSubGroups(true).createMeeting());
@@ -430,7 +431,7 @@ public class UserRepositoryTest {
         User u1 = userRepository.save(new User("0821234570", null, null));
         User u2 = userRepository.save(new User("0821234571", null, null));
 
-        Group group = groupRepository.save(new Group("rsvp yes",u1));
+        Group group = groupRepository.save(new Group("rsvp yes", GroupPermissionTemplate.DEFAULT_GROUP, u1));
         group.addMember(u2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
 
@@ -482,7 +483,7 @@ public class UserRepositoryTest {
         User user4 = userRepository.save(new User("0701110001", "tester3", null));
         User user5 = userRepository.save(new User("0701110002", "no name", null));
 
-        Group testGroup = groupRepository.save(new Group("test group", user1));
+        Group testGroup = groupRepository.save(new Group("test group", GroupPermissionTemplate.DEFAULT_GROUP, user1));
         testGroup.addMember(user1, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         testGroup.addMember(user2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         testGroup = groupRepository.save(testGroup);
@@ -524,7 +525,7 @@ public class UserRepositoryTest {
         User user2 = userRepository.save(new User(phoneBase + "2", "anonymous", null));
         User user3 = userRepository.save(new User(phoneBase + "3", "tester2", null));
 
-        Group testGroup = groupRepository.save(new Group("tg1", testUser));
+        Group testGroup = groupRepository.save(new Group("tg1", GroupPermissionTemplate.DEFAULT_GROUP, testUser));
         testGroup.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         testGroup.addMember(user2, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         testGroup.addMember(user3, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);

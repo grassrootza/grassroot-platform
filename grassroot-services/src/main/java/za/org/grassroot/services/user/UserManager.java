@@ -32,7 +32,6 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
-import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -738,8 +737,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public List<User> findRelatedUsers(User user, String nameFragment) {
-        List<Group> groups = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
-        return userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groups));
+        List<Long> groupIds = groupRepository.findGroupIdsWhereMemberHasPermission(user, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        return userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groupIds));
     }
 
     @Override

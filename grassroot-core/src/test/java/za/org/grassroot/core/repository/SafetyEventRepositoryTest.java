@@ -11,6 +11,7 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 
 import java.util.List;
 
@@ -37,7 +38,7 @@ public class SafetyEventRepositoryTest {
     public void shouldSaveAndReturnSafetyEvent() {
 
        User user = userRepository.save(new User("0848870765", null, null));
-        Group group = groupRepository.save(new Group("group", user));
+        Group group = groupRepository.save(new Group("group", GroupPermissionTemplate.DEFAULT_GROUP, user));
         SafetyEvent safetyEvent = safetyEventRepository.save(new SafetyEvent(user, group));
         assertNotEquals(null, safetyEvent);
         assertEquals(safetyEvent.getActivatedBy(),user);
@@ -48,7 +49,7 @@ public class SafetyEventRepositoryTest {
     @Test
     public void shouldFindByGroup() throws Exception{
       User user = userRepository.save(new User("0848875098", null, null));
-        Group group = groupRepository.save(new Group("group", user));
+        Group group = groupRepository.save(new Group("group", GroupPermissionTemplate.DEFAULT_GROUP, user));
         safetyEventRepository.save(new SafetyEvent(user, group));
         List<SafetyEvent> safetyEvents = safetyEventRepository.findByGroup(group);
         assertNotNull(safetyEvents);

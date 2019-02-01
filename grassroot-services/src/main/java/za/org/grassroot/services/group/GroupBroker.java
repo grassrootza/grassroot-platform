@@ -4,10 +4,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.GroupJoinCode;
-import za.org.grassroot.core.domain.group.GroupJoinMethod;
-import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
@@ -26,8 +23,8 @@ public interface GroupBroker {
     /** METHODS FOR CREATING AND EDITING GROUPS **/
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes,
-                 boolean openJoinToken, boolean discoverable, boolean addToAccountIfPresent);
+				 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes,
+				 boolean openJoinToken, boolean discoverable, boolean addToAccountIfPresent);
 
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 

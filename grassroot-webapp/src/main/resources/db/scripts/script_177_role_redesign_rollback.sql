@@ -1,0 +1,1 @@
+-- nothing here, cannot do rollback of dropped tables

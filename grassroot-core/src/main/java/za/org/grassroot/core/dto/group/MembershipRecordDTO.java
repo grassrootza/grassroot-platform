@@ -26,7 +26,7 @@ public class MembershipRecordDTO {
                 groupLog.getTarget().getUid();
         this.memberName = membership != null ? membership.getDisplayName() :
                 groupLog.getUserNameSafe();
-        this.roleName = membership != null ? membership.getRole().getName() : null;
+        this.roleName = membership != null ? membership.getRole() : null;
         this.changeDateTimeMillis = groupLog.getCreatedDateTime().toEpochMilli();
         this.changeType = groupLog.getGroupLogType();
         this.changingUserName = groupLog.getUser().getName();

@@ -20,7 +20,7 @@ import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.geo.AddressBroker;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;

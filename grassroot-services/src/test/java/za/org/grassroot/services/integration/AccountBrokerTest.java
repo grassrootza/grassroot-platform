@@ -13,7 +13,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
-import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.ServicesTestConfig;
 import za.org.grassroot.services.account.AccountBroker;

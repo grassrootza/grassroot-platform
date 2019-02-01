@@ -1,24 +1,15 @@
 package za.org.grassroot.services;
 
 import org.springframework.security.access.AccessDeniedException;
-import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
 
 import java.util.List;
 import java.util.Set;
 
 public interface PermissionBroker {
-
-    /**
-     * Sets the role permissions for a group from one of the permission templates available
-     * @param group The group for which the roles' permissions are being reset
-     * @param template The template from which to draw the permissions
-     */
-    void setRolePermissionsFromTemplate(Group group, GroupPermissionTemplate template);
 
     /**
      * Checks if a user has a required permission on a group and throws an error if the user does not
@@ -68,8 +59,6 @@ public interface PermissionBroker {
     List<Group> getPageOfGroups(User user, Permission requiredPermission, int pageNumber, int pageSize);
 
     int countActiveGroupsWithPermission(User user, Permission requiredPermission);
-
-    Set<Permission> getProtectedOrganizerPermissions();
 
     boolean isSystemAdmin(User user);
 

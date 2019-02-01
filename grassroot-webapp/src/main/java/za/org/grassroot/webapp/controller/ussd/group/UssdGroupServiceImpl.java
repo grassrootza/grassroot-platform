@@ -12,7 +12,7 @@ import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.UssdSupport;

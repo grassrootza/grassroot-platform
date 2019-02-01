@@ -29,7 +29,7 @@ public class MembershipStdDTO {
         User user = membership.getUser();
         this.userUid = user.getUid();
         this.displayName = membership.getDisplayName();
-        this.roleName = membership.getRole().getName();
+        this.roleName = membership.getRole();
         this.province = user.getProvince();
         this.phoneNumber = user.getPhoneNumber();
         this.emailAddress = user.getEmailAddress();

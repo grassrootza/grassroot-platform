@@ -342,7 +342,7 @@ public class GroupFetchController extends BaseRestController {
 
             List<PermissionDTO> permissionsDTO = new ArrayList<>();
             for (RoleName roleName : roleNames) {
-                Set<Permission> permissionsEnabled = group.getRole(roleName).getPermissions();
+                Set<Permission> permissionsEnabled = group.getPermissions(roleName);
                 permissionsDTO = permissionsDisplayed.keySet().stream()
                         .map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
                         .sorted()

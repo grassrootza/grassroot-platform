@@ -12,6 +12,7 @@ import org.springframework.test.context.junit4.AbstractTransactionalJUnit4Spring
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -54,8 +55,8 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
     @Test
     public void shouldDetectLoop() {
         User user = userRepository.save(new User("0824444441", null, null));
-        Group g1 = groupRepository.save(new Group("g1", user));
-        Group g2 = groupRepository.save(new Group("g2", user, g1));
+        Group g1 = groupRepository.save(new Group("g1", GroupPermissionTemplate.DEFAULT_GROUP, user));
+        Group g2 = groupRepository.save(new Group("g2", GroupPermissionTemplate.DEFAULT_GROUP, user, g1));
         // todo: add a test that possible parents doesn't include g2 (or however it should be structured
         // assertEquals(true, groupManagementService.isGroupAlsoParent(g1, g2));
     }
@@ -63,9 +64,9 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
     @Test
     public void shouldNotDetectLoop() {
         User user = userRepository.save(new User("0824444442", null, null));
-        Group g1 = groupRepository.save(new Group("g1", user));
-        Group g2 = groupRepository.save(new Group("g2", user, g1));
-        Group g3 = groupRepository.save(new Group("g3", user));
+        Group g1 = groupRepository.save(new Group("g1", GroupPermissionTemplate.DEFAULT_GROUP, user));
+        Group g2 = groupRepository.save(new Group("g2", GroupPermissionTemplate.DEFAULT_GROUP, user, g1));
+        Group g3 = groupRepository.save(new Group("g3", GroupPermissionTemplate.DEFAULT_GROUP, user));
         // assertEquals(false, groupManagementService.isGroupAlsoParent(g3, g2));
     }
 
@@ -112,8 +113,8 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
     public void shouldDeactivateGroup() {
         assertThat(groupRepository.count(), is(0L));
         User user = userManagementService.loadOrCreateUser(testUserBase + "1", UserInterfaceType.USSD);
-        Group group = groupRepository.save(new Group(testGroupBase + "1", user));
-        Group group2 = groupRepository.save(new Group(testGroupBase + "2", user));
+        Group group = groupRepository.save(new Group(testGroupBase + "1", GroupPermissionTemplate.DEFAULT_GROUP, user));
+        Group group2 = groupRepository.save(new Group(testGroupBase + "2", GroupPermissionTemplate.DEFAULT_GROUP, user));
        // groupBroker.deactivate(user.getUid(), group.getUid(), true);
 
 

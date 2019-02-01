@@ -9,6 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.domain.task.TodoRequest;
@@ -55,7 +56,7 @@ public class UssdTodoServiceTest extends UssdUnitTest {
     @Before
     public void setUp() {
         testUser = new User(testUserPhone,"Test User", null);
-        testGroup = new Group("Test Group",testUser);
+        testGroup = new Group("Test Group", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
         testTodo = new Todo(testUser,testGroup, TodoType.ACTION_REQUIRED,testMessage, Instant.now());
 
         this.ussdTodoService = new UssdTodoServiceImpl(ussdSupport, ussdMessageAssembler, userManagementServiceMock, todoBrokerMock, todoRequestBrokerMock, cacheUtilManagerMock, ussdGroupUtil, accountFeaturesBrokerMock, learningServiceMock, memberDataExportBrokerMock);

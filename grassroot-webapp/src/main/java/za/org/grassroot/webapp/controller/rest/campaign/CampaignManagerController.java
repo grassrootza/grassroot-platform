@@ -35,7 +35,7 @@ import za.org.grassroot.services.campaign.CampaignTextBroker;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
 import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;

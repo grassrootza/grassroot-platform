@@ -41,9 +41,9 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
     public GroupMinimalDTO(Group group, Membership membership) {
         super(group, group.getLastGroupChangeTime());
         this.description = group.getDescription();
-        this.userRole = membership.getRole().getName();
+        this.userRole = membership.getRole();
         this.lastTaskOrChangeTime = group.getLatestChangeOrTaskTime();
-        this.userPermissions = membership.getRole().getPermissions();
+        this.userPermissions = membership.getRolePermissions();
         this.pinned = GroupViewPriority.PINNED.equals(membership.getViewPriority());
         this.discoverable = group.isDiscoverable();
         this.hidden = GroupViewPriority.HIDDEN.equals(membership.getViewPriority());

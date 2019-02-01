@@ -26,7 +26,7 @@ public class MembershipFullDTO {
         this.displayName = membership.getDisplayName();
         this.user = new UserFullDTO(membership.getUser());
         this.group = new GroupMinimalDTO(membership.getGroup(), membership);
-        this.roleName = membership.getRole().getName();
+        this.roleName = membership.getRole();
         this.topics = membership.getTopics();
         this.joinMethod = membership.getJoinMethod();
         this.joinMethodDescriptor = membership.getJoinMethodDescriptor().orElse("");

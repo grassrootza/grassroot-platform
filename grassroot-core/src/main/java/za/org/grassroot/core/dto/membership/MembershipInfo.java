@@ -10,7 +10,6 @@ import lombok.Setter;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.RoleName;
-import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.Province;
@@ -79,7 +78,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     public static Set<MembershipInfo> createFromMembers(Set<Membership> members) {
         Set<MembershipInfo> membershipInfoSet = new HashSet<>();
-        members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getDisplayName(), m.getRole().getName(),
+        members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getDisplayName(), m.getRole(),
                 m.getTopics())));
         return membershipInfoSet;
     }
@@ -183,7 +182,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     public int compareTo(MembershipInfo m) {
         RoleName otherRole = m.getRoleName();
         if (roleName != null && !roleName.equals(otherRole)) {
-            return Role.compareRoleNames(roleName, otherRole);
+            return roleName.compareTo(otherRole);
         } else {
             return StringUtils.isEmpty(displayName) ? -1 :
                     StringUtils.isEmpty(m.getDisplayName()) ? 1 :

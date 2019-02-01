@@ -39,7 +39,7 @@ import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
 import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.group.GroupImageBroker;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupStatsBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -536,7 +536,7 @@ public class GroupModifyController extends GroupBaseController {
     }
 
     private Map<String, Set<Permission>> processUpdatedPermissions(Group group, RoleName roleName, List<PermissionDTO> permissionDTOs) {
-        Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
+        Set<Permission> currentPermissions = group.getPermissions(roleName);
         Set<Permission> permissionsAdded = new HashSet<>();
         Set<Permission> permissionsRemoved = new HashSet<>();
         for (PermissionDTO p : permissionDTOs) {

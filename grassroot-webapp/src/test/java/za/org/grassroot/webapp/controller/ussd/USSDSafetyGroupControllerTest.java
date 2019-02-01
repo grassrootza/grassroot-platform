@@ -1,31 +1,8 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.RoleName;
-import za.org.grassroot.core.domain.SafetyEvent;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.geo.Address;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.dto.membership.MembershipInfo;
-import za.org.grassroot.integration.location.UssdLocationServicesBroker;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
-import za.org.grassroot.webapp.util.USSDUrlUtil;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveAddressMenu;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveSafetyMenuPrompt;
 
 
 /**

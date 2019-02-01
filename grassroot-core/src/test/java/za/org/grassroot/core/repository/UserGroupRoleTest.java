@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertThat;
@@ -40,8 +41,8 @@ public class UserGroupRoleTest {
 
         user = userRepository.save(user);
 
-        Group group1 = new Group("Red Devils", user);
-        Group group2 = new Group("Code Nation", user);
+        Group group1 = new Group("Red Devils", GroupPermissionTemplate.DEFAULT_GROUP, user);
+        Group group2 = new Group("Code Nation", GroupPermissionTemplate.DEFAULT_GROUP, user);
 
         group1.addMember(user, RoleName.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group2.addMember(user, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
