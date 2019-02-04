@@ -65,18 +65,27 @@ public class USSDHomeController {
 
     @RequestMapping(value = homePath + "startMultiThreadTest")
     public void startMultiThreadTest() throws InterruptedException, ExecutionException {
-        final List<Callable<Void>> callables = constructTestCallables(2);
+        final List<Callable<Void>> callables = constructTestCallables(10);
         log.info("### Starting start test");
 
         Stopwatch stopwatch = Stopwatch.createStarted();
+/*
         List<Future<Void>> futures = startTestExecutors.invokeAll(callables);
         for (Future<Void> future : futures) {
             future.get();
         }
-        log.info("### Lasted secs: " + stopwatch.elapsed(TimeUnit.SECONDS));
+*/
+        for (Callable<Void> callable : callables) {
+            try {
+                callable.call();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        log.info("### Lasted secs: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    private final ExecutorService startTestExecutors = Executors.newFixedThreadPool(4);
+    private final ExecutorService startTestExecutors = Executors.newFixedThreadPool(1);
 
     private List<Callable<Void>> constructTestCallables(int amount ) {
         // amount cannot be larger than 900

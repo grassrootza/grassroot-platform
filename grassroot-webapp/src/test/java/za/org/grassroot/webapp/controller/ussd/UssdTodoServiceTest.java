@@ -9,6 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.domain.task.TodoRequest;
@@ -55,7 +56,7 @@ public class UssdTodoServiceTest extends UssdUnitTest {
     @Before
     public void setUp() {
         testUser = new User(testUserPhone,"Test User", null);
-        testGroup = new Group("Test Group",testUser);
+        testGroup = new Group("Test Group", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
         testTodo = new Todo(testUser,testGroup, TodoType.ACTION_REQUIRED,testMessage, Instant.now());
 
         this.ussdTodoService = new UssdTodoServiceImpl(ussdSupport, ussdMessageAssembler, userManagementServiceMock, todoBrokerMock, todoRequestBrokerMock, cacheUtilManagerMock, ussdGroupUtil, accountFeaturesBrokerMock, learningServiceMock, memberDataExportBrokerMock);
@@ -413,7 +414,7 @@ public class UssdTodoServiceTest extends UssdUnitTest {
         List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
                 new Group("tg2", testUser),
                 new Group("tg3", testUser));
-        testGroups.stream().forEach(tg -> tg.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
+        testGroups.stream().forEach(tg -> tg.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY)).thenReturn(3);
@@ -515,7 +516,7 @@ public class UssdTodoServiceTest extends UssdUnitTest {
     public void confirmTodoWorksWhenAssignedToUser() throws Exception {
 
         Group testGroup = new Group("testGroup", testUser);
-        testGroup.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser, testGroup);
 
         testUser.setDisplayName("Paballo");
@@ -595,7 +596,7 @@ public class UssdTodoServiceTest extends UssdUnitTest {
     public void viewEntryMenuWorks() throws Exception {
         Group testGroup = new Group("test testGroup", testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, TodoType.ACTION_REQUIRED, "Some todo subject", Instant.now());
-        dummyTodo.getAncestorGroup().addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        dummyTodo.getAncestorGroup().addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()))).thenReturn(testUser);
@@ -614,7 +615,7 @@ public class UssdTodoServiceTest extends UssdUnitTest {
     public void todoCompleteMenuWorks() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
-        testGroup.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Todo dummyTodo = new Todo(testUser, testGroup, TodoType.ACTION_REQUIRED, "test todo", Instant.now().minus(7, ChronoUnit.DAYS));
 
         dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
@@ -640,7 +641,7 @@ public class UssdTodoServiceTest extends UssdUnitTest {
     public void setActionTodoComplete() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
-        testGroup.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Todo dummyTodo = new Todo(testUser, testGroup, TodoType.ACTION_REQUIRED, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
         dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());

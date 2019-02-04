@@ -16,13 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.RoleName;
-import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.UserCreateRequest;
-import za.org.grassroot.core.domain.UserLog;
-import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
@@ -33,20 +27,11 @@ import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.dto.UserMinimalProjection;
-import za.org.grassroot.core.enums.AlertPreference;
-import za.org.grassroot.core.enums.DeliveryRoute;
-import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.LocationSource;
-import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.enums.VerificationCodeType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
-import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -67,12 +52,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -89,7 +69,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private UserRepository userRepository;
     @Autowired private GroupRepository groupRepository;
-    @Autowired private RoleRepository roleRepository;
     @Autowired private PasswordTokenService passwordTokenService;
     @Autowired private CacheUtilService cacheUtilService;
     @Autowired private AsyncUserLogger asyncUserService;
@@ -198,8 +177,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         userToSave.setHasInitiatedSession(true);
-        Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
-        userToSave.addStandardRole(fullUserRole);
+        userToSave.addStandardRole(StandardRole.ROLE_FULL_USER);
 
         if (passwordEncoder != null) {
             userToSave.setPassword(passwordEncoder.encode(userProfile.getPassword()));
@@ -234,7 +212,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         boolean userExists = userExist(phoneNumber);
-        Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
 
         if (userExists) {
 
@@ -249,7 +226,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userToUpdate.setMessagingPreference(DeliveryRoute.ANDROID_APP);
             userToUpdate.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
             userToUpdate.setHasInitiatedSession(true);
-            userToUpdate.addStandardRole(fullUserRole);
+            userToUpdate.addStandardRole(StandardRole.ROLE_FULL_USER);
             userToSave = userToUpdate;
 
         } else {
@@ -264,7 +241,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userProfile.setHasSetOwnName(true);
             userProfile.setHasAndroidProfile(true);
             userProfile.setHasInitiatedSession(true);
-            userProfile.addStandardRole(fullUserRole);
+            userProfile.addStandardRole(StandardRole.ROLE_FULL_USER);
             userProfile.setMessagingPreference(DeliveryRoute.ANDROID_APP);
             userProfile.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
 
@@ -730,9 +707,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public void setHasInitiatedUssdSession(User sessionUser, boolean sendWelcomeMessage) {
         sessionUser.setHasInitiatedSession(true);
-
-        Role fullUserRole = roleRepository.findByNameAndRoleType(RoleName.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
-        sessionUser.addStandardRole(fullUserRole);
+        sessionUser.addStandardRole(StandardRole.ROLE_FULL_USER);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
@@ -762,8 +737,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public List<User> findRelatedUsers(User user, String nameFragment) {
-        List<Group> groups = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
-        return userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groups));
+        List<Long> groupIds = groupRepository.findGroupIdsWhereMemberHasPermission(user, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        return userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groupIds));
     }
 
     @Override
@@ -867,8 +842,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
         if (!callingUserUid.equals(userToUpdateUid)) {
             User callingUser = userRepository.findOneByUid(callingUserUid);
-            Role adminRole = roleRepository.findByName(RoleName.ROLE_SYSTEM_ADMIN).get(0);
-            if (!callingUser.getStandardRoles().contains(adminRole)) {
+            if (!callingUser.getStandardRoles().contains(StandardRole.ROLE_SYSTEM_ADMIN)) {
                 throw new AccessDeniedException("Error! Only user or admin can perform this update");
             }
         }

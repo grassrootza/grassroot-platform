@@ -12,6 +12,7 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.enums.AccountType;
 
 import java.time.Instant;
@@ -252,7 +253,7 @@ public class AccountRepositoryTest {
 
         User testUser = new User("0505550000", null, null);
         testUser = userRepository.save(testUser);
-        Group testGroup = new Group("testGroup", testUser);
+        Group testGroup = new Group("testGroup", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
         testGroup = groupRepository.save(testGroup);
         Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
         account = accountRepository.save(account);

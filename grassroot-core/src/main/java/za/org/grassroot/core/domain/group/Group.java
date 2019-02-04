@@ -86,12 +86,9 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Column(name = "reminderminutes")
     private int reminderMinutes;
 
-    @OneToMany(cascade = CascadeType.ALL)
-    @JoinTable(name = "group_roles",
-            joinColumns = @JoinColumn(name = "group_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> groupRoles = new HashSet<>();
+    @ElementCollection
+    @CollectionTable(name = "group_role_permission", joinColumns = @JoinColumn(name = "group_id"))
+    private Set<GroupRolePermission> rolePermissions = new HashSet<>();
 
     /*
     Setting a group 'language', not used for messages etc., but as a default if new user enters system through this
@@ -179,11 +176,11 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         // for JPA
     }
 
-    public Group(String groupName, User createdByUser) {
-        this(groupName, createdByUser, null);
+    public Group(String groupName, GroupPermissionTemplate permissionTemplate, User createdByUser) {
+        this(groupName, permissionTemplate, createdByUser, null);
     }
 
-    public Group(String groupName, User createdByUser, Group parent) {
+    public Group(String groupName, GroupPermissionTemplate permissionTemplate, User createdByUser, Group parent) {
         Objects.requireNonNull(groupName);
         this.uid = UIDGenerator.generateId();
         this.groupName = removeUnwantedCharacters(groupName);
@@ -193,29 +190,25 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.active = true;
         this.discoverable = true; // make groups discoverable by default
         this.joinApprover = createdByUser; // discoverable groups need a join approver, defaulting to creating user
-        this.parent = parent;
         this.reminderMinutes = 24 * 60; // defaults to a day
         this.description = ""; // at some point may want to add to the constructor
         this.defaultImage = GroupDefaultImage.SOCIAL_MOVEMENT;
 
         if (parent != null) {
-            parent.addChildGroup(this);
+            this.parent = parent;
+            this.parent.addChildGroup(this);
         }
 
-        // automatically add 3 default roles
-        addRole(RoleName.ROLE_GROUP_ORGANIZER);
-        addRole(RoleName.ROLE_COMMITTEE_MEMBER);
-        addRole(RoleName.ROLE_ORDINARY_MEMBER);
+        // for each role, add initial permissions based on given template
+        for (GroupRole role : GroupRole.values()) {
+            setInitialPermissions(permissionTemplate, role);
+        }
     }
 
-    private void addRole(RoleName roleName) {
-        Objects.requireNonNull(roleName);
-        for (Role role : groupRoles) {
-            if (role.getName().equals(roleName)) {
-                throw new IllegalArgumentException("Role with name " + roleName + " already exists in group: " + this);
-            }
-        }
-        this.groupRoles.add(new Role(roleName, uid));
+    private void setInitialPermissions(GroupPermissionTemplate permissionTemplate, GroupRole role) {
+        Set<Permission> permissions = GroupPermissionTemplate.CLOSED_GROUP.equals(permissionTemplate) ?
+                role.getClosedGroupPermissions() : role.getDefaultGroupPermissions();
+        setPermissions(role, permissions);
     }
 
     public String getUid() {
@@ -277,11 +270,10 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-    public Set<Membership> addMembers(Collection<User> newMembers, RoleName roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
-        Objects.requireNonNull(roleName);
+    public Set<Membership> addMembers(Collection<User> newMembers, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+        Objects.requireNonNull(role);
         Objects.requireNonNull(newMembers);
 
-        Role role = getRole(roleName);
         Set<Membership> addedMemberships = new HashSet<>();
         for (User newMember : newMembers) {
             Membership membership = addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
@@ -293,20 +285,18 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
 
-    public Membership addMember(User newMember, RoleName roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
-        Objects.requireNonNull(roleName);
-        Role role = getRole(roleName);
+    public Membership addMember(User newMember, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+        Objects.requireNonNull(newMember);
+        Objects.requireNonNull(role);
+
         return addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
     }
 
 
-    private Membership addMemberInternal(User newMember, Role role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    private Membership addMemberInternal(User newMember, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(newMember);
         Objects.requireNonNull(role);
 
-        if (!getGroupRoles().contains(role)) {
-            throw new IllegalArgumentException("Role " + role + " is not one of roles belonging to group: " + this);
-        }
         final Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod, joinMethodDescriptor);
         boolean added = this.memberships.add(membership);
         if (added) {
@@ -351,14 +341,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return null;
     }
 
-    public Role getRole(RoleName roleName) {
-        Objects.requireNonNull(roleName);
-        return groupRoles.stream()
-                .filter(role -> role.getName().equals(roleName))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No role under name " + roleName + " found in group " + this));
-    }
-
     public boolean hasMember(User user) {
         Objects.requireNonNull(user);
         Membership membership = getMembership(user.getUid());
@@ -381,10 +363,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public Group getParent() {
         return parent;
-    }
-
-    public void setParent(Group parent) {
-        this.parent = parent;
     }
 
     public boolean hasParent() { return parent != null; }
@@ -609,13 +587,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public void setDefaultImage(GroupDefaultImage defaultImage) { this.defaultImage = defaultImage; }
 
-    public Set<Role> getGroupRoles() {
-        if (groupRoles == null) {
-            groupRoles = new HashSet<>();
-        }
-        return new HashSet<>(groupRoles);
-    }
-
     public Set<GroupJoinCode> getJoinCodes() {
         return new HashSet<>(this.groupJoinCodes);
     }
@@ -676,6 +647,25 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
             todos = new HashSet<>();
         }
         return todos;
+    }
+
+    public Set<Permission> getPermissions(GroupRole role) {
+        return this.rolePermissions.stream()
+                .filter(groupRolePermission -> groupRolePermission.getRole().equals(role))
+                .map(GroupRolePermission::getPermission)
+                .collect(Collectors.toSet());
+    }
+
+    public void setPermissions(GroupRole role, Set<Permission> permissions) {
+        final Set<GroupRolePermission> oldGroupRolePermissions = this.rolePermissions.stream()
+                .filter(groupRolePermission -> groupRolePermission.getRole().equals(role))
+                .collect(Collectors.toSet());
+        final Set<GroupRolePermission> newGroupRolePermissions = permissions.stream()
+                .map(permission -> new GroupRolePermission(role, permission))
+                .collect(Collectors.toSet());
+
+        this.rolePermissions.removeAll(oldGroupRolePermissions);
+        this.rolePermissions.addAll(newGroupRolePermissions);
     }
 
     @Override

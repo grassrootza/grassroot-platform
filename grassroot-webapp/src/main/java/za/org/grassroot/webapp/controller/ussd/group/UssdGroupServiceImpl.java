@@ -3,8 +3,8 @@ package za.org.grassroot.webapp.controller.ussd.group;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
@@ -12,7 +12,7 @@ import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.UssdSupport;
@@ -119,7 +119,7 @@ public class UssdGroupServiceImpl implements UssdGroupService {
 			if (interrupted) {
 				createdGroup = groupBroker.load(groupUid);
 			} else {
-				MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+				MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), GroupRole.ROLE_GROUP_ORGANIZER, user.getDisplayName());
 				createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
 						GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, true);
 			}

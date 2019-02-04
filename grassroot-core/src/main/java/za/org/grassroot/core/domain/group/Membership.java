@@ -1,12 +1,11 @@
 package za.org.grassroot.core.domain.group;
 
 import lombok.AccessLevel;
-import lombok.Getter;
-//import lombok.NonNull;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.GroupRole;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.GroupViewPriority;
@@ -40,9 +39,9 @@ public class Membership implements Serializable, TagHolder {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "role_id", nullable = false)
-    private Role role;
+    @Column(name = "role", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    private GroupRole role;
 
     @Column(name = "join_time", nullable = false)
     private Instant joinTime;
@@ -69,7 +68,7 @@ public class Membership implements Serializable, TagHolder {
         // for JPA
     }
 
-    Membership(Group group, User user, Role role, Instant joinTime, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    Membership(Group group, User user, GroupRole role, Instant joinTime, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         this.group = Objects.requireNonNull(group);
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
@@ -80,6 +79,14 @@ public class Membership implements Serializable, TagHolder {
         if (!StringUtils.isEmpty(joinMethodDescriptor)) {
             this.addTag(JOIN_METHOD_DESCRIPTOR_TAG + joinMethodDescriptor);
         }
+    }
+
+    /**
+     * Just a convenience
+     * @return
+     */
+    public Set<Permission> getRolePermissions() {
+        return this.group.getPermissions(this.role);
     }
 
     public Optional<String> getJoinMethodDescriptor() {
@@ -109,7 +116,7 @@ public class Membership implements Serializable, TagHolder {
                 .collect(Collectors.toList());
     }
 
-    public void setRole(Role role) {
+    public void updateRole(GroupRole role) {
         this.role = Objects.requireNonNull(role);
     }
 
@@ -129,11 +136,11 @@ public class Membership implements Serializable, TagHolder {
 		return user;
 	}
 
-	public Role getRole() {
-		return role;
-	}
+    public GroupRole getRole() {
+        return role;
+    }
 
-	public Instant getJoinTime() {
+    public Instant getJoinTime() {
 		return joinTime;
 	}
 

@@ -9,8 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.RoleName;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.Province;
@@ -33,7 +32,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     protected String phoneNumber;
 
     @ApiModelProperty(allowEmptyValue = true)
-    protected RoleName roleName; // optional
+    protected GroupRole roleName; // optional
 
     protected String displayName; // optional
     protected String firstName;
@@ -53,7 +52,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     @JsonCreator
     public MembershipInfo(@JsonProperty("phoneNumber") String phoneNumber,
-                          @JsonProperty("roleName") RoleName roleName,
+                          @JsonProperty("roleName") GroupRole roleName,
                           @JsonProperty("displayName") String displayName) {
         this.phoneNumber = phoneNumber;
         this.roleName = roleName;
@@ -62,7 +61,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     }
 
     // constructor to create a membership info with an empty role
-    public MembershipInfo(User user, String displayName, RoleName roleName, List<String> assignedTopics) {
+    public MembershipInfo(User user, String displayName, GroupRole roleName, List<String> assignedTopics) {
         this.phoneNumber = user.getPhoneNumber();
         this.memberEmail = user.getEmailAddress();
         this.displayName = displayName;
@@ -79,7 +78,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     public static Set<MembershipInfo> createFromMembers(Set<Membership> members) {
         Set<MembershipInfo> membershipInfoSet = new HashSet<>();
-        members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getDisplayName(), m.getRole().getName(),
+        members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getDisplayName(), m.getRole(),
                 m.getTopics())));
         return membershipInfoSet;
     }
@@ -181,9 +180,9 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     @Override
     public int compareTo(MembershipInfo m) {
-        RoleName otherRole = m.getRoleName();
+        GroupRole otherRole = m.getRoleName();
         if (roleName != null && !roleName.equals(otherRole)) {
-            return Role.compareRoleNames(roleName, otherRole);
+            return roleName.compareTo(otherRole);
         } else {
             return StringUtils.isEmpty(displayName) ? -1 :
                     StringUtils.isEmpty(m.getDisplayName()) ? 1 :

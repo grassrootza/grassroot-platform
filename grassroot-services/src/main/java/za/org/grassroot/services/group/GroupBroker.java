@@ -1,13 +1,10 @@
 package za.org.grassroot.services.group;
 
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.GroupJoinCode;
-import za.org.grassroot.core.domain.group.GroupJoinMethod;
-import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
@@ -26,8 +23,8 @@ public interface GroupBroker {
     /** METHODS FOR CREATING AND EDITING GROUPS **/
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes,
-                 boolean openJoinToken, boolean discoverable, boolean addToAccountIfPresent);
+				 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes,
+				 boolean openJoinToken, boolean discoverable, boolean addToAccountIfPresent);
 
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 
@@ -78,7 +75,7 @@ public interface GroupBroker {
 
     void unsubscribeMember(String userUid, String groupUid);
 
-    void updateMembershipRole(String userUid, String groupUid, String memberUid, RoleName roleName);
+    void updateMembershipRole(String userUid, String groupUid, String memberUid, GroupRole roleName);
 
     void updateMembershipDetails(String userUid, String groupUid, String memberUid, String name, String phone, String email,
                                  Province province);
@@ -94,7 +91,7 @@ public interface GroupBroker {
 
     boolean updateViewPriority(String userUid, String groupUid, GroupViewPriority priority);
 
-    void updateGroupPermissionsForRole(String userUid, String groupUid, RoleName roleName, Set<Permission> permissionsToAdd,
+    void updateGroupPermissionsForRole(String userUid, String groupUid, GroupRole roleName, Set<Permission> permissionsToAdd,
 									   Set<Permission> permissionsToRemove);
 
     void updateMemberAlias(String userUid, String groupUid, String alias);

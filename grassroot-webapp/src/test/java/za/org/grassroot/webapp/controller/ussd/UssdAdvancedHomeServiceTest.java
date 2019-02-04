@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.geo.TaskLocation;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.enums.EventType;
@@ -40,7 +41,7 @@ public class UssdAdvancedHomeServiceTest extends UssdUnitTest {
 	private static final User testUser = new User(phoneForTests, testUserName, null);
 	protected final static String testGroupName = "test_group";
 
-	protected final static Group testGroup = new Group(testGroupName, testUser);
+	protected final static Group testGroup = new Group(testGroupName, GroupPermissionTemplate.DEFAULT_GROUP, testUser);
 
 	private UssdAdvancedHomeService ussdAdvancedHomeService;
 
@@ -77,7 +78,7 @@ public class UssdAdvancedHomeServiceTest extends UssdUnitTest {
 
 		List<ObjectLocation> actualObjectLocations = new ArrayList<>();
 
-		Group testGroup = new Group("test Group", testUser);
+		Group testGroup = new Group("test Group", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
 
 		Meeting testMeeting = new MeetingBuilder().setName("test meeting")
 				.setStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS))

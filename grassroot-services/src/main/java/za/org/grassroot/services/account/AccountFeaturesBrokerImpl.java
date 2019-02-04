@@ -8,10 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.ConfigVariable;
-import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.RoleName;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
@@ -138,7 +135,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
 
     private void validateAdmin(User user, Account account) {
         if (!account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, RoleName.ROLE_SYSTEM_ADMIN);
+            permissionBroker.validateSystemRole(user, StandardRole.ROLE_SYSTEM_ADMIN);
         }
     }
 

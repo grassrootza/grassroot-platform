@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 
@@ -99,7 +100,7 @@ public class UssdHomeServiceTest extends UssdUnitTest {
         testUser.setDisplayName("");
         testUser.setHasInitiatedSession(false);
 
-        final Group testGroup = new Group(testGroupName, new User("27601110000", null, null));
+        final Group testGroup = new Group(testGroupName, GroupPermissionTemplate.DEFAULT_GROUP, new User("27601110000", null, null));
         testGroup.setGroupTokenCode("111");
         testGroup.setTokenExpiryDateTime(Instant.now().plus(7, ChronoUnit.DAYS));
 

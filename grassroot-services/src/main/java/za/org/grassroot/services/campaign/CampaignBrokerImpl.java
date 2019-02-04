@@ -13,9 +13,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Notification_;
-import za.org.grassroot.core.domain.Role_;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.campaign.Campaign;
@@ -39,7 +38,6 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.CampaignMessageRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
-import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -227,11 +225,10 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Specification<Campaign> createdByUser = (root, query, cb) -> cb.equal(root.get(Campaign_.createdByUser), user);
         Specification<Campaign> userIsOrganizerInGroup = (root, query, cb) -> {
             Join<Campaign, Group> masterGroupJoin = root.join(Campaign_.masterGroup);
-            Join<Group, Membership> memberJoin = masterGroupJoin.join(Group_.memberships);
-            Join<Membership, Role> roleJoin = memberJoin.join(Membership_.role);
+            Join<Group, Membership> membershipJoin = masterGroupJoin.join(Group_.memberships);
             query.distinct(true);
-            return cb.and(cb.equal(memberJoin.get(Membership_.user), user),
-                    cb.equal(roleJoin.get(Role_.name), RoleName.ROLE_GROUP_ORGANIZER));
+            return cb.and(cb.equal(membershipJoin.get(Membership_.user), user),
+                    cb.equal(membershipJoin.get(Membership_.role), GroupRole.ROLE_GROUP_ORGANIZER));
         };
 
         return campaignRepository.findAll(Specification.where(createdByUser).or(userIsOrganizerInGroup), Sort.by("createdDateTime"));

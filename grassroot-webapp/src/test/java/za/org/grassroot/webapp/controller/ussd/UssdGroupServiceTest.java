@@ -4,12 +4,12 @@ import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.ussd.group.UssdGroupMgmtService;
 import za.org.grassroot.webapp.controller.ussd.group.UssdGroupMgmtServiceImpl;
 import za.org.grassroot.webapp.controller.ussd.group.UssdGroupService;
@@ -45,8 +45,8 @@ public class UssdGroupServiceTest extends UssdUnitTest {
     @Before
     public void setUp() {
         testUser = new User(testUserPhone, null, null);
-        testGroup = new Group("test group", testUser);
-        testMembers.add(new MembershipInfo(testUserPhone, RoleName.ROLE_GROUP_ORGANIZER, null));
+        testGroup = new Group("test group", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
+        testMembers.add(new MembershipInfo(testUserPhone, GroupRole.ROLE_GROUP_ORGANIZER, null));
         testGroupIdString = testGroup.getUid();
 
         this.ussdGroupService = new UssdGroupServiceImpl(false, ussdSupport, groupBrokerMock, permissionBrokerMock, null, groupJoinRequestServiceMock, ussdGroupUtil, userManagementServiceMock, cacheUtilManagerMock);
@@ -56,10 +56,10 @@ public class UssdGroupServiceTest extends UssdUnitTest {
     @Test
     public void groupSecondPageShouldWork() throws Exception {
         resetTestGroup();
-        List<Group> testGroups = Arrays.asList(new Group("gc1", testUser),
-                new Group("gc2", testUser),
-                new Group("gc3", testUser),
-                new Group("gc4", testUser));
+        List<Group> testGroups = Arrays.asList(new Group("gc1", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                new Group("gc2", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                new Group("gc3", GroupPermissionTemplate.DEFAULT_GROUP, testUser),
+                new Group("gc4", GroupPermissionTemplate.DEFAULT_GROUP, testUser));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, null)).thenReturn(4);
@@ -77,7 +77,7 @@ public class UssdGroupServiceTest extends UssdUnitTest {
     @Test
     public void openingMenuShouldWorkWithNoGroups() throws Exception {
         resetTestGroup();
-        testGroup.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.getActiveGroupsWithPermission(testUser, null)).thenReturn(new HashSet<>());
 
@@ -420,11 +420,11 @@ public class UssdGroupServiceTest extends UssdUnitTest {
 
     // helper method to generate a set of membership info ... used often
     protected Set<MembershipInfo> ordinaryMember(String phoneNumber) {
-        return Sets.newHashSet(new MembershipInfo(phoneNumber, RoleName.ROLE_ORDINARY_MEMBER, null));
+        return Sets.newHashSet(new MembershipInfo(phoneNumber, GroupRole.ROLE_ORDINARY_MEMBER, null));
     }
 
     protected Set<MembershipInfo> organizer(User user) {
-        return Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
+        return Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), GroupRole.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
     }
 
     @Test
@@ -490,7 +490,7 @@ public class UssdGroupServiceTest extends UssdUnitTest {
      */
     private void resetTestGroup() {
         testGroup.setGroupName("test testGroup");
-        testGroup.addMember(testUser, RoleName.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
     }
 
 }

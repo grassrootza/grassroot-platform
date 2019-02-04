@@ -72,7 +72,7 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
 
     @Query(value = "select g.* from group_profile g " +
             "inner join group_user_membership m on g.id = m.group_id " +
-            "inner join role_permissions rp on m.role_id = rp.role_id " +
+            "inner join group_role_permission rp on m.role = rp.role and g.id = rp.group_id " +
             "where g.active = true and g.parent is null and m.user_id = ?1 and rp.permission = ?2 " +
             "and to_tsvector('english', g.name) @@ to_tsquery('english', ?3) " +
             "order by greatest(g.last_task_creation_time, g.last_log_creation_time) desc", nativeQuery = true)
@@ -80,11 +80,10 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
 
     @Query(value = "select g.* from group_profile g " +
             "inner join group_user_membership m on g.id = m.group_id " +
-            "inner join role_permissions rp on m.role_id = rp.role_id " +
+            "inner join group_role_permission rp on m.role = rp.role and g.id = rp.group_id " +
             "where g.active = true and g.parent is null and m.user_id = ?1 and rp.permission = ?2 " +
             "order by greatest(g.last_task_creation_time, g.last_log_creation_time) desc", nativeQuery = true)
-    Page<Group> findUsersGroupsOrderedByActivity(Long userId, String permission, Pageable pageable);
-
+    Page<Group> findUsersGroupsOrderedByActivity(Long userId, Permission permission, Pageable pageable);
 
     @Query(value = "select groupTokenCode from Group")
     List<String> findAllTokenCodes();
@@ -98,10 +97,11 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
     @Query("SELECT g from GroupLog gl inner join gl.group g WHERE gl.groupLogType = 'GROUP_MEMBER_REMOVED' and gl.targetUser = ?1 AND gl.createdDateTime >= ?2")
     List<Group> findMembershipRemovedAfter(User formerMember, Instant time);
 
-    @Query(value = "select count(*) from Group g " +
-            "inner join g.memberships m " +
-            "where g.active = true and m.user = ?1 and ?2 member of m.role.permissions")
-    int countActiveGroupsWhereUserHasPermission(User member, Permission requiredPermission);
+    @Query(value = "select count(*) from Membership m inner join m.group g inner join g.rolePermissions rp where m.user = ?1 and m.role = rp.role and rp.permission = ?2 and g.active = true")
+    int countActiveGroupsWhereMemberHasPermission(User member, Permission requiredPermission);
+
+    @Query("select distinct g.id from Membership m inner join m.group g inner join g.rolePermissions rp where m.user = ?1 and m.role = rp.role and rp.permission = ?2")
+    List<Long> findGroupIdsWhereMemberHasPermission(User member, Permission permission);
 
     @Query("SELECT g from Group g where " +
             "size(g.memberships) > :minSize")

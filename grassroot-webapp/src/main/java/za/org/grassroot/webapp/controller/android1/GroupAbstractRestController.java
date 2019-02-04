@@ -2,7 +2,7 @@ package za.org.grassroot.webapp.controller.android1;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
@@ -36,7 +36,7 @@ public class GroupAbstractRestController {
     protected PermissionBroker permissionBroker;
 
     protected GroupResponseWrapper createGroupWrapper(Group group, User caller) {
-        Role role = group.getMembership(caller).getRole();
+        GroupRole role = group.getMembership(caller).getRole();
         Event event = eventBroker.getMostRecentEvent(group.getUid());
         GroupLog groupLog = groupQueryBroker.getMostRecentLog(group);
         boolean hasTask = event != null;

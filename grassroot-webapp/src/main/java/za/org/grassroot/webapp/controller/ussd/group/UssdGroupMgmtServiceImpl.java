@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.RoleName;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
@@ -369,7 +369,7 @@ public class UssdGroupMgmtServiceImpl implements UssdGroupMgmtService {
 			menu = new USSDMenu(ussdSupport.getMessage("group.organizer.add.error", user),
 					groupMenuWithId("organizer/complete", groupUid));
 		} else {
-			MembershipInfo memberInfo = new MembershipInfo(organizerPhone, RoleName.ROLE_GROUP_ORGANIZER, null);
+			MembershipInfo memberInfo = new MembershipInfo(organizerPhone, GroupRole.ROLE_GROUP_ORGANIZER, null);
 			groupBroker.addMembers(user.getUid(), groupUid, Collections.singleton(memberInfo), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
 			menu = new USSDMenu(ussdSupport.getMessage("group.organizer.add.done", user),
 					groupMenuWithId("organizer/complete", groupUid));

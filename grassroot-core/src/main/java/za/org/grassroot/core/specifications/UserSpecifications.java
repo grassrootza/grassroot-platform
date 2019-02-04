@@ -1,11 +1,10 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.Role_;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.User_;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.Group_;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.group.Membership_;
 
@@ -47,15 +46,11 @@ public final class UserSpecifications {
         return (root, query, cb) -> cb.equal(root.get(User_.whatsAppOptedIn), true);
     }
 
-    public static Specification<User> phoneContains(String phoneNumber) {
-        return (root, query, cb) -> cb.like(root.get(User_.phoneNumber), "27" + phoneNumber);
-    }
-
-    public static Specification<User> inGroups(Collection<Group> groups) {
+    public static Specification<User> inGroups(Collection<Long> groupIds) {
         return (root, query, cb) -> {
             query.distinct(true);
             Join<User, Membership> userMembershipJoin = root.join(User_.memberships);
-            return cb.isTrue(userMembershipJoin.get(Membership_.group).in(groups));
+            return cb.isTrue(userMembershipJoin.get(Membership_.group).get(Group_.id).in(groupIds));
         };
     }
 
@@ -63,8 +58,8 @@ public final class UserSpecifications {
         return (root, query, cb) -> cb.like(cb.lower(root.get(User_.displayName)), "%" + nameFragment.toLowerCase() + "%");
     }
 
-    public static Specification<User> withNameInGroups(String nameFragment, List<Group> groups) {
-        return Specification.where(inGroups(groups)).and(nameContains(nameFragment));
+    public static Specification<User> withNameInGroups(String nameFragment, List<Long> groupIds) {
+        return Specification.where(inGroups(groupIds)).and(nameContains(nameFragment));
     }
 
     public static Specification<User> uidIn(Collection<String> uids) {
@@ -74,13 +69,4 @@ public final class UserSpecifications {
     public static Specification<User> isLiveWireContact() {
         return (root, query, cb) -> cb.isTrue(root.get(User_.liveWireContact));
     }
-
-    public static Specification<User> hasStandardRole(String roleName) {
-        return (root, query, cb) -> {
-            Join<User, Role> userRoleJoin = root.join(User_.standardRoles);
-            return cb.and(cb.equal(userRoleJoin.get(Role_.roleType), Role.RoleType.STANDARD),
-                    cb.equal(userRoleJoin.get(Role_.name), roleName));
-        };
-    }
-
 }

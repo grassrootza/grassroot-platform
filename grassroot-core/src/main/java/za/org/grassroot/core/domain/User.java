@@ -109,11 +109,11 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Version
     private Integer version;
 
-    @OneToMany
-    @JoinTable(name = "user_roles",
-            joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)},
-            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)})
-    private Set<Role> standardRoles = new HashSet<>();
+    @ElementCollection
+    @CollectionTable(name = "user_standard_role", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", length = 50, nullable = false)
+    private Set<StandardRole> standardRoles = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
     private Set<Membership> memberships = new HashSet<>();
@@ -287,22 +287,19 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         return safetyGroup != null;
     }
 
-    public Set<Role> getStandardRoles() {
+    public Set<StandardRole> getStandardRoles() {
         if (standardRoles == null) {
             standardRoles = new HashSet<>();
         }
         return new HashSet<>(standardRoles);
     }
 
-    public void addStandardRole(Role role) {
+    public void addStandardRole(StandardRole role) {
         Objects.requireNonNull(role);
-        if (!role.getRoleType().equals(Role.RoleType.STANDARD)) {
-            throw new IllegalArgumentException("Cannot add role directly to user that is not of standard type: " + role);
-        }
         this.standardRoles.add(role);
     }
 
-    public void removeStandardRole(Role role) {
+    public void removeStandardRole(StandardRole role) {
         Objects.requireNonNull(role);
         this.standardRoles.remove(role);
     }
@@ -351,23 +348,15 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Override
     public Collection<GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = new HashSet<>();
-        Set<Role> roles = getStandardAndGroupRoles();
-        authorities.addAll(roles);
 
-        Set<Permission> permissions = roles.stream()
-                .flatMap(role -> role.getPermissions().stream())
-                .collect(Collectors.toSet());
-        authorities.addAll(permissions);
-
-        return authorities;
-    }
-
-    private Set<Role> getStandardAndGroupRoles() {
-        Set<Role> roles = getStandardRoles();
-        for (Membership membership : getMemberships()) {
-            roles.add(membership.getRole());
+        for (StandardRole standardRole : standardRoles) {
+            authorities.add(standardRole);
         }
-        return roles;
+        for (Membership membership : getMemberships()) {
+            authorities.add(membership.getRole());
+            authorities.addAll(membership.getRolePermissions());
+        }
+        return authorities;
     }
 
     @Override

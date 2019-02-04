@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.RoleName;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
@@ -22,14 +22,13 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
@@ -215,7 +214,7 @@ public class UssdMeetingServiceImpl implements UssdMeetingService {
 		if (!USSDGroupUtil.isValidGroupName(userResponse)) {
 			return ussdSupport.menuBuilder(groupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, groupName));
 		} else {
-			MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), RoleName.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+			MembershipInfo membershipInfo = new MembershipInfo(user.getPhoneNumber(), GroupRole.ROLE_GROUP_ORGANIZER, user.getDisplayName());
 			Group group = groupBroker.create(user.getUid(), userResponse, null, Collections.singleton(membershipInfo), GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false, false);
 			return ussdSupport.menuBuilder(groupUtil.addNumbersToGroupPrompt(user, group, thisSection, groupHandlingMenu));
 		}
