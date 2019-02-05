@@ -181,7 +181,7 @@ public class LiveWireAlert implements LocationHolder {
         }
 
         public Builder contactUser(User user) {
-            logger.info("setting contact user to: {}", user);
+            logger.debug("setting contact user to: {}", user);
             this.contactUser = user;
             return this;
         }
@@ -228,6 +228,14 @@ public class LiveWireAlert implements LocationHolder {
 
         public Builder mediaFiles(Set<MediaFileRecord> mediaFiles) {
             this.mediaFiles = mediaFiles;
+            return this;
+        }
+
+        public Builder addMediaFiles(Set<MediaFileRecord> mediaFiles) {
+            if (this.mediaFiles == null) {
+                this.mediaFiles = new HashSet<>();
+            }
+            this.mediaFiles.addAll(mediaFiles);
             return this;
         }
 

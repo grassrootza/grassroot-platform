@@ -43,7 +43,7 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     @Value("${grassroot.task.images.bucket:null}")
     private String taskImagesBucket;
 
-    @Value("${grassroot.livewire.media.bucket:null}")
+    @Value("${grassroot.livewire.media.bucket:grassroot-livewire-media}")
     private String liveWireMediaBucket;
 
     @Value("${grassroot.media.default.bucket:null}")

@@ -291,7 +291,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         log.info("Completed creating LiveWire alert, entity: {}", alert);
 
         LogsAndNotificationsBundle bundle = alertCompleteBundle(userRepository.findOneByUid(userUid), alert);
-        log.info("LiveWire Alert notifications: {}", bundle.getNotifications());
+        log.debug("LiveWire Alert notifications: {}", bundle.getNotifications());
 
         AfterTxCommitTask task = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
         applicationEventPublisher.publishEvent(task);

@@ -98,7 +98,7 @@ public class WhatsAppJoinFlowController extends BaseController {
     // this will get called _a lot_ during a sesion (each message to and fro), so not yet introducting a record user log in
     @RequestMapping(value = "/user/id", method = RequestMethod.POST)
     public ResponseEntity fetchUserId(String msisdn) {
-        log.info("South African number? : {}", PhoneNumberUtil.isPhoneNumberSouthAfrican(msisdn));
+        log.debug("South African number? : {}", PhoneNumberUtil.isPhoneNumberSouthAfrican(msisdn));
         User user = userManagementService.loadOrCreateUser("+" + msisdn, UserInterfaceType.WHATSAPP);
         userLogger.recordUserSession(user.getUid(), UserInterfaceType.WHATSAPP);
         return ResponseEntity.ok(user.getUid());

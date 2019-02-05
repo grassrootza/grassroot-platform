@@ -87,6 +87,7 @@ public class MediaController extends BaseRestController {
                                            @RequestParam String mimeType) {
         log.info("Recording a media file, with image key {}, and bucket {}", imageKey, bucket);
         String storedFileUid = mediaFileBroker.recordFile(getUserIdFromRequest(request), bucket, mimeType, imageKey, null);
+        log.info("Stored, with id = {}", storedFileUid);
         return ResponseEntity.ok(storedFileUid);
     }
 
