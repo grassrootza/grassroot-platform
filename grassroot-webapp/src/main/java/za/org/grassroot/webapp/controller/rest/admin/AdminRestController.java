@@ -24,6 +24,7 @@ import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
@@ -175,35 +176,42 @@ public class AdminRestController extends BaseRestController{
     }
 
     @RequestMapping(value = "/groups/member/add",method = RequestMethod.POST)
-    public ResponseEntity addMemberToGroup(@RequestParam String groupUid, @RequestParam String displayName,
-                                                        @RequestParam String phoneNumber, @RequestParam String roleName,
-                                                        @RequestParam String email, @RequestParam String province,
-                                                        HttpServletRequest request){
+    public ResponseEntity addMemberToGroup(@RequestParam String groupUid,
+                                           @RequestParam String displayName,
+                                           @RequestParam String roleName,
+                                           @RequestParam(required = false) String phoneNumber,
+                                           @RequestParam(required = false) String email,
+                                           @RequestParam(required = false) Province province,
+                                           HttpServletRequest request) {
+        String msisdn = StringUtils.isEmpty(phoneNumber) ? null : PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+
         User user;
-        try{
-            user = userManagementService.findByNumberOrEmail(phoneNumber,email);
-        } catch (NoSuchUserException e){
+        try {
+            user = userManagementService.findByNumberOrEmail(msisdn,email);
+        } catch (NoSuchUserException e) {
             log.info("User not found");
             user = null;
         }
+
         Group group = groupRepository.findOneByUid(groupUid);
         RestMessage restMessage;
         MembershipInfo membershipInfo;
 
-        if(user != null && group.hasMember(user)){
+        if(user != null && group.hasMember(user)) {
             log.info("User was found and is part of group,updating only");
             Membership membership = group.getMembership(user);
-            if(!user.hasPassword() || !user.isHasSetOwnName()){
-                groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(),displayName,phoneNumber,email,Province.valueOf(province));
+            if(!user.isHasSetOwnName()){
+                groupBroker.updateMembershipDetails(getUserIdFromRequest(request),groupUid,membership.getUser().getUid(), displayName, msisdn, email, province);
                 restMessage = RestMessage.UPDATED;
             } else {
                 groupBroker.updateMembershipRole(getUserIdFromRequest(request), groupUid, user.getUid(), roleName);
                 restMessage = RestMessage.UPDATED;
             }
-        }else{
+        } else {
             log.info("User not found in database,creating membership and adding to group");
-            membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
-            membershipInfo.setProvince(Province.valueOf(province));
+            membershipInfo = new MembershipInfo(msisdn, roleName, displayName);
+            if (province != null)
+                membershipInfo.setProvince(province);
             membershipInfo.setMemberEmail(email);
             adminService.addMemberToGroup(getUserIdFromRequest(request), groupUid, membershipInfo);
             restMessage = RestMessage.UPLOADED;

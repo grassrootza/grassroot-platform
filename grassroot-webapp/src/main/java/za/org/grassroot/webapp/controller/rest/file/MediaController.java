@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.authentication.JwtService;
@@ -89,6 +90,11 @@ public class MediaController extends BaseRestController {
         String storedFileUid = mediaFileBroker.recordFile(getUserIdFromRequest(request), bucket, mimeType, imageKey, null);
         log.info("Stored, with id = {}", storedFileUid);
         return ResponseEntity.ok(storedFileUid);
+    }
+
+    @RequestMapping(value = "/details/{mediaRecordId}", method = RequestMethod.GET)
+    public ResponseEntity<MediaFileRecord> fetchMediaRecordDetails(@PathVariable String mediaRecordId) {
+        return ResponseEntity.ok(mediaFileBroker.load(mediaRecordId));
     }
 
 

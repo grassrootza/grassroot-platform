@@ -10,7 +10,12 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.UidIdentifiable;
@@ -37,7 +42,13 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -395,8 +406,11 @@ public class WhatsAppJoinFlowController extends BaseController {
                 actionOptions.put(nextAction.toString(), ""); // since we need to know the action
                 requestDataType = RequestDataType.FREE_FORM_OR_MEDIA;
             } else {
-                log.info("No data type to request, no final message, so close off");
-                messageTexts.addAll(dataRequestMessages(RequestDataType.NONE, JpaEntityType.CAMPAIGN));
+                log.info("No data type to request, no final message, so close off with campaign defined positive exit or the generic");
+                List<CampaignMessage> positiveExitIfExists = campaignBroker.findCampaignMessage(campaignUid, CampaignActionType.EXIT_POSITIVE, null, UserInterfaceType.WHATSAPP);
+                List<String> responseMessages = positiveExitIfExists != null && !positiveExitIfExists.isEmpty() ?
+                        Collections.singletonList(positiveExitIfExists.get(0).getMessage()) : dataRequestMessages(RequestDataType.NONE, JpaEntityType.CAMPAIGN);
+                messageTexts.addAll(responseMessages);
             }
         }
         return requestDataType;
@@ -426,7 +440,6 @@ public class WhatsAppJoinFlowController extends BaseController {
 
         List<CampaignMessage> nextMsgs = campaignBroker.findCampaignMessage(campaignUid, CampaignActionType.SHARE_PROMPT, null, UserInterfaceType.WHATSAPP);
         return (nextMsgs == null || nextMsgs.isEmpty()) ? null : nextMsgs.get(0);
-
     }
 
     private CampaignMessage showUserMediaRecordingPrompt(String campaignUid, String userUid) {

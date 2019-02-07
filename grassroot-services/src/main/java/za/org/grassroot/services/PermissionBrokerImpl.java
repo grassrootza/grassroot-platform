@@ -232,19 +232,19 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Override
     public void validateSystemRole(User user, String roleName) {
-        log.info("attempting to validate system role, with name: " + roleName);
+        log.debug("attempting to validate system role, with name: " + roleName);
         List<Role> systemRoles = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD);
-        log.info("system role for name: {}, found: {}", roleName, systemRoles);
+        log.debug("system role for name: {}, found: {}", roleName, systemRoles);
         if (systemRoles == null || systemRoles.isEmpty()) {
             throw new UnsupportedOperationException("Error! Attempt to check invalid role");
         }
-        log.info("user system roles: {}", user.getStandardRoles());
+        log.debug("user system roles: {}", user.getStandardRoles());
         for (Role role : systemRoles) {
             if (!user.getStandardRoles().contains(role)) {
                 throw new AccessDeniedException("Error! User " + user.getDisplayName() + " does not have the role " + roleName);
             }
         }
-        log.info("user has requisite role, returning");
+        log.debug("user has requisite role, returning");
     }
 
     @Override
