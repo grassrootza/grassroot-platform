@@ -273,26 +273,16 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok().build();
     }
 
-    @RequestMapping(value = "/config/fetch/above/limit",method = RequestMethod.GET)
-    public ResponseEntity<Integer> getNumberOfGroupsAboveFreeLimit(){
-        int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(freeLimit));
-    }
-
     @RequestMapping(value = "/config/fetch/below/limit",method = RequestMethod.GET)
-    public ResponseEntity<Integer> getNumberOfGroupsBelowFreeLimit(){
-        int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(freeLimit));
-    }
-
-    @RequestMapping(value = "/config/fetch/below/limit",method = RequestMethod.GET)
-    public ResponseEntity<Integer> countGroupsBelowLimit(@RequestParam int limit){
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(limit));
+    public ResponseEntity<Integer> countGroupsBelowLimit(@RequestParam(required = false) Integer limit){
+        int limitToUse = limit == null ? accountFeaturesBroker.getFreeGroupLimit() : limit;
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(limitToUse));
     }
 
     @RequestMapping(value = "/config/fetch/above/limit",method = RequestMethod.GET)
-    public ResponseEntity<Integer> countGroupsAboveLimit(@RequestParam int limit){
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(limit));
+    public ResponseEntity<Integer> countGroupsAboveLimit(@RequestParam(required = false) Integer limit){
+        int limitToUse = limit == null ? accountFeaturesBroker.getFreeGroupLimit() : limit;
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(limitToUse));
     }
 
     @RequestMapping(value = "/update/location/address",method = RequestMethod.GET)
