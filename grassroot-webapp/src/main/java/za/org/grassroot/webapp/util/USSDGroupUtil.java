@@ -185,7 +185,9 @@ public class USSDGroupUtil extends USSDUtil {
                 groupMenu = createGroupPrompt(user, section, builder.urlToCreateNewGroup);
             } else { // case (b), handle no groups, with redirect option
                 groupMenu = new USSDMenu(getMessage(section, messageKey, promptKey + ".empty", user));
-                groupMenu.addMenuOption(builder.urlForNoGroups, getMessage(section, messageKey, optionsKey + "new", user));
+                final String newGroupUri = StringUtils.isEmpty(builder.urlForCreateNewGroupPrompt) ?
+                        GROUP_MANAGER.toPath() + "create" : section.toPath() + builder.urlForCreateNewGroupPrompt;
+                groupMenu.addMenuOption(newGroupUri, getMessage(section, messageKey, optionsKey + "new", user));
                 groupMenu.addMenuOption("start_force", getMessage("start", user));
                 groupMenu.addMenuOption("exit", getMessage("exit.option", user));
             }

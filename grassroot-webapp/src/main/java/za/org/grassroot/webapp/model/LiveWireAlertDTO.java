@@ -52,7 +52,7 @@ public class LiveWireAlertDTO {
 
     private LiveWireAlertDestType destType;
 
-    private List<String> mediaFileUids;
+    private List<String> mediaFileKeys;
 
     public LiveWireAlertDTO(LiveWireAlert alert) {
         this.serverUid = alert.getUid();
@@ -92,9 +92,9 @@ public class LiveWireAlertDTO {
         }
 
         if (alert.hasMediaFiles()) {
-            this.mediaFileUids = alert.getMediaFiles().stream().map(MediaFileRecord::getUid).collect(Collectors.toList());
-        }else{
-            this.mediaFileUids = new ArrayList<>();
+            this.mediaFileKeys = alert.getMediaFiles().stream().map(MediaFileRecord::getKey).collect(Collectors.toList());
+        } else {
+            this.mediaFileKeys = new ArrayList<>();
         }
     }
 

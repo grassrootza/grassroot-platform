@@ -27,6 +27,8 @@ public interface StorageBroker {
 
     void deleteImage(String uid);
 
+    Set<MediaFileRecord> retrieveRecordsById(Set<String> mediaRecordIds);
+
     Set<MediaFileRecord> retrieveMediaRecordsForFunction(MediaFunction function, Set<String> mediaFileUids);
 
     File fetchFileFromRecord(MediaFileRecord record);

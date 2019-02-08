@@ -9,6 +9,8 @@ public interface MediaFileRecordRepository extends JpaRepository<MediaFileRecord
 
     MediaFileRecord findOneByUid(String uid);
 
+    Set<MediaFileRecord> findByUidIn(Set<String> uids);
+
     MediaFileRecord findByBucketAndKey(String bucket, String key);
 
     Set<MediaFileRecord> findByBucketAndKeyIn(String bucket, Set<String> keys);

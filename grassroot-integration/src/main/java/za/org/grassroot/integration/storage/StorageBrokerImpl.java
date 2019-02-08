@@ -59,7 +59,7 @@ public class StorageBrokerImpl implements StorageBroker {
     @Value("${grassroot.task.images.resized.bucket:null}")
     private String taskImagesResizedBucket;
 
-    @Value("${grassroot.livewire.media.bucket:null}")
+    @Value("${grassroot.livewire.media.bucket:grassroot-livewire-media}")
     private String liveWireMediaBucket;
 
     @Value("${grassroot.media.general.bucket:null}")
@@ -212,6 +212,11 @@ public class StorageBrokerImpl implements StorageBroker {
                     }
                 });
         }
+
+    @Override
+    public Set<MediaFileRecord> retrieveRecordsById(Set<String> mediaRecordIds) {
+        return mediaFileRepository.findByUidIn(mediaRecordIds);
+    }
 
     @Override
     @Transactional(readOnly = true)

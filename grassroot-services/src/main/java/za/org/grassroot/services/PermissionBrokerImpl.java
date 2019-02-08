@@ -119,7 +119,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
         if (!user.getStandardRoles().contains(role)) {
             throw new AccessDeniedException("Error! User " + user.getDisplayName() + " does not have the role " + role);
         }
-        log.info("user has requisite role, returning");
+        log.debug("user has requisite role, returning");
     }
 
     @Override

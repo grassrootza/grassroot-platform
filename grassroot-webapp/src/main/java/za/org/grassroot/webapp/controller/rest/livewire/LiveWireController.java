@@ -84,13 +84,14 @@ public class LiveWireController extends BaseRestController{
                                                                @RequestParam(required = false) LiveWireAlertDestType destType,
                                                                @RequestParam(required = false) String destUid,
                                                                @RequestParam(required = false) Set<String> mediaFileKeys,
+                                                               @RequestParam(required = false) Set<String> mediaRecordIds,
                                                                @RequestParam(required = false) String contactName,
                                                                @RequestParam(required = false) String contactNumber,
                                                                @PathVariable String userUid, HttpServletRequest request) {
         User creatingUser = userManagementService.load(getUserIdFromRequest(request));
 
-        log.info("Creating a new LiveWire alert, alert type = {}, dest type = {}, has location? : {}, has media files? : {}",
-                type, destType, addLocation, mediaFileKeys);
+        log.info("Creating a new LiveWire alert, alert type = {}, dest type = {}, has location? : {}, has media files? : {} or record IDs: {}",
+                type, destType, addLocation, mediaFileKeys, mediaRecordIds);
 
         LiveWireAlert.Builder builder = LiveWireAlert.newBuilder();
 
@@ -122,9 +123,17 @@ public class LiveWireController extends BaseRestController{
             }
         }
 
+        log.info("About to fetch media files? : {}", mediaFileKeys != null && !mediaFileKeys.isEmpty());
         if (mediaFileKeys != null && !mediaFileKeys.isEmpty()) {
             Set<MediaFileRecord> records = storageBroker.retrieveMediaRecordsForFunction(MediaFunction.LIVEWIRE_MEDIA, mediaFileKeys);
-            builder.mediaFiles(records);
+            builder.addMediaFiles(records);
+        }
+
+        log.info("About to try by media record id? : {}", mediaRecordIds != null && mediaRecordIds.isEmpty());
+        if (mediaRecordIds != null && !mediaRecordIds.isEmpty()) {
+            Set<MediaFileRecord> idRecords = storageBroker.retrieveRecordsById(mediaRecordIds);
+            log.info("Found records by ID: {}", idRecords);
+            builder.addMediaFiles(idRecords);
         }
 
         return RestUtil.okayResponseWithData(RestMessage.LIVEWIRE_ALERT_CREATED,
