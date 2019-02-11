@@ -56,6 +56,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private final PermissionBroker permissionBroker;
     private final TodoRepository todoRepository;
     private final EventRepository eventRepository;
+    private final MembershipRepository membershipRepository;
 
     private final AccountRepository accountRepository;
     private final BroadcastRepository templateRepository;
@@ -69,12 +70,13 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private Map<String, String> configVariables = new HashMap<>();
 
     @Autowired
-    public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
+    public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, TodoRepository todoRepository,
                                      EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
                                      BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService,
                                      LogsAndNotificationsBroker logsAndNotificationsBroker, ConfigRepository configRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.membershipRepository = membershipRepository;
         this.todoRepository = todoRepository;
         this.eventRepository = eventRepository;
         this.permissionBroker = permissionBroker;
@@ -169,7 +171,12 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         final boolean isGroupJoin = joinMethod != null && GroupJoinMethod.JOIN_CODE_METHODS.contains(joinMethod);
         final boolean limitDoesNotApply = !groupSizeLimited || (isGroupJoin && !groupJoinsLimited) || group.robustIsPaidFor();
 
-        return limitDoesNotApply ? 99999 : Math.max(0, freeGroupLimit - group.getMemberships().size()); // todo: VJERAN: optimize this with direct query?
+        if (limitDoesNotApply) {
+            return 99999;
+        } else {
+            int membershipCount = membershipRepository.countByGroup(group);
+            return Math.max(0, freeGroupLimit - membershipCount);
+        }
     }
 
     @Override

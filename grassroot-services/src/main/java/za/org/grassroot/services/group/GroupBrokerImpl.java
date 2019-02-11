@@ -511,7 +511,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             throw new IllegalArgumentException("Error! Must have at least one of join code or broadcast ID");
         }
 
-        Group group = groupRepository.findOneByUid(groupUid);
+        final Group group = groupRepository.findOneByUid(groupUid);
 
         if (!StringUtils.isEmpty(code)) {
             validateJoinCode(group, code, true, false); // don't record use, as already done elsewhere
@@ -537,9 +537,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
             userExists = joiningUser != null;
             if (!userExists) {
-                // have to do these as otherwise an empty string might trigger uniqueness constraint
-                joiningUser = new User(StringUtils.isEmpty(msisdn) ? null : msisdn, name, StringUtils.isEmpty(email) ? null : email);
-                userRepository.saveAndFlush(joiningUser);
+                final String phoneNumber = StringUtils.isEmpty(msisdn) ? null : msisdn;
+                final String emailAddress = StringUtils.isEmpty(email) ? null : email;
+                final User newUser = new User(phoneNumber, name, emailAddress);
+                joiningUser = userRepository.save(newUser);
             }
         }
 
@@ -692,34 +693,27 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 
-    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> rawMembershipInfos,
-                                                      GroupJoinMethod joinMethod, String joinMethodDescriptor,
+    private LogsAndNotificationsBundle addMemberships(final User initiator, final Group group, final Set<MembershipInfo> rawMembershipInfos,
+                                                      final GroupJoinMethod joinMethod, final String joinMethodDescriptor,
                                                       boolean duringGroupCreation, boolean createWelcomeNotifications, boolean limitSizeCheck) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
-        Set<MembershipInfo> membershipInfos = stripDuplicateEmailsAndPhones(rawMembershipInfos).stream()
+        final Set<MembershipInfo> membershipInfos = stripDuplicateEmailsAndPhones(rawMembershipInfos).stream()
                 .filter(MembershipInfo::hasValidPhoneOrEmail)
                 .collect(Collectors.toSet());
 
         logger.info("number of valid members in import: {}", membershipInfos.size());
 
-        Set<String> memberPhoneNumbers = membershipInfos.stream().filter(MembershipInfo::hasValidPhoneNumber)
-                .map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
+        logPhoneNumbersAndEmailAddressesToAdd(membershipInfos);
 
-        Set<String> emailAddresses = membershipInfos.stream().filter(MembershipInfo::hasValidEmail)
-                .map(MembershipInfo::getMemberEmail).collect(Collectors.toSet());
-
-        logger.info("phoneNumbers returned: .... {}, email addresses: {}", memberPhoneNumbers, emailAddresses);
-
-        Set<Membership> addedMemberships = new HashSet<>();
-
-        Set<User> newlyCreatedUsers = new HashSet<>();
-        Set<MembershipInfo> taskTeamMembers = new HashSet<>();
-
-        Set<String> existingEmails = userRepository.fetchUsedEmailAddresses();
-        Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
+        final Set<Membership> addedMemberships = new HashSet<>();
+        final Set<User> newlyCreatedUsers = new HashSet<>();
+        final Set<MembershipInfo> taskTeamMembers = new HashSet<>();
 
         // depends how we're limiting
         int numberMembersLeft = limitSizeCheck ? accountFeaturesBroker.numberMembersLeftForGroup(group, joinMethod) : 9999;
+
+        final Set<String> existingEmails = userRepository.fetchUsedEmailAddresses();
+        final Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
 
         for (MembershipInfo membershipInfo : membershipInfos) {
             if (numberMembersLeft < 0) {
@@ -727,50 +721,31 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 break;
             }
 
-            // note: splitting this instead of getOrDefault, since that method calls default method even if it
-            // finds something, hence spurious user creation
-            Optional<String> msisdn = membershipInfo.getConvertedNumber();
-            Optional<String> emailAddress = membershipInfo.getFormattedEmail();
-
-            User memberUser;
-            if (msisdn.isPresent() && existingPhoneNumbers.contains(msisdn.get())) {
-                memberUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn.get());
-            } else if (emailAddress.isPresent() && existingEmails.contains(emailAddress.get())) {
-                memberUser = userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress.get());
-            } else {
-                logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msisdn, emailAddress);
-                memberUser = new User(msisdn.orElse(null), membershipInfo.getDisplayName(), emailAddress.orElse(null));
-                memberUser.setFirstName(membershipInfo.getFirstName());
-                memberUser.setLastName(membershipInfo.getSurname());
-                newlyCreatedUsers.add(memberUser);
+            final User member = findOrConstructMemberToAdd(membershipInfo, existingEmails, existingPhoneNumbers);
+            // if newly created, add to set of them
+            if (member.getId() == null) {
+                newlyCreatedUsers.add(member);
             }
 
-            if (!memberUser.isHasInitiatedSession()) {
-                if (!memberUser.hasEmailAddress() && emailAddress.isPresent() && !existingEmails.contains(emailAddress.get())) {
-                    memberUser.setEmailAddress(emailAddress.get());
-                }
-                if (!memberUser.hasPhoneNumber() && msisdn.isPresent() && !existingPhoneNumbers.contains(msisdn.get())) {
-                    memberUser.setPhoneNumber(msisdn.get());
-                }
-            }
+            final GroupRole roleName = membershipInfo.getRoleName() == null ? GroupRole.ROLE_ORDINARY_MEMBER : membershipInfo.getRoleName();
+            final GroupJoinMethod memberJoinMethod = joinMethod == null ? GroupJoinMethod.ADDED_BY_OTHER_MEMBER : joinMethod;
+            final Membership membership = group.addMember(member, roleName, memberJoinMethod, joinMethodDescriptor);
 
-            GroupRole roleName = membershipInfo.getRoleName() == null ? GroupRole.ROLE_ORDINARY_MEMBER : membershipInfo.getRoleName();
-            joinMethod = joinMethod == null ? GroupJoinMethod.ADDED_BY_OTHER_MEMBER : joinMethod;
-
-            Membership membership = group.addMember(memberUser, roleName, joinMethod, joinMethodDescriptor);
-            membership = wireUpMembershipTags(memberUser, membership, membershipInfo);
-
-            if (membershipInfo.getTaskTeams() != null && !membershipInfo.getTaskTeams().isEmpty())
+            if (membershipInfo.hasTaskTeams()) {
+                membershipInfo.setUserUid(member.getUid());
                 taskTeamMembers.add(membershipInfo);
+            }
 
             if (membership != null) {
+                wireUpMembershipTags(membership, membershipInfo);
+
                 addedMemberships.add(membership);
                 numberMembersLeft--;
             }
         }
 
         logger.info("completed iteration, added {} users", membershipInfos.size());
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        final LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         // make sure the newly created users are stored
         storeCreatedUsers(group, newlyCreatedUsers, bundle);
@@ -781,7 +756,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<String> addedUserUids = new HashSet<>();
         for (Membership membership : addedMemberships) {
             User member = membership.getUser();
-            GroupLog groupLog = new GroupLog(group, initiator, logType, member, null, null, null);
+            final GroupLog groupLog = new GroupLog(group, initiator, logType, member, null, null, null);
             bundle.addLog(groupLog);
             notifyNewMembersOfUpcomingMeetings(bundle, member, group, groupLog);
             addedUserUids.add(member.getUid());
@@ -806,6 +781,57 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 graphBroker.annotateMembership(membership.getUser().getUid(), membership.getGroup().getUid(), null, true);
 
         return bundle;
+    }
+
+    private void logPhoneNumbersAndEmailAddressesToAdd(Set<MembershipInfo> membershipInfos) {
+        final Set<String> memberPhoneNumbers = membershipInfos.stream().filter(MembershipInfo::hasValidPhoneNumber)
+                .map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
+
+        final Set<String> emailAddresses = membershipInfos.stream().filter(MembershipInfo::hasValidEmail)
+                .map(MembershipInfo::getMemberEmail).collect(Collectors.toSet());
+
+        logger.info("phoneNumbers returned: .... {}, email addresses: {}", memberPhoneNumbers, emailAddresses);
+    }
+
+    private User findOrConstructMemberToAdd(MembershipInfo membershipInfo, Set<String> existingEmails, Set<String> existingPhoneNumbers) {
+        final Optional<String> msisdn = membershipInfo.getConvertedNumber();
+        final Optional<String> emailAddress = membershipInfo.getFormattedEmail();
+
+        User member;
+        if (msisdn.isPresent() && existingPhoneNumbers.contains(msisdn.get())) {
+            member = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn.get());
+        } else if (emailAddress.isPresent() && existingEmails.contains(emailAddress.get())) {
+            member = userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress.get());
+        } else {
+            logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msisdn, emailAddress);
+            member = new User(msisdn.orElse(null), membershipInfo.getDisplayName(), emailAddress.orElse(null));
+            member.setFirstName(membershipInfo.getFirstName());
+            member.setLastName(membershipInfo.getSurname());
+        }
+
+        if (!member.isHasInitiatedSession()) {
+            if (!member.hasEmailAddress() && emailAddress.isPresent() && !existingEmails.contains(emailAddress.get())) {
+                member.setEmailAddress(emailAddress.get());
+            }
+            if (!member.hasPhoneNumber() && msisdn.isPresent() && !existingPhoneNumbers.contains(msisdn.get())) {
+                member.setPhoneNumber(msisdn.get());
+            }
+        }
+
+        if (member.getProvince() == null && membershipInfo.getProvince() != null) {
+            member.setProvince(membershipInfo.getProvince());
+        }
+
+        return member;
+    }
+
+    private void wireUpMembershipTags(Membership membership, MembershipInfo membershipInfo) {
+        if (membershipInfo.getTopics() != null) {
+            membership.setTopics(new HashSet<>(membershipInfo.getTopics()));
+        }
+        if (membershipInfo.getAffiliations() != null) {
+            membership.addAffiliations(new HashSet<>(membershipInfo.getAffiliations()));
+        }
     }
 
     private Set<MembershipInfo> stripDuplicateEmailsAndPhones(Set<MembershipInfo> membershipInfos) {
@@ -834,32 +860,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         return safeMembers;
     }
 
-    private Membership wireUpMembershipTags(User user, Membership membership, MembershipInfo membershipInfo) {
-        if (user.getProvince() == null && membershipInfo.getProvince() != null) {
-            user.setProvince(membershipInfo.getProvince());
-        }
-
-        if (membership != null) {
-            if (membershipInfo.getTopics() != null) {
-                membership.setTopics(new HashSet<>(membershipInfo.getTopics()));
-            }
-
-            if (membershipInfo.getAffiliations() != null) {
-                membership.addAffiliations(new HashSet<>(membershipInfo.getAffiliations()));
-            }
-
-            if (membershipInfo.hasTaskTeams()) {
-                membershipInfo.setUserUid(user.getUid());
-            }
-        }
-
-        return membership;
-    }
-
     private void storeCreatedUsers(Group group, Set<User> createdUsers, LogsAndNotificationsBundle bundle) {
         if (createdUsers != null && !createdUsers.isEmpty()) {
             userRepository.saveAll(createdUsers);
-            userRepository.flush();
 
             for (User createdUser : createdUsers) {
                 bundle.addLog(new UserLog(createdUser.getUid(), UserLogType.CREATED_IN_DB, String.format("Created by being added to group with ID: %s", group.getUid()), UNKNOWN));

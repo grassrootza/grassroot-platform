@@ -114,7 +114,8 @@ public class GroupRestController extends GroupAbstractRestController {
     @RequestMapping(value = "members/left/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> numberMembersLeftForGroup(@PathVariable String groupUid) {
         Group group = this.groupRepository.findOneByUid(groupUid);
-        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, accountFeaturesBroker.numberMembersLeftForGroup(group, null));
+        int numberOfMembersLeft = accountFeaturesBroker.numberMembersLeftForGroup(group, null);
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, numberOfMembersLeft);
     }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)

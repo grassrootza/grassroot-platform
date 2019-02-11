@@ -24,4 +24,6 @@ public interface MembershipRepository extends JpaRepository<Membership, Long>, J
     Page<Membership> findByGroupUid(String groupUid, Pageable pageable);
 
     List<Membership> findByGroupUid(String groupUid);
+
+    int countByGroup(Group group);
 }
