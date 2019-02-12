@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AlertPreference;
@@ -41,70 +42,70 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     private String uid;
 
     @Column(name = "phone_number", nullable = true, length = 20, unique = true)
-    @Setter private String phoneNumber;
+    private String phoneNumber;
 
     @Column(name = "email_address", nullable = true, unique = true) // enforcing one user per email add.
     private String emailAddress;
 
     @Column(name = "first_name")
-    @Setter private String firstName;
+    private String firstName;
 
     @Column(name = "last_name")
-    @Setter private String lastName;
+    private String lastName;
 
     @Column(name = "display_name", nullable = true, length = 70) // allowing this to be nullable as might not be set
     private String displayName;
 
     @Column(name = "language_code", nullable = true, length = 10)
-    @Setter private String languageCode;
+    private String languageCode;
 
     @Column(name = "created_date_time", updatable = false, nullable = false)
-    @Getter private Instant createdDateTime;
+    private Instant createdDateTime;
 
     @Column(name = "user_name", length = 50, unique = true)
-    @Setter private String username;
+    private String username;
 
     @Column(name = "password")
-    @Setter private String password;
+    private String password;
 
     @Column(name = "notification_priority")
-    @Setter private Integer notificationPriority;
+    private Integer notificationPriority;
 
     @Column(name = "web")
-    @Setter private boolean hasWebProfile = false;
+    private boolean hasWebProfile = false;
 
     @Column(name = "android")
-    @Getter @Setter private boolean hasAndroidProfile = false;
+    @Getter private boolean hasAndroidProfile = false;
 
     @Column(name = "whatsapp")
-    @Getter @Setter private boolean whatsAppOptedIn = false;
+    @Getter private boolean whatsAppOptedIn = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "message_preference", nullable = false, length = 50)
-    @Getter @Setter private DeliveryRoute messagingPreference;
+    @Getter private DeliveryRoute messagingPreference;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "alert_preference", length = 50)
-    @Setter private AlertPreference alertPreference;
+    private AlertPreference alertPreference;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "province", length = 50)
-    @Setter private Province province;
+    private Province province;
 
     @Column(name = "enabled")
-    @Setter private boolean enabled = true;
+    private boolean enabled = true;
 
     // We use this to differentiate between users who have initiated a G/R session on their own, and those who have just
     // been added via being part of another group -- to us in our stats, plus for some use cases (e.g., asking for language)
     @Column(name = "initiated_session")
-    @Setter @Getter private boolean hasInitiatedSession;
+    @Getter private boolean hasInitiatedSession;
 
     @Column(name = "has_set_name")
-    @Setter private boolean hasSetOwnName;
+    private boolean hasSetOwnName;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "safety_group_id")
-    @Setter private Group safetyGroup;
+    private Group safetyGroup;
 
     @Version
     private Integer version;
@@ -124,21 +125,18 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     private Account primaryAccount;
 
     @Column(name = "free_trial_used")
-    @Setter @Getter private boolean hasUsedFreeTrial;
+    @Getter private boolean hasUsedFreeTrial;
 
-    @Basic
     @Column(name = "livewire_contact")
-    @Setter @Getter private boolean liveWireContact;
+    @Getter private boolean liveWireContact;
 
     // both of these could be done by looking up logs and image records, but this entity is already
     // quite encumbered, and booleans are light, so trade-off runs in favour of denormalizing here
-    @Basic
     @Column(name = "has_image")
-    @Getter @Setter private boolean hasImage;
+    @Getter private boolean hasImage;
 
-    @Basic
     @Column(name = "contact_error")
-    @Getter @Setter private boolean contactError;
+    @Getter private boolean contactError;
 
     // note: keep an eye on this in profiling, make sure it is super lazy (i.e., join table not hit at all), else drop on this side
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "administrators")
@@ -262,6 +260,10 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     public Optional<Membership> getGroupMembership(String groupId) {
         return getMemberships().stream().filter(m -> m.getGroup().getUid().equalsIgnoreCase(groupId)).findFirst();
     }
+
+//    public Membership addMembership(Group group, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+//
+//    }
 
     /**
      * This is just used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
@@ -408,6 +410,90 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     // refactoring to avoid confusion with property displayName -- point is this returns name, or phone number if no name
     public String nameToDisplay() {
         return getName("");
+    }
+
+    public void setLanguageCode(String languageCode) {
+        this.languageCode = languageCode;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setProvince(Province province) {
+        this.province = province;
+    }
+
+    public void setSafetyGroup(Group safetyGroup) {
+        this.safetyGroup = safetyGroup;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setHasWebProfile(boolean hasWebProfile) {
+        this.hasWebProfile = hasWebProfile;
+    }
+
+    public void setHasInitiatedSession(boolean hasInitiatedSession) {
+        this.hasInitiatedSession = hasInitiatedSession;
+    }
+
+    public void setHasAndroidProfile(boolean hasAndroidProfile) {
+        this.hasAndroidProfile = hasAndroidProfile;
+    }
+
+    public void setHasSetOwnName(boolean hasSetOwnName) {
+        this.hasSetOwnName = hasSetOwnName;
+    }
+
+    public void setHasUsedFreeTrial(boolean hasUsedFreeTrial) {
+        this.hasUsedFreeTrial = hasUsedFreeTrial;
+    }
+
+    public void setMessagingPreference(DeliveryRoute messagingPreference) {
+        this.messagingPreference = messagingPreference;
+    }
+
+    public void setAlertPreference(AlertPreference alertPreference) {
+        this.alertPreference = alertPreference;
+    }
+
+    public void setNotificationPriority(Integer notificationPriority) {
+        this.notificationPriority = notificationPriority;
+    }
+
+    public void setWhatsAppOptedIn(boolean whatsAppOptedIn) {
+        this.whatsAppOptedIn = whatsAppOptedIn;
+    }
+
+    public void setHasImage(boolean hasImage) {
+        this.hasImage = hasImage;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public void setLiveWireContact(boolean liveWireContact) {
+        this.liveWireContact = liveWireContact;
+    }
+
+    public void setContactError(boolean contactError) {
+        this.contactError = contactError;
     }
 
     @Override

@@ -151,7 +151,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         log.debug("fetching heavy group, group uid = {}, user = {}", groupUid, user.getName());
 
-        final Optional<Membership> membership = user.getGroupMembership(groupUid);
+        final Optional<Membership> membership = group.getMembership(userUid);
         if (!membership.isPresent()) {
             log.error("Error! Non existent group or membership passed to query: group UID: {}", groupUid);
             return null;

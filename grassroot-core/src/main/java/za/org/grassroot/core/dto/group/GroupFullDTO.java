@@ -6,8 +6,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.GroupJoinCode;
-import za.org.grassroot.core.domain.group.JoinCodeType;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.membership.MembershipDTO;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -46,9 +44,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
         this.joinTopics.addAll(group.getJoinTopics());
         this.paidFor = group.isPaidFor();
         this.reminderMinutes = group.getReminderMinutes();
-        this.joinWords = group.getGroupJoinCodes().stream()
-                .filter(GroupJoinCode::isActive)
-                .filter(g -> JoinCodeType.JOIN_WORD.equals(g.getType()))
+        this.joinWords = group.getActiveJoinCodes().stream()
                 .map(w -> new JoinWordDTO(w.getCode(), w.getShortUrl()))
                 .collect(Collectors.toList());
 

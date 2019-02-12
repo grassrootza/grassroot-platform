@@ -1527,26 +1527,24 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+        final User user = userRepository.findOneByUid(userUid);
+        final Group group = groupRepository.findOneByUid(groupUid);
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
-        if (groupJoinCodeRepository.countByGroupUidAndActiveTrue(groupUid) > maxJoinWords) {
+        // validate first ...
+        if (group.getActiveJoinCodes().size() > maxJoinWords) {
             throw new JoinWordsExceededException();
         }
-
-        Set<String> currentTags = groupJoinCodeRepository.selectActiveJoinWords();
-        if (currentTags.contains(code.toLowerCase())) {
+        final Set<String> currentLowerCaseJoinWords = groupJoinCodeRepository.selectLowerCaseActiveJoinWords();
+        if (currentLowerCaseJoinWords.contains(code.toLowerCase())) {
             throw new IllegalArgumentException("Error! Passed an already taken join code");
         }
 
-        GroupJoinCode gjc  = new GroupJoinCode(user, group, code, JoinCodeType.JOIN_WORD);
-        if (urlToShorten != null) {
-            gjc.setShortUrl(urlShortener.shortenJoinUrls(urlToShorten));
-        }
+        final String shortenedUrl = urlToShorten == null ? null : urlShortener.shortenJoinUrls(urlToShorten);
+        GroupJoinCode gjc  = new GroupJoinCode(user, group, code, shortenedUrl);
 
-        gjc = groupJoinCodeRepository.saveAndFlush(gjc);
+        gjc = groupJoinCodeRepository.save(gjc);
 
         // note: shouldn't need to add to group, Hibernate should wire up, but keep an eye out
 
@@ -1572,9 +1570,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         final Optional<GroupJoinCode> joinCodeOptional = group.getActiveJoinCode(code);
         if (joinCodeOptional.isPresent()) {
             final GroupJoinCode gjc = joinCodeOptional.get();
-            gjc.setActive(false);
-            gjc.setClosedTime(Instant.now());
-            gjc.setClosingUser(user);
+            gjc.close(Instant.now(), user);
         } else {
             logger.error("Asked to close an already closed or non-existing join code, {}, for group {}", code, group);
         }
@@ -1597,7 +1593,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Override
     @Transactional(readOnly = true)
     public Set<String> getUsedJoinWords() {
-        return groupJoinCodeRepository.selectActiveJoinWords();
+        return groupJoinCodeRepository.selectLowerCaseActiveJoinWords();
     }
 
     @Override

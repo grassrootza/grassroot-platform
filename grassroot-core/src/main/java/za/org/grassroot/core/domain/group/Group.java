@@ -1,7 +1,5 @@
 package za.org.grassroot.core.domain.group;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import za.org.grassroot.core.domain.*;
@@ -67,12 +65,12 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     @ManyToOne()
     @JoinColumn(name = "account_id")
-    @Getter @Setter private Account account;
+    private Account account;
 
-    @Column(name = "group_token_code", nullable = true, insertable = true, updatable = true, unique = true)
+    @Column(name = "group_token_code", unique = true)
     private String groupTokenCode;
 
-    @Column(name = "token_code_expiry", nullable = true, insertable = true, updatable = true)
+    @Column(name = "token_code_expiry")
     private Instant tokenExpiryDateTime;
 
     @Version
@@ -115,7 +113,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     to start removing prior calculation results). Note: this is used in an HQL query, hence needs mapping.
      */
     @OneToMany(mappedBy = "group")
-    @Getter private Set<GroupLocation> locations;
+    private Set<GroupLocation> locations;
 
     @ManyToOne(optional = true)
     @JoinColumn(name= "join_approver_id", nullable = true)
@@ -167,10 +165,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     private String[] tags;
 
     @OneToMany(mappedBy = "group")
-    @Getter private Set<GroupJoinCode> groupJoinCodes = new HashSet<>();
-
-    // @OneToMany(mappedBy = "masterGroup")
-    // private List<Campaign> campaign;
+    private Set<GroupJoinCode> groupJoinCodes = new HashSet<>();
 
     private Group() {
         // for JPA
@@ -237,6 +232,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public User getCreatedByUser() {
         return this.createdByUser;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+
+    public Account getAccount() {
+        return account;
     }
 
     public Set<Membership> getMemberships() {
@@ -307,12 +310,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public Membership removeMember(User member) {
-        Membership membership = getMembership(member.getUid());
-        if (membership == null) {
+        Optional<Membership> membershipOptional = getMembership(member.getUid());
+        if (!membershipOptional.isPresent()) {
             return null;
+        } else {
+            final Membership membership = membershipOptional.get();
+            removeMembership(membership);
+            return membership;
         }
-        removeMembership(membership);
-        return membership;
     }
 
     public boolean removeMembership(Membership membership) {
@@ -327,24 +332,20 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     public Membership getMembership(User user) {
         Objects.requireNonNull(user);
 
-        return this.getMembership(user.getUid());
+        return this.getMembership(user.getUid()).orElse(null);
     }
 
-    public Membership getMembership(String userUid) {
+    public Optional<Membership> getMembership(String userUid) {
         Objects.requireNonNull(userUid);
 
-        for (Membership membership : memberships) {
-            if (membership.getUser().getUid().equals(userUid)) {
-                return membership;
-            }
-        }
-        return null;
+        return this.memberships.stream()
+                .filter(membership -> membership.getUser().getUid().equals(userUid))
+                .findFirst();
     }
 
     public boolean hasMember(User user) {
         Objects.requireNonNull(user);
-        Membership membership = getMembership(user.getUid());
-        return membership != null;
+        return getMembership(user.getUid()).isPresent();
     }
 
     public List<String> getJoinTopics() {
@@ -587,8 +588,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public void setDefaultImage(GroupDefaultImage defaultImage) { this.defaultImage = defaultImage; }
 
-    public Set<GroupJoinCode> getJoinCodes() {
-        return new HashSet<>(this.groupJoinCodes);
+    public Set<GroupJoinCode> getActiveJoinCodes() {
+        return this.groupJoinCodes.stream().filter(GroupJoinCode::isActive).collect(Collectors.toSet());
     }
 
     public Optional<GroupJoinCode> getActiveJoinCode(String code) {
