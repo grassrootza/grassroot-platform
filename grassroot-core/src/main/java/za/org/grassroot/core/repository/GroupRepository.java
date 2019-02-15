@@ -83,7 +83,7 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
             "inner join group_role_permission rp on m.role = rp.role and g.id = rp.group_id " +
             "where g.active = true and g.parent is null and m.user_id = ?1 and rp.permission = ?2 " +
             "order by greatest(g.last_task_creation_time, g.last_log_creation_time) desc", nativeQuery = true)
-    Page<Group> findUsersGroupsOrderedByActivity(Long userId, Permission permission, Pageable pageable);
+    Page<Group> findUsersGroupsOrderedByActivity(Long userId, String permission, Pageable pageable);
 
     @Query(value = "select groupTokenCode from Group")
     List<String> findAllTokenCodes();

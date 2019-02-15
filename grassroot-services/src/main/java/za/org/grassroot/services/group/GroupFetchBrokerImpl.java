@@ -304,8 +304,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             log.info("For search term {}, encoded version {}", searchTerm, tsEncodedTerm);
             groupsFomDb = groupRepository.findUsersGroupsWithSearchTermOrderedByActivity(user.getId(), requiredPermission.name(), tsEncodedTerm, pageRequest);
         } else {
-            log.info("No search term, but required permission: {}", requiredPermission.name());
-            groupsFomDb = groupRepository.findUsersGroupsOrderedByActivity(user.getId(), requiredPermission, pageRequest);
+            log.info("No search term, but required permission: {}", requiredPermission);
+            groupsFomDb = groupRepository.findUsersGroupsOrderedByActivity(user.getId(), requiredPermission.name(), pageRequest);
         }
 
         log.info("Content of page: {}", groupsFomDb.getContent());

@@ -671,7 +671,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     private boolean validateJoinWord(final Group group, final String joinWord, final boolean recordIfJoinWordFound) {
-        Optional<GroupJoinCode> joinCodeOptional = group.getActiveJoinCode(joinWord); // todo: VJERAN: joinCode->group foreign key index
+        Optional<GroupJoinCode> joinCodeOptional = group.getActiveJoinCode(joinWord);
         if (joinCodeOptional.isPresent()) {
             if (recordIfJoinWordFound) {
                 joinCodeOptional.get().incrementInboundUses();
