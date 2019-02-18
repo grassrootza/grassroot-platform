@@ -109,7 +109,7 @@ public class UssdGroupServiceImpl implements UssdGroupService {
 	@Override
 	@Transactional
 	public Request processCreateGroupWithName(String inputNumber, String groupName, boolean interrupted, String groupUid) throws URISyntaxException {
-		User user = userManager.findByInputNumber(inputNumber);
+		final User user = userManager.findByInputNumber(inputNumber);
 		Group createdGroup;
 		USSDMenu menu;
 		if (!isValidGroupName(groupName)) {
@@ -126,11 +126,10 @@ public class UssdGroupServiceImpl implements UssdGroupService {
 
 			cacheManager.putUssdMenuForUser(inputNumber, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));
 
-			if (!locationRequestEnabled) {
-				menu = postCreateOptionsNoLocation(createdGroup.getUid(), groupName, createdGroup.getGroupTokenCode(), user);
-			} else {
-				menu = postCreateOptionsWithLocation(createdGroup.getUid(), createdGroup.getGroupTokenCode(), user);
-			}
+			// UX feedback shows we should just remove the one after location. todo: use a dynamic config var to switch on/off
+//			menu = !locationRequestEnabled ? postCreateOptionsNoLocation(createdGroup.getUid(), groupName, createdGroup.getGroupTokenCode(), user) :
+//					postCreateOptionsWithLocation(createdGroup.getUid(), createdGroup.getGroupTokenCode(), user);
+			menu = postCreateOptionsNoLocation(createdGroup.getUid(), groupName, createdGroup.getGroupTokenCode(), user);
 		}
 		return ussdSupport.menuBuilder(menu);
 	}
