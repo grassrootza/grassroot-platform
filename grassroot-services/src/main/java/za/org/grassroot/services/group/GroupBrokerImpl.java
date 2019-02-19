@@ -593,14 +593,21 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         boolean wasAlreadyMember = false;
 
-        Membership membership = group.addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, joinMethod, code);
-        if (membership != null) {
-            // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
-            membership.setViewPriority(GroupViewPriority.PINNED);
-        } else {
+        Membership membership;
+        final Optional<Membership> existingMembershipOptional = user.getMembership(group.getUid());
+        if (existingMembershipOptional.isPresent()) {
             // means user was already part of group, so we will just add topics etc.
-            membership = group.getMembership(user);
+            membership = existingMembershipOptional.get();
             wasAlreadyMember = true;
+
+        } else {
+            final Membership newMembership = new Membership(group, user, GroupRole.ROLE_ORDINARY_MEMBER, Instant.now(), joinMethod, code);
+            // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
+            newMembership.setViewPriority(GroupViewPriority.PINNED);
+            // we have to save via repository because we cannot just add cascading persist due to inverse side (Group's membership having that), otherwise double insert fails
+            membership = this.membershipRepository.save(newMembership);
+
+            user.addMappedByMembership(membership);
         }
 
         if (topics != null) {
@@ -611,8 +618,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         // recursively add user to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            parentGroup.addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
-            bundle.addLog(new GroupLog(parentGroup, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_SUBGROUP_CODE, user, group, null, null));
+            if (!user.getMembership(parentGroup.getUid()).isPresent()) {
+                final Membership parentMembership = this.membershipRepository.save(
+                        new Membership(parentGroup, user, GroupRole.ROLE_ORDINARY_MEMBER, Instant.now(), GroupJoinMethod.SELF_JOINED, code));
+                user.addMappedByMembership(parentMembership);
+                bundle.addLog(new GroupLog(parentGroup, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_SUBGROUP_CODE, user, group, null, null));
+            }
             parentGroup = parentGroup.getParent();
         }
 
@@ -635,7 +646,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         storeBundleAfterCommit(bundle);
 
-        return group.getMembership(user);
+        return user.getMembership(group.getUid()).orElse(null);
     }
 
     private GroupJoinMethod getJoinMethodFromInterface(UserInterfaceType interfaceType) {
@@ -903,7 +914,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
         meetings.forEach(m -> {
             Group meetingGroup = m.getAncestorGroup();
-            if (meetingGroup.equals(group) || !meetingGroup.hasMember(user)) {
+            if (meetingGroup.equals(group) || !user.hasMembership(meetingGroup)) {
                 boolean appliesToMember = m.isAllGroupMembersAssigned() || m.getAssignedMembers().contains(user);
                 if (appliesToMember) {
                     String message = messageAssemblingService.createEventInfoMessage(user, m);

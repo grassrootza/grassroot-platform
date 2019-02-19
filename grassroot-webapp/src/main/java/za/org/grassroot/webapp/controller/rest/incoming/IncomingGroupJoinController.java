@@ -100,7 +100,8 @@ public class IncomingGroupJoinController extends BaseRestController {
         User user = userManager.load(joinedUserUid);
         // since the next call has to be unprotected, we need a way to prevent spoofing & strafing
         final String tokenForSubequent = tokenService.generateShortLivedOTP(user.getUsername()).getCode();
-        return ResponseEntity.ok(new JoinResponse(tokenForSubequent, new UserFullDTO(user)));
+        final UserFullDTO userFullDTO = new UserFullDTO(user);
+        return ResponseEntity.ok(new JoinResponse(tokenForSubequent, userFullDTO));
     }
 
     @RequestMapping(value = "/topics/{groupUid}", method = RequestMethod.POST)

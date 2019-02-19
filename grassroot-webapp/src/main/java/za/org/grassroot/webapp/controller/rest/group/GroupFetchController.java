@@ -215,8 +215,9 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/full", method = RequestMethod.GET)
     @ApiOperation(value = "Get full details about a group, including members (if permission to see details) and description")
     public ResponseEntity<GroupFullDTO> fetchFullGroupInfo(HttpServletRequest request, @RequestParam String groupUid) {
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request),
-                groupUid, false, false, false));
+        final String userUid = getUserIdFromRequest(request);
+        final GroupFullDTO groupFullDTO = groupFetchBroker.fetchGroupFullInfo(userUid, groupUid, false, false, false);
+        return ResponseEntity.ok(groupFullDTO);
     }
 
     @RequestMapping(value = "/members/history/{groupUid}", method = RequestMethod.GET)

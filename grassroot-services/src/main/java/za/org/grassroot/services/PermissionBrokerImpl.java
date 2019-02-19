@@ -61,7 +61,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     public boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission) {
-        final Optional<Membership> membershipOptional = user.getGroupMembership(group.getUid());
+        final Optional<Membership> membershipOptional = user.getMembership(group.getUid());
         return membershipOptional.isPresent() && (requiredPermission == null || membershipOptional.get().getRolePermissions().contains(requiredPermission));
     }
 

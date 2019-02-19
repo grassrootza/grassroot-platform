@@ -68,7 +68,7 @@ public class Membership implements Serializable, TagHolder {
         // for JPA
     }
 
-    Membership(Group group, User user, GroupRole role, Instant joinTime, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    public Membership(Group group, User user, GroupRole role, Instant joinTime, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         this.group = Objects.requireNonNull(group);
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);

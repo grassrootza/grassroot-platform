@@ -28,6 +28,18 @@ import java.util.stream.Collectors;
 import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
 
+/**
+ * IMPORTANT:
+ * Unless one is adding a lot of members in the same request, adding or removing single (or just a few) members via Group's API
+ * is very inefficient because it involves loading and dirty-checking potentially big collection of existing memberships just to add a single new one.
+ * It would be much better to manage memberships from other side - User side, which is much more lightweight because there can be just a
+ * few user's membership at most usually. Of course, this would involve specifying User's membership collection with CascadeType.ALL
+ * and orphan removal enabled, similar as it is now in Group's membership collection. Problem is that adding/removing such membership from
+ * User side should not include setting the membership's inverse side - group's side, because it would destroy performance gain again, but then again,
+ * we would end up having inconsistent states of both membership collections which would make code more fragile and prone to bugs.
+ * The way to avoid it is to remove one side, concretely group's heavyweight membership collection, and use direct queries (via MembershipRepository)
+ * when wanting to fetch group's memberships, but this would require massive refactoring :-(
+ */
 @Entity @Getter
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
 public class User implements GrassrootEntity, UserDetails, Comparable<User> {
@@ -257,13 +269,13 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
                 .collect(Collectors.toSet());
     }
 
-    public Optional<Membership> getGroupMembership(String groupId) {
+    public Optional<Membership> getMembership(String groupId) {
         return getMemberships().stream().filter(m -> m.getGroup().getUid().equalsIgnoreCase(groupId)).findFirst();
     }
 
-//    public Membership addMembership(Group group, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
-//
-//    }
+    public boolean hasMembership(Group group) {
+        return getMembership(group.getUid()).isPresent();
+    }
 
     /**
      * This is just used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
