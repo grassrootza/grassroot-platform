@@ -273,6 +273,10 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         return getMemberships().stream().filter(m -> m.getGroup().getUid().equalsIgnoreCase(groupId)).findFirst();
     }
 
+    public Membership getMembership(Group group) {
+        return getMembership(group.getUid()).orElse(null);
+    }
+
     public boolean hasMembership(Group group) {
         return getMembership(group.getUid()).isPresent();
     }
@@ -285,6 +289,16 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
      */
     public void addMappedByMembership(Membership membership) {
         this.memberships.add(membership);
+    }
+
+    public Membership addMappedByMembership(Group group, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+        if (hasMembership(group)) {
+            return null;
+        } else {
+            Membership membership = new Membership(group, this, role, Instant.now(), joinMethod, joinMethodDescriptor);
+            this.memberships.add(membership);
+            return membership;
+        }
     }
 
     /**
