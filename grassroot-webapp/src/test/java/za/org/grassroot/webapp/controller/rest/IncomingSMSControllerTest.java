@@ -235,7 +235,6 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         List<Event> votes = Collections.singletonList(vote);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.getEventsNeedingResponseFromUser(sessionTestUser)).thenReturn(votes);
         when(logsAndNotificationsBrokerMock.lastNotificationsSentToUser(eq(sessionTestUser), anyInt(), any(Instant.class)))
                 .thenReturn(dummyNotification(sessionTestUser, vote));
 

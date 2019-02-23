@@ -112,7 +112,6 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);
         when(eventLogRepositoryMock.findOne(any(Specification.class))).thenReturn(Optional.of(testLog));
-        when(eventLogBrokerMock.hasUserRespondedToEvent(meetingEvent, sessionTestUser)).thenReturn(false);
         when(eventLogBrokerMock.getResponseCountForEvent(meetingEvent)).thenReturn(testResponseTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode))
                 .andExpect(status().is2xxSuccessful());

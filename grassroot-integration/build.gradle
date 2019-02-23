@@ -1,28 +1,20 @@
 description = 'Grassroot Integration'
 
-repositories {
-    mavenLocal()
-    maven {
-        url  "https://dl.bintray.com/grassrootza/grassroot-graph"
-    }
-}
-
 dependencies {
     compile project(':grassroot-core')
 
     compile group: 'za.org.grassroot', name: 'grassroot-graph-domain', version: '0.0.4'
 
-    compile group: 'org.springframework', name: 'spring-web', version: libs.springVersion
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-webflux', version: libs.springBootVersion
+    compile group: 'org.springframework', name: 'spring-web'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-webflux'
 
+    compile group: 'org.springframework.ws', name: 'spring-ws-core'
 
-    compile group: 'org.springframework.ws', name: 'spring-ws-core', version: '2.4.0.RELEASE'
-
-    compile(group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2') {
+    compile(group: 'org.apache.httpcomponents', name: 'httpclient') {
         exclude(module: 'commons-logging')
     }
 
-    compile(group: 'org.apache.httpcomponents', name: 'httpasyncclient', version: '4.1.2') {
+    compile(group: 'org.apache.httpcomponents', name: 'httpasyncclient') {
         exclude(module: 'commons-logging')
     }
 

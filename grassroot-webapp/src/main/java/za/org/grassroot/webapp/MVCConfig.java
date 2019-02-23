@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -27,11 +28,8 @@ import java.util.Locale;
 @Configuration
 @ControllerAdvice @Slf4j
 public class MVCConfig implements WebMvcConfigurer {
-
-    @Bean
-    public TokenValidationInterceptor tokenValidationInterceptor() {
-        return new TokenValidationInterceptor();
-    }
+    @Autowired
+    private TokenValidationInterceptor tokenValidationInterceptor;
 
     @Bean
     public SimpleLoggingInterceptor loggingInterceptor(){return  new SimpleLoggingInterceptor();}
@@ -54,7 +52,7 @@ public class MVCConfig implements WebMvcConfigurer {
         log.info("Adding interceptor for legacy Android controllers");
 //        registry.addInterceptor(localeChangeInterceptor());
 //        registry.addInterceptor(loggingInterceptor());
-        registry.addInterceptor(tokenValidationInterceptor())
+        registry.addInterceptor(tokenValidationInterceptor)
                 .addPathPatterns("/api/group/**")
                 .addPathPatterns("/api/user/profile/**")
                 .addPathPatterns("/api/task/**")

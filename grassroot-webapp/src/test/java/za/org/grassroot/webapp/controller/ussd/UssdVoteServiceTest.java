@@ -79,13 +79,13 @@ public class UssdVoteServiceTest extends UssdUnitTest {
 
         testGroups.forEach(tg -> tg.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null));
 
-        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), nullable(String.class))).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(3);
         when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3)).thenReturn(testGroups);
 
         this.ussdVoteService.processYesNoSelectGroup(testUserPhone, VoteRequest.makeEmpty().getUid());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(eq(testUserPhone), anyString());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(eq(testUserPhone), nullable(String.class));
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(permissionBrokerMock, times(2)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3);

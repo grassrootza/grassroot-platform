@@ -6,10 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.VerificationTokenCode;
@@ -320,7 +322,7 @@ public class PasswordTokenManager implements PasswordTokenService {
     @Override
     public void triggerOtp(User user){
         final String message = otpMessage(user.getUsername(),user.getLocale());
-        if (environment.acceptsProfiles("production"))
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.PRODUCTION)))
             sendOtp(user, message);
         else
             log.info("OTP message: {}", message);

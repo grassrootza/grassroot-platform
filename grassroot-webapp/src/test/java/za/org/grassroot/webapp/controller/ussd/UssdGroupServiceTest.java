@@ -79,7 +79,6 @@ public class UssdGroupServiceTest extends UssdUnitTest {
         resetTestGroup();
         testGroup.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(permissionBrokerMock.getActiveGroupsWithPermission(testUser, null)).thenReturn(new HashSet<>());
 
         this.ussdGroupService.processGroupList(testUserPhone, false);
 
@@ -284,8 +283,6 @@ public class UssdGroupServiceTest extends UssdUnitTest {
     public void addNumberConfirmShouldWork() throws Exception {
         resetTestGroup();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
         this.ussdGroupService.processAddNumberToGroup(testUserPhone, testGroupIdString, "0801110001");
 
@@ -302,7 +299,6 @@ public class UssdGroupServiceTest extends UssdUnitTest {
         resetTestGroup();
         String urlToSave = saveGroupMenu("unsubscribe", testGroup.getUid());
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
         this.ussdGroupService.processUnsubscribeConfirm(testUserPhone, testGroupIdString);
         this.ussdGroupService.processUnsubscribeConfirm(testUserPhone, testGroup.getUid());
@@ -405,8 +401,6 @@ public class UssdGroupServiceTest extends UssdUnitTest {
         String urlToSave = saveGroupMenuWithInput("add-numbers-do", testGroup.getUid(), newNumbersToPass, false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
         this.ussdGroupService.processAddNumbersToNewlyCreatedGroup(testUserPhone, testGroupIdString, newNumbersToPass, null);
 

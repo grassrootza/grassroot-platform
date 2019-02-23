@@ -3,6 +3,7 @@ package za.org.grassroot.core;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Profiles;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import static java.lang.String.format;
@@ -24,10 +25,10 @@ public class GrassrootApplication extends SpringApplication {
 
         int numberActive = 0;
 
-        if (environment.acceptsProfiles(GrassrootApplicationProfiles.INMEMORY)) numberActive++;
-        if (environment.acceptsProfiles(GrassrootApplicationProfiles.LOCAL_PG)) numberActive++;
-        if (environment.acceptsProfiles(GrassrootApplicationProfiles.STAGING)) numberActive++;
-        if (environment.acceptsProfiles(GrassrootApplicationProfiles.PRODUCTION)) numberActive++;
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.INMEMORY))) numberActive++;
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.LOCAL_PG))) numberActive++;
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.STAGING))) numberActive++;
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.PRODUCTION))) numberActive++;
 
         if (numberActive > 1) {
             throw new IllegalStateException(format("Only one of the following profiles may be specified: [%s]",

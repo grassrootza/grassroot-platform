@@ -5,7 +5,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.annotation.Rollback;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
@@ -65,16 +65,6 @@ public class UssdAdvancedHomeServiceTest extends UssdUnitTest {
 
 		when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 		when(geoLocationBrokerMock.fetchBestGuessUserLocation(testUser.getUid())).thenReturn(testLocation);
-
-		when(geoLocationBrokerMock.fetchMeetingLocationsNearUser(testUser, null, testRadius, GeographicSearchType.PUBLIC,
-				null)).thenThrow(new IllegalArgumentException("Invalid location"));
-
-		when(geoLocationBrokerMock.fetchMeetingLocationsNearUser(testUser, testLocation, -5, GeographicSearchType.PUBLIC,
-				null)).thenThrow(new IllegalArgumentException("Invalid radius parameter"));
-
-		when(geoLocationBrokerMock.fetchMeetingLocationsNearUser(testUser, testLocation, null, GeographicSearchType.PUBLIC,
-				null)).thenThrow(new IllegalArgumentException("Invalid radius"));
-
 
 		List<ObjectLocation> actualObjectLocations = new ArrayList<>();
 

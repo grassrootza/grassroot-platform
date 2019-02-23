@@ -64,9 +64,9 @@ public class GeoLocationBrokerTest {
 	@Before
 	public void setUp() {
 		testUser = new User("27610001234", "test", null);
-		given(mockQuery.setParameter(anyString(), any())).willReturn(mockQuery);
+		given(mockQuery.setParameter(nullable(String.class), any())).willReturn(mockQuery);
 		given(mockQuery.getResultList()).willAnswer(Arrays::asList);
-		given(mockEntityManager.createQuery(anyString(), eq(ObjectLocation.class))).willReturn(mockQuery);
+		given(mockEntityManager.createQuery(nullable(String.class), eq(ObjectLocation.class))).willReturn(mockQuery);
 	}
 
 
@@ -125,7 +125,7 @@ public class GeoLocationBrokerTest {
 
 		// as above, consolidation has broken something in mock injection, come back and fix when/if important
 //		verify(mockQuery, times(1)).getResultList();
-//		verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
+//		verify(mockEntityManager, times(1)).createQuery(nullable(String.class), eq(ObjectLocation.class));
 
 		Assert.assertNotNull(groupLocations.size());
 		Assert.assertEquals(groupLocations.size(), 0);
@@ -167,7 +167,7 @@ public class GeoLocationBrokerTest {
 //				testUser, new GeoLocation(53.4808, 2.2426), 10000, GeographicSearchType.PUBLIC, null);
 //
 //		verify(mockQuery, times(1)).getResultList();
-//		verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
+//		verify(mockEntityManager, times(1)).createQuery(nullable(String.class), eq(ObjectLocation.class));
 //
 //		Assert.assertNotNull(meetingLocations);
 //		Assert.assertEquals(meetingLocations.size(), 0);
