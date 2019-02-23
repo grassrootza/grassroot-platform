@@ -85,12 +85,6 @@ public class AnalyticalServiceImpl implements AnalyticalService {
 
     @Override
     @Transactional(readOnly = true)
-    public int countUsersWithGeoLocationData() {
-        return geoLocationBroker.fetchUsersWithRecordedAverageLocations(LocalDate.now()).size();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public int countGroupsWithGeoLocationData() {
         return geoLocationBroker.fetchGroupsWithRecordedAverageLocations().size();
     }

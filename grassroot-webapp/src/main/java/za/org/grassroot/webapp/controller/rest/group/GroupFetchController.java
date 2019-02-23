@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -214,8 +215,9 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/full", method = RequestMethod.GET)
     @ApiOperation(value = "Get full details about a group, including members (if permission to see details) and description")
     public ResponseEntity<GroupFullDTO> fetchFullGroupInfo(HttpServletRequest request, @RequestParam String groupUid) {
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request),
-                groupUid, false, false, false));
+        final String userUid = getUserIdFromRequest(request);
+        final GroupFullDTO groupFullDTO = groupFetchBroker.fetchGroupFullInfo(userUid, groupUid, false, false, false);
+        return ResponseEntity.ok(groupFullDTO);
     }
 
     @RequestMapping(value = "/members/history/{groupUid}", method = RequestMethod.GET)
@@ -330,18 +332,18 @@ public class GroupFetchController extends BaseRestController {
     }
 
     @RequestMapping(value = "/permissions/{groupUid}", method = RequestMethod.POST)
-    public ResponseEntity<HashMap<String, List<PermissionDTO>>> fetchPermissions(@PathVariable String groupUid,
-                                                                @RequestParam Set<String> roleNames,
-                                                                HttpServletRequest request) {
+    public ResponseEntity<Map<GroupRole, List<PermissionDTO>>> fetchPermissions(@PathVariable String groupUid,
+																				@RequestParam Set<GroupRole> roleNames,
+																				HttpServletRequest request) {
 
         User user = getUserFromRequest(request);
-        HashMap<String, List<PermissionDTO>> permissions = new HashMap<>();
+        Map<GroupRole, List<PermissionDTO>> permissions = new HashMap<>();
         if (user != null) {
             Group group = groupBroker.load(groupUid);
 
             List<PermissionDTO> permissionsDTO = new ArrayList<>();
-            for (String roleName : roleNames) {
-                Set<Permission> permissionsEnabled = group.getRole(roleName).getPermissions();
+            for (GroupRole roleName : roleNames) {
+                Set<Permission> permissionsEnabled = group.getPermissions(roleName);
                 permissionsDTO = permissionsDisplayed.keySet().stream()
                         .map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
                         .sorted()

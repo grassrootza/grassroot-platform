@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
@@ -40,7 +40,7 @@ public class GroupQueryRestControllerTest extends RestAbstractUnitTest {
     private String path = "/api/group/";
 
     private List<Group> groups = new ArrayList<>();
-    private MembershipInfo membershipInfo = new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
+    private MembershipInfo membershipInfo = new MembershipInfo(testUserPhone, GroupRole.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
     private Set<MembershipInfo> membersToAdd = Sets.newHashSet();
     private Event event = meetingEvent;
 
@@ -54,7 +54,7 @@ public class GroupQueryRestControllerTest extends RestAbstractUnitTest {
     public void getUserGroupsShouldWork() throws Exception {
         GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_ADDED,
                 sessionTestUser, null, null, null);
-        testGroup.addMember(sessionTestUser, "ROLE_GROUP_ORGANIZER", GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(sessionTestUser, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         List<Group> groups = Collections.singletonList(testGroup);
 
         ChangedSinceData<Group> wrapper = new ChangedSinceData<>(groups, Collections.EMPTY_SET);
@@ -96,7 +96,7 @@ public class GroupQueryRestControllerTest extends RestAbstractUnitTest {
 
     private void settingUpDummyData(Group group, List<Group> groups, MembershipInfo membershipInfo, Set<MembershipInfo> membersToAdd) {
         membersToAdd.add(membershipInfo);
-        group.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(sessionTestUser, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groups.add(group);
         group.setDescription(testEventDescription);
     }

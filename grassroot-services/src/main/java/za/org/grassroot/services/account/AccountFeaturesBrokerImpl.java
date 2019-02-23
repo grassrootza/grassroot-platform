@@ -8,10 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.ConfigVariable;
-import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
@@ -38,7 +35,6 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import javax.annotation.PostConstruct;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,8 +48,6 @@ import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAs
 @Service @Slf4j
 public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, ApplicationListener<AlterConfigVariableEvent> {
 
-    private Instant eventLimitStart;
-
     private static final int LARGE_EVENT_LIMIT = 99;
     private static final long WELCOME_MSG_INTERVAL = 60 * 1000; // 1 minute
 
@@ -62,6 +56,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private final PermissionBroker permissionBroker;
     private final TodoRepository todoRepository;
     private final EventRepository eventRepository;
+    private final MembershipRepository membershipRepository;
 
     private final AccountRepository accountRepository;
     private final BroadcastRepository templateRepository;
@@ -75,12 +70,13 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private Map<String, String> configVariables = new HashMap<>();
 
     @Autowired
-    public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
+    public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, TodoRepository todoRepository,
                                      EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
                                      BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService,
                                      LogsAndNotificationsBroker logsAndNotificationsBroker, ConfigRepository configRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.membershipRepository = membershipRepository;
         this.todoRepository = todoRepository;
         this.eventRepository = eventRepository;
         this.permissionBroker = permissionBroker;
@@ -128,8 +124,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         if(configVariables.containsKey(configVariable.getKey())){
             configVariables.put(configVariable.getKey(), configVariable.getValue());
         }
-
-        setEventLimitStart();
     }
 
     private int getConfigVarIntegerSafe(String configKey, int defaultValue) {
@@ -141,21 +135,9 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         }
     }
 
-    private void setEventLimitStart() {
-        LocalDate ldEventLimitStart;
-        try {
-            String eventLimitStarting = (String) configVariables.getOrDefault("grassroot.events.limit.started","2017-04-01");
-            ldEventLimitStart = LocalDate.parse(eventLimitStarting, DateTimeFormatter.ISO_LOCAL_DATE);
-        } catch (DateTimeParseException e) {
-            log.error("Error parsing! {}", e);
-            ldEventLimitStart = LocalDate.of(2017, 4, 1);
-        }
-        eventLimitStart = ldEventLimitStart.atStartOfDay().toInstant(ZoneOffset.UTC);
-    }
-
     private void validateAdmin(User user, Account account) {
         if (!account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+            permissionBroker.validateSystemRole(user, StandardRole.ROLE_SYSTEM_ADMIN);
         }
     }
 
@@ -177,10 +159,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
 
     @Override
     @Transactional(readOnly = true)
-    public int numberMembersLeftForGroup(String groupUid, GroupJoinMethod joinMethod) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        int currentMembers = group.getMemberships().size();
-
+    public int numberMembersLeftForGroup(final Group group, GroupJoinMethod joinMethod) {
         final boolean groupSizeLimited = Boolean.parseBoolean(configVariables.getOrDefault("group.size.limited","false"));
         final boolean groupJoinsLimited = Boolean.parseBoolean(configVariables.getOrDefault("group.joins.limited", "false"));
 
@@ -192,7 +171,12 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         final boolean isGroupJoin = joinMethod != null && GroupJoinMethod.JOIN_CODE_METHODS.contains(joinMethod);
         final boolean limitDoesNotApply = !groupSizeLimited || (isGroupJoin && !groupJoinsLimited) || group.robustIsPaidFor();
 
-        return limitDoesNotApply ? 99999 : Math.max(0, freeGroupLimit - currentMembers);
+        if (limitDoesNotApply) {
+            return 99999;
+        } else {
+            int membershipCount = membershipRepository.countByGroup(group);
+            return Math.max(0, freeGroupLimit - membershipCount);
+        }
     }
 
     @Override
@@ -318,55 +302,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
                     .description("Group welcome messages deactivated due to conflicting creation of new template").build());
             template.setActive(false);
         }
-    }
-
-    @Override
-    @Transactional
-    public void updateGroupWelcomeNotifications(String userUid, String groupUid, List<String> messages, Duration delayToSend) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(messages);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        Account account = group.getAccount();
-
-        validateAdmin(user, account);
-
-        // todo : as above, checking for uniqueness, disabling, etc
-        Broadcast template = templateRepository.findTopByGroupAndBroadcastScheduleAndActiveTrue(group,
-                BroadcastSchedule.ADDED_TO_GROUP);
-
-        boolean changedTime = false;
-        if (delayToSend != null && delayToSend != Duration.of(template.getDelayIntervalMillis(), ChronoUnit.MILLIS)) {
-            template.setDelayIntervalMillis(delayToSend.toMillis());
-            changedTime = true;
-        }
-
-        boolean changedMessages = !messages.equals(template.getTemplateStrings());
-        if (changedMessages) {
-            template.setSmsTemplate1(messages.get(0));
-            if (messages.size() > 1) {
-                template.setSmsTemplate2(messages.get(1));
-            } else if (!StringUtils.isEmpty(template.getSmsTemplate2())) {
-                template.setSmsTemplate2(null);
-            }
-            if (messages.size() > 2) {
-                template.setSmsTemplate3(messages.get(2));
-            } else if (!StringUtils.isEmpty(template.getSmsTemplate3())) {
-                template.setSmsTemplate3(null);
-            }
-        }
-
-        final String logDescription = (changedTime ? String.format("Duration: %s,", delayToSend.toString()) : "") +
-                (changedMessages ? String.format("Messages: %s", messages.toString()) : "");
-        storeAccountLogPostCommit(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.GROUP_WELCOME_MESSAGES_CHANGED)
-                .group(group)
-                .paidGroupUid(group.getUid())
-                .user(user)
-                .description(logDescription).build());
     }
 
     @Override

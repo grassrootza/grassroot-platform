@@ -76,20 +76,6 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
         return gcmRegistrationRepository.save(gcmRegistration);
     }
 
-    @Override
-    @Transactional
-    public void unregisterUser(User user) {
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
-        List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user);
-        for (Group group : groupsPartOf) {
-            try {
-                unsubscribeFromTopic(gcmRegistration.getRegistrationId(), group.getUid());
-            } catch (Exception ignored) {
-            }
-        }
-        gcmRegistrationRepository.delete(gcmRegistration);
-    }
-
     @Async
     @Override
     public void changeTopicSubscription(String userUid, String topicId, boolean subscribe) throws IOException {

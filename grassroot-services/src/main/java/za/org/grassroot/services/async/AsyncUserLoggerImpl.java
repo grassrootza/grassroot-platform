@@ -6,8 +6,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
@@ -15,14 +14,12 @@ import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
@@ -42,15 +39,13 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     private final UserLogRepository userLogRepository;
     private final UserLocationLogRepository userLocationLogRepository;
     private final CacheUtilService cacheUtilService;
-    private final RoleRepository roleRepository;
 
     @Autowired
-    public AsyncUserLoggerImpl(UserRepository userRepository, UserLogRepository userLogRepository, UserLocationLogRepository userLocationLogRepository, CacheUtilService cacheUtilService, RoleRepository roleRepository) {
+    public AsyncUserLoggerImpl(UserRepository userRepository, UserLogRepository userLogRepository, UserLocationLogRepository userLocationLogRepository, CacheUtilService cacheUtilService) {
         this.userRepository = userRepository;
         this.userLogRepository = userLogRepository;
         this.userLocationLogRepository = userLocationLogRepository;
         this.cacheUtilService = cacheUtilService;
-        this.roleRepository = roleRepository;
     }
 
     @Async
@@ -71,8 +66,7 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
 
         if (!user.isHasInitiatedSession()) {
             user.setHasInitiatedSession(true);
-            Role fullUserRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_FULL_USER, Role.RoleType.STANDARD).get(0);
-            user.addStandardRole(fullUserRole);
+            user.addStandardRole(StandardRole.ROLE_FULL_USER);
         }
 
         userLogRepository.save(new UserLog(userUid, UserLogType.USER_SESSION, "", channel));
@@ -118,18 +112,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         UserLocationLog locationLog = new UserLocationLog(Instant.now(), userUid, location, locationSource);
         userLocationLogRepository.save(locationLog);
         log.info("Completed log recording");
-    }
-
-    @Async
-    @Override
-    @Transactional
-    public void recordUssdMenuAccessed(String userUid, String ussdSection, String ussdMenu) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(ussdSection);
-        Objects.requireNonNull(ussdMenu);
-
-        String urlToSave = ussdSection + ":" + ussdMenu;
-        userLogRepository.save(new UserLog(userUid, UserLogType.USSD_MENU_ACCESSED, urlToSave, USSD));
     }
 
     @Async
@@ -196,15 +178,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     public boolean hasChangedLanguage(String userUid) {
         return userLogRepository.count(where(forUser(userUid))
                 .and(ofType(UserLogType.CHANGED_LANGUAGE))) > 0;
-    }
-
-    @Override
-    public boolean hasUsedJoinCodeRecently(String userUid) {
-        Instant end = Instant.now();
-        Instant start = end.minus(5, ChronoUnit.MINUTES);
-        return userLogRepository.count(where(forUser(userUid))
-                .and(ofType(UserLogType.USED_A_JOIN_CODE))
-                .and(creationTimeBetween(start, end))) > 0;
     }
 
     @Override

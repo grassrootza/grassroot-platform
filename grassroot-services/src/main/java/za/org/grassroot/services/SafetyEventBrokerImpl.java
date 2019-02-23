@@ -140,12 +140,6 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean needsToRespondToSafetyEvent(User sessionUser) {
-        return getOutstandingUserSafetyEventsResponse(sessionUser.getUid()) != null;
-    }
-
-    @Override
     @Transactional
     public void setSafetyGroup(String userUid, String groupUid) {
         Objects.requireNonNull(userUid);

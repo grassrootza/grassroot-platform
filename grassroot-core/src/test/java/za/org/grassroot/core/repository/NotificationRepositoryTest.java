@@ -13,6 +13,7 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.*;
@@ -64,7 +65,7 @@ public class NotificationRepositoryTest {
     public void shouldSaveAndRetrieveNotifications() {
         assertThat(notificationRepository.count(), is(0L));
         User user = userRepository.save(new User("08488754097", null, null));
-        Group group = groupRepository.save(new Group("test eventlog", user));
+        Group group = groupRepository.save(new Group("test eventlog", GroupPermissionTemplate.DEFAULT_GROUP, user));
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433"));
@@ -79,7 +80,7 @@ public class NotificationRepositoryTest {
         assertThat(notificationRepository.count(), is(0L));
         Instant start = Instant.now();
         User user = userRepository.save(new User("08488754097", null, null));
-        Group group = groupRepository.save(new Group("test eventlog", user));
+        Group group = groupRepository.save(new Group("test eventlog", GroupPermissionTemplate.DEFAULT_GROUP, user));
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         notificationRepository.save(new EventInfoNotification(user, "hello", eventLog));
@@ -102,7 +103,7 @@ public class NotificationRepositoryTest {
         User user = userRepository.save(new User("0848835097", null, null));
         user.setMessagingPreference(DeliveryRoute.ANDROID_APP);
         userRepository.save(user);
-        Group group = groupRepository.save(new Group("test eventlog", user));
+        Group group = groupRepository.save(new Group("test eventlog", GroupPermissionTemplate.DEFAULT_GROUP, user));
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
@@ -115,9 +116,9 @@ public class NotificationRepositoryTest {
     public void shouldFetchNotificatonsToDeliver() {
         assertEquals(0, notificationRepository.count());
         User user = userRepository.save(new User("001111115", null, null));
-        Group group = groupRepository.save(new Group("test notification 3", user));
+        Group group = groupRepository.save(new Group("test notification 3", GroupPermissionTemplate.DEFAULT_GROUP, user));
         User user2 = userRepository.save(new User("00111116", null, null));
-        group.addMember(user2, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(user2, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 3").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         Notification notification = new EventInfoNotification(user, "test meeting called", eventLog);
@@ -139,10 +140,10 @@ public class NotificationRepositoryTest {
     public void shouldSaveAndRetrieveUnreadNotifications() {
         assertEquals(0, notificationRepository.count());
         User user = userRepository.save(new User("0801112345", null, null));
-        Group group = groupRepository.save(new Group("test notification", user));
+        Group group = groupRepository.save(new Group("test notification", GroupPermissionTemplate.DEFAULT_GROUP, user));
 
         User user2 = userRepository.save(new User("0701112345", null, null));
-        group.addMember(user2, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(user2, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         UserLog userLog = userLogRepository.save(new UserLog(user2.getUid(), UserLogType.INITIATED_USSD, "welcome to grassroot", UserInterfaceType.USSD));
 
         Event event = eventRepository.save(new Vote("test notifications", Instant.now().plus(1, ChronoUnit.DAYS), user, group));

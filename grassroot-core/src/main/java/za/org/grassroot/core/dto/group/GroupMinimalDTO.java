@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Getter;
 import lombok.Setter;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -24,7 +25,7 @@ import java.util.Set;
 public class GroupMinimalDTO extends GroupTimeChangedDTO {
 
     protected String description;
-    private final String userRole;
+    private final GroupRole userRole;
     protected Instant nextEventTime;
     protected TaskType nextEventType;
     private final Set<Permission> userPermissions;
@@ -40,9 +41,9 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
     public GroupMinimalDTO(Group group, Membership membership) {
         super(group, group.getLastGroupChangeTime());
         this.description = group.getDescription();
-        this.userRole = membership.getRole().getName();
+        this.userRole = membership.getRole();
         this.lastTaskOrChangeTime = group.getLatestChangeOrTaskTime();
-        this.userPermissions = membership.getRole().getPermissions();
+        this.userPermissions = membership.getRolePermissions();
         this.pinned = GroupViewPriority.PINNED.equals(membership.getViewPriority());
         this.discoverable = group.isDiscoverable();
         this.hidden = GroupViewPriority.HIDDEN.equals(membership.getViewPriority());

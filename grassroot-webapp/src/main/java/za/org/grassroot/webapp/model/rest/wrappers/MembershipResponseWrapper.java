@@ -1,6 +1,6 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 
@@ -13,15 +13,15 @@ public class MembershipResponseWrapper {
     private String displayName;
     private String groupUid;
     private String phoneNumber;
-    private String roleName;
+    private GroupRole roleName;
     private boolean selected;
 
-    public MembershipResponseWrapper(Group group, User user, Role role, boolean selected) {
+    public MembershipResponseWrapper(Group group, User user, GroupRole role, boolean selected) {
         this.memberUid = user.getUid();
         this.displayName = group.getMembership(user).getDisplayName();
         this.groupUid = group.getUid();
         this.phoneNumber = user.getPhoneNumber();
-        this.roleName = role.getName();
+        this.roleName = role;
         this.selected = selected;
     }
 
@@ -47,7 +47,7 @@ public class MembershipResponseWrapper {
         return phoneNumber;
     }
 
-    public String getRoleName() {
+    public GroupRole getRoleName() {
         return roleName;
     }
 

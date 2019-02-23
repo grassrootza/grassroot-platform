@@ -37,7 +37,6 @@ import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.graph.GraphBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.*;
 import za.org.grassroot.services.user.GcmRegistrationBroker;
@@ -85,7 +84,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     private GcmRegistrationBroker gcmRegistrationBroker;
     private GraphBroker graphBroker;
 
-    private AccountBroker accountBroker;
     private AccountFeaturesBroker accountFeaturesBroker;
 
     @Setter private ApplicationContext applicationContext;
@@ -120,11 +118,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     @Autowired
-    public void setAccountBroker(AccountBroker accountBroker) {
-        this.accountBroker = accountBroker;
-    }
-
-    @Autowired
     public void setAccountFeaturesBroker(AccountFeaturesBroker accountFeaturesBroker) {
         this.accountFeaturesBroker = accountFeaturesBroker;
     }
@@ -154,21 +147,17 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(membershipInfos);
         Objects.requireNonNull(groupPermissionTemplate);
 
-        User user = userRepository.findOneByUid(userUid);
+        final User user = userRepository.findOneByUid(userUid);
 
-        Group parent = null;
-        if (parentGroupUid != null) {
-            parent = groupRepository.findOneByUid(parentGroupUid);
-        }
+        final Group parent = (parentGroupUid == null) ? null : groupRepository.findOneByUid(parentGroupUid);
 
         logger.info("Creating new group: name={}, add to account={}, description={}, membershipInfos={}, groupPermissionTemplate={},  parent={}, user={}, openJoinToken=",
                 name, addToAccountIfPresent, description, membershipInfos, groupPermissionTemplate, parent, user, openJoinToken);
 
-        Group group = new Group(name, user);
+        Group group = new Group(name, groupPermissionTemplate, user, parent);
         // last: set some advanced features, with defaults in case null passed
         group.setDescription((description == null) ? "" : description);
         group.setReminderMinutes((reminderMinutes == null) ? (24 * 60) : reminderMinutes);
-        group.setParent(parent);
         group.setDiscoverable(discoverable);
 
         LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos,
@@ -179,7 +168,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             bundle.addLog(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, null, group, null, "Subgroup added"));
         }
 
-        permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
 
         logger.info("Group created under UID {}", group.getUid());
@@ -231,12 +219,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private void storeBundleAfterCommit(LogsAndNotificationsBundle bundle) {
         AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle); // we want to log group events after transaction has committed
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
-    }
-
-    private void addToAccountAfterCommit(User user, Group group) {
-        AfterTxCommitTask afterTxCommitTask = () -> accountBroker.addGroupsToAccount(user.getPrimaryAccount().getUid(),
-                Collections.singleton(group.getUid()), user.getUid());
         applicationEventPublisher.publishEvent(afterTxCommitTask);
     }
 
@@ -325,11 +307,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (!adminUserCalling) {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
-            if (!checkGroupSizeLimit(group, membershipInfos.size())) {
-                throw new GroupSizeLimitExceededException();
-            }
+            validateGroupSizeLimit(group, membershipInfos.size());
         } else {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+            permissionBroker.validateSystemRole(user, StandardRole.ROLE_SYSTEM_ADMIN);
         }
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
@@ -365,7 +345,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         List<User> members = userRepository.findByUidIn(memberUids);
-        subgroup.addMembers(members, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_SUBGROUP, user.getName());
+        subgroup.addMembers(members, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_SUBGROUP, user.getName());
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         createSubGroupAddedLogs(parent, subgroup, user, members, bundle);
@@ -447,12 +427,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         Set<User> userSet = fromGroup.getMembers();
 
-        if (!checkGroupSizeLimit(toGroup, userSet.size())) {
-            throw new GroupSizeLimitExceededException();
-        }
+        validateGroupSizeLimit(toGroup, userSet.size());
 
         final String fromGroupName = fromGroup.getName();
-        Set<Membership> addedMembers = toGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupName);
+        toGroup.addMembers(userSet, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP, fromGroupName);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
@@ -507,11 +485,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     public Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
+        return addMemberViaJoinCode(user, group, tokenPassed, interfaceType);
+    }
 
-        validateJoinCode(group, tokenPassed);
-        recordJoinCodeInbound(group, tokenPassed);
+    @Override
+    public Membership addMemberViaJoinCode(final User user, final Group group, final String tokenPassed, final UserInterfaceType interfaceType) {
+        validateJoinCode(group, tokenPassed, false, false);
 
-        return selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null, null);
+        final GroupJoinMethod groupJoinMethod = getJoinMethodFromInterface(interfaceType);
+        return selfJoinViaCode(user, group, groupJoinMethod, tokenPassed, null, null, null);
     }
 
     @Override
@@ -527,10 +509,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             throw new IllegalArgumentException("Error! Must have at least one of join code or broadcast ID");
         }
 
-        Group group = groupRepository.findOneByUid(groupUid);
+        final Group group = groupRepository.findOneByUid(groupUid);
 
         if (!StringUtils.isEmpty(code)) {
-            validateJoinCode(group, code); // don't record use, as already done elsewhere
+            validateJoinCode(group, code, true, false); // don't record use, as already done elsewhere
         }
 
         Broadcast broadcast = StringUtils.isEmpty(broadcastId) ? null : broadcastRepository.findOneByUid(broadcastId);
@@ -553,9 +535,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
             userExists = joiningUser != null;
             if (!userExists) {
-                // have to do these as otherwise an empty string might trigger uniqueness constraint
-                joiningUser = new User(StringUtils.isEmpty(msisdn) ? null : msisdn, name, StringUtils.isEmpty(email) ? null : email);
-                userRepository.saveAndFlush(joiningUser);
+                final String phoneNumber = StringUtils.isEmpty(msisdn) ? null : msisdn;
+                final String emailAddress = StringUtils.isEmpty(email) ? null : email;
+                final User newUser = new User(phoneNumber, name, emailAddress);
+                joiningUser = userRepository.save(newUser);
             }
         }
 
@@ -608,14 +591,18 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         boolean wasAlreadyMember = false;
 
-        Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, joinMethod, code);
-        if (membership != null) {
-            // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
-            membership.setViewPriority(GroupViewPriority.PINNED);
-        } else {
+        Membership membership;
+        if (user.hasMembership(group)) {
             // means user was already part of group, so we will just add topics etc.
-            membership = group.getMembership(user);
+            membership = user.getMembership(group);
             wasAlreadyMember = true;
+
+        } else {
+            // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
+            membership = user.addMappedByMembership(group, GroupRole.ROLE_ORDINARY_MEMBER, joinMethod, code);
+            membership.setViewPriority(GroupViewPriority.PINNED);
+            // we have to save via repository because we cannot just add cascading persist due to inverse side (Group's membership having that), otherwise double insert fails
+            membership = this.membershipRepository.save(membership);
         }
 
         if (topics != null) {
@@ -626,8 +613,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         // recursively add user to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            parentGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
-            bundle.addLog(new GroupLog(parentGroup, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_SUBGROUP_CODE, user, group, null, null));
+            if (!user.hasMembership(parentGroup)) {
+                Membership parentMembership = user.addMappedByMembership(parentGroup, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
+                parentMembership = this.membershipRepository.save(parentMembership);
+
+                bundle.addLog(new GroupLog(parentGroup, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_SUBGROUP_CODE, user, group, null, null));
+            }
             parentGroup = parentGroup.getParent();
         }
 
@@ -650,7 +641,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         storeBundleAfterCommit(bundle);
 
-        return group.getMembership(user);
+        return user.getMembership(group);
     }
 
     private GroupJoinMethod getJoinMethodFromInterface(UserInterfaceType interfaceType) {
@@ -677,21 +668,24 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
     }
 
-
-    private void validateJoinCode(Group group, String joinCode) {
-        Set<String> joinWords = groupJoinCodeRepository.selectActiveJoinCodesForGroup(group);
-        if (!joinWords.contains(joinCode.toLowerCase()) && !joinCode.equals(group.getGroupTokenCode()) || Instant.now().isAfter(group.getTokenExpiryDateTime()))
-            throw new InvalidTokenException("Invalid token: " + joinCode);
-    }
-
-    private void recordJoinCodeInbound(Group group, String code) {
-        DebugUtil.transactionRequired("");
-        GroupJoinCode gjc = groupJoinCodeRepository.findByGroupUidAndCodeAndActiveTrue(group.getUid(), code);
-        if (gjc != null) {
-            gjc.incrementInboundUses();
+    private void validateJoinCode(Group group, String joinCode, boolean includeJoinWords, boolean recordIfJoinWordFound) {
+        final boolean valid = Instant.now().isBefore(group.getTokenExpiryDateTime()) && (joinCode.equals(group.getGroupTokenCode()) ||
+                (includeJoinWords && validateJoinWord(group, joinCode, recordIfJoinWordFound)));
+        if (!valid) {
+            throw new InvalidTokenException("Invalid join code: " + joinCode);
         }
     }
 
+    private boolean validateJoinWord(final Group group, final String joinWord, final boolean recordIfJoinWordFound) {
+        Optional<GroupJoinCode> joinCodeOptional = group.getActiveJoinCode(joinWord);
+        if (joinCodeOptional.isPresent()) {
+            if (recordIfJoinWordFound) {
+                joinCodeOptional.get().incrementInboundUses();
+            }
+            return true;
+        }
+        return false;
+    }
 
     @Override
     @Transactional
@@ -705,34 +699,27 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 
-    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> rawMembershipInfos,
-                                                      GroupJoinMethod joinMethod, String joinMethodDescriptor,
+    private LogsAndNotificationsBundle addMemberships(final User initiator, final Group group, final Set<MembershipInfo> rawMembershipInfos,
+                                                      final GroupJoinMethod joinMethod, final String joinMethodDescriptor,
                                                       boolean duringGroupCreation, boolean createWelcomeNotifications, boolean limitSizeCheck) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
-        Set<MembershipInfo> membershipInfos = stripDuplicateEmailsAndPhones(rawMembershipInfos).stream()
+        final Set<MembershipInfo> membershipInfos = stripDuplicateEmailsAndPhones(rawMembershipInfos).stream()
                 .filter(MembershipInfo::hasValidPhoneOrEmail)
                 .collect(Collectors.toSet());
 
         logger.info("number of valid members in import: {}", membershipInfos.size());
 
-        Set<String> memberPhoneNumbers = membershipInfos.stream().filter(MembershipInfo::hasValidPhoneNumber)
-                .map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
+        logPhoneNumbersAndEmailAddressesToAdd(membershipInfos);
 
-        Set<String> emailAddresses = membershipInfos.stream().filter(MembershipInfo::hasValidEmail)
-                .map(MembershipInfo::getMemberEmail).collect(Collectors.toSet());
-
-        logger.info("phoneNumbers returned: .... {}, email addresses: {}", memberPhoneNumbers, emailAddresses);
-
-        Set<Membership> addedMemberships = new HashSet<>();
-
-        Set<User> newlyCreatedUsers = new HashSet<>();
-        Set<MembershipInfo> taskTeamMembers = new HashSet<>();
-
-        Set<String> existingEmails = userRepository.fetchUsedEmailAddresses();
-        Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
+        final Set<Membership> addedMemberships = new HashSet<>();
+        final Set<User> newlyCreatedUsers = new HashSet<>();
+        final Set<MembershipInfo> taskTeamMembers = new HashSet<>();
 
         // depends how we're limiting
-        int numberMembersLeft = limitSizeCheck ? accountFeaturesBroker.numberMembersLeftForGroup(group.getUid(), joinMethod) : 9999;
+        int numberMembersLeft = limitSizeCheck ? accountFeaturesBroker.numberMembersLeftForGroup(group, joinMethod) : 9999;
+
+        final Set<String> existingEmails = userRepository.fetchUsedEmailAddresses();
+        final Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
 
         for (MembershipInfo membershipInfo : membershipInfos) {
             if (numberMembersLeft < 0) {
@@ -740,50 +727,31 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 break;
             }
 
-            // note: splitting this instead of getOrDefault, since that method calls default method even if it
-            // finds something, hence spurious user creation
-            Optional<String> msisdn = membershipInfo.getConvertedNumber();
-            Optional<String> emailAddress = membershipInfo.getFormattedEmail();
-
-            User memberUser;
-            if (msisdn.isPresent() && existingPhoneNumbers.contains(msisdn.get())) {
-                memberUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn.get());
-            } else if (emailAddress.isPresent() && existingEmails.contains(emailAddress.get())) {
-                memberUser = userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress.get());
-            } else {
-                logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msisdn, emailAddress);
-                memberUser = new User(msisdn.orElse(null), membershipInfo.getDisplayName(), emailAddress.orElse(null));
-                memberUser.setFirstName(membershipInfo.getFirstName());
-                memberUser.setLastName(membershipInfo.getSurname());
-                newlyCreatedUsers.add(memberUser);
+            final User member = findOrConstructMemberToAdd(membershipInfo, existingEmails, existingPhoneNumbers);
+            // if newly created, add to set of them
+            if (member.getId() == null) {
+                newlyCreatedUsers.add(member);
             }
 
-            if (!memberUser.isHasInitiatedSession()) {
-                if (!memberUser.hasEmailAddress() && emailAddress.isPresent() && !existingEmails.contains(emailAddress.get())) {
-                    memberUser.setEmailAddress(emailAddress.get());
-                }
-                if (!memberUser.hasPhoneNumber() && msisdn.isPresent() && !existingPhoneNumbers.contains(msisdn.get())) {
-                    memberUser.setPhoneNumber(msisdn.get());
-                }
-            }
+            final GroupRole roleName = membershipInfo.getRoleName() == null ? GroupRole.ROLE_ORDINARY_MEMBER : membershipInfo.getRoleName();
+            final GroupJoinMethod memberJoinMethod = joinMethod == null ? GroupJoinMethod.ADDED_BY_OTHER_MEMBER : joinMethod;
+            final Membership membership = group.addMember(member, roleName, memberJoinMethod, joinMethodDescriptor);
 
-            String roleName = membershipInfo.getRoleName() == null ? BaseRoles.ROLE_ORDINARY_MEMBER : membershipInfo.getRoleName();
-            joinMethod = joinMethod == null ? GroupJoinMethod.ADDED_BY_OTHER_MEMBER : joinMethod;
-
-            Membership membership = group.addMember(memberUser, roleName, joinMethod, joinMethodDescriptor);
-            membership = wireUpMembershipTags(memberUser, membership, membershipInfo);
-
-            if (membershipInfo.getTaskTeams() != null && !membershipInfo.getTaskTeams().isEmpty())
+            if (membershipInfo.hasTaskTeams()) {
+                membershipInfo.setUserUid(member.getUid());
                 taskTeamMembers.add(membershipInfo);
+            }
 
             if (membership != null) {
+                wireUpMembershipTags(membership, membershipInfo);
+
                 addedMemberships.add(membership);
                 numberMembersLeft--;
             }
         }
 
         logger.info("completed iteration, added {} users", membershipInfos.size());
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        final LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         // make sure the newly created users are stored
         storeCreatedUsers(group, newlyCreatedUsers, bundle);
@@ -794,7 +762,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<String> addedUserUids = new HashSet<>();
         for (Membership membership : addedMemberships) {
             User member = membership.getUser();
-            GroupLog groupLog = new GroupLog(group, initiator, logType, member, null, null, null);
+            final GroupLog groupLog = new GroupLog(group, initiator, logType, member, null, null, null);
             bundle.addLog(groupLog);
             notifyNewMembersOfUpcomingMeetings(bundle, member, group, groupLog);
             addedUserUids.add(member.getUid());
@@ -806,7 +774,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             triggerWelcomeMessagesAfterCommit(initiator.getUid(), group.getUid(), addedUserUids);
 
         if (group.getParent() != null)
-            triggerAddMembersToParentGroup(initiator, group.getParent(), membershipInfos, joinMethod);
+            addMembersToParentGroupAfterCommit(initiator, group.getParent(), membershipInfos, joinMethod);
 
         if (!taskTeamMembers.isEmpty())
             addMembersToSubgroupsAfterCommit(initiator.getUid(), group.getUid(), taskTeamMembers);
@@ -819,6 +787,57 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 graphBroker.annotateMembership(membership.getUser().getUid(), membership.getGroup().getUid(), null, true);
 
         return bundle;
+    }
+
+    private void logPhoneNumbersAndEmailAddressesToAdd(Set<MembershipInfo> membershipInfos) {
+        final Set<String> memberPhoneNumbers = membershipInfos.stream().filter(MembershipInfo::hasValidPhoneNumber)
+                .map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
+
+        final Set<String> emailAddresses = membershipInfos.stream().filter(MembershipInfo::hasValidEmail)
+                .map(MembershipInfo::getMemberEmail).collect(Collectors.toSet());
+
+        logger.info("phoneNumbers returned: .... {}, email addresses: {}", memberPhoneNumbers, emailAddresses);
+    }
+
+    private User findOrConstructMemberToAdd(MembershipInfo membershipInfo, Set<String> existingEmails, Set<String> existingPhoneNumbers) {
+        final Optional<String> msisdn = membershipInfo.getConvertedNumber();
+        final Optional<String> emailAddress = membershipInfo.getFormattedEmail();
+
+        User member;
+        if (msisdn.isPresent() && existingPhoneNumbers.contains(msisdn.get())) {
+            member = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn.get());
+        } else if (emailAddress.isPresent() && existingEmails.contains(emailAddress.get())) {
+            member = userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress.get());
+        } else {
+            logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msisdn, emailAddress);
+            member = new User(msisdn.orElse(null), membershipInfo.getDisplayName(), emailAddress.orElse(null));
+            member.setFirstName(membershipInfo.getFirstName());
+            member.setLastName(membershipInfo.getSurname());
+        }
+
+        if (!member.isHasInitiatedSession()) {
+            if (!member.hasEmailAddress() && emailAddress.isPresent() && !existingEmails.contains(emailAddress.get())) {
+                member.setEmailAddress(emailAddress.get());
+            }
+            if (!member.hasPhoneNumber() && msisdn.isPresent() && !existingPhoneNumbers.contains(msisdn.get())) {
+                member.setPhoneNumber(msisdn.get());
+            }
+        }
+
+        if (member.getProvince() == null && membershipInfo.getProvince() != null) {
+            member.setProvince(membershipInfo.getProvince());
+        }
+
+        return member;
+    }
+
+    private void wireUpMembershipTags(Membership membership, MembershipInfo membershipInfo) {
+        if (membershipInfo.getTopics() != null) {
+            membership.setTopics(new HashSet<>(membershipInfo.getTopics()));
+        }
+        if (membershipInfo.getAffiliations() != null) {
+            membership.addAffiliations(new HashSet<>(membershipInfo.getAffiliations()));
+        }
     }
 
     private Set<MembershipInfo> stripDuplicateEmailsAndPhones(Set<MembershipInfo> membershipInfos) {
@@ -847,32 +866,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         return safeMembers;
     }
 
-    private Membership wireUpMembershipTags(User user, Membership membership, MembershipInfo membershipInfo) {
-        if (user.getProvince() == null && membershipInfo.getProvince() != null) {
-            user.setProvince(membershipInfo.getProvince());
-        }
-
-        if (membership != null) {
-            if (membershipInfo.getTopics() != null) {
-                membership.setTopics(new HashSet<>(membershipInfo.getTopics()));
-            }
-
-            if (membershipInfo.getAffiliations() != null) {
-                membership.addAffiliations(new HashSet<>(membershipInfo.getAffiliations()));
-            }
-
-            if (membershipInfo.hasTaskTeams()) {
-                membershipInfo.setUserUid(user.getUid());
-            }
-        }
-
-        return membership;
-    }
-
     private void storeCreatedUsers(Group group, Set<User> createdUsers, LogsAndNotificationsBundle bundle) {
         if (createdUsers != null && !createdUsers.isEmpty()) {
             userRepository.saveAll(createdUsers);
-            userRepository.flush();
 
             for (User createdUser : createdUsers) {
                 bundle.addLog(new UserLog(createdUser.getUid(), UserLogType.CREATED_IN_DB, String.format("Created by being added to group with ID: %s", group.getUid()), UNKNOWN));
@@ -880,8 +876,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
     }
 
-    private void triggerAddMembersToParentGroup(User initiator, Group group, Set<MembershipInfo> membershipInfos,
-                                                GroupJoinMethod joinMethod) {
+    private void addMembersToParentGroupAfterCommit(User initiator, Group group, Set<MembershipInfo> membershipInfos,
+                                                    GroupJoinMethod joinMethod) {
         AfterTxCommitTask afterTxCommitTask = () -> applicationContext.getBean(GroupBroker.class)
                     .asyncAddMemberships(initiator.getUid(), group.getUid(), membershipInfos, joinMethod, null, false, false);
         applicationEventPublisher.publishEvent(afterTxCommitTask);
@@ -913,7 +909,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
         meetings.forEach(m -> {
             Group meetingGroup = m.getAncestorGroup();
-            if (meetingGroup.equals(group) || !meetingGroup.hasMember(user)) {
+            if (meetingGroup.equals(group) || !user.hasMembership(meetingGroup)) {
                 boolean appliesToMember = m.isAllGroupMembersAssigned() || m.getAssignedMembers().contains(user);
                 if (appliesToMember) {
                     String message = messageAssemblingService.createEventInfoMessage(user, m);
@@ -1007,7 +1003,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         Membership membership = group.getMembership(user);
 
-        if (BaseRoles.ROLE_GROUP_ORGANIZER.equalsIgnoreCase(membership.getRole().getName())) {
+        if (membership.getRole().equals(GroupRole.ROLE_GROUP_ORGANIZER)) {
             if (membershipRepository.count(MembershipSpecifications.groupOrganizers(group)) == 1) {
                 throw new SoleOrganizerUnsubscribeException();
             }
@@ -1019,12 +1015,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName) {
+    public void updateMembershipRole(String userUid, String groupUid, String memberUid, GroupRole role) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(memberUid);
 
-        logger.info("changing member to this role: " + roleName);
+        logger.info("changing member to this role: " + role);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -1042,9 +1038,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("There is no member under UID " + memberUid + " in group " + group));
 
-        logger.info("Updating membership role: membership={}, roleName={}, user={}", membership, roleName, user);
+        logger.info("Updating membership role: membership={}, role={}, user={}", membership, role, user);
 
-        Set<ActionLog> actionLogs = changeMembersToRole(user, group, Collections.singleton(memberUid), group.getRole(roleName));
+        Set<ActionLog> actionLogs = changeMembersToRole(user, group, Collections.singleton(memberUid), role);
         logActionLogsAfterCommit(actionLogs);
     }
 
@@ -1217,183 +1213,43 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         return false;
     }
 
-    private Set<ActionLog> changeMembersToRole(User user, Group group, Set<String> memberUids, Role newRole) {
+    private Set<ActionLog> changeMembersToRole(User user, Group group, Set<String> memberUids, GroupRole newRole) {
         return group.getMemberships().stream()
                 .filter(m -> memberUids.contains(m.getUser().getUid()))
-                .peek(m -> m.setRole(newRole))
-                .map(m -> new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ROLE_CHANGED, m.getUser(), null, null, newRole.getName()))
+                .peek(m -> m.updateRole(newRole))
+                .map(m -> new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ROLE_CHANGED, m.getUser(), null, null, newRole.name()))
                 .collect(Collectors.toSet());
     }
 
-    @Override
-    @Transactional
-    public void updateMembers(String userUid, String groupUid, Set<MembershipInfo> modifiedMembers, boolean checkForDeletion) {
-
-        // note: a simpler way to do this might be to in effect replace the members, but then will create issues with logging
-        // also, we want to check permissions separately, hence ...
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        Set<Membership> memberships = group.getMemberships();
-
-        Set<String> modifiedPhoneNumbers = modifiedMembers.stream().map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
-        Set<Membership> membershipsToRemove = memberships.stream()
-                .filter(membership -> !modifiedPhoneNumbers.contains(membership.getUser().getPhoneNumber()))
-                .collect(Collectors.toSet());
-
-        Set<MembershipInfo> membersToAdd = new HashSet<>();
-        Set<MembershipInfo> currentMembershipInfos = MembershipInfo.createFromMembers(memberships);
-
-        for (MembershipInfo m : modifiedMembers) {
-            if (currentMembershipInfos.contains(m)) {
-                // todo: this seems incredibly inefficient, figure out how to do without all these entity loads
-                User savedUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(m.getPhoneNumber());
-                Membership savedMembership = group.getMembership(savedUser);
-                if (!savedMembership.getRole().getName().equals(m.getRoleName())) {
-                    updateMembershipRole(userUid, groupUid, savedUser.getUid(), m.getRoleName());
-                }
-            } else {
-                // note: could also just do this with a removeAll, but since we're running the contain check, may as well
-                membersToAdd.add(m);
-            }
-        }
-
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-        if (checkForDeletion && !membershipsToRemove.isEmpty()) {
-            // note: only call if non-empty to avoid throwing no permission error if user hasn't removed anyone
-            Set<ActionLog> removeMembershipsLogs = removeMemberships(user, group, membershipsToRemove);
-            bundle.addLogs(removeMembershipsLogs);
-        }
-
-        if (!membersToAdd.isEmpty() && checkGroupSizeLimit(group, membersToAdd.size())) {
-            // note: as above, only call if non-empty so permission check only happens
-            // and since by definition this is only ever called by group organizer, method is added by other
-            LogsAndNotificationsBundle addMembershipsBundle = addMemberships(user, group, membersToAdd,
-                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, user.getName(), false, true, true);
-            bundle.addBundle(addMembershipsBundle);
-        }
-
-        logsAndNotificationsBroker.asyncStoreBundle(bundle);
-    }
 
     @Override
     @Transactional
-    public Group merge(String userUid, String firstGroupUid, String secondGroupUid,
-                       boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(firstGroupUid);
-        Objects.requireNonNull(secondGroupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-
-        Group firstGroup = groupRepository.findOneByUid(firstGroupUid);
-        Group secondGroup = groupRepository.findOneByUid(secondGroupUid);
-
-        if (!checkGroupSizeLimit(firstGroup, secondGroup.getMemberships().size())) {
-            throw new GroupSizeLimitExceededException();
-        }
-
-        logger.info("Merging groups: firstGroup={}, secondGroup={}, user={}, leaveActive={}, orderSpecified={}, createNew={}, newGroupName={}",
-                firstGroup, secondGroup, user, leaveActive, orderSpecified, createNew, newGroupName);
-
-        Group groupInto, groupFrom;
-        if (orderSpecified || firstGroup.getMemberships().size() > secondGroup.getMemberships().size()) {
-            groupInto = firstGroup;
-            groupFrom = secondGroup;
-        } else {
-            groupInto = secondGroup;
-            groupFrom = firstGroup;
-        }
-
-        permissionBroker.validateGroupPermission(user, groupInto, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
-        if (!leaveActive) {
-            permissionBroker.validateGroupPermission(user, groupFrom, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        }
-
-        Group resultGroup;
-
-        if (createNew) {
-            Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupInto.getMemberships());
-            membershipInfos.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
-            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false, true);
-            if (!leaveActive) {
-                deactivate(user.getUid(), groupInto.getUid(), false);
-                deactivate(user.getUid(), groupFrom.getUid(), false);
-            }
-        } else {
-
-            Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupFrom.getMemberships());
-            LogsAndNotificationsBundle bundle = addMemberships(user, groupInto, membershipInfos,
-                    GroupJoinMethod.COPIED_INTO_GROUP, groupFrom.getName(), false, true, true);
-            resultGroup = groupInto;
-            if (!leaveActive) {
-                deactivate(user.getUid(), groupFrom.getUid(), false);
-            }
-
-            logsAndNotificationsBroker.asyncStoreBundle(bundle);
-        }
-
-        logger.info("Group from active status is now : {}", groupFrom.isActive());
-        return resultGroup;
-    }
-
-    @Override
-    @Transactional
-    public void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions) {
-
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(newPermissions);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
-
-        // note: the UI also needs to enforce protection of organizer permissions, but since this is delicate and
-        // potentially irreversible, also enforcing it here
-
-        for (Role role : group.getGroupRoles()) {
-            Objects.requireNonNull(newPermissions.get(role.getName()));
-            Set<Permission> adjustedRolePermissions = newPermissions.get(role.getName());
-            if (role.getName().equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
-                adjustedRolePermissions.addAll(permissionBroker.getProtectedOrganizerPermissions());
-            }
-            role.setPermissions(adjustedRolePermissions);
-        }
-
-        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user,
-                GroupLogType.PERMISSIONS_CHANGED, "Changed permissions assigned to group roles")));
-
-    }
-
-    @Override
-    @Transactional
-    public void updateGroupPermissionsForRole(String userUid, String groupUid, String roleName, Set<Permission> permissionsToAdd, Set<Permission> permissionsToRemove) {
+    public void updateGroupPermissionsForRole(String userUid, String groupUid, GroupRole roleName, Set<Permission> permissionsToAdd, Set<Permission> permissionsToRemove) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(permissionsToAdd);
         Objects.requireNonNull(permissionsToRemove);
 
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+        if (permissionsToAdd.isEmpty() && permissionsToRemove.isEmpty()) {
+            logger.info("No permission to add or remove to group " + groupUid + " under role " + roleName);
+        } else {
+            User user = userRepository.findOneByUid(userUid);
+            Group group = groupRepository.findOneByUid(groupUid);
 
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
 
-        Role roleToUpdate = group.getRole(roleName);
-        Set<Permission> updatedPermissions = new HashSet<>(roleToUpdate.getPermissions());
-        updatedPermissions.removeAll(permissionsToRemove);
-        updatedPermissions.addAll(permissionsToAdd);
-	    if (roleName.equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
-		    updatedPermissions.addAll(permissionBroker.getProtectedOrganizerPermissions());
-	    }
+            Set<Permission> newRolePermissions = group.getPermissions(roleName);
+            newRolePermissions.removeAll(permissionsToRemove);
+            newRolePermissions.addAll(permissionsToAdd);
+            if (roleName.equals(GroupRole.ROLE_GROUP_ORGANIZER)) {
+                final Set<Permission> protectedOrganizerPermissions = PermissionSets.protectedOrganizerPermissions;
+                newRolePermissions.addAll(protectedOrganizerPermissions);
+            }
 
-        roleToUpdate.setPermissions(updatedPermissions);
+            group.setPermissions(roleName, newRolePermissions);
 
-        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user,
-                GroupLogType.PERMISSIONS_CHANGED, "Changed permissions assigned to " + roleName)));
-
+            logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, "Changed permissions assigned to " + roleName)));
+        }
     }
 
     @Override
@@ -1464,7 +1320,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         if (organizersToAdd != null && !organizersToAdd.isEmpty()) {
-            groupLogs.addAll(changeMembersToRole(user, group, organizersToAdd, group.getRole(BaseRoles.ROLE_GROUP_ORGANIZER)));
+			Set<ActionLog> actionLogs = changeMembersToRole(user, group, organizersToAdd, GroupRole.ROLE_GROUP_ORGANIZER);
+			groupLogs.addAll(actionLogs);
         }
 
         if(group.getReminderMinutes() != reminderMinutes){
@@ -1484,8 +1341,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Group group = load(groupUid);
         logger.info("code =? {}, and b id = {}", code, broadcastId);
         if (!StringUtils.isEmpty(code)) {
-            validateJoinCode(group, code);
-            recordJoinCodeInbound(group, code);
+            validateJoinCode(group, code, true, true);
         }
         if (!StringUtils.isEmpty(broadcastId)) {
             logger.info("we had an inbound on broadcast ID! record it");
@@ -1493,23 +1349,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         return group;
     }
 
-
-    @Override
-    @Transactional
-    public void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        Group group = load(groupUid);
-        User user = userRepository.findOneByUid(userUid);
-
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        // todo: think about whether to change any events currently pending & set to group default
-        group.setReminderMinutes(reminderMinutes);
-        String logMessage = String.format("Changed reminder default to %d minutes", reminderMinutes);
-        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.REMINDER_DEFAULT_CHANGED, logMessage)));
-    }
 
     @Override
     @Transactional
@@ -1584,13 +1423,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         newTopics.removeAll(group.getTopics());
         logger.info("any join topics not in main ? : {}", newTopics);
         group.addTopics(newTopics);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean canAddMember(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        return checkGroupSizeLimit(group, 1);
     }
 
     @Override
@@ -1701,26 +1533,24 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+        final User user = userRepository.findOneByUid(userUid);
+        final Group group = groupRepository.findOneByUid(groupUid);
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
-        if (groupJoinCodeRepository.countByGroupUidAndActiveTrue(groupUid) > maxJoinWords) {
+        // validate first ...
+        if (group.getActiveJoinCodes().size() > maxJoinWords) {
             throw new JoinWordsExceededException();
         }
-
-        Set<String> currentTags = groupJoinCodeRepository.selectActiveJoinWords();
-        if (currentTags.contains(code.toLowerCase())) {
+        final Set<String> currentLowerCaseJoinWords = groupJoinCodeRepository.selectLowerCaseActiveJoinWords();
+        if (currentLowerCaseJoinWords.contains(code.toLowerCase())) {
             throw new IllegalArgumentException("Error! Passed an already taken join code");
         }
 
-        GroupJoinCode gjc  = new GroupJoinCode(user, group, code, JoinCodeType.JOIN_WORD);
-        if (urlToShorten != null) {
-            gjc.setShortUrl(urlShortener.shortenJoinUrls(urlToShorten));
-        }
+        final String shortenedUrl = urlToShorten == null ? null : urlShortener.shortenJoinUrls(urlToShorten);
+        GroupJoinCode gjc  = new GroupJoinCode(user, group, code, shortenedUrl);
 
-        gjc = groupJoinCodeRepository.saveAndFlush(gjc);
+        gjc = groupJoinCodeRepository.save(gjc);
 
         // note: shouldn't need to add to group, Hibernate should wire up, but keep an eye out
 
@@ -1737,18 +1567,16 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
+        final User user = userRepository.findOneByUid(userUid);
+        final Group group = groupRepository.findOneByUid(groupUid);
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         logger.info("looking for code: {}", code);
-        GroupJoinCode gjc = groupJoinCodeRepository.findByGroupUidAndCodeAndActiveTrue(group.getUid(), code);
-
-        if (gjc != null) {
-            gjc.setActive(false);
-            gjc.setClosedTime(Instant.now());
-            gjc.setClosingUser(user);
+        final Optional<GroupJoinCode> joinCodeOptional = group.getActiveJoinCode(code);
+        if (joinCodeOptional.isPresent()) {
+            final GroupJoinCode gjc = joinCodeOptional.get();
+            gjc.close(Instant.now(), user);
         } else {
             logger.error("Asked to close an already closed or non-existing join code, {}, for group {}", code, group);
         }
@@ -1771,7 +1599,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Override
     @Transactional(readOnly = true)
     public Set<String> getUsedJoinWords() {
-        return groupJoinCodeRepository.selectActiveJoinWords();
+        return groupJoinCodeRepository.selectLowerCaseActiveJoinWords();
     }
 
     @Override
@@ -1811,45 +1639,27 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     @Override
-    @Transactional
-    public void link(String userUid, String childGroupUid, String parentGroupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(childGroupUid);
-        Objects.requireNonNull(parentGroupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group child = groupRepository.findOneByUid(childGroupUid);
-        Group parent = groupRepository.findOneByUid(parentGroupUid);
-
-        permissionBroker.validateGroupPermission(user, parent, Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
-        permissionBroker.validateGroupPermission(user, child, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        child.setParent(parent);
-
-        Set<ActionLog> actionLogs = new HashSet<>();
-        actionLogs.add(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, null, child, null, "Subgroup added"));
-        actionLogs.add(new GroupLog(child, user, GroupLogType.PARENT_CHANGED, null, parent, null, "Parent group added or changed"));
-        logActionLogsAfterCommit(actionLogs);
-    }
-
-    @Override
-    @Transactional
-    public void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode) {
-        User user = userRepository.findOneByUid(userUidToAdd);
-        Group group = groupRepository.findOneByUid(groupUid);
-
+    public void addMemberViaCampaign(User user, Group group, String campaignCode) {
         logger.info("Adding a member via campaign add request: group={}, user={}, code={}", group, user, campaignCode);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
+
+        Membership membership = user.addMappedByMembership(group, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
+        if (membership != null) {
+            membership = this.membershipRepository.save(membership);
+        }
+
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            parentGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+            Membership parentMembership = user.addMappedByMembership(parentGroup, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+            if (parentMembership != null) {
+                this.membershipRepository.save(parentMembership);
+            }
             parentGroup = parentGroup.getParent();
         }
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN,
                 user, null, null, "Member joined via campaign code: " + campaignCode);
         bundle.addLog(groupLog);
-        bundle.addLog(new UserLog(userUidToAdd, UserLogType.USED_A_CAMPAIGN, groupUid, UNKNOWN));
+        bundle.addLog(new UserLog(user.getUid(), UserLogType.USED_A_CAMPAIGN, group.getUid(), UNKNOWN));
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
         storeBundleAfterCommit(bundle);
     }
@@ -1898,8 +1708,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
     }
 
-    private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
-        return accountFeaturesBroker.numberMembersLeftForGroup(group.getUid(), null) > numberOfMembersAdding;
+    private void validateGroupSizeLimit(Group group, int numberOfMembersAdding) {
+        int numberOfMembersLeft = accountFeaturesBroker.numberMembersLeftForGroup(group, null);
+        if (!(numberOfMembersLeft > numberOfMembersAdding)) {
+            throw new GroupSizeLimitExceededException();
+        }
     }
 
 }

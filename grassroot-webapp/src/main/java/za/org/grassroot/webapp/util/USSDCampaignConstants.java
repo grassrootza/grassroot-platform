@@ -11,7 +11,6 @@ public class USSDCampaignConstants {
 
     public static final String LANGUAGE_PARAMETER ="lang";
     public static final String LANG_SUFFIX = "&lang=";
-    public static final String CAMPAIGN_ID_PARAMETER ="&campaignUid=";
     public static final String CAMPAIGN_PREFIX ="campaign.";
     public static final String TAG_ME_URL = "tag-me";
     public static final String JOIN_MASTER_GROUP_URL = "join-group";

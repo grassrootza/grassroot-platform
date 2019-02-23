@@ -1,6 +1,7 @@
 package za.org.grassroot.core.dto.group;
 
 import lombok.Getter;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -12,7 +13,7 @@ public class MembershipRecordDTO {
     private final String groupUid;
     private final String userUid;
     private final String memberName;
-    private final String roleName;
+    private final GroupRole roleName;
     private final long changeDateTimeMillis;
     private final GroupLogType changeType;
     private final String changingUserName;
@@ -25,7 +26,7 @@ public class MembershipRecordDTO {
                 groupLog.getTarget().getUid();
         this.memberName = membership != null ? membership.getDisplayName() :
                 groupLog.getUserNameSafe();
-        this.roleName = membership != null ? membership.getRole().getName() : null;
+        this.roleName = membership != null ? membership.getRole() : null;
         this.changeDateTimeMillis = groupLog.getCreatedDateTime().toEpochMilli();
         this.changeType = groupLog.getGroupLogType();
         this.changingUserName = groupLog.getUser().getName();

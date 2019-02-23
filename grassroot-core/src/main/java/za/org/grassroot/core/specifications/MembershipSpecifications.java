@@ -3,8 +3,7 @@ package za.org.grassroot.core.specifications;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Role_;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.User_;
 import za.org.grassroot.core.domain.group.*;
@@ -28,23 +27,8 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.greaterThan(root.get(Membership_.joinTime), joinAfter);
     }
 
-    private static Specification<Membership> membershipsOfGroupsCreatedAfter(Instant groupCreatedAfter) {
-        return (root, query, cb) -> cb.greaterThan(root.get(Membership_.group).get(Group_.createdDateTime), groupCreatedAfter);
-    }
-
-    private static Specification<Membership> membershipsOfGroupsCreatedBy(User groupCreator) {
-        return (root, query, cb) -> cb.equal(root.get(Membership_.group).get(Group_.createdByUser), groupCreator);
-    }
-
-    public static Specification<Membership> membershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant membershipCreatedAfter) {
-        Specification<Membership> groupCreatedByUserSpec = MembershipSpecifications.membershipsOfGroupsCreatedBy(groupCreator);
-        Specification<Membership> groupCreatedAfterSpec = MembershipSpecifications.membershipsOfGroupsCreatedAfter(groupCreatedAfter);
-        Specification<Membership> membershipCreatedAfterSpec = MembershipSpecifications.membershipsCreatedAfter(membershipCreatedAfter);
-        return Specification.where(groupCreatedByUserSpec).and(groupCreatedAfterSpec).and(membershipCreatedAfterSpec);
-    }
-
-    public static Specification<Membership> recentMembershipsInGroups(List<Group> groups, Instant membershipCreatedAfter, User callingUser) {
-        Specification<Membership> inGroups = MembershipSpecifications.forGroups(groups);
+    public static Specification<Membership> recentMembershipsInGroups(List<Long> groupIds, Instant membershipCreatedAfter, User callingUser) {
+        Specification<Membership> inGroups = MembershipSpecifications.forGroups(groupIds);
         Specification<Membership> membershipCreatedAfterSpec = MembershipSpecifications.membershipsCreatedAfter(membershipCreatedAfter);
         Specification<Membership> notSubGroup = (root, query, cb) -> cb.notEqual(root.get(Membership_.joinMethod),
                 GroupJoinMethod.ADDED_SUBGROUP);
@@ -135,12 +119,12 @@ public class MembershipSpecifications {
 
     }
 
-    private static Specification<Membership> hasRole(String roleName) {
-        return (root, query, cb) -> cb.equal(root.get(Membership_.role).get(Role_.name), roleName);
+    private static Specification<Membership> hasRole(GroupRole roleName) {
+        return (root, query, cb) -> cb.equal(root.get(Membership_.role), roleName);
     }
 
-    private static Specification<Membership> forGroups(List<Group> groups) {
-        return (root, query, cb) -> root.get(Membership_.group).in(groups);
+    private static Specification<Membership> forGroups(List<Long> groupIds) {
+        return (root, query, cb) -> root.get(Membership_.group).get(Group_.id).in(groupIds);
     }
 
     public static Specification<Membership> forGroup(Group group) {
@@ -152,7 +136,7 @@ public class MembershipSpecifications {
     }
 
     public static Specification<Membership> groupOrganizers(Group group) {
-        return Specification.where(hasRole(BaseRoles.ROLE_GROUP_ORGANIZER)).and(forGroup(group));
+        return Specification.where(hasRole(GroupRole.ROLE_GROUP_ORGANIZER)).and(forGroup(group));
     }
 
     public static Specification<Membership> membersJoinedBefore(Instant time) {

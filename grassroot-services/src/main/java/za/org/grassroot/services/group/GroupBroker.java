@@ -1,12 +1,10 @@
 package za.org.grassroot.services.group;
 
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.group.GroupJoinCode;
-import za.org.grassroot.core.domain.group.GroupJoinMethod;
-import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.group.*;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
@@ -25,8 +23,8 @@ public interface GroupBroker {
     /** METHODS FOR CREATING AND EDITING GROUPS **/
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes,
-                 boolean openJoinToken, boolean discoverable, boolean addToAccountIfPresent);
+				 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes,
+				 boolean openJoinToken, boolean discoverable, boolean addToAccountIfPresent);
 
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 
@@ -36,8 +34,6 @@ public interface GroupBroker {
 
     void updateDescription(String userUid, String groupUid, String description);
 
-    void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes);
-
     void updateGroupDefaultLanguage(String userUid, String groupUid, String newLocale, boolean includeSubGroups);
 
     void updateTopics(String userUid, String groupUid, Set<String> topics);
@@ -46,8 +42,6 @@ public interface GroupBroker {
     void setJoinTopics(String userUid, String groupUid, List<String> joinTopics);
 
     /** METHODS FOR DEALING WITH MEMBERS AND PERMISSIONS **/
-
-    boolean canAddMember(String groupUid);
 
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos,
                     GroupJoinMethod joinMethod, boolean adminUserCalling);
@@ -64,6 +58,8 @@ public interface GroupBroker {
 
     Membership addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
 
+    Membership addMemberViaJoinCode(User user, Group group, String tokenPassed, UserInterfaceType interfaceType);
+
     String addMemberViaJoinPage(String groupUid, String code, String broadcastId, String userUid, String name, String phone, String email,
                                 Province province, Locale language, List<String> topics, UserInterfaceType interfaceType);
 
@@ -79,7 +75,7 @@ public interface GroupBroker {
 
     void unsubscribeMember(String userUid, String groupUid);
 
-    void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
+    void updateMembershipRole(String userUid, String groupUid, String memberUid, GroupRole roleName);
 
     void updateMembershipDetails(String userUid, String groupUid, String memberUid, String name, String phone, String email,
                                  Province province);
@@ -95,12 +91,8 @@ public interface GroupBroker {
 
     boolean updateViewPriority(String userUid, String groupUid, GroupViewPriority priority);
 
-    void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean checkForDeletion);
-
-    void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
-
-    void updateGroupPermissionsForRole(String userUid, String groupUid, String roleName, Set<Permission> permissionsToAdd,
-                                       Set<Permission> permissionsToRemove);
+    void updateGroupPermissionsForRole(String userUid, String groupUid, GroupRole roleName, Set<Permission> permissionsToAdd,
+									   Set<Permission> permissionsToRemove);
 
     void updateMemberAlias(String userUid, String groupUid, String alias);
 
@@ -135,15 +127,9 @@ public interface GroupBroker {
 
     /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/
 
-    void link(String userUid, String childGroupUid, String parentGroupUid);
-
-    Group merge(String userUid, String firstGroupUid, String secondGroupUid,
-                boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
-
-    void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode);
+    void addMemberViaCampaign(User user, Group hgroup, String campaignCode);
 
     void sendGroupJoinCodeNotification(String userUid, String groupUid);
 
     void sendAllGroupJoinCodesNotification(String userUid);
-
 }

@@ -14,7 +14,6 @@ import java.util.List;
  * Created by luke on 2016/04/03.
  */
 public interface AccountLogRepository extends JpaRepository<AccountLog, Long> {
-    int countByAccountAndAccountLogTypeAndCreationTimeGreaterThan(Account account, AccountLogType accountLogType, Instant time);
     List<AccountLog> findByBroadcastAndAccountLogType(Broadcast broadcast, AccountLogType type);
     List<AccountLog> findByAccountLogType(AccountLogType type, Pageable pageable);
 }

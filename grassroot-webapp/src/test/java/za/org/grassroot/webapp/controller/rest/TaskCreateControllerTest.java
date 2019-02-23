@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.Vote;
@@ -55,7 +56,7 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void createMeetingShouldWork() throws Exception{
-        Group dummyGroup = new Group("Dummy Group3", new User(
+        Group dummyGroup = new Group("Dummy Group3", GroupPermissionTemplate.DEFAULT_GROUP, new User(
                 "234345345", null, null));
 
         Meeting dummyMeeting = new MeetingBuilder().setName("test meeting")

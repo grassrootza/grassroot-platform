@@ -8,7 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
@@ -151,7 +151,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         request.setProcessedTime(time);
 
         MembershipInfo membershipInfo =
-                new MembershipInfo(requestingUser.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER, requestingUser.getDisplayName());
+                new MembershipInfo(requestingUser.getPhoneNumber(), GroupRole.ROLE_ORDINARY_MEMBER, requestingUser.getDisplayName());
         groupBroker.addMembers(userUid, groupToJoin.getUid(), Sets.newHashSet(membershipInfo),
                 GroupJoinMethod.SELF_JOINED, false);
 

@@ -15,8 +15,6 @@ import java.util.Optional;
  */
 public interface GroupQueryBroker {
 
-    Group load(String groupUid);
-
     List<Group> loadAll();
 
     List<Group> searchUsersGroups(String userUid, String searchTerm, boolean onlyCreatedGroups);

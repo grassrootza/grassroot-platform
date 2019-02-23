@@ -9,10 +9,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.domain.task.TodoLog;
@@ -51,8 +52,8 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveTodoForGroup()  {
 
         User user = userRepository.save(new User("001111141", null, null));
-        Group group = groupRepository.save(new Group("test action", user));
-        Group groupUnrelated = groupRepository.save(new Group("not related action", user));
+        Group group = groupRepository.save(new Group("test action", GroupPermissionTemplate.DEFAULT_GROUP, user));
+        Group groupUnrelated = groupRepository.save(new Group("not related action", GroupPermissionTemplate.DEFAULT_GROUP, user));
         Todo lb1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "just do it", addHoursFromNow(2)));
         Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, TodoType.ACTION_REQUIRED, "just do it too", addHoursFromNow(2)));
         List<Todo> list = todoRepository.findAll(TodoSpecifications.hasGroupAsParent(group));
@@ -64,8 +65,8 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveTodoForGroupAndNotCompleted()  {
         // todo: finalize these and subsequent
         User user = userRepository.save(new User("001111142", null, null));
-        Group group = groupRepository.save(new Group("test action", user));
-        Group groupUnrelated = groupRepository.save(new Group("not related action", user));
+        Group group = groupRepository.save(new Group("test action", GroupPermissionTemplate.DEFAULT_GROUP, user));
+        Group groupUnrelated = groupRepository.save(new Group("not related action", GroupPermissionTemplate.DEFAULT_GROUP, user));
         Todo lb1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "just do it", addHoursFromNow(2)));
         Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, TodoType.ACTION_REQUIRED, "just do it too", addHoursFromNow(2)));
     }
@@ -74,7 +75,7 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveTodoForGroupAndCompleted()  {
 
         User user = userRepository.save(new User("001111143", null, null));
-        Group group = groupRepository.save(new Group("test action", user));
+        Group group = groupRepository.save(new Group("test action", GroupPermissionTemplate.DEFAULT_GROUP, user));
         Todo lb1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED,"just do it", addHoursFromNow(2)));
         Todo lb2 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "just do it too", addHoursFromNow(2)));
         lb1 = todoRepository.save(lb1);
@@ -83,8 +84,8 @@ public class TodoRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveTodoAssignedToUserAndCompleted()  {
         User user = userRepository.save(new User("001111145", null, null));
-        Group group = new Group("test action", user);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        Group group = new Group("test action", GroupPermissionTemplate.DEFAULT_GROUP, user);
+        group.addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 
         Todo lb1 = new Todo(user, group, TodoType.ACTION_REQUIRED, "assigned 1", addHoursFromNow(2));
@@ -106,8 +107,8 @@ public class TodoRepositoryTest {
     @Test
     public void shouldRetrieveTodosWithTimeChanged() {
         User user = userRepository.save(new User("0601110000", null, null));
-        Group group = new Group("test", user);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        Group group = new Group("test", GroupPermissionTemplate.DEFAULT_GROUP, user);
+        group.addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 
         Todo todo1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "firstOne", addHoursFromNow(2)));

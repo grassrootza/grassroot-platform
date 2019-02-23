@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
 
@@ -24,8 +24,8 @@ public class AddMemberInfo {
     private String displayName;
 
     @ApiModelProperty(notes = "Can be empty, in which case defaults to ROLE_ORDINARY_MEMBER, for list of possible roles" +
-            "see BaseRoles class")
-    private String roleName;
+            "see GroupRole class")
+    private GroupRole roleName;
 
     @ApiModelProperty(notes = "Can be empty / null")
     private List<String> alernateNumbers;
@@ -56,7 +56,7 @@ public class AddMemberInfo {
         info.setDisplayName(displayName);
         info.setPhoneNumber(memberMsisdn);
         info.setMemberEmail(emailAddress);
-        info.setRoleName(StringUtils.isEmpty(roleName) ? BaseRoles.ROLE_ORDINARY_MEMBER : roleName);
+        info.setRoleName(StringUtils.isEmpty(roleName) ? GroupRole.ROLE_ORDINARY_MEMBER : roleName);
         info.setProvince(province);
         info.setTopics(topics != null && !topics.isEmpty() ? topics : null);
         info.setAffiliations(affiliations != null && !affiliations.isEmpty() ? affiliations : null);

@@ -24,7 +24,4 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 	Page<UserLocationLog> findByMunicipalityIdIsNullAndTimestampAfter(Instant cutoffTime, Pageable pageRequest);
 
 	UserLocationLog findFirstByUserUidAndMunicipalityIdIsNotNullOrderByTimestampDesc(String userUid);
-
-	//Counting all user location logs based on Instant time days ago
-	int countByTimestampGreaterThan(Instant timeDaysAgo);
 }

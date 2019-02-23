@@ -32,19 +32,9 @@ public interface TodoBroker {
 
     boolean canUserRespond(String userUid, String todoUid);
 
-    boolean canUserViewResponses(String userUid, String todoUid);
-
-    boolean canUserModify(String userUid, String todoUid);
-
     void recordResponse(String userUid, String todoUid, String response, boolean confirmRecorded);
 
     void updateTodoCompleted(String userUid, String todoUid, boolean completed);
-
-    void addAssignments(String addingUserUid, String todoUid, Set<String> addedMemberUids);
-
-    void addValidators(String addingUserUid, String todoUid, Set<String> validatingMemberUids);
-
-    void removeUsers(String removingUserUid, String todoUid, Set<String> memberUidsToRemove);
 
     // methods for retrieving to-dos
     List<Todo> fetchTodosForUser(String userUid, boolean forceIncludeCreated, boolean limitToNeedingResponse, Instant intervalStart, Instant intervalEnd, Sort sort);
@@ -60,15 +50,9 @@ public interface TodoBroker {
 
     List<TaskTimeChangedDTO> fetchGroupTodosWithTimeChanged(String groupUid);
 
-    TodoAssignment fetchUserTodoDetails(String userUid, String todoUid);
-
     List<TodoAssignment> fetchAssignedUserResponses(String userUid, String todoUid, boolean respondedOnly,
                                                     boolean assignedOnly, boolean witnessOnly);
 
     // Handling reminders
     void sendScheduledReminder(String todoUid);
-
-    // we use this to populate the graph (temporary convenience)
-    List<Todo> loadAllTodos();
-
 }

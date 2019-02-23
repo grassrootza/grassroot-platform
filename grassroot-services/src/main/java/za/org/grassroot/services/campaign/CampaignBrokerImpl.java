@@ -12,13 +12,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Notification_;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.Role_;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
 import za.org.grassroot.core.domain.campaign.Campaign;
@@ -42,7 +38,6 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.CampaignMessageRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
-import za.org.grassroot.core.specifications.NotificationSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -230,11 +225,10 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Specification<Campaign> createdByUser = (root, query, cb) -> cb.equal(root.get(Campaign_.createdByUser), user);
         Specification<Campaign> userIsOrganizerInGroup = (root, query, cb) -> {
             Join<Campaign, Group> masterGroupJoin = root.join(Campaign_.masterGroup);
-            Join<Group, Membership> memberJoin = masterGroupJoin.join(Group_.memberships);
-            Join<Membership, Role> roleJoin = memberJoin.join(Membership_.role);
+            Join<Group, Membership> membershipJoin = masterGroupJoin.join(Group_.memberships);
             query.distinct(true);
-            return cb.and(cb.equal(memberJoin.get(Membership_.user), user),
-                    cb.equal(roleJoin.get(Role_.name), BaseRoles.ROLE_GROUP_ORGANIZER));
+            return cb.and(cb.equal(membershipJoin.get(Membership_.user), user),
+                    cb.equal(membershipJoin.get(Membership_.role), GroupRole.ROLE_GROUP_ORGANIZER));
         };
 
         return campaignRepository.findAll(Specification.where(createdByUser).or(userIsOrganizerInGroup), Sort.by("createdDateTime"));
@@ -269,7 +263,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         if (campaignUid != null) {
             Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-            log.info("well, we're looking for campaign, it has code = {}, proposed = {}, is active = {}",
+            log.debug("well, we're looking for campaign, it has code = {}, proposed = {}, is active = {}",
                     campaign.getCampaignCode(), proposedCode, campaign.isActive());
             if (campaign.isActive() && proposedCode.equals(campaign.getCampaignCode())) {
                 return false; // because it's not taken by another campaign
@@ -390,12 +384,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_SENT_MEDIA, campaign, channel, null);
         createAndStoreCampaignLog(campaignLog);
-    }
-
-    long countCampaignShares(Campaign campaign) {
-        Specification<Notification> spec = Specification.where(NotificationSpecifications.sharedForCampaign(campaign))
-                .and(NotificationSpecifications.wasDelivered());
-        return logsAndNotificationsBroker.countNotifications(spec);
     }
 
     @Override
@@ -587,8 +575,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         validateUserCanModifyCampaign(user, campaign);
 
-        log.info("campaign account: ", campaign.getAccount());
-
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         if (!StringUtils.isEmpty(name) && !campaign.getName().trim().equalsIgnoreCase(name)) {
             campaign.setName(name);
@@ -606,6 +592,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
         } else if (removeImage) {
             campaign.setCampaignImage(null);
             bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_IMG_REMOVED, campaign, null, null));
+        }
+
+        if (!StringUtils.isEmpty(newCode) && !isCodeTaken(newCode, campaignUid)) {
+            final String changeLog = "Campaign code from " + campaign.getCampaignCode() + " to " + newCode;
+            bundle.addLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_MODIFIED, campaign, null, changeLog));
+            campaign.setCampaignCode(newCode);
         }
 
         if (endDate != null) {
@@ -685,12 +677,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         User user = userManager.load(userUid);
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-        final String masterGroupUid = campaign.getMasterGroup().getUid();
+        final Group masterGroup = campaign.getMasterGroup();
 
-        if (accountFeaturesBroker.hasGroupWelcomeMessages(masterGroupUid))
+        if (accountFeaturesBroker.hasGroupWelcomeMessages(masterGroup.getUid()))
             haltCampaignWelcome(campaign, user);
 
-        groupBroker.addMemberViaCampaign(user.getUid(), masterGroupUid, campaign.getCampaignCode());
+        groupBroker.addMemberViaCampaign(user, masterGroup, campaign.getCampaignCode());
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP, campaign, channel, null);
         persistCampaignLog(campaignLog);
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);

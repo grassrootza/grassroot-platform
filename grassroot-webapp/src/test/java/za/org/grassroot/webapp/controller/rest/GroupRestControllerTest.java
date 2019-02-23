@@ -9,14 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.android1.GroupQueryRestController;
 import za.org.grassroot.webapp.controller.android1.GroupRestController;
 
@@ -44,7 +44,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
     private String path = "/api/group/";
 
     private List<Group> groups = new ArrayList<>();
-    private MembershipInfo membershipInfo = new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
+    private MembershipInfo membershipInfo = new MembershipInfo(testUserPhone, GroupRole.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
     private Set<MembershipInfo> membersToAdd = Sets.newHashSet();
     private Event event = meetingEvent;
 
@@ -57,7 +57,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
     public void createGroupShouldWork() throws Exception {
 
         settingUpDummyData(testGroup, groups, membershipInfo, membersToAdd);
-        membersToAdd.add(new MembershipInfo("27810001234", BaseRoles.ROLE_ORDINARY_MEMBER, "test user"));
+        membersToAdd.add(new MembershipInfo("27810001234", GroupRole.ROLE_ORDINARY_MEMBER, "test user"));
         GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION,
                 sessionTestUser, null, null, "");
 
@@ -89,7 +89,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     private void settingUpDummyData(Group group, List<Group> groups, MembershipInfo membershipInfo, Set<MembershipInfo> membersToAdd) {
         membersToAdd.add(membershipInfo);
-        group.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(sessionTestUser, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groups.add(group);
         group.setDescription(testEventDescription);
     }

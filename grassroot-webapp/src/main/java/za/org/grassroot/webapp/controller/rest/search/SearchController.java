@@ -49,7 +49,6 @@ public class SearchController extends BaseRestController {
     private final GroupJoinRequestService groupJoinRequestService;
     private final GroupBroker groupBroker;
     private final CacheUtilService cacheUtilService;
-    private int attemptsCounter = 0;
 
     @Autowired
     public SearchController(TaskBroker taskBroker,
@@ -90,8 +89,9 @@ public class SearchController extends BaseRestController {
         final String userUid = getUserIdFromRequest(request);
         List<Group> groups = groupQueryBroker.searchUsersGroups(userUid,searchTerm,false);
         log.debug("group names: {}", groups.stream().map(Group::getName).collect(Collectors.joining(", ")));
-        List<GroupFullDTO> dtos = groups.stream().map(group -> groupFetchBroker.fetchGroupFullInfo(userUid, group.getUid(),
-                false,false,false)).collect(Collectors.toList());
+        List<GroupFullDTO> dtos = groups.stream()
+                .map(group -> groupFetchBroker.fetchGroupFullInfo(userUid, group.getUid(), false,false,false))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
     }
 
@@ -155,9 +155,10 @@ public class SearchController extends BaseRestController {
     public ResponseEntity<GroupFullDTO> addMemberWithJoinCode(@RequestParam String joinCode,
                                                                  @RequestParam String groupUid,
                                                                  HttpServletRequest request){
-        groupBroker.addMemberViaJoinCode(getUserIdFromRequest(request),groupUid,joinCode, UserInterfaceType.WEB_2);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request),
-                groupUid, false, false, false));
+        final String userUid = getUserIdFromRequest(request);
+        groupBroker.addMemberViaJoinCode(userUid,groupUid,joinCode, UserInterfaceType.WEB_2);
+        GroupFullDTO groupFullDTO = groupFetchBroker.fetchGroupFullInfo(userUid, groupUid, false, false, false);
+        return ResponseEntity.ok(groupFullDTO);
     }
 
 }

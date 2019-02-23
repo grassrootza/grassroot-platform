@@ -109,6 +109,8 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         staticCache.remove(campaignUid + "_engagement");
     }
 
+    // something in staging DB has made this method a complete nightmare, and it is proving impossible to replciate the null pointer.
+    // hence, overriding.
     @Override
     public CampaignLogsDataCollection getCampaignLogData(String campaignUid) {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
@@ -116,14 +118,19 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         long startTime = System.currentTimeMillis();
         Map<String, BigInteger> otherCollection = campaignLogRepository.selectCampaignLogCounts(campaign.getId());
         // at some point maybe we remove even that final query, but for now it already strips it way down
-        CampaignLogsDataCollection collection2 = CampaignLogsDataCollection.builder()
-                .totalEngaged(otherCollection.get("total_engaged").longValue())
-                .totalSigned(otherCollection.get("total_signed").longValue())
-                .totalJoined(otherCollection.get("total_joined").longValue())
-                .lastActivityEpochMilli(campaignLogRepository.findFirstByCampaignOrderByCreationTimeDesc(campaign).getCreationTime().toEpochMilli())
-                .build();
-        log.info("Collecting campaign counts took {} msecs to assemble", System.currentTimeMillis() - startTime);
-        return collection2;
+        try {
+            CampaignLogsDataCollection collection2 = CampaignLogsDataCollection.builder()
+                    .totalEngaged(otherCollection.getOrDefault("total_engaged", BigInteger.ZERO).longValue())
+                    .totalSigned(otherCollection.getOrDefault("total_signed", BigInteger.ZERO).longValue())
+                    .totalJoined(otherCollection.getOrDefault("total_joined", BigInteger.ZERO).longValue())
+                    .lastActivityEpochMilli(campaignLogRepository.findFirstByCampaignOrderByCreationTimeDesc(campaign).getCreationTime().toEpochMilli())
+                    .build();
+            log.info("Collecting campaign counts took {} msecs to assemble", System.currentTimeMillis() - startTime);
+            return collection2;
+        } catch (NullPointerException e) {
+            log.error("Mangled campaigns returning null collections, campaign uid = {}", campaignUid); // in time, should deactivate or remove
+            return CampaignLogsDataCollection.builder().build();
+        }
     }
 
     @Override
@@ -155,7 +162,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         Map<Long, CampaignLog> lastStageMap = new LinkedHashMap<>();
         matchingLogs.stream().filter(log -> !lastStageMap.containsKey(log.getUser().getId()))
                 .forEach(log -> lastStageMap.put(log.getUser().getId(), log));
-        log.debug("latest stage map: {}", lastStageMap);
+        log.debug("Latest stage map: {}", lastStageMap);
 
         int currentMemberCount = 0; // replace with count of group at start
 
@@ -220,7 +227,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
         // step 3: count the number of users in a particular stage
         Map<String, Long> result = lastStageMap.entrySet().stream()
                 .collect(Collectors.groupingBy(entry -> entry.getValue().toString(), Collectors.counting()));
-        log.info("okay and the collected map = {}", result);
+        log.debug("okay and the collected map = {}", result);
 
         cache.put(new Element(cacheKey, result));
         return result;

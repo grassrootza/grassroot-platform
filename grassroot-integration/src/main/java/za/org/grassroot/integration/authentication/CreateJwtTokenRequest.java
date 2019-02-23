@@ -2,8 +2,7 @@ package za.org.grassroot.integration.authentication;
 
 import lombok.Getter;
 import lombok.Setter;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 
 import java.util.HashMap;
@@ -29,7 +28,7 @@ public class CreateJwtTokenRequest {
     public CreateJwtTokenRequest(JwtType jwtType, User user) {
         this(jwtType);
         claims.put(JwtService.USER_UID_KEY, user.getUid());
-        claims.put(JwtService.SYSTEM_ROLE_KEY, user.getStandardRoles().stream().map(Role::getName).collect(Collectors.joining(",")));
+        claims.put(JwtService.SYSTEM_ROLE_KEY, user.getStandardRoles().stream().map(Enum::name).collect(Collectors.joining(",")));
     }
 
     // NB: never insert roles in here, this is exclusively for minimal scope tokens
@@ -54,7 +53,7 @@ public class CreateJwtTokenRequest {
     // strictly for microservices
     public static CreateJwtTokenRequest makeSystemToken() {
         CreateJwtTokenRequest request = new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE);
-        request.claims.put(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_SYSTEM_CALL);
+        request.claims.put(JwtService.SYSTEM_ROLE_KEY, StandardRole.ROLE_SYSTEM_CALL);
         return request;
     }
 

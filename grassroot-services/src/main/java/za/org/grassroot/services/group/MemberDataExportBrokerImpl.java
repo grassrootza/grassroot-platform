@@ -2,12 +2,7 @@ package za.org.grassroot.services.group;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-import org.apache.poi.xssf.usermodel.XSSFFont;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
@@ -47,13 +42,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
@@ -212,7 +201,6 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     @Override
     @Transactional(readOnly = true)
     public XSSFWorkbook exportCampaignJoinedData(String campaignUid, String userUid) {
-        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         List<CampaignLog> campaignLogs = campaignStatsBroker.getCampaignJoinedAndBetter(Objects.requireNonNull(campaignUid));
 
         XSSFWorkbook workbook = new XSSFWorkbook();

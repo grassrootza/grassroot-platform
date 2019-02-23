@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.model.rest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ImmutableMap;
 import org.springframework.context.support.MessageSourceAccessor;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.group.Group;
 
@@ -33,7 +34,7 @@ public class PermissionDTO implements Comparable<PermissionDTO> {
 
 
 	private String groupUid;
-	private String forRole;
+	private GroupRole forRole;
 
 	private Permission permission;
 	private String permissionName;
@@ -44,7 +45,7 @@ public class PermissionDTO implements Comparable<PermissionDTO> {
 
 	public PermissionDTO() { } // for Jackson
 
-	public PermissionDTO(Permission permission, Group group, String roleName, Set<Permission> enabledSet, MessageSourceAccessor messageSourceAccessor) {
+	public PermissionDTO(Permission permission, Group group, GroupRole roleName, Set<Permission> enabledSet, MessageSourceAccessor messageSourceAccessor) {
 		this.permission = permission;
 		this.groupUid = group.getUid();
 		this.forRole = roleName;
@@ -63,11 +64,11 @@ public class PermissionDTO implements Comparable<PermissionDTO> {
 		this.groupUid = groupUid;
 	}
 
-	public String getForRole() {
+	public GroupRole getForRole() {
 		return forRole;
 	}
 
-	public void setForRole(String forRole) {
+	public void setForRole(GroupRole forRole) {
 		this.forRole = forRole;
 	}
 

@@ -65,18 +65,6 @@ public interface MessageAssemblingService {
 
     String createGroupJoinedMessage(User user, Group group);
 
-    String createReplyFailureMessage(User user);
-
-    /**
-     * Assembles a message to notify group organizers that some people have joined via a join code.
-     * @param user The user to receive the message
-     * @param groupName The name of the group
-     * @param numberJoined How many people joined
-     * @param namesJoined Their names or phone numbers. Pass null if only want to display number.
-     * @return An assembled string, in the user's language.
-     */
-    String createGroupJoinCodeUseMessage(User user, String groupName, int numberJoined, List<String> namesJoined);
-
     String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply);
 
     String createAndroidLinkSms(User user);

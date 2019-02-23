@@ -14,10 +14,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.ConfigVariable;
-import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
@@ -459,7 +456,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional(readOnly = true)
     public Page<LiveWireAlert> loadAlerts(String userUid, boolean unreviewedOnly, Pageable pageable) {
-        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), BaseRoles.ROLE_LIVEWIRE_USER);
+        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), StandardRole.ROLE_LIVEWIRE_USER);
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(pageable);
 
@@ -488,7 +485,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional
     public void setTagsForAlert(String userUid, String alertUid, List<String> tags) {
-        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), BaseRoles.ROLE_ALPHA_TESTER);
+        permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), StandardRole.ROLE_ALPHA_TESTER);
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
@@ -520,14 +517,14 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
+        User user = userRepository.findOneByUid(userUid);
         if (!canUserRelease(userUid)) {
             log.info("Looks like user isn't a subscriber admin, so check for system role");
-            permissionBroker.validateSystemRole(userRepository.findOneByUid(userUid), BaseRoles.ROLE_LIVEWIRE_USER);
+            permissionBroker.validateSystemRole(user, StandardRole.ROLE_LIVEWIRE_USER);
         }
 
         log.info("User can release alert, proceeding ...");
 
-        User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         if (tags != null && !tags.isEmpty()) {
             alert.addTags(tags);

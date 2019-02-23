@@ -1,16 +1,12 @@
 package za.org.grassroot.webapp.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
-import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -24,35 +20,21 @@ import java.util.Map;
 @Component @Slf4j
 public class USSDMenuUtil {
 
-    private final Environment environment;
-
-    private String baseURI;
-    private int maxOpeningMenuLength;
-    private int maxMenuLength;
+    private final String baseURI;
+    private final int maxOpeningMenuLength;
+    private final int maxMenuLength;
 
     private static final int enumLength = ("1. ").length();
 
-    @Autowired
-    public USSDMenuUtil(Environment environment) {
-        this.environment = environment;
-    }
-
-    @PostConstruct
-    private void init() {
-        baseURI = environment.getProperty("grassroot.ussd.return.url", "http://127.0.0.1:8080/ussd/");
-        maxOpeningMenuLength = environment.getProperty("grassroot.ussd.menu.length.opening", Integer.class, 140);
-        maxMenuLength = environment.getProperty("grassroot.ussd.menu.length.standard", Integer.class, 160);
+    public USSDMenuUtil(
+            @Value("${grassroot.ussd.return.url:http://127.0.0.1:8080/ussd/}") String baseURI,
+            @Value("${grassroot.ussd.menu.length.opening:140}") int maxOpeningMenuLength,
+            @Value("${grassroot.ussd.menu.length.standard:160}") int maxMenuLength
+    ) {
+        this.baseURI = baseURI;
+        this.maxOpeningMenuLength = maxOpeningMenuLength;
+        this.maxMenuLength = maxMenuLength;
         log.info("ussd menu util initialized, baseURI = {}, maxMenuOpen = {}, maxMenuLength = {}...", baseURI, maxOpeningMenuLength, maxMenuLength);
-    }
-
-    // todo : when we move to Spring Boot 1.4 use new constructor patterns to avoid this
-    public void setForTests() {
-        if (environment != null) {
-            throw new UnsupportedOperationException("Error! Can only call this method via tests");
-        }
-        this.baseURI = "http://127.0.0.1/ussd";
-        this.maxOpeningMenuLength = 140;
-        this.maxMenuLength = 160;
     }
 
     private List<Option> createMenu(Map<String, String> menuOptions) throws URISyntaxException {

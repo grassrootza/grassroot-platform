@@ -10,12 +10,13 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.GroupRole;
+import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -51,9 +52,6 @@ public class UserRepositoryTest {
     @Autowired
     private EventLogRepository eventLogRepository;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
     private static final String number = "0821234560";
 
     @Test
@@ -74,7 +72,7 @@ public class UserRepositoryTest {
     @Test
     public void shouldHaveSafetyGroup() {
         User newUser = new User("0111222", null, null);
-        Group newGroup = new Group("test Group", newUser);
+        Group newGroup = new Group("test Group", GroupPermissionTemplate.DEFAULT_GROUP, newUser);
         assertNotNull(newUser.getUid());
         newUser.setSafetyGroup(newGroup);
         assertTrue(newUser.hasSafetyGroup());
@@ -233,13 +231,11 @@ public class UserRepositoryTest {
     public void shouldAddAndRemoveMappedMembership() {
 
         User user = new User("099654", null, null);
-        Role role = new Role("", null);
-        Group group = new Group("", user);
-        Membership newMember = new Membership(group, user, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        user.addMappedByMembership(newMember);
+        Group group = new Group("", GroupPermissionTemplate.DEFAULT_GROUP, user);
+        Membership membership = group.addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
         assertThat(user.getMemberships().size(), is(1));
         userRepository.save(user);
-        user.removeMappedByMembership(newMember);
+        group.removeMember(user);
         assertThat(user.getMemberships().size(), is(0));
         userRepository.save(user);
     }
@@ -247,15 +243,13 @@ public class UserRepositoryTest {
     @Test
     public void shouldFetchMemberships() {
         User userMember = new User("1234", null, null);
-        Group group = new Group("Group", userMember);
-        Role role = new Role("", null);
+        Group group = new Group("Group", GroupPermissionTemplate.DEFAULT_GROUP, userMember);
         assertNotNull(userMember.getUid());
         assertTrue(userMember.getMemberships().isEmpty());
 
-        Membership newMember = new Membership(group, userMember, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        assertThat(newMember.getGroup().getGroupName(), is("Group"));
-        assertThat(newMember.getUser().getPhoneNumber(), is("1234"));
-        assertThat(userMember.getMemberships().size(),is(0));
+        Membership membership = group.addMember(userMember, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
+        assertThat(membership.getGroup().getGroupName(), is("Group"));
+        assertThat(membership.getUser().getPhoneNumber(), is("1234"));
     }
 
     @Test
@@ -422,8 +416,8 @@ public class UserRepositoryTest {
     public void shouldReturnUserThatRSVPYes() {
         User u1 = userRepository.save(new User("0821234560", null, null));
         User u2 = userRepository.save(new User("0821234561", null, null));
-        Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        Group group = groupRepository.save(new Group("rsvp yes", GroupPermissionTemplate.DEFAULT_GROUP, u1));
+        group.addMember(u2, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new MeetingBuilder().setName("rsvp event").setStartDateTime(Instant.now()).setUser(u1).setParent(group).setEventLocation("someLocation").setIncludeSubGroups(true).createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.RSVP, EventRSVPResponse.YES));
@@ -437,8 +431,8 @@ public class UserRepositoryTest {
         User u1 = userRepository.save(new User("0821234570", null, null));
         User u2 = userRepository.save(new User("0821234571", null, null));
 
-        Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        Group group = groupRepository.save(new Group("rsvp yes", GroupPermissionTemplate.DEFAULT_GROUP, u1));
+        group.addMember(u2, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
 
         Event event = eventRepository.save(new MeetingBuilder().setName("rsvp event").setStartDateTime(Instant.now()).setUser(u1).setParent(group).setEventLocation("someLocation").setIncludeSubGroups(true).createMeeting());
@@ -453,29 +447,27 @@ public class UserRepositoryTest {
     @Rollback
     public void shouldSaveAddedRole() {
         User user = userRepository.save(new User(number, null, null));
-        Role role = roleRepository.save(new Role("TEST_ROLE", null));
-        user.addStandardRole(role);
+        user.addStandardRole(StandardRole.ROLE_FULL_USER);
         userRepository.save(user);
         User userFromDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull(number);
         assertNotNull(userFromDb);
         assertEquals(userFromDb.getId(), user.getId());
-        assertTrue(userFromDb.getStandardRoles().contains(role));
+        assertTrue(userFromDb.getStandardRoles().contains(StandardRole.ROLE_FULL_USER));
     }
 
     @Test
     @Rollback
     public void shouldRemoveRole() {
         User user = userRepository.save(new User(number, null, null));
-        Role role = roleRepository.save(new Role("TEST_ROLE", null));
-        user.addStandardRole(role);
+        user.addStandardRole(StandardRole.ROLE_FULL_USER);
         user = userRepository.save(user);
-        assertTrue(user.getStandardRoles().contains(role));
-        user.removeStandardRole(role);
+        assertTrue(user.getStandardRoles().contains(StandardRole.ROLE_FULL_USER));
+        user.removeStandardRole(StandardRole.ROLE_FULL_USER);
         userRepository.save(user);
         User userfromDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull(number);
         assertNotNull(userfromDb);
         assertEquals(userfromDb.getId(), user.getId());
-        assertFalse(userfromDb.getStandardRoles().contains(role));
+        assertFalse(userfromDb.getStandardRoles().contains(StandardRole.ROLE_FULL_USER));
     }
 
     @Test
@@ -491,9 +483,9 @@ public class UserRepositoryTest {
         User user4 = userRepository.save(new User("0701110001", "tester3", null));
         User user5 = userRepository.save(new User("0701110002", "no name", null));
 
-        Group testGroup = groupRepository.save(new Group("test group", user1));
-        testGroup.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        Group testGroup = groupRepository.save(new Group("test group", GroupPermissionTemplate.DEFAULT_GROUP, user1));
+        testGroup.addMember(user1, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(user2, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         testGroup = groupRepository.save(testGroup);
 
         List<User> usersByPhone = userRepository.findByPhoneNumberContaining(phoneBase);
@@ -533,10 +525,10 @@ public class UserRepositoryTest {
         User user2 = userRepository.save(new User(phoneBase + "2", "anonymous", null));
         User user3 = userRepository.save(new User(phoneBase + "3", "tester2", null));
 
-        Group testGroup = groupRepository.save(new Group("tg1", testUser));
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
-        testGroup.addMember(user3, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        Group testGroup = groupRepository.save(new Group("tg1", GroupPermissionTemplate.DEFAULT_GROUP, testUser));
+        testGroup.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(user2, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(user3, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Group testGroupFromDb = groupRepository.save(testGroup);
 
         assertThat(testGroupFromDb.getMemberships().size(), is(3));

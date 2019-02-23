@@ -8,10 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
@@ -56,15 +57,15 @@ public class EventBrokerTest {
     @Test
     public void shouldNotReturnOutstandingRSVPEventForSecondLevelUserAndParentGroupEvent() {
         User user = userRepository.save(new User("0825555511", null, null));
-        Group grouplevel1 = groupRepository.save(new Group("rsvp level1",user));
+        Group grouplevel1 = groupRepository.save(new Group("rsvp level1", GroupPermissionTemplate.DEFAULT_GROUP, user));
         User userl1 = userRepository.save(new User("0825555512", null, null));
-        grouplevel1.addMember(userl1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        grouplevel1.addMember(userl1, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         grouplevel1 = groupRepository.save(grouplevel1);
-        Group grouplevel2 = groupRepository.save(new Group("rsvp level2",user));
-        grouplevel2.setParent(grouplevel1);
+        Group grouplevel2 = groupRepository.save(new Group("rsvp level2", GroupPermissionTemplate.DEFAULT_GROUP, user, grouplevel1));
+
         grouplevel2 = groupRepository.save(grouplevel2);
         User userl2 = userRepository.save(new User("0825555521", null, null));
-        grouplevel2.addMember(userl2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        grouplevel2.addMember(userl2, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         grouplevel2 = groupRepository.save(grouplevel2);
         List<Event> outstanding =  eventBroker.getEventsNeedingResponseFromUser(userl2);
         assertNotNull(outstanding);

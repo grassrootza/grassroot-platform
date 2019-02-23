@@ -12,18 +12,19 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
@@ -44,6 +45,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
     private final AccountFeaturesBroker accountFeaturesBroker;
     private final MessageSourceAccessor messageSourceAccessor;
+    private final GroupRepository groupRepository;
 
     private final static Set<Permission> permissionsDisplayed = Sets.newHashSet(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
             Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
@@ -54,9 +56,10 @@ public class GroupRestController extends GroupAbstractRestController {
             Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
     @Autowired
-    public GroupRestController(AccountFeaturesBroker accountFeaturesBroker, @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+    public GroupRestController(AccountFeaturesBroker accountFeaturesBroker, @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSourceAccessor, GroupRepository groupRepository) {
         this.accountFeaturesBroker = accountFeaturesBroker;
         this.messageSourceAccessor = messageSourceAccessor;
+        this.groupRepository = groupRepository;
     }
 
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName}/{description:.+}", method = RequestMethod.POST)
@@ -88,7 +91,7 @@ public class GroupRestController extends GroupAbstractRestController {
                 if (!membersToAdd.isEmpty() && (invalidNumbers.size() == membersToAdd.size())) {
                     throw new InvalidPhoneNumberException(String.join(",", invalidNumbers));
                 } else {
-                    MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+                    MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), GroupRole.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                     membersToAdd.add(creator);
                     Group created = groupBroker.create(user.getUid(), groupName, null, membersToAdd,
                             GroupPermissionTemplate.DEFAULT_GROUP, description, null, true, false, true);
@@ -110,7 +113,9 @@ public class GroupRestController extends GroupAbstractRestController {
 
     @RequestMapping(value = "members/left/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> numberMembersLeftForGroup(@PathVariable String groupUid) {
-        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, accountFeaturesBroker.numberMembersLeftForGroup(groupUid, null));
+        Group group = this.groupRepository.findOneByUid(groupUid);
+        int numberOfMembersLeft = accountFeaturesBroker.numberMembersLeftForGroup(group, null);
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, numberOfMembersLeft);
     }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
@@ -283,12 +288,12 @@ public class GroupRestController extends GroupAbstractRestController {
 
     @RequestMapping(value = "/edit/fetch_permissions/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> fetchPermissions(@PathVariable String phoneNumber, @PathVariable String code,
-                                                            @RequestParam String groupUid, @RequestParam String roleName) {
+                                                            @RequestParam String groupUid, @RequestParam GroupRole roleName) {
 
         Group group = groupBroker.load(groupUid);
         ResponseEntity<ResponseWrapper> response;
         try {
-            Set<Permission> permissionsEnabled = group.getRole(roleName).getPermissions();
+            Set<Permission> permissionsEnabled = group.getPermissions(roleName);
             List<PermissionDTO> permissionsDTO = permissionsDisplayed.stream()
                     .map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
                     .sorted()
@@ -302,7 +307,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
     @RequestMapping(value = "/edit/update_permissions/{phoneNumber}/{code}/{groupUid}/{roleName}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String phoneNumber, @PathVariable String code,
-                                                             @PathVariable String groupUid, @PathVariable String roleName,
+                                                             @PathVariable String groupUid, @PathVariable GroupRole roleName,
                                                              @RequestBody List<PermissionDTO> updatedPermissions) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
@@ -321,7 +326,7 @@ public class GroupRestController extends GroupAbstractRestController {
     @RequestMapping(value = "/edit/change_role/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> changeMemberRole(@PathVariable String phoneNumber, @PathVariable String code,
                                                             @RequestParam String groupUid, @RequestParam String memberUid,
-                                                            @RequestParam String roleName) {
+                                                            @RequestParam GroupRole roleName) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         ResponseEntity<ResponseWrapper> response;
@@ -382,8 +387,8 @@ public class GroupRestController extends GroupAbstractRestController {
         return groupBroker.checkForDuplicate(creatingUserUid, groupName.trim());
     }
 
-    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
-        Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
+    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, GroupRole roleName, List<PermissionDTO> permissionDTOs) {
+        Set<Permission> currentPermissions = group.getPermissions(roleName);
         Set<Permission> permissionsAdded = new HashSet<>();
         Set<Permission> permissionsRemoved = new HashSet<>();
         for (PermissionDTO p : permissionDTOs) {

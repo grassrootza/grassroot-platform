@@ -1,7 +1,5 @@
 package za.org.grassroot.core.domain.group;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import za.org.grassroot.core.domain.*;
@@ -22,6 +20,18 @@ import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 
+/**
+ * IMPORTANT:
+ * Unless one is adding a lot of members in the same request, adding or removing single (or just a few) members via Group's API
+ * is very inefficient because it involves loading and dirty-checking potentially big collection of existing memberships just to add a single new one.
+ * It would be much better to manage memberships from other side - User side, which is much more lightweight because there can be just a
+ * few user's membership at most usually. Of course, this would involve specifying User's membership collection with CascadeType.ALL
+ * and orphan removal enabled, similar as it is now in Group's membership collection. Problem is that adding/removing such membership from
+ * User side should not include setting the membership's inverse side - group's side, because it would destroy performance gain again, but then again,
+ * we would end up having inconsistent states of both membership collections which would make code more fragile and prone to bugs.
+ * The way to avoid it is to remove one side, concretely group's heavyweight membership collection, and use direct queries (via MembershipRepository)
+ * when wanting to fetch group's memberships, but this would require massive refactoring :-(
+ */
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
 @DynamicUpdate
@@ -67,12 +77,12 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     @ManyToOne()
     @JoinColumn(name = "account_id")
-    @Getter @Setter private Account account;
+    private Account account;
 
-    @Column(name = "group_token_code", nullable = true, insertable = true, updatable = true, unique = true)
+    @Column(name = "group_token_code", unique = true)
     private String groupTokenCode;
 
-    @Column(name = "token_code_expiry", nullable = true, insertable = true, updatable = true)
+    @Column(name = "token_code_expiry")
     private Instant tokenExpiryDateTime;
 
     @Version
@@ -86,12 +96,9 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Column(name = "reminderminutes")
     private int reminderMinutes;
 
-    @OneToMany(cascade = CascadeType.ALL)
-    @JoinTable(name = "group_roles",
-            joinColumns = @JoinColumn(name = "group_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> groupRoles = new HashSet<>();
+    @ElementCollection
+    @CollectionTable(name = "group_role_permission", joinColumns = @JoinColumn(name = "group_id"))
+    private Set<GroupRolePermission> rolePermissions = new HashSet<>();
 
     /*
     Setting a group 'language', not used for messages etc., but as a default if new user enters system through this
@@ -118,7 +125,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     to start removing prior calculation results). Note: this is used in an HQL query, hence needs mapping.
      */
     @OneToMany(mappedBy = "group")
-    @Getter private Set<GroupLocation> locations;
+    private Set<GroupLocation> locations;
 
     @ManyToOne(optional = true)
     @JoinColumn(name= "join_approver_id", nullable = true)
@@ -170,20 +177,17 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     private String[] tags;
 
     @OneToMany(mappedBy = "group")
-    @Getter private Set<GroupJoinCode> groupJoinCodes = new HashSet<>();
-
-    // @OneToMany(mappedBy = "masterGroup")
-    // private List<Campaign> campaign;
+    private Set<GroupJoinCode> groupJoinCodes = new HashSet<>();
 
     private Group() {
         // for JPA
     }
 
-    public Group(String groupName, User createdByUser) {
-        this(groupName, createdByUser, null);
+    public Group(String groupName, GroupPermissionTemplate permissionTemplate, User createdByUser) {
+        this(groupName, permissionTemplate, createdByUser, null);
     }
 
-    public Group(String groupName, User createdByUser, Group parent) {
+    public Group(String groupName, GroupPermissionTemplate permissionTemplate, User createdByUser, Group parent) {
         Objects.requireNonNull(groupName);
         this.uid = UIDGenerator.generateId();
         this.groupName = removeUnwantedCharacters(groupName);
@@ -193,41 +197,25 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.active = true;
         this.discoverable = true; // make groups discoverable by default
         this.joinApprover = createdByUser; // discoverable groups need a join approver, defaulting to creating user
-        this.parent = parent;
         this.reminderMinutes = 24 * 60; // defaults to a day
         this.description = ""; // at some point may want to add to the constructor
         this.defaultImage = GroupDefaultImage.SOCIAL_MOVEMENT;
 
         if (parent != null) {
-            parent.addChildGroup(this);
+            this.parent = parent;
+            this.parent.addChildGroup(this);
         }
 
-        // automatically add 3 default roles
-        addRole(BaseRoles.ROLE_GROUP_ORGANIZER);
-        addRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
-        addRole(BaseRoles.ROLE_ORDINARY_MEMBER);
-    }
-
-    private void addRole(String roleName) {
-        Objects.requireNonNull(roleName);
-        for (Role role : groupRoles) {
-            if (role.getName().equals(roleName)) {
-                throw new IllegalArgumentException("Role with name " + roleName + " already exists in group: " + this);
-            }
+        // for each role, add initial permissions based on given template
+        for (GroupRole role : GroupRole.values()) {
+            setInitialPermissions(permissionTemplate, role);
         }
-        this.groupRoles.add(new Role(roleName, uid));
     }
 
-    /**
-     * We use this static constructor because no-arg constructor should be only used by JPA
-     *
-     * @return group
-     */
-    public static Group makeEmpty() {
-        Group group = new Group();
-        group.uid = UIDGenerator.generateId();
-        group.active = true;
-        return group;
+    private void setInitialPermissions(GroupPermissionTemplate permissionTemplate, GroupRole role) {
+        Set<Permission> permissions = GroupPermissionTemplate.CLOSED_GROUP.equals(permissionTemplate) ?
+                role.getClosedGroupPermissions() : role.getDefaultGroupPermissions();
+        setPermissions(role, permissions);
     }
 
     public String getUid() {
@@ -256,6 +244,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public User getCreatedByUser() {
         return this.createdByUser;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+
+    public Account getAccount() {
+        return account;
     }
 
     public Set<Membership> getMemberships() {
@@ -289,38 +285,34 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-    public Set<Membership> addMembers(Collection<User> newMembers, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
-        Objects.requireNonNull(roleName);
+    public Set<Membership> addMembers(Collection<User> newMembers, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+        Objects.requireNonNull(role);
         Objects.requireNonNull(newMembers);
 
-        Role role = getRole(roleName);
-        Set<Membership> memberships = new HashSet<>();
+        Set<Membership> addedMemberships = new HashSet<>();
         for (User newMember : newMembers) {
             Membership membership = addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
             if (membership != null) {
-                memberships.add(membership);
+                addedMemberships.add(membership);
             }
         }
-        return memberships;
+        return addedMemberships;
     }
 
 
-    public Membership addMember(User newMember, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
-        Objects.requireNonNull(roleName);
-        Role role = getRole(roleName);
+    public Membership addMember(User newMember, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+        Objects.requireNonNull(newMember);
+        Objects.requireNonNull(role);
+
         return addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
     }
 
 
-    private Membership addMemberInternal(User newMember, Role role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    private Membership addMemberInternal(User newMember, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(newMember);
         Objects.requireNonNull(role);
 
-        if (!getGroupRoles().contains(role)) {
-            throw new IllegalArgumentException("Role " + role + " is not one of roles belonging to group: " + this);
-        }
-        Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod,
-                joinMethodDescriptor);
+        final Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod, joinMethodDescriptor);
         boolean added = this.memberships.add(membership);
         if (added) {
             newMember.addMappedByMembership(membership);
@@ -330,12 +322,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public Membership removeMember(User member) {
-        Membership membership = getMembership(member.getUid());
-        if (membership == null) {
+        Optional<Membership> membershipOptional = getMembership(member.getUid());
+        if (!membershipOptional.isPresent()) {
             return null;
+        } else {
+            final Membership membership = membershipOptional.get();
+            removeMembership(membership);
+            return membership;
         }
-        removeMembership(membership);
-        return membership;
     }
 
     public boolean removeMembership(Membership membership) {
@@ -347,45 +341,23 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return removed;
     }
 
-    public void removeMemberships(Set<String> phoneNumbers) {
-        Objects.requireNonNull(phoneNumbers);
-        Set<Membership> memberships = this.memberships.stream()
-                .filter(membership -> phoneNumbers.contains(membership.getUser().getPhoneNumber()))
-                .collect(Collectors.toSet());
-
-        this.memberships.removeAll(memberships);
-    }
-
-
     public Membership getMembership(User user) {
         Objects.requireNonNull(user);
 
-        return this.getMembership(user.getUid());
+        return this.getMembership(user.getUid()).orElse(null);
     }
 
-    public Membership getMembership(String userUid) {
+    public Optional<Membership> getMembership(String userUid) {
         Objects.requireNonNull(userUid);
 
-        for (Membership membership : memberships) {
-            if (membership.getUser().getUid().equals(userUid)) {
-                return membership;
-            }
-        }
-        return null;
-    }
-
-    public Role getRole(String roleName) {
-        Objects.requireNonNull(roleName);
-        return groupRoles.stream()
-                .filter(role -> role.getName().equals(roleName))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No role under name " + roleName + " found in group " + this));
+        return this.memberships.stream()
+                .filter(membership -> membership.getUser().getUid().equals(userUid))
+                .findFirst();
     }
 
     public boolean hasMember(User user) {
         Objects.requireNonNull(user);
-        Membership membership = getMembership(user.getUid());
-        return membership != null;
+        return getMembership(user.getUid()).isPresent();
     }
 
     public List<String> getJoinTopics() {
@@ -404,10 +376,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public Group getParent() {
         return parent;
-    }
-
-    public void setParent(Group parent) {
-        this.parent = parent;
     }
 
     public boolean hasParent() { return parent != null; }
@@ -632,12 +600,15 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public void setDefaultImage(GroupDefaultImage defaultImage) { this.defaultImage = defaultImage; }
 
-    public Set<Role> getGroupRoles() {
-        if (groupRoles == null) {
-            groupRoles = new HashSet<>();
-        }
-        return new HashSet<>(groupRoles);
+    public Set<GroupJoinCode> getActiveJoinCodes() {
+        return this.groupJoinCodes.stream().filter(GroupJoinCode::isActive).collect(Collectors.toSet());
     }
+
+    public Optional<GroupJoinCode> getActiveJoinCode(String code) {
+		return this.groupJoinCodes.stream()
+				.filter(groupJoinCode -> groupJoinCode.isActive() && groupJoinCode.getCode().equalsIgnoreCase(code))
+				.findAny();
+	}
 
     @PreUpdate
     @PrePersist
@@ -689,6 +660,25 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
             todos = new HashSet<>();
         }
         return todos;
+    }
+
+    public Set<Permission> getPermissions(GroupRole role) {
+        return this.rolePermissions.stream()
+                .filter(groupRolePermission -> groupRolePermission.getRole().equals(role))
+                .map(GroupRolePermission::getPermission)
+                .collect(Collectors.toSet());
+    }
+
+    public void setPermissions(GroupRole role, Set<Permission> permissions) {
+        final Set<GroupRolePermission> oldGroupRolePermissions = this.rolePermissions.stream()
+                .filter(groupRolePermission -> groupRolePermission.getRole().equals(role))
+                .collect(Collectors.toSet());
+        final Set<GroupRolePermission> newGroupRolePermissions = permissions.stream()
+                .map(permission -> new GroupRolePermission(role, permission))
+                .collect(Collectors.toSet());
+
+        this.rolePermissions.removeAll(oldGroupRolePermissions);
+        this.rolePermissions.addAll(newGroupRolePermissions);
     }
 
     @Override

@@ -11,7 +11,7 @@ public class MembershipDTO extends MembershipInfo {
     @Getter private final long joinedDateTimeMillis;
 
     public MembershipDTO(Membership membership) {
-        super(membership.getUser(), membership.getDisplayName(), membership.getRole().getName(), null);
+        super(membership.getUser(), membership.getDisplayName(), membership.getRole(), null);
         this.memberUid = membership.getUser().getUid();
         this.userSetName = membership.getUser().isHasSetOwnName();
         this.groupUid = membership.getGroup().getUid();

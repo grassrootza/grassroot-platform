@@ -18,6 +18,7 @@ import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.TaskLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
@@ -135,7 +136,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
 
         User testUser = new User(phoneForTests,testUserName, null);
 
-        Group testGroup = new Group("test Group", new User("121212121", null, null));
+        Group testGroup = new Group("test Group", GroupPermissionTemplate.DEFAULT_GROUP, new User("121212121", null, null));
         GroupLocation groupLocation = new GroupLocation(testGroup,LocalDate.now(),testLocation,0,LocationSource.LOGGED_APPROX);
 
         ObjectLocation objectLocation = new ObjectLocation(testGroup,groupLocation);
@@ -178,7 +179,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
         String testCreatedByMe = "createdByMe";
         User testUser = new User(phoneForTests,testUserName, null);
-        Group testGroup = new Group("test group", testUser);
+        Group testGroup = new Group("test group", GroupPermissionTemplate.DEFAULT_GROUP, testUser);
 
         LiveWireAlert.Builder builder = LiveWireAlert.newBuilder();
         builder.creatingUser(testUser)

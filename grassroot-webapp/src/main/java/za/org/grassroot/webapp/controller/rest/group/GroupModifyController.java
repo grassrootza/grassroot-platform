@@ -13,8 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.integration.location.Municipality;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.broadcast.Broadcast;
@@ -32,17 +31,15 @@ import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.authentication.JwtService;
-import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountFeaturesBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.JoinWordsExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
-import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.group.GroupImageBroker;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupStatsBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -97,9 +94,8 @@ public class GroupModifyController extends GroupBaseController {
         log.info("creating a group, with name {}", name);
         User user = getUserFromRequest(request);
         if (user != null) {
-            HashSet<MembershipInfo> membershipInfos = new HashSet<>();
-            membershipInfos.add(new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER, null));
-            Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true, discoverable, true);
+            MembershipInfo membershipInfo = new MembershipInfo(user, user.getDisplayName(), GroupRole.ROLE_GROUP_ORGANIZER, null);
+            Group group = groupBroker.create(user.getUid(), name, null, Collections.singleton(membershipInfo), permissionTemplate, description, reminderMinutes, true, discoverable, true);
 
             if (defaultAddToAccount && user.getPrimaryAccount() != null) {
                 accountBroker.addGroupsToAccount(user.getPrimaryAccount().getUid(), Collections.singleton(group.getUid()), user.getUid());
@@ -218,8 +214,10 @@ public class GroupModifyController extends GroupBaseController {
                                                              @PathVariable String parentUid,
                                                              @RequestParam String childGroupUid,
                                                              @RequestParam Set<String> memberUids) {
-        groupBroker.addMembersToSubgroup(getUserIdFromRequest(request), parentUid, childGroupUid, memberUids);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid, false, false, false));
+        final String userUid = getUserIdFromRequest(request);
+        groupBroker.addMembersToSubgroup(userUid, parentUid, childGroupUid, memberUids);
+        final GroupFullDTO groupFullDTO = groupFetchBroker.fetchGroupFullInfo(userUid, parentUid, false, false, false);
+        return ResponseEntity.ok(groupFullDTO);
     }
 
     @RequestMapping(value = "/members/remove/taskteam/{parentUid}", method = RequestMethod.POST)
@@ -228,8 +226,10 @@ public class GroupModifyController extends GroupBaseController {
                                                                   @PathVariable String parentUid,
                                                                   @RequestParam String childGroupUid,
                                                                   @RequestParam Set<String> memberUids) {
-        groupBroker.removeMembersFromSubgroup(getUserIdFromRequest(request), parentUid, childGroupUid, memberUids);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid, false, false, false));
+        String userUid = getUserIdFromRequest(request);
+        groupBroker.removeMembersFromSubgroup(userUid, parentUid, childGroupUid, memberUids);
+        GroupFullDTO groupFullDTO = groupFetchBroker.fetchGroupFullInfo(userUid, parentUid, false, false, false);
+        return ResponseEntity.ok(groupFullDTO);
     }
 
     @RequestMapping(value = "/create/taskteam/{parentUid}", method = RequestMethod.POST)
@@ -258,8 +258,10 @@ public class GroupModifyController extends GroupBaseController {
     public ResponseEntity<GroupFullDTO> deactivateTaskTeam(HttpServletRequest request,
                                                            @PathVariable String parentUid,
                                                            @RequestParam String taskTeamUid) {
-        groupBroker.deactivateSubGroup(getUserIdFromRequest(request), parentUid, taskTeamUid);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid, true, true, false));
+        final String userUid = getUserIdFromRequest(request);
+        groupBroker.deactivateSubGroup(userUid, parentUid, taskTeamUid);
+        final GroupFullDTO groupFullDTO = groupFetchBroker.fetchGroupFullInfo(userUid, parentUid, true, true, false);
+        return ResponseEntity.ok(groupFullDTO);
     }
 
     @RequestMapping(value = "/rename/taskteam/{parentUid}", method = RequestMethod.POST)
@@ -304,7 +306,7 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "/members/modify/role/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Modify the role of a member in the group", notes = "Requires GROUP_PERMISSION_UPDATE_GROUP_DETAILS")
     public ResponseEntity<MembershipFullDTO> changeMemberRole(HttpServletRequest request, @PathVariable String groupUid,
-                                                              @RequestParam String memberUid, @RequestParam String roleName) {
+                                                              @RequestParam String memberUid, @RequestParam GroupRole roleName) {
         try {
             String userId = getUserIdFromRequest(request);
             groupBroker.updateMembershipRole(userId, groupUid, memberUid, roleName);
@@ -470,14 +472,14 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "/permissions/update/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Update group permissions")
     public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String groupUid,
-                                                             @RequestBody HashMap<String, List<PermissionDTO>> updatedPermissionsByRole,
+                                                             @RequestBody Map<GroupRole, List<PermissionDTO>> updatedPermissionsByRole,
                                                              HttpServletRequest request) {
         User user = getUserFromRequest(request);
         Group group = groupBroker.load(groupUid);
         ResponseEntity<ResponseWrapper> response;
 
         try {
-            for (String roleName : updatedPermissionsByRole.keySet()) {
+            for (GroupRole roleName : updatedPermissionsByRole.keySet()) {
                 Map<String, Set<Permission>> analyzedPerms = processUpdatedPermissions(group, roleName, updatedPermissionsByRole.get(roleName));
                 groupBroker.updateGroupPermissionsForRole(user.getUid(), groupUid, roleName, analyzedPerms.get("ADDED"), analyzedPerms.get("REMOVED"));
             }
@@ -539,8 +541,8 @@ public class GroupModifyController extends GroupBaseController {
                 .collect(Collectors.toList());
     }
 
-    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
-        Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
+    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, GroupRole roleName, List<PermissionDTO> permissionDTOs) {
+        Set<Permission> currentPermissions = group.getPermissions(roleName);
         Set<Permission> permissionsAdded = new HashSet<>();
         Set<Permission> permissionsRemoved = new HashSet<>();
         for (PermissionDTO p : permissionDTOs) {

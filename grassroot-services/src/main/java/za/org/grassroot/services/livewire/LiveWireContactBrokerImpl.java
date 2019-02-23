@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.LiveWireContactDTO;
 import za.org.grassroot.core.enums.LiveWireContactType;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -168,7 +169,10 @@ public class LiveWireContactBrokerImpl implements LiveWireContactBroker {
 
     @Transactional(readOnly = true)
     public int getUserGraphSize(User user) {
-        return user.getMemberships().size() == 0 ? 0 : (int) userRepository.count(UserSpecifications.inGroups(user.getGroups()));
+        Collection<Long> groupIds = user.getGroups().stream()
+                .map(Group::getId)
+                .collect(Collectors.toList());
+        return user.getMemberships().size() == 0 ? 0 : (int) userRepository.count(UserSpecifications.inGroups(groupIds));
     }
 
     private Comparator<LiveWireContactDTO> sortComparator(Sort sort) {

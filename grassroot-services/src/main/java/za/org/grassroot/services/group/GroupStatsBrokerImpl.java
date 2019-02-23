@@ -15,7 +15,6 @@ import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
 
 import javax.annotation.Nullable;
 import java.time.Clock;
@@ -33,7 +32,6 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     private final GroupRepository groupRepository;
     private final MembershipRepository membershipRepository;
     private final CacheManager cacheManager;
-    private final SocialMediaBroker socialMediaBroker;
 
     private final String ORGANISATION_TAG_PREFIX = "AFFILIATION";
 
@@ -41,14 +39,11 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
             GroupLogRepository groupLogRepository,
             GroupRepository groupRepository,
             MembershipRepository membershipRepository,
-            CacheManager cacheManager,
-            SocialMediaBroker socialMediaBroker) {
-
+            CacheManager cacheManager) {
         this.groupLogRepository = groupLogRepository;
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
         this.cacheManager = cacheManager;
-        this.socialMediaBroker = socialMediaBroker;
     }
 
     @Override

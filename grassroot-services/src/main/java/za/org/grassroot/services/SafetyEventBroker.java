@@ -1,7 +1,6 @@
 package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.SafetyEvent;
-import za.org.grassroot.core.domain.User;
 
 import java.util.List;
 
@@ -21,8 +20,6 @@ public interface SafetyEventBroker {
     boolean isUserBarred(String uid);
 
     void sendReminders(String uid);
-
-    boolean needsToRespondToSafetyEvent(User sessionUser);
 
     void setSafetyGroup(String userUid, String groupUid);
 

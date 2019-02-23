@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.webapp.model.http.AuthorizationHeader;
 
@@ -14,6 +14,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,10 +44,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authorizationHeader.hasBearerToken() && jwtService.isJwtTokenValid(token)) {
             String userId = jwtService.getUserIdFromJwtToken(token);
             log.debug("User ID: {}", userId);
-            Set<Role> userRoles = jwtService.getStandardRolesFromJwtToken(token).stream().map(name -> new Role(name, null))
-                    .collect(Collectors.toSet());
-            log.debug("and user roles = {}", userRoles);
-            JwtBasedAuthentication auth = new JwtBasedAuthentication(userRoles, token, userId);
+            final List<String> standardRolesNames = jwtService.getStandardRolesFromJwtToken(token);
+            final Set<StandardRole> standardRoles = standardRolesNames.stream().map(StandardRole::valueOf).collect(Collectors.toSet());
+            log.debug("and user roles = {}", standardRoles);
+            JwtBasedAuthentication auth = new JwtBasedAuthentication(standardRoles, token, userId);
             SecurityContextHolder.getContext().setAuthentication(auth);
             log.debug("Finished pushing authentication object");
         } else {

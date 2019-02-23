@@ -10,24 +10,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.user.UserManagementService;
 
 import javax.annotation.PostConstruct;
-import javax.net.ssl.*;
-import java.io.IOException;
-import java.net.HttpURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -61,27 +57,16 @@ public class USSDAbstractIT {
 
     // Common parameters for assembling the USSD urls
     protected final String ussdPath = "ussd/";
-    protected final String mtgPath = "mtg/";
     protected final String userPath = "user/";
 
     // Common parameters used for assembling the USSD service calls
     protected final String phoneParam = "msisdn";
     protected final String freeTextParam = "request";
-    protected final String eventParam = "eventId";
 
     // Some strings used throughout tests
     protected final String testPhone = "27815550000"; // todo: make sure this isn't an actual number
-    protected final String secondGroupPhone = "27625550000"; // slightly different ot main testPhone so rename doesn't break XML checks if renamed already
-    protected final String thirdGroupPhone = "27835550000";
     protected final String testDisplayName = "TestPhone1";
-    protected final List<String> testPhones = Arrays.asList(PhoneNumberUtil.invertPhoneNumber(secondGroupPhone, ""),
-                                                            PhoneNumberUtil.invertPhoneNumber(thirdGroupPhone, ""), "0845550000"); // todo: as above
-    protected final Integer testGroupSize = testPhones.size() + 1; // includes creating user
-
-    protected final String nonGroupPhone = "27800000000";
     protected final String testPhoneZu = "27720000000"; // for testing the Zulu opening menu
-    protected final String testMtgLocation = "JoziHub";
-    protected final String testMtgDateTime = "Tomorrow 9am";
 
     @PostConstruct
     public void init() {
@@ -146,37 +131,4 @@ public class USSDAbstractIT {
     protected ResponseEntity<String> executeQuery(URI uriToExecute) {
         return template.getForEntity(uriToExecute, String.class);
     }
-
-    protected URI testPhoneUriBuild(String path) {
-        return testPhoneUri(path).build().toUri();
-    }
-
-    protected User createTestUser() {
-        executeQuery(testPhoneUriBuild("start"));
-        return userManager.findByInputNumber(testPhone);
-    }
-
-    /**
-     * Http Request Factory for ignoring SSL hostname errors. Not for production use!
-     */
-    class MySimpleClientHttpRequestFactory extends SimpleClientHttpRequestFactory {
-
-        private final HostnameVerifier verifier;
-
-        public MySimpleClientHttpRequestFactory(final HostnameVerifier verifier) {
-            this.verifier = verifier;
-        }
-
-        @Override
-        protected void prepareConnection(final HttpURLConnection connection,
-                                         final String httpMethod) throws IOException {
-            if (connection instanceof HttpsURLConnection) {
-                ((HttpsURLConnection) connection).setHostnameVerifier(this.verifier);
-            }
-            super.prepareConnection(connection, httpMethod);
-        }
-    }
-
-
-
 }

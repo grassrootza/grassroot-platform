@@ -8,6 +8,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.GroupLogRepository;
@@ -43,7 +44,7 @@ public class RestAbstractUnitTest {
     protected final static Instant testInstant = Instant.now().plus(5, ChronoUnit.HOURS);
     protected final static LocalDateTime testDateTime = convertToUserTimeZone(testInstant, getSAST()).toLocalDateTime();
     protected final static User sessionTestUser = new User(testUserPhone, "testUser", null);
-    protected final static Group testGroup = new Group(testGroupName, sessionTestUser);
+    protected final static Group testGroup = new Group(testGroupName, GroupPermissionTemplate.DEFAULT_GROUP, sessionTestUser);
 
     protected MockMvc mockMvc;
 

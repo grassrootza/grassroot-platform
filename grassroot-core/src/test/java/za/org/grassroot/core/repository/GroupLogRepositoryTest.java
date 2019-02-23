@@ -11,6 +11,7 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.enums.GroupLogType;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -41,7 +42,7 @@ public class GroupLogRepositoryTest {
         User userToDoTests = new User("0810001111", null, null);
         userToDoTests = userRepository.save(userToDoTests);
 
-        Group groupToCreate = new Group("testGroup", userToDoTests);
+        Group groupToCreate = new Group("testGroup", GroupPermissionTemplate.DEFAULT_GROUP, userToDoTests);
         groupToCreate = groupRepository.save(groupToCreate);
 
         GroupLog groupLog = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_ADDED, null);
@@ -62,7 +63,7 @@ public class GroupLogRepositoryTest {
         assertThat(groupLogRepository.count(), is(0L));
 
         User userToDoTests = userRepository.save(new User("0810002222", null, null));
-        Group groupToCreate = groupRepository.save(new Group("testGroup", userToDoTests));
+        Group groupToCreate = groupRepository.save(new Group("testGroup", GroupPermissionTemplate.DEFAULT_GROUP, userToDoTests));
 
         GroupLog groupLog1 = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_ADDED, null);
         assertNull(groupLog1.getId());

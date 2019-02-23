@@ -2,7 +2,6 @@ package za.org.grassroot.services;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.ConfigVariable;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 
 import java.util.List;
@@ -19,24 +18,8 @@ public interface AdminService {
 
     void removeUserFromAllGroups(String adminUserUid, String userUid);
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void addSystemRole(String adminUserUid, String userUid, String systemRole);
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void removeStdRole(String adminUserUid, String userUid, String systemRole);
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    String createUserWithSystemRole(String adminUserUid, String displayName, String phoneNumber,
-                                  String emailAddress, String systemRole);
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    List<User> getUsersWithStdRole(String adminUserUid, String systemRole);
-
     //@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateUserPassword(String adminUserUid, String userUid, String newPassword);
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    long sendBatchOfAndroidLinks(String adminUserUid, int batchSize);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateConfigVariable(String key, String newValue,String description);

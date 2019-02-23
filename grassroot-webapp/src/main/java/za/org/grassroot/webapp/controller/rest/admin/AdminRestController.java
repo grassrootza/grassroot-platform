@@ -9,13 +9,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.ConfigVariable;
+import za.org.grassroot.core.domain.GroupRole;
+import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
@@ -28,7 +28,6 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.authentication.JwtType;
-import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.integration.location.MunicipalFilteringBroker;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AdminService;
@@ -78,8 +77,7 @@ public class AdminRestController extends BaseRestController{
                                GroupBroker groupBroker,
                                MessagingServiceBroker messagingServiceBroker,
                                PasswordTokenService passwordTokenService,
-                               AccountFeaturesBroker accountFeaturesBroker,
-                               LocationInfoBroker locationInfoBroker){
+                               AccountFeaturesBroker accountFeaturesBroker) {
         super(jwtService,userManagementService);
         this.adminService = adminService;
         this.userManagementService = userManagementService;
@@ -178,7 +176,7 @@ public class AdminRestController extends BaseRestController{
     @RequestMapping(value = "/groups/member/add",method = RequestMethod.POST)
     public ResponseEntity addMemberToGroup(@RequestParam String groupUid,
                                            @RequestParam String displayName,
-                                           @RequestParam String roleName,
+                                           @RequestParam GroupRole roleName,
                                            @RequestParam(required = false) String phoneNumber,
                                            @RequestParam(required = false) String email,
                                            @RequestParam(required = false) Province province,
@@ -228,7 +226,7 @@ public class AdminRestController extends BaseRestController{
     public ResponseEntity<String> createApiToken() {
         CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.API_CLIENT);
         Map<String, Object> claims = tokenRequest.getClaims();
-        claims.put(JwtService.SYSTEM_ROLE_KEY, BaseRoles.ROLE_SYSTEM_CALL);
+        claims.put(JwtService.SYSTEM_ROLE_KEY, StandardRole.ROLE_SYSTEM_CALL);
         tokenRequest.setClaims(claims);
         return ResponseEntity.ok(jwtService.createJwt(tokenRequest));
     }
@@ -275,26 +273,16 @@ public class AdminRestController extends BaseRestController{
         return ResponseEntity.ok().build();
     }
 
-    @RequestMapping(value = "/config/fetch/above/limit",method = RequestMethod.GET)
-    public ResponseEntity<Integer> getNumberOfGroupsAboveFreeLimit(){
-        int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(freeLimit));
-    }
-
     @RequestMapping(value = "/config/fetch/below/limit",method = RequestMethod.GET)
-    public ResponseEntity<Integer> getNumberOfGroupsBelowFreeLimit(){
-        int freeLimit = accountFeaturesBroker.getFreeGroupLimit();
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(freeLimit));
+    public ResponseEntity<Integer> countGroupsBelowLimit(@RequestParam(required = false) Integer limit){
+        int limitToUse = limit == null ? accountFeaturesBroker.getFreeGroupLimit() : limit;
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(limitToUse));
     }
 
-    @RequestMapping(value = "/config/fetch/below/limit/{limit}",method = RequestMethod.GET)
-    public ResponseEntity<Integer> countGroupsBelowLimit(@PathVariable int limit){
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsBelowFreeLimit(limit));
-    }
-
-    @RequestMapping(value = "/config/fetch/above/limit/{limit}",method = RequestMethod.GET)
-    public ResponseEntity<Integer> countGroupsAboveLimit(@PathVariable int limit){
-        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(limit));
+    @RequestMapping(value = "/config/fetch/above/limit",method = RequestMethod.GET)
+    public ResponseEntity<Integer> countGroupsAboveLimit(@RequestParam(required = false) Integer limit){
+        int limitToUse = limit == null ? accountFeaturesBroker.getFreeGroupLimit() : limit;
+        return ResponseEntity.ok(accountFeaturesBroker.numberGroupsAboveFreeLimit(limitToUse));
     }
 
     @RequestMapping(value = "/update/location/address",method = RequestMethod.GET)
