@@ -128,7 +128,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.mergeFields(Arrays.asList(Broadcast.NAME_FIELD_TEMPLATE, Broadcast.CONTACT_FIELD_TEMPALTE,
                 Broadcast.PROVINCE_FIELD_TEMPLATE, Broadcast.DATE_FIELD_TEMPLATE));
 
-        if (account != null && account.isEnabled()) {
+        if (account != null && account.isEnabled() && !account.hasBreachedSpendingLimit()) {
             builder.isSmsAllowed(true).smsCostCents(25);
         } else {
             builder.isSmsAllowed(false);
@@ -171,7 +171,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.mergeFields(Arrays.asList(Broadcast.NAME_FIELD_TEMPLATE, Broadcast.CONTACT_FIELD_TEMPALTE,
                 Broadcast.PROVINCE_FIELD_TEMPLATE, Broadcast.DATE_FIELD_TEMPLATE));
 
-        if (account.getFreeFormCost() > 0) {
+        if (account.getFreeFormCost() > 0 && !account.hasBreachedSpendingLimit()) {
             builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
         } else {
             builder.isSmsAllowed(false);
@@ -214,7 +214,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         User user = userRepository.findOneByUid(bc.getUserUid());
         Account account = findAccountToChargeBroadcast(user, bc.getGroupUid());
 
-        if (account == null && !StringUtils.isEmpty(bc.getShortMessage())) {
+        if ((account == null || account.hasBreachedSpendingLimit()) && !StringUtils.isEmpty(bc.getShortMessage())) {
             throw new NoPaidAccountException();
         }
 
@@ -241,7 +241,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         User user = userRepository.findOneByUid(bc.getUserUid());
         Campaign campaign = campaignRepository.findOneByUid(bc.getCampaignUid());
 
-        if (campaign.getAccount() == null) {
+        if (campaign.getAccount() == null || campaign.getAccount().hasBreachedSpendingLimit()) {
             throw new NoPaidAccountException();
         }
 

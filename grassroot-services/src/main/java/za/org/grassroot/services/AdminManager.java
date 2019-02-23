@@ -10,20 +10,39 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.ConfigVariable;
+import za.org.grassroot.core.domain.StandardRole;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupLog;
+import za.org.grassroot.core.domain.group.GroupLog_;
+import za.org.grassroot.core.domain.group.Group_;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.events.AlterConfigVariableEvent;
 import za.org.grassroot.core.events.RemoveConfigVariableEvent;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.ConfigRepository;
+import za.org.grassroot.core.repository.GroupLogRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.UserLogRepository;
+import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.group.*;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +72,11 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Autowired
@@ -97,6 +121,33 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
             group.removeMembership(membership); // concurrency?
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Group> findGroupByJoinCode(final String adminUserUid, final String joinCode) {
+        validateAdminRole(adminUserUid);
+        return groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode));
+    }
+
+    @Override
+    @Transactional
+    public void removeJoinCodeFromGroup(final String adminUserUid, final String groupUid) {
+        validateAdminRole(adminUserUid);
+        final Group group = groupRepository.findOneByUid(groupUid);
+        group.setGroupTokenCode(null);
+        group.setTokenExpiryDateTime(Instant.now());
+        // store a group log
+    }
+
+    @Override
+    public void grantJoinCodeToGroup(final String adminUserUid, final String groupUid, final String joinCode) {
+        validateAdminRole(adminUserUid);
+        final Group group = groupRepository.findOneByUid(groupUid);
+        group.setGroupTokenCode(joinCode);
+        group.setTokenExpiryDateTime(DateTimeUtil.getVeryLongAwayInstant());
+        // store a group log
+    }
+
 
     @Override
     @Transactional
@@ -205,8 +256,4 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
         }
     }
 
-    @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this.applicationEventPublisher = applicationEventPublisher;
-    }
 }

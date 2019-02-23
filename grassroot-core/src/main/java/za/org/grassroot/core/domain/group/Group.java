@@ -373,7 +373,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public boolean robustIsPaidFor() {
-        return paidFor && account != null && account.isEnabled();
+        return paidFor && account != null && account.isEnabled() && !account.hasBreachedSpendingLimit();
     }
 
     public void setPaidFor(boolean paidFor) {

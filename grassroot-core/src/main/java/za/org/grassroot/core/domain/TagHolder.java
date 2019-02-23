@@ -4,6 +4,7 @@ import za.org.grassroot.core.util.StringArrayUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface TagHolder {
 
@@ -41,6 +42,10 @@ public interface TagHolder {
 
     default List<String> getTagList() {
         return StringArrayUtil.arrayToList(getTags());
+    }
+
+    default Stream<String> getPrefixFilteredList(final String prefix) {
+        return Arrays.stream(getTags()).filter(s -> s.startsWith(prefix));
     }
 
     default List<String> getTopics() {

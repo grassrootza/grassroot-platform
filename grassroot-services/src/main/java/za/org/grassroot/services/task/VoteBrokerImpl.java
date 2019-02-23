@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.notification.UserLanguageNotification;
 import za.org.grassroot.core.domain.notification.VoteResultsNotification;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -21,6 +22,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.VoteRepository;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
@@ -31,7 +33,15 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 import static za.org.grassroot.core.enums.EventLogType.CHANGE;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
@@ -217,6 +227,11 @@ public class VoteBrokerImpl implements VoteBroker {
                 throw e;
             }
         }
+    }
+
+    @Override
+    public Optional<Vote> getMassVoteOpenForGroup(final Group group) {
+        return voteRepository.findOne(EventSpecifications.isOpenMassVoteForGroup(group));
     }
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {

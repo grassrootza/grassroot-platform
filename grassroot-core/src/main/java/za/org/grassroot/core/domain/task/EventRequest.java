@@ -4,8 +4,18 @@ import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.DiscriminatorColumn;
+import javax.persistence.DiscriminatorType;
+import javax.persistence.Entity;
+import javax.persistence.Inheritance;
+import javax.persistence.InheritanceType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.Table;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -36,7 +46,12 @@ public abstract class EventRequest<P extends UidIdentifiable> extends AbstractEv
 		// for JPA
 	}
 
+	public List<String> getVoteOptions() {
+		return getTagList();
+	}
+
 	protected boolean isFilledWithCommonFields() {
 		return !(getName() == null || getName().trim().equals("")) && getCreatedByUser() != null && getEventStartDateTime() != null;
 	}
+
 }

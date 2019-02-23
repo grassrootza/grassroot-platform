@@ -5,7 +5,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.util.StringArrayUtil;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
@@ -14,12 +13,18 @@ import javax.persistence.ManyToOne;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Entity
 @DiscriminatorValue("VOTE")
 public class Vote extends Event<VoteContainer> {
 
 	private static final String RANDOMIZE_TAG = "RANDOMIZE";
+
+	private static final String OPTION_PREFIX = "OPTION::";
+	private static final String LANGUAGE_PREFIX = "LANGUAGE::";
 
 	@ManyToOne
 	@JoinColumn(name = "parent_meeting_id")
@@ -43,22 +48,19 @@ public class Vote extends Event<VoteContainer> {
 	}
 
 	public boolean hasOption(String option) {
-		if (getTags() != null) {
-			for (String tag : getTags()) {
-				if (tag.trim().equalsIgnoreCase(option.trim()))
-					return true;
-			}
-		}
-		return false;
+		if (getTags() == null)
+			return false;
+
+		return getVoteOptions().stream().anyMatch(tag -> tag.trim().equalsIgnoreCase(option.trim()));
 	}
 
-	@Override
 	public List<String> getVoteOptions() {
-		List<String> options = StringArrayUtil.arrayToList(getTags());
+		List<String> options = getPrefixFilteredList(OPTION_PREFIX).map(s -> s.substring(OPTION_PREFIX.length())).collect(Collectors.toList());
+
 		if (shouldRandomize()) {
-			options.remove(RANDOMIZE_TAG); // since that will be within the list
 			Collections.shuffle(options);
 		}
+
 		return options;
 	}
 
@@ -72,6 +74,17 @@ public class Vote extends Event<VoteContainer> {
 
 	private boolean shouldRandomize() {
 		return this.getTagList().contains(RANDOMIZE_TAG);
+	}
+
+	public void addLanguagePrompt(Locale language, String prompt) {
+		this.getLanguagePrompt(language).ifPresent(existing -> this.removeTag(LANGUAGE_PREFIX + "::" + language.toString() + "::" + existing));
+		this.addTag(LANGUAGE_PREFIX + "::" + language.toString() + "::" + prompt);
+	}
+
+	public Optional<String> getLanguagePrompt(Locale language) {
+		return this.getPrefixFilteredList(LANGUAGE_PREFIX)
+				.filter(s -> s.startsWith(language.toString()))
+				.findFirst().map(s -> s.substring(language.toString().length()));
 	}
 
 	@Override

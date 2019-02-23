@@ -39,6 +39,10 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -666,6 +670,68 @@ public class AccountBrokerImpl implements AccountBroker {
                 .userSessionCount(countSessionsForDatasets(Collections.singleton(dataSetLabel), start, end))
                 .notificationsCount(countNotificationsForDataSet(dataSetLabel, start, end))
                 .start(start).end(end).build();
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountSpendingLimit(final String userUid, final String accountUid, final long newAccountLimit) {
+        final User user = userRepository.findOneByUid(userUid);
+        final Account account = accountRepository.findOneByUid(accountUid);
+        validateAdmin(user, account);
+        final long oldLimit = account.getMonthlySpendingLimit();
+        account.setMonthlySpendingLimit(newAccountLimit);
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
+                .accountLogType(AccountLogType.MONTHLY_LIMIT_CHANGED)
+                .description("From " + oldLimit + " to " + newAccountLimit).build());
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountUnitCosts(String userUid, String accountUid, int costPerUssdSession, int costPerSms) {
+        final User user = userRepository.findOneByUid(userUid);
+        permissionBroker.validateSystemRole(user, StandardRole.ROLE_SYSTEM_ADMIN);
+        final Account account = accountRepository.findOneByUid(accountUid);
+        final String fromRecord = "From " + account.getAvgUssdCost() + "c per USSD and " + account.getFreeFormCost() + "c per SMS ";
+        account.setAvgUssdCost(costPerUssdSession);
+        account.setFreeFormCost(costPerUssdSession);
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
+            .accountLogType(AccountLogType.AVG_COST_CHANGED)
+            .description(fromRecord + "to " + costPerUssdSession + "c per USSD and " + costPerSms + "c per SMS").build());
+    }
+
+    @Override
+    public void updateAccountMonthlyFlatFee(String userUid, String accountUid, long newFlatFee) {
+        final User user = userRepository.findOneByUid(userUid);
+        permissionBroker.validateSystemRole(user, StandardRole.ROLE_SYSTEM_ADMIN);
+        final Account account = accountRepository.findOneByUid(accountUid);
+        final long oldFee = account.getMonthlyFlatFee();
+        account.setMonthlyFlatFee(newFlatFee);
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
+            .accountLogType(AccountLogType.MONTHLY_FEE_CHANGED)
+            .description("From " + oldFee + "c per month to " + newFlatFee + "c per month").build());
+    }
+
+    @Override
+    @Transactional
+    public void calculateAccountSpendingThisMonth(final String accountUid) {
+        final Account account = accountRepository.findOneByUid(accountUid);
+
+        final ZoneOffset zoneToUse = ZoneOffset.UTC;
+        final Instant start = LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay().toInstant(zoneToUse);
+        final Instant end = LocalDateTime.now().toInstant(zoneToUse);
+
+        final long baseFee = account.getMonthlyFlatFee();
+
+        // get counts of: (1) sent notifications, (2) USSD sessions, (3) monthly flat fee
+        final long ussdSpend = countChargedUssdSessionsForAccount(accountUid, start, end) * account.getAvgUssdCost();
+        final long smsSpend = countAccountNotifications(accountUid, start, end) * account.getFreeFormCost();
+
+        final long totalSpent = baseFee + ussdSpend + smsSpend;
+
+        log.info("For account {}, base fee of {}c, USSD spend of {}, and SMS spend of {} calculated total: {}",
+                account.getName(), baseFee, ussdSpend, smsSpend, totalSpent);
+
+        account.setCurrentMonthSpend(totalSpent);
     }
 
     private long countNotificationsForDataSet(String dataSetLabel, Instant start, Instant end) {

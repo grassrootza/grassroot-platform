@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
 import static za.org.grassroot.webapp.controller.ussd.UssdSupport.entityUidUrlSuffix;
@@ -43,7 +45,7 @@ import static za.org.grassroot.webapp.controller.ussd.UssdSupport.*;
 import static za.org.grassroot.webapp.enums.VoteTime.*;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
-@Service
+@Service @Slf4j
 public class UssdVoteServiceImpl implements UssdVoteService {
 	private static final int EVENT_LIMIT_WARNING_THRESHOLD = 5; // only warn when below this
 
@@ -301,6 +303,18 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 		} catch (AccountLimitExceededException e) {
 			return ussdSupport.menuBuilder(eventUtil.outOfEventsMenu(thisSection, voteMenus + "new", ussdSupport.optionsHomeExit(user, true), user));
 		}
+	}
+
+	@Override
+	@Transactional
+	public Optional<USSDMenu> processPossibleMassVote(User user, Group group) {
+		return voteBroker.getMassVoteOpenForGroup(group).map(vote -> {
+			final String prompt = ussdSupport.getMessage("home.start.prompt.group.vote", new String[] { group.getName(), vote.getName() }, user);
+			final USSDMenu menu = assembleVoteMenu(user, vote); // handles option setting, etc.
+			menu.setPromptMessage(vote.getName()); // because this is better in this context than standard
+			log.info("Created a mass vote, here it is: {}", menu);
+			return menu;
+		});
 	}
 
 	private void setStandardTime(String requestUid, VoteTime time, User user) {

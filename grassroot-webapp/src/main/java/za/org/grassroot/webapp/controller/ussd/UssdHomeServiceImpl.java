@@ -43,7 +43,12 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static za.org.grassroot.webapp.controller.ussd.UssdSupport.startMenu;
@@ -363,7 +368,10 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 				return notifyGroupLimitReached(user, group);
 			} else {
 				final Membership membership = groupBroker.addMemberViaJoinCode(user, group, token, UserInterfaceType.USSD);
-				if (!group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
+				final Optional<USSDMenu> massVoteMenu = ussdVoteService.processPossibleMassVote(user, group);
+				if (massVoteMenu.isPresent()) {
+					return massVoteMenu.get();
+				} if (!group.getJoinTopics().isEmpty() && !membership.hasAnyTopic(group.getJoinTopics())) {
 					return askForJoinTopics(group, user);
 				} else {
 					String promptStart = group.hasName() ? ussdSupport.getMessage(HOME, startMenu, ussdSupport.promptKey + ".group.token.named", group.getGroupName(), user) :
@@ -389,4 +397,5 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));
 		return menu;
 	}
+
 }
