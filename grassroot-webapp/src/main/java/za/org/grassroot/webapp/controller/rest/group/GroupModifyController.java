@@ -214,8 +214,10 @@ public class GroupModifyController extends GroupBaseController {
                                                              @PathVariable String parentUid,
                                                              @RequestParam String childGroupUid,
                                                              @RequestParam Set<String> memberUids) {
-        groupBroker.addMembersToSubgroup(getUserIdFromRequest(request), parentUid, childGroupUid, memberUids);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid, false, false, false));
+        final String userUid = getUserIdFromRequest(request);
+        groupBroker.addMembersToSubgroup(userUid, parentUid, childGroupUid, memberUids);
+        final GroupFullDTO groupFullDTO = groupFetchBroker.fetchGroupFullInfo(userUid, parentUid, false, false, false);
+        return ResponseEntity.ok(groupFullDTO);
     }
 
     @RequestMapping(value = "/members/remove/taskteam/{parentUid}", method = RequestMethod.POST)
@@ -224,8 +226,10 @@ public class GroupModifyController extends GroupBaseController {
                                                                   @PathVariable String parentUid,
                                                                   @RequestParam String childGroupUid,
                                                                   @RequestParam Set<String> memberUids) {
-        groupBroker.removeMembersFromSubgroup(getUserIdFromRequest(request), parentUid, childGroupUid, memberUids);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid, false, false, false));
+        String userUid = getUserIdFromRequest(request);
+        groupBroker.removeMembersFromSubgroup(userUid, parentUid, childGroupUid, memberUids);
+        GroupFullDTO groupFullDTO = groupFetchBroker.fetchGroupFullInfo(userUid, parentUid, false, false, false);
+        return ResponseEntity.ok(groupFullDTO);
     }
 
     @RequestMapping(value = "/create/taskteam/{parentUid}", method = RequestMethod.POST)
@@ -254,8 +258,10 @@ public class GroupModifyController extends GroupBaseController {
     public ResponseEntity<GroupFullDTO> deactivateTaskTeam(HttpServletRequest request,
                                                            @PathVariable String parentUid,
                                                            @RequestParam String taskTeamUid) {
-        groupBroker.deactivateSubGroup(getUserIdFromRequest(request), parentUid, taskTeamUid);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid, true, true, false));
+        final String userUid = getUserIdFromRequest(request);
+        groupBroker.deactivateSubGroup(userUid, parentUid, taskTeamUid);
+        final GroupFullDTO groupFullDTO = groupFetchBroker.fetchGroupFullInfo(userUid, parentUid, true, true, false);
+        return ResponseEntity.ok(groupFullDTO);
     }
 
     @RequestMapping(value = "/rename/taskteam/{parentUid}", method = RequestMethod.POST)

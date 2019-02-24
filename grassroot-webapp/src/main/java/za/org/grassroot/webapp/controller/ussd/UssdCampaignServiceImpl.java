@@ -230,7 +230,7 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 		final Campaign campaign = message.getCampaign();
 		final Group masterGroup = campaign.getMasterGroup();
 		if (parentMessage != null && parentMessage.getTagList() != null && parentMessage.getTagList().isEmpty()) {
-			final Membership membership = user.getGroupMembership(masterGroup.getUid())
+			final Membership membership = user.getMembership(masterGroup.getUid())
 					.orElseGet(() -> {
 								// todo: VJERAN: - Is this bug in commented old line where Role's group UID is null? Test this new code!!!
 								return campaign.getMasterGroup().addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);

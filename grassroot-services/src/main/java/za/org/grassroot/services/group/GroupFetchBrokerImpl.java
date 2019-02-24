@@ -194,7 +194,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     public GroupFullDTO fetchSubGroupDetails(String userUid, String parentGroupUid, String childGroupUid) {
         final User user = userRepository.findOneByUid(userUid);
 
-        final Membership parentGroupMembership = user.getGroupMembership(parentGroupUid)
+        final Membership parentGroupMembership = user.getMembership(parentGroupUid)
                 .orElseThrow(() -> new IllegalArgumentException("No membership group under UID " + parentGroupUid + " for user " + user));
 
         final Group parentGroup = parentGroupMembership.getGroup();
@@ -206,7 +206,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         if (permissionBroker.isGroupPermissionAvailable(user, parentGroup, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS) ||
                 permissionBroker.isGroupPermissionAvailable(user, childGroup, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
-            final Membership membership = user.getGroupMembership(childGroupUid).orElse(parentGroupMembership);
+            final Membership membership = user.getMembership(childGroupUid).orElse(parentGroupMembership);
             return new GroupFullDTO(childGroup, membership);
         } else {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);

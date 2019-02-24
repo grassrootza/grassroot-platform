@@ -1,6 +1,5 @@
 package za.org.grassroot.services.group;
 
-import com.google.common.base.Stopwatch;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -593,14 +591,18 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         boolean wasAlreadyMember = false;
 
-        Membership membership = group.addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, joinMethod, code);
-        if (membership != null) {
-            // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
-            membership.setViewPriority(GroupViewPriority.PINNED);
-        } else {
+        Membership membership;
+        if (user.hasMembership(group)) {
             // means user was already part of group, so we will just add topics etc.
-            membership = group.getMembership(user);
+            membership = user.getMembership(group);
             wasAlreadyMember = true;
+
+        } else {
+            // we are going to assume this at present, and hence do in service layer - but switch to a view layer toggle if user feedback implies should
+            membership = user.addMappedByMembership(group, GroupRole.ROLE_ORDINARY_MEMBER, joinMethod, code);
+            membership.setViewPriority(GroupViewPriority.PINNED);
+            // we have to save via repository because we cannot just add cascading persist due to inverse side (Group's membership having that), otherwise double insert fails
+            membership = this.membershipRepository.save(membership);
         }
 
         if (topics != null) {
@@ -611,8 +613,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         // recursively add user to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            parentGroup.addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
-            bundle.addLog(new GroupLog(parentGroup, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_SUBGROUP_CODE, user, group, null, null));
+            if (!user.hasMembership(parentGroup)) {
+                Membership parentMembership = user.addMappedByMembership(parentGroup, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
+                parentMembership = this.membershipRepository.save(parentMembership);
+
+                bundle.addLog(new GroupLog(parentGroup, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_SUBGROUP_CODE, user, group, null, null));
+            }
             parentGroup = parentGroup.getParent();
         }
 
@@ -635,7 +641,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         storeBundleAfterCommit(bundle);
 
-        return group.getMembership(user);
+        return user.getMembership(group);
     }
 
     private GroupJoinMethod getJoinMethodFromInterface(UserInterfaceType interfaceType) {
@@ -903,7 +909,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
         meetings.forEach(m -> {
             Group meetingGroup = m.getAncestorGroup();
-            if (meetingGroup.equals(group) || !meetingGroup.hasMember(user)) {
+            if (meetingGroup.equals(group) || !user.hasMembership(meetingGroup)) {
                 boolean appliesToMember = m.isAllGroupMembersAssigned() || m.getAssignedMembers().contains(user);
                 if (appliesToMember) {
                     String message = messageAssemblingService.createEventInfoMessage(user, m);
@@ -1635,10 +1641,18 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Override
     public void addMemberViaCampaign(User user, Group group, String campaignCode) {
         logger.info("Adding a member via campaign add request: group={}, user={}, code={}", group, user, campaignCode);
-        group.addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
+
+        Membership membership = user.addMappedByMembership(group, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, null);
+        if (membership != null) {
+            membership = this.membershipRepository.save(membership);
+        }
+
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            parentGroup.addMember(user, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+            Membership parentMembership = user.addMappedByMembership(parentGroup, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+            if (parentMembership != null) {
+                this.membershipRepository.save(parentMembership);
+            }
             parentGroup = parentGroup.getParent();
         }
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -1692,27 +1706,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             logger.info("MSG....={}",s);
             logger.info("Length....={}",s.length());
         }
-    }
-
-    @Override
-    @Transactional()
-    public void testMembersFetch(long groupId) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        final Group group = this.groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Not found group udner ID: " + groupId));
-//        System.out.println("Fetch by ID lasted " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-
-        stopwatch.reset();
-        stopwatch.start();
-        group.getMembers().iterator().hasNext();
-        System.out.println("### Fetch members lasted " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-    }
-
-    @Override
-    @Transactional()
-    public void testMembersFetchViaJoinCode(String joinCode) {
-        final Group group = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode)).orElseThrow(() -> new RuntimeException("Not found group under join code : " + joinCode));
-        boolean hasNext = group.getMembers().iterator().hasNext();
-        System.out.println("### hasNext = " + hasNext);
     }
 
     private void validateGroupSizeLimit(Group group, int numberOfMembersAdding) {
