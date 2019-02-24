@@ -369,7 +369,7 @@ public class GroupRestController extends GroupAbstractRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
         return RestUtil.okayResponseWithData(RestMessage.MEMBER_ALIAS_RETURNED,
-                group.getMembership(user).getDisplayName());
+                user.getMembership(group).getDisplayName());
     }
 
     @RequestMapping(value = "/alias/reset/{phoneNumber}/{code}", method = RequestMethod.POST)

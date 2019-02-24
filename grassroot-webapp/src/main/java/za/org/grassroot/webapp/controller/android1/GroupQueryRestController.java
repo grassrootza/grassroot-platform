@@ -134,7 +134,7 @@ public class GroupQueryRestController extends GroupAbstractRestController {
             permissionBroker.validateGroupPermission(thisUser, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
-        Membership m = group.getMembership(user);
+        Membership m = user.getMembership(group);
         return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, new MembershipResponseWrapper(group, user, m.getRole(), false));
     }
 

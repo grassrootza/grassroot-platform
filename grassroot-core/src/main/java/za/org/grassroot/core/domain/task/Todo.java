@@ -126,7 +126,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     public String getName() { return message; }
 
     public String getCreatorAlias() {
-        return ancestorGroup.getMembership(this.createdByUser).getDisplayName();
+        return this.createdByUser.getMembership(ancestorGroup).getDisplayName();
     }
 
     @Override

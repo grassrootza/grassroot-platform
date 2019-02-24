@@ -347,7 +347,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String subject = event.getName();
         subject = (subject.contains("&")) ? subject.replace("&", "and") : subject;
 
-        Membership creatingMember = event.getAncestorGroup().getMembership(event.getCreatedByUser());
+        Membership creatingMember = event.getCreatedByUser().getMembership(event.getAncestorGroup());
         String userAlias = creatingMember != null ? creatingMember.getDisplayName() : event.getCreatedByUser().getDisplayName();
 
         String[] eventVariables;

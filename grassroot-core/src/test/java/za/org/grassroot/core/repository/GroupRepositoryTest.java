@@ -84,7 +84,7 @@ public class GroupRepositoryTest {
 
         Event eventFromDb = eventRepository.findAll().iterator().next();
         assertNotNull(eventFromDb.getParent());
-        assertTrue(eventFromDb.getParent().getUid().equals(group2.getUid()));
+        assertEquals(eventFromDb.getParent().getUid(), group2.getUid());
     }
 
     @Test
@@ -113,7 +113,7 @@ public class GroupRepositoryTest {
 
         Todo todoFromDb = todoRepository.findOneByUid(newTask.getUid());
         assertNotNull(todoFromDb.getParent());
-        assertTrue(todoFromDb.getParent().getUid().equals(groupToCreate1.getUid()));
+        assertEquals(todoFromDb.getParent().getUid(), groupToCreate1.getUid());
     }
 
 
@@ -125,11 +125,11 @@ public class GroupRepositoryTest {
         assertThat(groupRepository.count(), is(1L));
         assertNotNull(groupToCreate);
         groupToCreate.setDefaultImage(GroupDefaultImage.SOCIAL_MOVEMENT);
-        assertTrue(groupToCreate.getDefaultImage().equals(GroupDefaultImage.SOCIAL_MOVEMENT));
+        assertEquals(groupToCreate.getDefaultImage(), GroupDefaultImage.SOCIAL_MOVEMENT);
 
         Group groupFromDB = groupRepository.findOneByUid(groupToCreate.getUid());
         assertNotNull(groupFromDB);
-        assertTrue(groupToCreate.getDefaultImage().equals(GroupDefaultImage.SOCIAL_MOVEMENT));
+        assertEquals(groupToCreate.getDefaultImage(), GroupDefaultImage.SOCIAL_MOVEMENT);
 
     }
 
@@ -141,10 +141,10 @@ public class GroupRepositoryTest {
         assertThat(groupRepository.count(), is(1L));
         assertNotNull(groupToCreate);
         groupToCreate.setImageUrl("http");
-        assertTrue(groupToCreate.getImageUrl().equals("http"));
+        assertEquals("http", groupToCreate.getImageUrl());
         Group groupFromDb = groupRepository.findOne(where(hasImageUrl("http"))).get();
         assertNotNull(groupFromDb);
-        assertTrue(groupToCreate.getImageUrl().equals("http"));
+        assertEquals("http", groupToCreate.getImageUrl());
     }
 
     @Test
@@ -169,12 +169,12 @@ public class GroupRepositoryTest {
         assertThat(groupRepository.count(), is(1L));
         assertNotNull(groupToCreate);
 
-        Membership membership = groupToCreate.getMembership(userRole);
+        Membership membership = userRole.getMembership(groupToCreate);
         log.info("first membership: {}", membership);
 
-        assertTrue(groupToCreate.getMembership(userRole).getRole().equals(GroupRole.ROLE_COMMITTEE_MEMBER));
-        assertTrue(groupToCreate.getMembership(userRole1).getRole().equals(GroupRole.ROLE_ORDINARY_MEMBER));
-        assertTrue(groupToCreate.getMembership(userRole2).getRole().equals(GroupRole.ROLE_GROUP_ORGANIZER));
+        assertEquals(userRole.getMembership(groupToCreate).getRole(), GroupRole.ROLE_COMMITTEE_MEMBER);
+        assertEquals(userRole1.getMembership(groupToCreate).getRole(), GroupRole.ROLE_ORDINARY_MEMBER);
+        assertEquals(userRole2.getMembership(groupToCreate).getRole(), GroupRole.ROLE_GROUP_ORGANIZER);
 
         Group groupFromDb = groupRepository.findAll().iterator().next();
         assertNotNull(groupFromDb.getId());
@@ -236,8 +236,8 @@ public class GroupRepositoryTest {
         assertNotNull(groupFromDb.getId());
         assertTrue(userToRetrieve.isMemberOf(groupFromDb));
         assertTrue(userToRetrieve1.isMemberOf(groupFromDb));
-        assertTrue(groupFromDb.getMembership(userToRetrieve).getUser().getPhoneNumber().equals("56789"));
-        assertTrue(groupFromDb.getMembership(userToRetrieve1).getUser().getPhoneNumber().equals("45678"));
+        assertEquals("56789", userToRetrieve.getMembership(groupFromDb).getUser().getPhoneNumber());
+        assertEquals("45678", userToRetrieve1.getMembership(groupFromDb).getUser().getPhoneNumber());
         assertThat(groupFromDb.getMemberships().size(),is(2));
 
     }

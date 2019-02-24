@@ -127,7 +127,7 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         Task task = TaskType.TODO.equals(type) ? todoBroker.load(taskUid) : eventBroker.load(taskUid);
 
-        if (task.getAncestorGroup().getMembership(user) == null) {
+        if (user.getMembership(task.getAncestorGroup()) == null) {
             throw new AccessDeniedException("Error! Only users within ancestor group can see task");
         }
 
@@ -676,7 +676,7 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     private boolean partOfGroupBeforeVoteCalled(Event event, User user) {
-        Membership membership = event.getAncestorGroup().getMembership(user);
+        Membership membership = user.getMembership(event.getAncestorGroup());
         return membership != null && event.getCreatedDateTime().isAfter(membership.getJoinTime());
     }
 

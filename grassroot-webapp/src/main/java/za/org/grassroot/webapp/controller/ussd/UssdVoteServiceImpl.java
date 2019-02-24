@@ -81,7 +81,7 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 	@Override
 	public USSDMenu assembleVoteMenu(User user, Vote vote) {
 		final String[] promptFields = new String[]{vote.getAncestorGroup().getName(""),
-				vote.getAncestorGroup().getMembership(vote.getCreatedByUser()).getDisplayName(),
+				vote.getCreatedByUser().getMembership(vote.getAncestorGroup()).getDisplayName(),
 				vote.getName()};
 
 		final String prompt = EventSpecialForm.MASS_VOTE.equals(vote.getSpecialForm()) ? promptKey + "-vote-mass" : promptKey + "-vote";

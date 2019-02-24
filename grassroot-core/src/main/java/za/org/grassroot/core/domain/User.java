@@ -268,16 +268,16 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
                 .collect(Collectors.toSet());
     }
 
-    public Optional<Membership> getMembership(String groupId) {
-        return getMemberships().stream().filter(m -> m.getGroup().getUid().equalsIgnoreCase(groupId)).findFirst();
+    public Optional<Membership> getMembershipOptional(Group group) {
+        return this.memberships.stream().filter(membership -> membership.getGroup().equals(group)).findFirst();
     }
 
     public Membership getMembership(Group group) {
-        return getMembership(group.getUid()).orElse(null);
+        return getMembershipOptional(group).orElse(null);
     }
 
     public boolean isMemberOf(Group group) {
-        return getMembership(group.getUid()).isPresent();
+        return getMembershipOptional(group).isPresent();
     }
 
     /**

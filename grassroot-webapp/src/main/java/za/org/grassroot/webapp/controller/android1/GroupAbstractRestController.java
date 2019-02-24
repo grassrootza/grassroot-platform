@@ -36,7 +36,7 @@ public class GroupAbstractRestController {
     protected PermissionBroker permissionBroker;
 
     protected GroupResponseWrapper createGroupWrapper(Group group, User caller) {
-        GroupRole role = group.getMembership(caller).getRole();
+        GroupRole role = caller.getMembership(group).getRole();
         Event event = eventBroker.getMostRecentEvent(group.getUid());
         GroupLog groupLog = groupQueryBroker.getMostRecentLog(group);
         boolean hasTask = event != null;
