@@ -46,28 +46,32 @@ dependencies {
 
     // note: to work well with IntelliJ, enable 'annotation processing', with sources generated relative to content root
     // do a build, then mark the generated folder as 'generated sources' (note: may require a reimport of the project)
-    compileOnly group: 'org.hibernate', name: 'hibernate-jpamodelgen'
 
-    compile group: 'org.springframework', name: 'spring-context'
-    compile group: 'org.springframework', name: 'spring-context-support'
+    annotationProcessor "org.hibernate:hibernate-jpamodelgen"
+    compileOnly "org.hibernate:hibernate-jpamodelgen"
+    testAnnotationProcessor 'org.hibernate:hibernate-jpamodelgen'
+    testCompileOnly 'org.hibernate:hibernate-jpamodelgen'
 
-    compile group: 'org.springframework.security', name: 'spring-security-config'
+    compile 'org.springframework:spring-context'
+    compile 'org.springframework:spring-context-support'
+
+    compile 'org.springframework.security:spring-security-config'
     
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa'
+    compile 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-    compile group: 'com.h2database', name: 'h2'
-    compile group: 'org.apache.tomcat', name: 'tomcat-jdbc'
+    compile 'com.h2database:h2'
+    compile 'org.apache.tomcat:tomcat-jdbc'
 
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind'
+    compile 'com.fasterxml.jackson.core:jackson-core'
+    compile 'com.fasterxml.jackson.core:jackson-annotations'
+    compile 'com.fasterxml.jackson.core:jackson-databind'
 
-    compile group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version:'8.8.8'
+    compile 'com.googlecode.libphonenumber:libphonenumber:8.8.8'
 
-    compile group: 'net.sf.ehcache', name: 'ehcache'
-    runtime group: 'org.postgresql', name: 'postgresql'
+    compile 'net.sf.ehcache:ehcache'
+    runtime 'org.postgresql:postgresql'
 
-    compile group: 'org.apache.commons', name: 'commons-text', version: '1.3'
-    compile group: 'commons-validator', name: 'commons-validator', version: '1.6'
+    compile 'org.apache.commons:commons-text:1.3'
+    compile 'commons-validator:commons-validator:1.6'
 
 }
