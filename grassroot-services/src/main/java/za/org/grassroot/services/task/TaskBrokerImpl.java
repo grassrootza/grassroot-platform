@@ -474,7 +474,7 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     private void validateUserPartOfGroupOrSystemAdmin(Group group, User user) {
-        if (!group.hasMember(user) && !permissionBroker.isSystemAdmin(user)) {
+        if (!user.isMemberOf(group) && !permissionBroker.isSystemAdmin(user)) {
             throw new AccessDeniedException("Error! Must be part of group");
         }
     }

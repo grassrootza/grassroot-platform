@@ -199,15 +199,15 @@ public class GroupRepositoryTest {
 
         assertThat(groupRepository.count(), is(1L));
         assertNotNull(groupToAdd);
-        assertTrue(groupToAdd.hasMember(userAdd));
-        assertTrue(groupToAdd.hasMember(userAdd1));
+        assertTrue(userAdd.isMemberOf(groupToAdd));
+        assertTrue(userAdd1.isMemberOf(groupToAdd));
         assertThat(groupToAdd.getMembers().size(), is(2));
 
         Group groupFromDb = groupRepository.findAll().iterator().next();
         assertNotNull(groupFromDb.getId());
         assertThat(groupFromDb.getMembers().size(),is(2));
-        assertTrue(groupFromDb.hasMember(userAdd));
-        assertTrue(groupFromDb.hasMember(userAdd1));
+        assertTrue(userAdd.isMemberOf(groupFromDb));
+        assertTrue(userAdd1.isMemberOf(groupFromDb));
     }
 
     @Test
@@ -228,14 +228,14 @@ public class GroupRepositoryTest {
 
         assertThat(groupRepository.count(),is(1L));
         assertNotNull(groupToCollect);
-        assertTrue(groupToCollect.hasMember(userToRetrieve));
-        assertTrue(groupToCollect.hasMember(userToRetrieve1));
+        assertTrue(userToRetrieve.isMemberOf(groupToCollect));
+        assertTrue(userToRetrieve1.isMemberOf(groupToCollect));
         assertThat(groupToCollect.getMemberships().size(),is(2));
 
         Group groupFromDb = groupRepository.findAll().iterator().next();
         assertNotNull(groupFromDb.getId());
-        assertTrue(groupFromDb.hasMember(userToRetrieve));
-        assertTrue(groupFromDb.hasMember(userToRetrieve1));
+        assertTrue(userToRetrieve.isMemberOf(groupFromDb));
+        assertTrue(userToRetrieve1.isMemberOf(groupFromDb));
         assertTrue(groupFromDb.getMembership(userToRetrieve).getUser().getPhoneNumber().equals("56789"));
         assertTrue(groupFromDb.getMembership(userToRetrieve1).getUser().getPhoneNumber().equals("45678"));
         assertThat(groupFromDb.getMemberships().size(),is(2));

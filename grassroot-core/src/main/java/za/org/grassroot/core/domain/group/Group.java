@@ -355,11 +355,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
                 .findFirst();
     }
 
-    public boolean hasMember(User user) {
-        Objects.requireNonNull(user);
-        return getMembership(user.getUid()).isPresent();
-    }
-
     public List<String> getJoinTopics() {
         return this.getTagList().stream().filter(s -> s.startsWith(JOIN_TOPIC_PREFIX))
                 .map(s -> s.substring(JOIN_TOPIC_PREFIX.length())).collect(Collectors.toList());

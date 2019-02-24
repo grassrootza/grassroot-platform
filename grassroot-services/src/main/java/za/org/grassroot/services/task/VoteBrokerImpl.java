@@ -263,7 +263,7 @@ public class VoteBrokerImpl implements VoteBroker {
         }
 
         boolean isUserInGroup = vote.isAllGroupMembersAssigned() ?
-                vote.getThisOrAncestorGroup().hasMember(user) :
+                user.isMemberOf(vote.getThisOrAncestorGroup()) :
                 vote.getAssignedMembers().contains(user);
 
         if (!isUserInGroup) {

@@ -66,7 +66,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ApplicationEventPublisher eventPublisher;
 
-    private Map<String, String> configDefaults = new HashMap<>();
     private Map<String, String> configVariables = new HashMap<>();
 
     @Autowired
@@ -95,6 +94,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     @PostConstruct
     public void init() {
         log.info("Setting up account features, populating config variable map");
+        Map<String, String> configDefaults = new HashMap<>();
         configDefaults.put("group.size.limited", "false");
         configDefaults.put("group.joins.limited", "false");
         configDefaults.put("group.size.freemax", "300");

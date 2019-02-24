@@ -392,7 +392,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Campaign campaign = campaignRepository.findOneByUid(Objects.requireNonNull(campaignUid));
         User user = userManager.load(Objects.requireNonNull(userUid));
         Group masterGroup = campaign.getMasterGroup();
-        return masterGroup.hasMember(user);
+        return user.isMemberOf(masterGroup);
     }
 
     @Override

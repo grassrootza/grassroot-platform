@@ -147,7 +147,7 @@ public class AroundMeRestController extends BaseRestController {
                 groupLocation.getName(),
                 groupLocation.getDescription(),
                 groupLocation.getName(),
-                group.hasMember(user),
+                user.isMemberOf(group),
                 contactName,
                 group.getCreatedDateTime().toEpochMilli(),
                 groupLocation.getLatitude(),

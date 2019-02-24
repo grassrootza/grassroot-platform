@@ -20,7 +20,7 @@ import za.org.grassroot.webapp.controller.android1.VoteRestController;
 
 import java.util.Optional;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

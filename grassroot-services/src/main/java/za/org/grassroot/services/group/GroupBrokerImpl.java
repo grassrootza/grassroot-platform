@@ -592,7 +592,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         boolean wasAlreadyMember = false;
 
         Membership membership;
-        if (user.hasMembership(group)) {
+        if (user.isMemberOf(group)) {
             // means user was already part of group, so we will just add topics etc.
             membership = user.getMembership(group);
             wasAlreadyMember = true;
@@ -613,7 +613,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         // recursively add user to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            if (!user.hasMembership(parentGroup)) {
+            if (!user.isMemberOf(parentGroup)) {
                 Membership parentMembership = user.addMappedByMembership(parentGroup, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
                 parentMembership = this.membershipRepository.save(parentMembership);
 
@@ -909,7 +909,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
         meetings.forEach(m -> {
             Group meetingGroup = m.getAncestorGroup();
-            if (meetingGroup.equals(group) || !user.hasMembership(meetingGroup)) {
+            if (meetingGroup.equals(group) || !user.isMemberOf(meetingGroup)) {
                 boolean appliesToMember = m.isAllGroupMembersAssigned() || m.getAssignedMembers().contains(user);
                 if (appliesToMember) {
                     String message = messageAssemblingService.createEventInfoMessage(user, m);

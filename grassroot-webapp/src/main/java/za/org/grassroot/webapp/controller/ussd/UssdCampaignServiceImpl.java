@@ -170,7 +170,8 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 		CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
 		campaignBroker.signPetition(message.getCampaign().getUid(), user.getUid(), UserInterfaceType.USSD);
 		final String promptStart = message.getMessage() + (StringUtils.isEmpty(message.getMessage()) ? "" : ". ");
-		return ussdSupport.menuBuilder(joinGroupOrFinalOptionsMenu(message.getCampaign(), user, promptStart, message.getLocale()));
+		final USSDMenu ussdMenu = joinGroupOrFinalOptionsMenu(message.getCampaign(), user, promptStart, message.getLocale());
+		return ussdSupport.menuBuilder(ussdMenu);
 	}
 
 	@Override

@@ -151,18 +151,19 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         log.debug("fetching heavy group, group uid = {}, user = {}", groupUid, user.getName());
 
-        final Optional<Membership> membership = group.getMembership(userUid);
-        if (!membership.isPresent()) {
+        final Membership membership = user.getMembership(group);
+        if (membership == null) {
             log.error("Error! Non existent group or membership passed to query: group UID: {}", groupUid);
             return null;
         }
-        final GroupFullDTO groupFullDTO = new GroupFullDTO(group, membership.get());
+        final GroupFullDTO groupFullDTO = new GroupFullDTO(group, membership);
 
         final boolean hasMemberDetailsPerm = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
         if (includeAllMembers && hasMemberDetailsPerm) {
             final Pageable page = PageRequest.of(0, MAX_DTO_MEMBERS, Sort.Direction.DESC, "joinTime");
-            final List<Membership> memberships = membershipRepository.findByGroupUid(group.getUid(), page).getContent();
+            final Page<Membership> membershipPage = membershipRepository.findByGroupUid(group.getUid(), page);
+            final List<Membership> memberships = membershipPage.getContent();
             final Set<MembershipDTO> membershipDTOS = memberships.stream().map(MembershipDTO::new).collect(Collectors.toSet());
             groupFullDTO.setMembers(membershipDTOS);
         }
@@ -318,7 +319,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
         try {
-            if (group.hasParent() && !group.hasMember(user)) {
+            if (group.hasParent() && !user.isMemberOf(group)) {
                 permissionBroker.validateGroupPermission(user, group.getParent(), Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
             } else {
                 permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);

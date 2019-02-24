@@ -24,7 +24,6 @@ import java.util.Locale;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 public class UssdCampaignServiceTest extends UssdUnitTest {
