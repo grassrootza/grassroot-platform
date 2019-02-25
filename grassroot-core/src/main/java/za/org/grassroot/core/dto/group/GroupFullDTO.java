@@ -16,13 +16,18 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @ApiModel @Getter @Slf4j
-public class GroupFullDTO extends GroupHeavyDTO {
+public class GroupFullDTO extends GroupMinimalDTO {
 
     // note: in future we may make this variable / settable
     private static final int MAX_JOIN_WORDS = 3;
 
     private final String joinCode;
     private final boolean paidFor;
+    private final String groupCreatorName;
+    private final String groupCreatorUid;
+    private final Long groupCreationTimeMillis;
+    private final Integer reminderMinutes;
+
     @Setter private Set<MembershipDTO> members;
     @Setter private List<MembershipRecordDTO> memberHistory;
     @Setter private List<GroupMembersDTO> subGroups = new ArrayList<>();
@@ -33,10 +38,13 @@ public class GroupFullDTO extends GroupHeavyDTO {
     @Setter private int joinWordsLeft;
     @Setter private boolean hasInboundMessages;
     @Setter private String joinMessage;
-    private final Integer reminderMinutes;
 
     public GroupFullDTO(Group group, Membership membership, MembershipRepository membershipRepository) {
         super(group, membership, membershipRepository);
+        this.groupCreatorUid = group.getCreatedByUser().getUid();
+        this.groupCreatorName = group.getCreatedByUser().getName();
+        this.groupCreationTimeMillis = group.getCreatedDateTime().toEpochMilli();
+
         this.joinCode = group.getGroupTokenCode();
         this.topics.addAll(group.getTopics());
         this.joinTopics.addAll(group.getJoinTopics());
