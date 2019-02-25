@@ -137,7 +137,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         return user.getMemberships().stream()
                 .filter(membership -> groupUids.contains(membership.getGroup().getUid()))
-                .map(membership -> new GroupMinimalDTO(membership.getGroup(), membership))
+                .map(membership -> new GroupMinimalDTO(membership.getGroup(), membership, this.membershipRepository))
                 .collect(Collectors.toSet());
     }
 
@@ -156,7 +156,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             log.error("Error! Non existent group or membership passed to query: group UID: {}", groupUid);
             return null;
         }
-        final GroupFullDTO groupFullDTO = new GroupFullDTO(group, membership);
+        final GroupFullDTO groupFullDTO = new GroupFullDTO(group, membership, this.membershipRepository);
 
         final boolean hasMemberDetailsPerm = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
@@ -210,7 +210,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         if (permissionBroker.isGroupPermissionAvailable(user, parentGroup, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS) ||
                 permissionBroker.isGroupPermissionAvailable(user, childGroup, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             final Membership membership = user.getMembershipOptional(childGroup).orElse(parentGroupMembership);
-            return new GroupFullDTO(childGroup, membership);
+            return new GroupFullDTO(childGroup, membership, this.membershipRepository);
         } else {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
@@ -274,7 +274,11 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user);
 
         List<GroupWebDTO> dtos = groups.stream()
-                .map(gr -> new GroupWebDTO(gr, membershipRepository.findByGroupAndUser(gr, user), includeSubgroups ? getSubgroups(gr) : Collections.emptyList()))
+                .map(gr -> {
+                    final Membership membership = membershipRepository.findByGroupAndUser(gr, user);
+                    List<GroupRefDTO> subGroups = includeSubgroups ? getSubgroups(gr) : Collections.emptyList();
+                    return new GroupWebDTO(gr, membership, subGroups, this.membershipRepository);
+                })
                 .collect(Collectors.toList());
 
         return dtos.stream()
@@ -399,7 +403,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 !(group.hasParent() && permissionBroker.isGroupPermissionAvailable(user, group.getParent(), Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS))) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
-        return new MembershipFullDTO(membershipRepository.findByGroupUidAndUserUid(groupUid, memberUid));
+        final Membership membership = membershipRepository.findByGroupUidAndUserUid(groupUid, memberUid);
+        return new MembershipFullDTO(membership, this.membershipRepository);
     }
 
     @Override

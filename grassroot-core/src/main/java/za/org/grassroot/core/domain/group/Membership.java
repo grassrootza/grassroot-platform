@@ -15,14 +15,15 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Entity
 @Table(name = "group_user_membership",
         uniqueConstraints = @UniqueConstraint(name = "uk_membership_group_user", columnNames = {"group_id", "user_id"}))
 public class Membership implements Serializable, TagHolder {
 
-    public static final String JOIN_METHOD_DESCRIPTOR_TAG = "JOINDESC:";
-    public static final String AFFILITATION_TAG ="AFFILIATION:";
+    private static final String JOIN_METHOD_DESCRIPTOR_TAG = "JOINDESC:";
+    private static final String AFFILITATION_TAG ="AFFILIATION:";
 
     @Setter(AccessLevel.PRIVATE)
     @Id
@@ -110,13 +111,17 @@ public class Membership implements Serializable, TagHolder {
     }
 
     public List<String> getAffiliations() {
-        return this.getTagList().stream()
-                .filter(s -> s.startsWith(AFFILITATION_TAG))
-                .map(s -> s.substring(AFFILITATION_TAG.length()))
-                .collect(Collectors.toList());
+		Collection<String> tagList = this.getTagList();
+		return extractAffiliations(tagList).collect(Collectors.toList());
     }
 
-    public void updateRole(GroupRole role) {
+	public static Stream<String> extractAffiliations(Collection<String> tagList) {
+		return tagList.stream()
+                .filter(s -> s.startsWith(AFFILITATION_TAG))
+                .map(s -> s.substring(AFFILITATION_TAG.length()));
+	}
+
+	public void updateRole(GroupRole role) {
         this.role = Objects.requireNonNull(role);
     }
 

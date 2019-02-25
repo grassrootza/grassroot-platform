@@ -8,13 +8,11 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.membership.MembershipDTO;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @ApiModel @Getter @Slf4j
@@ -37,8 +35,8 @@ public class GroupFullDTO extends GroupHeavyDTO {
     @Setter private String joinMessage;
     private final Integer reminderMinutes;
 
-    public GroupFullDTO(Group group, Membership membership) {
-        super(group, membership);
+    public GroupFullDTO(Group group, Membership membership, MembershipRepository membershipRepository) {
+        super(group, membership, membershipRepository);
         this.joinCode = group.getGroupTokenCode();
         this.topics.addAll(group.getTopics());
         this.joinTopics.addAll(group.getJoinTopics());
@@ -49,8 +47,10 @@ public class GroupFullDTO extends GroupHeavyDTO {
                 .collect(Collectors.toList());
 
         this.joinWordsLeft = MAX_JOIN_WORDS - this.joinWords.size();
-        this.affiliations = group.getMemberships().stream()
-                .flatMap(m -> m.getAffiliations().stream())
+
+        final Set<String[]> tagsSet = membershipRepository.findDistinctMembershipTagsByGroup(group);
+        this.affiliations = tagsSet.stream()
+                .flatMap(tags -> Membership.extractAffiliations(Arrays.asList(tags)))
                 .collect(Collectors.toSet());
 
         this.members = new HashSet<>();
