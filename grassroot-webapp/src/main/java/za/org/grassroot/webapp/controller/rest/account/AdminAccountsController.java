@@ -1,11 +1,16 @@
 package za.org.grassroot.webapp.controller.rest.account;
 
+import com.google.api.Http;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.billing.BillingServiceBroker;
@@ -80,6 +85,19 @@ public class AdminAccountsController extends BaseRestController {
                                                 @RequestParam(required = false) Boolean updateDynamoReference) {
         accountBroker.updateDataSetLabels(getUserIdFromRequest(request), accountUid,
                 geoDataSets, updateDynamoReference != null ? updateDynamoReference : false);
+        return ResponseEntity.ok(wrapAccount(request, accountUid));
+    }
+
+    @RequestMapping(value = "/update/costs/units", method = RequestMethod.POST)
+    public ResponseEntity updateAccountUnitCosts(HttpServletRequest request, @RequestParam String accountUid,
+                                                 @RequestParam int avgUssdCost, @RequestParam int perSmsCost) {
+        accountBroker.updateAccountUnitCosts(getUserIdFromRequest(request), accountUid, avgUssdCost, perSmsCost);
+        return ResponseEntity.ok(wrapAccount(request, accountUid));
+    }
+
+    @RequestMapping(value = "/update/costs/calc", method = RequestMethod.POST)
+    public ResponseEntity updateAccountSpent(HttpServletRequest request, @RequestParam String accountUid) {
+        accountBroker.calculateAccountSpendingThisMonth(accountUid);
         return ResponseEntity.ok(wrapAccount(request, accountUid));
     }
 

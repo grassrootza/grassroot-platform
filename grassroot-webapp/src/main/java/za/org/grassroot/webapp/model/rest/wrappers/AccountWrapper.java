@@ -39,6 +39,8 @@ public class AccountWrapper {
 
     private long notificationsSinceLastBill;
     private long chargedUssdSinceLastBill;
+    private long totalSpentThisMonth;
+    private long spendingLimit;
 
     private List<String> geoDataSets;
 
@@ -51,6 +53,9 @@ public class AccountWrapper {
         this.name = account.getAccountName();
         this.subscriptionId = account.getSubscriptionRef();
         this.lastBillingDateMillis = account.getLastBillingDate().toEpochMilli();
+
+        this.totalSpentThisMonth = account.getCurrentMonthSpend();
+        this.spendingLimit = account.getMonthlySpendingLimit();
 
         // these are pretty inefficient but this should be occassional - turn into a query at some point
         this.paidForGroups = account.getPaidGroups().stream().collect(Collectors.toMap(Group::getUid, Group::getName));

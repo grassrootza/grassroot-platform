@@ -9,7 +9,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
@@ -19,7 +24,6 @@ import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.task.EventBroker;
@@ -31,9 +35,6 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -123,7 +124,28 @@ public class EventCreateController extends BaseRestController{
     public ResponseEntity<TaskFullDTO> createVote(HttpServletRequest request,
                                                   @PathVariable String parentUid,
                                                   @PathVariable JpaEntityType parentType,
-                                                  @RequestParam String title,
+                                                  @RequestBody VoteCreationRequest voteRequest) {
+
+        String userUid = getUserIdFromRequest(request);
+
+        try {
+            final User user = userService.load(userUid);
+
+            log.info("Creating vote with request: {}", voteRequest);
+
+            final VoteHelper helper = voteRequest.convertToHelper(userUid, parentUid, parentType);
+
+            Vote vote = eventBroker.createVote(helper);
+
+            log.debug("Vote={},User={}",vote,user);
+            return ResponseEntity.ok(new TaskFullDTO(vote, user,vote.getCreatedDateTime(), null));
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        }
+    }
+
+    /*
+    @RequestParam String title,
                                                   @RequestParam(required = false) List<String> voteOptions,
                                                   @RequestParam(required = false) String description,
                                                   @RequestParam long time,
@@ -131,19 +153,9 @@ public class EventCreateController extends BaseRestController{
                                                   @RequestParam(required = false) Boolean randomizeOptions,
                                                   @RequestParam(required = false) String mediaFileUid,
                                                   @RequestParam(required = false) @ApiParam(value = "UIDs of assigned members, if left blank all " +
-                                                              "members of the parent are assigned") Set<String> assignedMemberUids){
+                                                              "members of the parent are assigned") Set<String> assignedMemberUids
 
-        String userUid = getUserIdFromRequest(request);
-
-        LocalDateTime eventStartDateTime = Instant.ofEpochMilli(time).atZone(DateTimeUtil.getSAST()).toLocalDateTime();
-
-        try {
-            User user = userService.load(userUid);
-
-            assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
-            log.info("title={}, description={}, time={}, members={}, options={}, special form={}, randomize={}", title, description, eventStartDateTime, assignedMemberUids, voteOptions, specialForm, randomizeOptions);
-
-            VoteHelper helper = VoteHelper.builder()
+                                                               VoteHelper helper = VoteHelper.builder()
                     .userUid(user.getUid())
                     .parentUid(parentUid)
                     .parentType(parentType)
@@ -157,15 +169,6 @@ public class EventCreateController extends BaseRestController{
                     .randomizeOptions(randomizeOptions != null && randomizeOptions)
                     .build();
 
-            log.info("corresponding helper: {}", helper);
-
-            Vote vote = eventBroker.createVote(helper);
-
-            log.debug("Vote={},User={}",vote,user);
-            return ResponseEntity.ok(new TaskFullDTO(vote, user,vote.getCreatedDateTime(), null));
-        } catch (AccessDeniedException e) {
-            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
-        }
-    }
+     */
 
 }

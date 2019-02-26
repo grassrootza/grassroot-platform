@@ -1,67 +1,73 @@
-allprojects  {
-  apply plugin: 'maven'
-  group = 'za.org.grassroot'
-  version = '1.2.4'
+buildscript {
+	ext {
+		springBootVersion = '2.1.3.RELEASE'
+	}
 
-  task downloadDependencies() {
-    description 'Download all dependencies to the Gradle cache'
-    doLast {
-      configurations.findAll { it.canBeResolved }.files
-    }
-  }
+	repositories {
+		gradlePluginPortal()
+	}
+
+	dependencies {
+		classpath "org.springframework.boot:spring-boot-gradle-plugin:$springBootVersion"
+	}
 }
 
-ext.libs = [
-        springVersion: '5.0.11.RELEASE',
-        springBootVersion: '2.0.7.RELEASE',
-        springSecurityVersion: '5.0.10.RELEASE',
-        jacksonVersion: '2.8.7'
-]
-
 subprojects {
+	apply plugin: 'java'
+	apply plugin: 'io.spring.dependency-management'
 
-  apply plugin: 'java'
-  apply plugin: 'jacoco'
+	group = 'za.org.grassroot'
+	sourceCompatibility = 1.8
+    version = '1.3.0'
 
-  sourceCompatibility = 1.8
-  targetCompatibility = 1.8
+	repositories {
+        mavenLocal()
+        maven { url "http://repo.maven.apache.org/maven2" }
+        maven { url "http://optimizely.bintray.com/optimizely" }
+        maven { url "https://dl.bintray.com/grassrootza/grassroot-graph" }
+	}
 
-  repositories {
-    mavenLocal()
-    maven { url "http://repo.maven.apache.org/maven2" }
-    maven { url "http://optimizely.bintray.com/optimizely" }
-    maven { url "https://dl.bintray.com/grassrootza/grassroot-graph" }
-  }
-
-  test {
-    exclude '**/*IT*'
-    testLogging {
-      events "failed"
-      exceptionFormat = "full"
+    task downloadDependencies() {
+      description 'Download all dependencies to the Gradle cache'
+      doLast {
+        configurations.findAll { it.canBeResolved }.files
+      }
     }
 
-    systemProperty "grassroot.sms.gateway", "127.0.0.1"
-    systemProperty "grassroot.sms.gateway.username", "grassrootstest"
-    systemProperty "grassroot.sms.gateway.password", "test"
-  }
+	dependencyManagement {
+		imports {
+			mavenBom "org.springframework.boot:spring-boot-dependencies:$springBootVersion"
+		}
+	}
 
-  dependencies {
+    test {
+      exclude '**/*IT*'
+      testLogging {
+        events "failed"
+        exceptionFormat = "full"
+      }
 
-    compile group: 'com.google.guava', name: 'guava', version: '19.0'
-    compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.7.0'
-    compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.7.0'
+      systemProperty "grassroot.sms.gateway", "127.0.0.1"
+      systemProperty "grassroot.sms.gateway.username", "grassrootstest"
+      systemProperty "grassroot.sms.gateway.password", "test"
+    }
 
-    compile group: 'org.projectlombok', name: 'lombok', version: '1.18.2'
+    dependencies {
 
-    testCompile group: 'org.springframework', name: 'spring-test', version: libs.springVersion
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.dbunit', name: 'dbunit', version: '2.5.3'
-    testCompile group: 'com.github.springtestdbunit', name: 'spring-test-dbunit', version: '1.3.0'
+      compile 'com.google.guava:guava:19.0'
+      compile 'io.springfox:springfox-swagger2:2.7.0'
+      compile 'io.springfox:springfox-swagger-ui:2.7.0'
 
-    testCompile group: 'org.hamcrest', name: 'hamcrest-library', version: '1.3'
-    testCompile group: 'org.mockito', name: 'mockito-core', version: '1.10.19'
-    testCompile group: 'org.powermock', name: 'powermock-module-junit4', version: '1.6.5'
+      annotationProcessor 'org.projectlombok:lombok'
+      compileOnly 'org.projectlombok:lombok'
+      testAnnotationProcessor 'org.projectlombok:lombok'
+      testCompileOnly 'org.projectlombok:lombok'
 
-    testCompile group: 'org.springframework.boot', name: 'spring-boot-test-autoconfigure', version: libs.springBootVersion
-  }
+      testCompile 'junit:junit'
+      testCompile 'org.dbunit:dbunit:2.5.3'
+      testCompile 'com.github.springtestdbunit:spring-test-dbunit:1.3.0'
+
+      compile 'org.springframework.boot:spring-boot-starter'
+      testCompile 'org.springframework.boot:spring-boot-starter-test'
+    }
 }

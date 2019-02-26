@@ -376,10 +376,9 @@ public class USSDGroupUtil extends USSDUtil {
         if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER))
             listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupUid), getMessage(menuKey + addMemberPrompt, user));
 
-        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
-            listMenu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupUid), getMessage(menuKey + renameGroupPrompt, user));
-
         if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
+            listMenu.addMenuOption(groupMenuWithId("organizer", groupUid), getMessage("group.menu.options.organizer", user));
+            listMenu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupUid), getMessage(menuKey + renameGroupPrompt, user));
             listMenu.addMenuOption(groupMenuWithId(advancedGroupMenu, groupUid), getMessage(menuKey + advancedGroupMenu, user));
         } else {
             listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(menuKey + unsubscribePrompt, user));
@@ -416,7 +415,7 @@ public class USSDGroupUtil extends USSDUtil {
             listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupUid), getMessage(tokenKey, user));
             listMenu.addMenuOption(groupMenuWithId("language", groupUid), getMessage("group.advanced.options.language", user));
             listMenu.addMenuOption(groupMenuWithId(visibility, groupUid), visibilityMenuOptionPrompt);
-            listMenu.addMenuOption(groupMenuWithId("organizer", groupUid), getMessage("group.menu.options.organizer", user));
+
         }
 
         if (groupBroker.isDeactivationAvailable(user, group, true))

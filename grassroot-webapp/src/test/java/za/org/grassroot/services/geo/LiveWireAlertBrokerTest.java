@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.context.ApplicationEventPublisher;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -73,9 +73,9 @@ public class LiveWireAlertBrokerTest {
 
         testUser = new User("1234567899","Testing", null);
         testLocation = new GeoLocation(-11.00, 11.0);
-        given(mockQuery.setParameter(anyString(),any())).willReturn(mockQuery);
+        given(mockQuery.setParameter(nullable(String.class),any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(l -> Arrays.asList());
-        given(entityManagerMock.createQuery(anyString(),eq(LiveWireAlert.class))).willReturn(mockQuery);
+        given(entityManagerMock.createQuery(nullable(String.class),eq(LiveWireAlert.class))).willReturn(mockQuery);
     }
 
     @Test(expected = InvalidParameterException.class)
@@ -104,7 +104,7 @@ public class LiveWireAlertBrokerTest {
                 liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation, testRadius,GeographicSearchType.BOTH);
 
         verify(mockQuery,times(1)).getResultList();
-        verify(entityManagerMock, times(1)).createQuery(anyString(), eq(LiveWireAlert.class));
+        verify(entityManagerMock, times(1)).createQuery(nullable(String.class), eq(LiveWireAlert.class));
 
         Assert.assertNotNull(liveWireAlerts);
         Assert.assertEquals(liveWireAlerts.size(), 0);

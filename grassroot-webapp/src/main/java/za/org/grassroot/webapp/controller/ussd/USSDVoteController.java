@@ -10,6 +10,7 @@ import za.org.grassroot.webapp.enums.VoteTime;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
+import java.util.Locale;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.controller.ussd.UssdSupport.phoneNumber;
@@ -46,6 +47,34 @@ public class USSDVoteController {
     public Request voteAndWelcome(@RequestParam(value = phoneNumber) String inputNumber,
                                   @RequestParam String voteUid, @RequestParam String response) throws URISyntaxException {
         return ussdVoteService.processVoteAndWelcome(inputNumber, voteUid, response);
+    }
+
+    /*
+    Mass vote menus begin here
+     */
+
+    @RequestMapping(value = path + "mass/opening") // if we know what it is
+    @ResponseBody
+    public Request massVoteOpening(@RequestParam(value = phoneNumber) String inputNumber,
+                                   @RequestParam String voteUid) throws URISyntaxException {
+        return ussdVoteService.processKnownMassVote(inputNumber, voteUid);
+    }
+
+    @RequestMapping(value = path + "mass/language")
+    @ResponseBody
+    public Request massVoteSetLanguageAndPrompt(@RequestParam(value = phoneNumber) String inputNumber,
+                                                @RequestParam String voteUid,
+                                                @RequestParam Locale language) throws URISyntaxException {
+        return ussdVoteService.processMassVoteLanguageSelection(inputNumber, voteUid, language);
+    }
+
+    @RequestMapping(value = path + "mass/record")
+    @ResponseBody
+    public Request massVoteRecordResponseAndContinue(@RequestParam(value = phoneNumber) String inputNumber,
+                                                     @RequestParam String voteUid,
+                                                     @RequestParam String response,
+                                                     @RequestParam(required = false) Locale language) throws URISyntaxException {
+        return ussdVoteService.processMassVoteResponse(inputNumber, voteUid, response, language);
     }
 
     /*

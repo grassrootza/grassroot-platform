@@ -1,42 +1,28 @@
+
 description = 'Grassroot Web Application'
 
-buildscript {
-    dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:$libs.springBootVersion")
-    }
-
-    repositories {
-        mavenCentral()
-    }
-}
-
 apply plugin: 'org.springframework.boot'
-apply plugin: 'io.spring.dependency-management'
 
 dependencies {
     compile project(':grassroot-core')
     compile project(':grassroot-services')
     compile project(':grassroot-integration')
 
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: libs.springBootVersion
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: libs.springBootVersion
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: libs.springBootVersion
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-security'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web'
 
-    compile group: 'org.springframework.security', name: 'spring-security-web', version: libs.springSecurityVersion
+    compile group: 'org.springframework.security', name: 'spring-security-web'
 
-    compile group: 'org.liquibase', name: 'liquibase-core', version: '3.5.1'
+    compile group: 'org.liquibase', name: 'liquibase-core'
 
     compile group: 'commons-validator', name: 'commons-validator', version: '1.5.1'
 
-    testCompile group: 'xmlunit', name: 'xmlunit', version: '1.6'
-    testCompile(group: 'org.powermock', name: 'powermock-api-mockito', version: '1.6.5') {
-        exclude(module: 'powermock-api-support')
-    }
-    testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: libs.springBootVersion) {
+    testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test') {
         exclude(module: 'commons-logging')
     }
-    testCompile group: 'org.hsqldb', name: 'hsqldb', version: '2.3.4'
-    testCompile group: 'org.hamcrest', name: 'hamcrest-all', version: '1.3'
+    testCompile group: 'org.hsqldb', name: 'hsqldb'
+    testCompile group: 'org.hamcrest', name: 'hamcrest-library'
     
 }
 

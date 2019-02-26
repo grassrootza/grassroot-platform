@@ -109,9 +109,10 @@ public class AroundMeRestController extends BaseRestController {
                                                                     @RequestParam double latitude,
                                                                     @RequestParam int radiusMetres,
                                                                     @RequestParam(required = false) String filterTerm){
-        GeoLocation location = new GeoLocation(latitude,longitude);
-        return ResponseEntity.ok(geoLocationBroker.fetchGroupsNearby(getUserIdFromRequest(request),location,radiusMetres,filterTerm,
-                GeographicSearchType.PUBLIC));
+        final GeoLocation location = new GeoLocation(latitude,longitude);
+        final String userUid = getUserIdFromRequest(request);
+        final List<ObjectLocation> objectLocations = geoLocationBroker.fetchGroupsNearby(userUid, location, radiusMetres, filterTerm, GeographicSearchType.PUBLIC);
+        return ResponseEntity.ok(objectLocations);
     }
 
     @RequestMapping(value = "/all/alerts", method = RequestMethod.GET)
@@ -146,7 +147,7 @@ public class AroundMeRestController extends BaseRestController {
                 groupLocation.getName(),
                 groupLocation.getDescription(),
                 groupLocation.getName(),
-                group.hasMember(user),
+                user.isMemberOf(group),
                 contactName,
                 group.getCreatedDateTime().toEpochMilli(),
                 groupLocation.getLatitude(),

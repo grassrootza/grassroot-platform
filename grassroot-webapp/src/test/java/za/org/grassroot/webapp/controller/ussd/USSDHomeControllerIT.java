@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import org.custommonkey.xmlunit.XMLUnit;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -15,8 +14,6 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.springframework.http.HttpStatus.OK;
-
-//import static org.hamcrest.CoreMatchers.containsString;
 
 /**
  * Created by luke on 2015/11/17.
@@ -63,8 +60,6 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
     @Before
     public void setUp() {
         base.port(port);
-        XMLUnit.setIgnoreWhitespace(true);
-        XMLUnit.setNormalizeWhitespace(true);
     }
 
     @Test

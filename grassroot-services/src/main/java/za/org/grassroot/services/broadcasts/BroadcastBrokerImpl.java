@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -13,6 +14,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
@@ -128,7 +130,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.mergeFields(Arrays.asList(Broadcast.NAME_FIELD_TEMPLATE, Broadcast.CONTACT_FIELD_TEMPALTE,
                 Broadcast.PROVINCE_FIELD_TEMPLATE, Broadcast.DATE_FIELD_TEMPLATE));
 
-        if (account != null && account.isEnabled()) {
+        if (account != null && account.isEnabled() && !account.hasBreachedSpendingLimit()) {
             builder.isSmsAllowed(true).smsCostCents(25);
         } else {
             builder.isSmsAllowed(false);
@@ -171,7 +173,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.mergeFields(Arrays.asList(Broadcast.NAME_FIELD_TEMPLATE, Broadcast.CONTACT_FIELD_TEMPALTE,
                 Broadcast.PROVINCE_FIELD_TEMPLATE, Broadcast.DATE_FIELD_TEMPLATE));
 
-        if (account.getFreeFormCost() > 0) {
+        if (account.getFreeFormCost() > 0 && !account.hasBreachedSpendingLimit()) {
             builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
         } else {
             builder.isSmsAllowed(false);
@@ -214,7 +216,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         User user = userRepository.findOneByUid(bc.getUserUid());
         Account account = findAccountToChargeBroadcast(user, bc.getGroupUid());
 
-        if (account == null && !StringUtils.isEmpty(bc.getShortMessage())) {
+        if ((account == null || account.hasBreachedSpendingLimit()) && !StringUtils.isEmpty(bc.getShortMessage())) {
             throw new NoPaidAccountException();
         }
 
@@ -241,7 +243,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         User user = userRepository.findOneByUid(bc.getUserUid());
         Campaign campaign = campaignRepository.findOneByUid(bc.getCampaignUid());
 
-        if (campaign.getAccount() == null) {
+        if (campaign.getAccount() == null || campaign.getAccount().hasBreachedSpendingLimit()) {
             throw new NoPaidAccountException();
         }
 
@@ -848,7 +850,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private long countDeliveredSms(Broadcast broadcast) {
         Specification<BroadcastNotification> smsSpecs = Specification
                 .where(forBroadcast(broadcast)).and(forShortMessage());
-        if (environment.acceptsProfiles("production")) {
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.PRODUCTION))) {
             smsSpecs = smsSpecs.and(broadcastDelivered());
         }
         return logsAndNotificationsBroker.countNotifications(smsSpecs, BroadcastNotification.class);
@@ -857,7 +859,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private long countDeliveredEmails(Broadcast broadcast) {
         Specification<BroadcastNotification> emailSpecs = Specification.where(forBroadcast(broadcast)).and(forEmail());
 
-        if (environment.acceptsProfiles("production")) {
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.PRODUCTION))) {
             emailSpecs = emailSpecs.and(broadcastDelivered());
         }
 

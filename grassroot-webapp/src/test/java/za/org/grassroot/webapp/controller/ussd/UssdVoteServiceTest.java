@@ -79,13 +79,13 @@ public class UssdVoteServiceTest extends UssdUnitTest {
 
         testGroups.forEach(tg -> tg.addMember(testUser, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null));
 
-        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), nullable(String.class))).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(3);
         when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3)).thenReturn(testGroups);
 
         this.ussdVoteService.processYesNoSelectGroup(testUserPhone, VoteRequest.makeEmpty().getUid());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(eq(testUserPhone), anyString());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(eq(testUserPhone), nullable(String.class));
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(permissionBrokerMock, times(2)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3);
@@ -110,7 +110,8 @@ public class UssdVoteServiceTest extends UssdUnitTest {
     @Test
     public void selectVoteForMultiOptionVoteShouldWork() throws Exception {
         VoteRequest voteRequest = VoteRequest.makeEmpty();
-        voteRequest.setVoteOptions(Arrays.asList("Option 1", "Option 2"));
+        voteRequest.addVoteOption("Option 1");
+        voteRequest.addVoteOption("Option 2");
         String urlToSave = "vote/multi_option/add?requestUid=" + voteRequest.getUid() + "&interrupted=1&priorInput=0";
         List<Group> validGroups = Arrays.asList(new Group("tg1", GroupPermissionTemplate.DEFAULT_GROUP, testUser), new Group("tg2", GroupPermissionTemplate.DEFAULT_GROUP, testUser));
 

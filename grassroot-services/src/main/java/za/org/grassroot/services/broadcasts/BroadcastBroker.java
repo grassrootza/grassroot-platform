@@ -33,7 +33,7 @@ public interface BroadcastBroker {
 
     List<BroadcastDTO> fetchCampaignBroadcasts(String campaignUid, String fetchingUserUid);
 
-    // needs to be in interface so picked up by entities
+    // needs to be in interface so picked up by entities, todo : find why not called anymore
     void sendScheduledBroadcasts();
 
 }

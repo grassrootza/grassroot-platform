@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -46,7 +48,7 @@ public class USSDEmulatorController extends BaseController {
     }
 
     private String getBaseUrl() {
-		return environment.acceptsProfiles("staging") ? "https://staging.grassroot.org.za/" : "http://localhost:8080/";
+		return environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.STAGING)) ? "https://staging.grassroot.org.za/" : "http://localhost:8080/";
 	}
 
     @RequestMapping(value = "view/{userPhone}", method = RequestMethod.GET)

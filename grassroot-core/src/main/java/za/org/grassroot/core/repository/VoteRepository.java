@@ -24,7 +24,7 @@ public interface VoteRepository extends JpaRepository<Vote, Long>, JpaSpecificat
 
 	@Transactional
 	@Query(value = "SELECT e FROM Event e " +
-			"WHERE e.class = 'VOTE' AND " +
+			"WHERE type(e) = Vote AND " +
 			"(e.eventStartDateTime between ?1 and ?2) " +
 			"AND e.canceled = FALSE " +
 			"AND (SELECT count(el) FROM EventLog el WHERE el.eventLogType = za.org.grassroot.core.enums.EventLogType.RESULT AND e = el.event) = 0")

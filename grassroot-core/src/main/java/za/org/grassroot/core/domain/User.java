@@ -1,7 +1,6 @@
 package za.org.grassroot.core.domain;
 
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -269,16 +268,16 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
                 .collect(Collectors.toSet());
     }
 
-    public Optional<Membership> getMembership(String groupId) {
-        return getMemberships().stream().filter(m -> m.getGroup().getUid().equalsIgnoreCase(groupId)).findFirst();
+    public Optional<Membership> getMembershipOptional(Group group) {
+        return this.memberships.stream().filter(membership -> membership.getGroup().equals(group)).findFirst();
     }
 
     public Membership getMembership(Group group) {
-        return getMembership(group.getUid()).orElse(null);
+        return getMembershipOptional(group).orElse(null);
     }
 
-    public boolean hasMembership(Group group) {
-        return getMembership(group.getUid()).isPresent();
+    public boolean isMemberOf(Group group) {
+        return getMembershipOptional(group).isPresent();
     }
 
     /**
@@ -292,7 +291,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     }
 
     public Membership addMappedByMembership(Group group, GroupRole role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
-        if (hasMembership(group)) {
+        if (isMemberOf(group)) {
             return null;
         } else {
             Membership membership = new Membership(group, this, role, Instant.now(), joinMethod, joinMethodDescriptor);

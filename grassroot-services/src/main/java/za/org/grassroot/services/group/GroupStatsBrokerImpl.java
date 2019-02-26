@@ -16,17 +16,31 @@ import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 
 @Service
 public class GroupStatsBrokerImpl implements GroupStatsBroker {
+
+    private final static ZoneId ZONE_OFFSET = Clock.systemDefaultZone().getZone();
+
 
     private final GroupLogRepository groupLogRepository;
     private final GroupRepository groupRepository;
@@ -46,177 +60,173 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
         this.cacheManager = cacheManager;
     }
 
+    private Optional<Map<String, Integer>> checkCache(final String cacheName, final String cacheKey) {
+        final Cache cache = cacheManager.getCache(cacheName);
+        final Element element = cache.get(cacheKey);
+        final Map<String, Integer> resultFromCache = element != null ? (Map<String, Integer>) element.getObjectValue() : null;
+        return Optional.ofNullable(resultFromCache);
+    }
+
     @Override
     public Map<String, Integer> getMembershipGrowthStats(String groupUid, @Nullable Integer year, @Nullable Integer month) {
+        final String cacheName = "group_stats_member_count";
+        final String cacheKey = groupUid + "-" + year + "-" + month;
+        return checkCache(cacheName, cacheKey).orElse(calculateMembershipGrowthStats(groupUid, year, month, cacheKey));
+    }
 
-        Cache cache = cacheManager.getCache("group_stats_member_count");
-        String cacheKey = groupUid + "-" + year + "-" + month;
-        Element element = cache.get(cacheKey);
-        Map<String, Integer> resultFromCache = element != null ? (Map<String, Integer>) element.getObjectValue() : null;
-
-        if (resultFromCache != null)
-            return resultFromCache;
-
-        // if there is no cached stats, calculate them, put in cache and return
+    private Map<String, Integer> calculateMembershipGrowthStats(final String groupUid, final Integer year, final Integer month, final String cacheKey) {
+        final Cache cache = cacheManager.getCache("group_stats_member_count");
 
         DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
 
         Group group = groupRepository.findOneByUid(groupUid);
 
-        LocalDate startTime = DateTimeUtil.getStartTimeForEntityStats(year, month, group.getCreatedDateTime());
-        LocalDate endTime = DateTimeUtil.getEndTime(year, month, startTime);
+        final LocalDate startDay = DateTimeUtil.getStartTimeForEntityStats(year, month, group.getCreatedDateTime());
+        final LocalDate endDay = DateTimeUtil.getEndTime(year, month, startDay);
 
-        Instant startTimeInstant = startTime.atStartOfDay(Clock.systemDefaultZone().getZone()).toInstant();
-        Instant endTimeInstant = endTime.atStartOfDay(Clock.systemDefaultZone().getZone()).toInstant();
+        final Instant start = startDay.atStartOfDay(ZONE_OFFSET).toInstant();
+        final Instant end = endDay.atStartOfDay(ZONE_OFFSET).toInstant();
 
-        Specification<GroupLog> groupLogSpec = GroupLogSpecifications.memberCountChanges(groupUid, startTimeInstant, endTimeInstant);
+        Specification<GroupLog> groupLogSpec = GroupLogSpecifications.memberCountChanges(groupUid, start, end);
         List<GroupLog> memberCountChanges = groupLogRepository.findAll(groupLogSpec);
 
         Specification<Membership> startingMemberCountSpec = Specification.where(
                 MembershipSpecifications.forGroup(group))
-                .and(MembershipSpecifications.membersJoinedBefore(startTimeInstant));
+                .and(MembershipSpecifications.membersJoinedBefore(start));
 
         int currentMemberCount = (int) membershipRepository.count(startingMemberCountSpec);
 
+        final DateTimeFormatter timeFormatter = year != null && month !=null ? dayFormatter : monthFormatter;
+        Map<String, List<GroupLog>> groupedChanges = memberCountChanges.stream()
+                .collect(Collectors.groupingBy(gl -> timeFormatter.format(gl.getCreatedDateTime().atZone(ZONE_OFFSET))));
+
+        final Map<String, Integer> membersCountByTimeStep = new LinkedHashMap<>(); //preserve key order
         if (year != null && month != null) {
-
-            Map<String, List<GroupLog>> changes = memberCountChanges.stream()
-                    .collect(
-                            Collectors.groupingBy(gl -> dayFormatter.format(gl.getCreatedDateTime().atZone(Clock.systemDefaultZone().getZone()))
-                            ));
-
-            Map<String, Integer> membersCountByDay = new LinkedHashMap<>(); //preserve key order
-            LocalDate currDay = startTime;
-            while (currDay.isBefore(endTime)) {
-
-                String dayKey = dayFormatter.format(currDay);
-                List<GroupLog> dayChanges = changes.get(dayKey);
-
-                if (dayChanges != null) {
-                    int added = (int) dayChanges.stream().filter(gl -> gl.getGroupLogType() != GroupLogType.GROUP_MEMBER_REMOVED).count();
-                    int removed = (int) dayChanges.stream().filter(gl -> gl.getGroupLogType() == GroupLogType.GROUP_MEMBER_REMOVED).count();
-                    currentMemberCount += (added - removed);
-                }
-                membersCountByDay.put(dayKey, currentMemberCount);
+            LocalDate currDay = startDay;
+            while (currDay.isBefore(endDay)) {
+                final String dayKey = dayFormatter.format(currDay);
+                final List<GroupLog> dayChanges = groupedChanges.get(dayKey);
+                currentMemberCount += countAddedRemoved(dayChanges);
+                membersCountByTimeStep.put(dayKey, currentMemberCount);
                 currDay = currDay.plusDays(1);
             }
-
-            cache.put(new Element(cacheKey, membersCountByDay));
-            return membersCountByDay;
         } else {
-
-            Map<String, List<GroupLog>> changes = memberCountChanges.stream()
-                    .collect(
-                            Collectors.groupingBy(gl -> monthFormatter.format(gl.getCreatedDateTime().atZone(Clock.systemDefaultZone().getZone()))
-                            ));
-
-            Map<String, Integer> membersCountByMonth = new LinkedHashMap<>(); //preserve key order
-            LocalDate currMonth = startTime;
-            while (currMonth.getYear() < endTime.getYear() || currMonth.getMonthValue() < endTime.getMonthValue()) {
-                String monthKey = monthFormatter.format(currMonth);
-                List<GroupLog> monthChanges = changes.get(monthKey);
-                if (monthChanges != null) {
-                    int added = (int) monthChanges.stream().filter(gl -> gl.getGroupLogType() != GroupLogType.GROUP_MEMBER_REMOVED).count();
-                    int removed = (int) monthChanges.stream().filter(gl -> gl.getGroupLogType() == GroupLogType.GROUP_MEMBER_REMOVED).count();
-                    currentMemberCount += (added - removed);
-                }
-                membersCountByMonth.put(monthKey, currentMemberCount);
+            LocalDate currMonth = startDay;
+            while (currMonth.getYear() < endDay.getYear() || currMonth.getMonthValue() < endDay.getMonthValue()) {
+                final String monthKey = monthFormatter.format(currMonth);
+                final List<GroupLog> monthChanges = groupedChanges.get(monthKey);
+                currentMemberCount += countAddedRemoved(monthChanges);
+                membersCountByTimeStep.put(monthKey, currentMemberCount);
                 currMonth = currMonth.plusMonths(1);
             }
 
-            cache.put(new Element(cacheKey, membersCountByMonth));
-            return membersCountByMonth;
         }
 
+        cache.put(new Element(cacheKey, membersCountByTimeStep));
+        return membersCountByTimeStep;
+    }
+
+    private int countAddedRemoved(List<GroupLog> logs) {
+        if (logs != null) {
+            final int added = countByLogsIn(logs, GroupLogType.targetUserAddedTypes);
+            final int removed = countByLogIs(logs, GroupLogType.GROUP_MEMBER_REMOVED);
+            return added - removed;
+        } else {
+            return 0;
+        }
+    }
+
+    private int countByLogIs(List<GroupLog> logs, GroupLogType type) {
+        return (int) logs.stream().filter(filterByLogIs(type)).count();
+    }
+
+    private int countByLogsIn(List<GroupLog> logs, Collection<GroupLogType> types) {
+        return (int) logs.stream().filter(filterByLogIn(types)).count();
+    }
+
+    private Predicate<? super GroupLog> filterByLogIs(GroupLogType type) {
+        return gl -> gl.getGroupLogType() == type;
+    }
+
+    private Predicate<? super GroupLog> filterByLogIn(Collection<GroupLogType> types) {
+        return gl -> types.contains(gl.getGroupLogType());
+    }
+
+    private Collector<Object, ?, Integer> integerSum() {
+        return Collectors.reducing(0, e -> 1, Integer::sum);
     }
 
     @Override
-    public Map<String, Long> getProvincesStats(String groupUid) {
+    public Map<String, Integer> getProvincesStats(String groupUid) {
+        final String cacheName = "group_stats_provinces";
+        return checkCache(cacheName, groupUid).orElseGet(() -> {
+            Cache cache = cacheManager.getCache("group_stats_provinces");
 
-        Cache cache = cacheManager.getCache("group_stats_provinces");
-        String cacheKey = groupUid;
-        Element element = cache.get(cacheKey);
-        Map<String, Long> resultFromCache = element != null ? (Map<String, Long>) element.getObjectValue() : null;
+            // todo : convert this to calling users directly, this is what is killing the backend
+            final List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+            Map<String, Integer> data = memberships.stream()
+                    .filter(m -> m.getUser().getProvince() != null)
+                    .collect(Collectors.groupingBy(m -> m.getUser().getProvince().name(), integerSum()));
 
-        if (resultFromCache != null)
-            return resultFromCache;
+            int unknownProvinceCount = (int) memberships.stream().filter(m -> m.getUser().getProvince() == null).count();
+            if (unknownProvinceCount > 0)
+                data.put("UNKNOWN", unknownProvinceCount);
 
-        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+            cache.put(new Element(groupUid, data));
+            return data;
+        });
 
-        Map<String, Long> data = memberships.stream()
-                .filter(m -> m.getUser().getProvince() != null)
-                .collect(
-                        Collectors.groupingBy(
-                                m -> m.getUser().getProvince().name(),
-                                Collectors.counting()
-                        )
-                );
-
-        long unknownProvinceCount = memberships.stream().filter(m -> m.getUser().getProvince() == null).count();
-        if (unknownProvinceCount > 0)
-            data.put("UNKNOWN", unknownProvinceCount);
-
-        cache.put(new Element(cacheKey, data));
-
-        return data;
     }
 
     @Override
-    public Map<String, Long> getSourcesStats(String groupUid) {
-        Cache cache = cacheManager.getCache("group_stats_sources");
-        String cacheKey = groupUid;
-        Element element = cache.get(cacheKey);
-        Map<String, Long> resultFromCache = element != null ? (Map<String, Long>) element.getObjectValue() : null;
+    public Map<String, Integer> getSourcesStats(String groupUid) {
+        final String cacheName = "group_stats_sources";
+        return checkCache(cacheName, groupUid)
+                .orElse(assembleMemberStats(groupUid, cacheName, m -> m.getJoinMethod() != null, m -> m.getJoinMethod() == null,
+                        m -> m.getJoinMethod().name()));
+    }
 
-        if (resultFromCache != null)
-            return resultFromCache;
+    private Map<String, Integer> assembleMemberStats(String groupUid, String cacheName,
+                                               Predicate<? super Membership> includePredicate,
+                                               Predicate<? super Membership> unknownPredicate,
+                                               Function<? super Membership, String> groupByName) {
+        Cache cache = cacheManager.getCache(cacheName);
 
         List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
 
-        Map<String, Long> data = memberships.stream()
-                .filter(m -> m.getJoinMethod() != null)
-                .collect(
-                        Collectors.groupingBy(
-                                m -> m.getJoinMethod().name(),
-                                Collectors.counting()
-                        )
-                );
+        Map<String, Integer> data = memberships.stream()
+                .filter(includePredicate)
+                .collect(Collectors.groupingBy(groupByName, integerSum()));
 
-        long unknownSourceCount = memberships.stream().filter(m -> m.getJoinMethod() == null).count();
+        int unknownSourceCount = (int) memberships.stream().filter(unknownPredicate).count();
         if (unknownSourceCount > 0)
             data.put("UNKNOWN", unknownSourceCount);
 
-        cache.put(new Element(cacheKey, data));
-
+        cache.put(new Element(groupUid, data));
         return data;
     }
 
 
     @Override
-    public Map<String, Long> getOrganisationsStats(String groupUid) {
+    public Map<String, Integer> getOrganisationsStats(String groupUid) {
+        final String cacheName = "group_stats_organisations";
+        return checkCache(cacheName, groupUid).orElseGet(() -> {
+            final Cache cache = cacheManager.getCache(cacheName);
 
-        Cache cache = cacheManager.getCache("group_stats_organisations");
-        String cacheKey = groupUid;
-        Element element = cache.get(cacheKey);
-        Map<String, Long> resultFromCache = element != null ? (Map<String, Long>) element.getObjectValue() : null;
+            List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+            Map<String, Integer> data = memberships.stream()
+                    .filter(m -> !m.getAffiliations().isEmpty())
+                    .flatMap(m -> m.getAffiliations().stream())
+                    .collect(Collectors.groupingBy(s -> s, integerSum()));
+            data.put("Unknown", memberships.size());
 
-        if (resultFromCache != null)
-            return resultFromCache;
+            cache.put(new Element(groupUid, data));
 
-        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
-        Map<String, Long> data = memberships.stream()
-                .filter(m -> !m.getAffiliations().isEmpty())
-                .flatMap(m -> m.getAffiliations().stream())
-                .collect(Collectors.groupingBy(
-                        s -> s,
-                        Collectors.counting()
-                ));
-        data.put("Unknown", (long) memberships.size());
+            return data;
+        });
 
-        cache.put(new Element(cacheKey, data));
 
-        return data;
     }
 
 

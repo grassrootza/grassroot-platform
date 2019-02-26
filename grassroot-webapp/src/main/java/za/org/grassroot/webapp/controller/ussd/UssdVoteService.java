@@ -1,12 +1,15 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.VoteTime;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
+import java.util.Locale;
+import java.util.Optional;
 
 public interface UssdVoteService {
 	USSDMenu assembleVoteMenu(User user, Vote vote);
@@ -36,4 +39,12 @@ public interface UssdVoteService {
 	Request processVoteSendResetTime(String inputNumber, String requestUid) throws URISyntaxException;
 
 	Request processVoteSendDo(String inputNumber, String requestUid) throws URISyntaxException;
+
+	Optional<USSDMenu> processPossibleMassVote(User user, Group group);
+
+	Request processKnownMassVote(String inputNumber, String voteUid) throws URISyntaxException;
+
+	Request processMassVoteLanguageSelection(String inputNumber, String voteUid, Locale language) throws URISyntaxException;
+
+	Request processMassVoteResponse(String inputNumber, String voteUid, String response, Locale language) throws URISyntaxException;
 }

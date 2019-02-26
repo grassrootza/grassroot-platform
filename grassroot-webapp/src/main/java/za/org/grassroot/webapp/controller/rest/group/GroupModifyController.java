@@ -29,6 +29,7 @@ import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.account.AccountBroker;
@@ -63,6 +64,7 @@ public class GroupModifyController extends GroupBaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupModifyController.class);
 
+    private final MembershipRepository membershipRepository;
     private final GroupFetchBroker groupFetchBroker;
     private final GroupImageBroker groupImageBroker;
     private final AccountBroker accountBroker;
@@ -72,13 +74,14 @@ public class GroupModifyController extends GroupBaseController {
 
     public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, GroupFetchBroker groupFetchBroker,
                                  GroupImageBroker groupImageBroker, AccountBroker accountBroker, AccountFeaturesBroker accountFeaturesBroker,
-                                 GroupStatsBroker groupStatsBroker) {
+                                 GroupStatsBroker groupStatsBroker, MembershipRepository membershipRepository) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.groupImageBroker = groupImageBroker;
         this.accountBroker = accountBroker;
         this.accountFeaturesBroker = accountFeaturesBroker;
         this.groupStatsBroker = groupStatsBroker;
+        this.membershipRepository = membershipRepository;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
@@ -105,7 +108,7 @@ public class GroupModifyController extends GroupBaseController {
                 groupBroker.updateViewPriority(user.getUid(), group.getUid(), GroupViewPriority.PINNED);
             }
 
-            return new ResponseEntity<>(new GroupRefDTO(group.getUid(), group.getGroupName(), group.getMemberships().size()), HttpStatus.OK);
+            return new ResponseEntity<>(new GroupRefDTO(group, this.membershipRepository), HttpStatus.OK);
         } else
             return new ResponseEntity<>((GroupRefDTO) null, HttpStatus.UNAUTHORIZED);
     }

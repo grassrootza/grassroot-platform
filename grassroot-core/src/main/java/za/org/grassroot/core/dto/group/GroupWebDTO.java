@@ -5,10 +5,12 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.task.TaskRefDTO;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.repository.MembershipRepository;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Getter
@@ -18,8 +20,8 @@ public class GroupWebDTO extends GroupMinimalDTO {
     private List<TaskRefDTO> comingUpEvents = new ArrayList<>();
     private List<String> topics = new ArrayList<>();
 
-    public GroupWebDTO(Group group, Membership membership, List<GroupRefDTO> subGroups) {
-        super(group, membership);
+    public GroupWebDTO(Group group, Membership membership, List<GroupRefDTO> subGroups, MembershipRepository membershipRepository) {
+        super(group, membership, membershipRepository);
         this.subGroups = subGroups;
         this.comingUpEvents.addAll(
                 group.getEvents()

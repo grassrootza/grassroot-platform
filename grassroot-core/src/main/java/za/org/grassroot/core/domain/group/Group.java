@@ -322,13 +322,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public Membership removeMember(User member) {
-        Optional<Membership> membershipOptional = getMembership(member.getUid());
-        if (!membershipOptional.isPresent()) {
-            return null;
-        } else {
-            final Membership membership = membershipOptional.get();
-            removeMembership(membership);
-            return membership;
+		Optional<Membership> membership = this.memberships.stream()
+				.filter(mship -> mship.getUser().equals(member))
+				.findFirst();
+		if (membership.isPresent()) {
+			removeMembership(membership.get());
+			return membership.get();
+		} else {
+			return null;
         }
     }
 
@@ -339,25 +340,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
             membership.getUser().removeMappedByMembership(membership);
         }
         return removed;
-    }
-
-    public Membership getMembership(User user) {
-        Objects.requireNonNull(user);
-
-        return this.getMembership(user.getUid()).orElse(null);
-    }
-
-    public Optional<Membership> getMembership(String userUid) {
-        Objects.requireNonNull(userUid);
-
-        return this.memberships.stream()
-                .filter(membership -> membership.getUser().getUid().equals(userUid))
-                .findFirst();
-    }
-
-    public boolean hasMember(User user) {
-        Objects.requireNonNull(user);
-        return getMembership(user.getUid()).isPresent();
     }
 
     public List<String> getJoinTopics() {
@@ -385,7 +367,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public boolean robustIsPaidFor() {
-        return paidFor && account != null && account.isEnabled();
+        return paidFor && account != null && account.isEnabled() && !account.hasBreachedSpendingLimit();
     }
 
     public void setPaidFor(boolean paidFor) {

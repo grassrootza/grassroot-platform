@@ -2,8 +2,14 @@ package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.util.StringArrayUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface TagHolder {
 
@@ -43,11 +49,13 @@ public interface TagHolder {
         return StringArrayUtil.arrayToList(getTags());
     }
 
+    default Stream<String> getPrefixFilteredList(final String prefix) {
+        return getTags() == null ? Stream.empty() :
+                Arrays.stream(getTags()).filter(s -> s.startsWith(prefix)).map(s -> s.substring(prefix.length()));
+    }
+
     default List<String> getTopics() {
-        return getTagList().stream()
-                .filter(s -> s.startsWith(TOPIC_PREFIX))
-                .map(s -> s.substring(TOPIC_PREFIX.length()))
-                .collect(Collectors.toList());
+        return getPrefixFilteredList(TOPIC_PREFIX).collect(Collectors.toList());
     }
 
     default void setTopics(Set<String> topics) {

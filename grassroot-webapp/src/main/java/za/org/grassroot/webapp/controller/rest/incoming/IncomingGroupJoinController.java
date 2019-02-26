@@ -63,8 +63,7 @@ public class IncomingGroupJoinController extends BaseRestController {
         if (!StringUtils.isEmpty(userUid)) {
             log.info("joining with an existing, and logged in user!");
             User user = getUserFromRequest(request);
-            builder = builder.userLoggedIn(false)
-                    .userAlreadyMember(group.hasMember(user));
+            builder = builder.userLoggedIn(false).userAlreadyMember(user.isMemberOf(group));
         } else {
             builder.userLoggedIn(false);
         }

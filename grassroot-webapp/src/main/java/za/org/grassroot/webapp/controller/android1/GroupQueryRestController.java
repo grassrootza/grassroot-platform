@@ -134,7 +134,7 @@ public class GroupQueryRestController extends GroupAbstractRestController {
             permissionBroker.validateGroupPermission(thisUser, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
-        Membership m = group.getMembership(user);
+        Membership m = user.getMembership(group);
         return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, new MembershipResponseWrapper(group, user, m.getRole(), false));
     }
 
@@ -152,7 +152,7 @@ public class GroupQueryRestController extends GroupAbstractRestController {
         Optional<Group> groupByToken = groupQueryBroker.findGroupFromJoinCode(tokenSearch);
 
         ResponseEntity<ResponseWrapper> responseEntity;
-        if (groupByToken.isPresent() && !groupByToken.get().hasMember(user)) {
+        if (groupByToken.isPresent() && !user.isMemberOf(groupByToken.get())) {
             responseEntity = RestUtil.okayResponseWithData(RestMessage.GROUP_FOUND, new GroupSearchWrapper(groupByToken.get()));
         } else {
             // the service beans accept null for the filter, in which case they just ignore location, hence doing it this way

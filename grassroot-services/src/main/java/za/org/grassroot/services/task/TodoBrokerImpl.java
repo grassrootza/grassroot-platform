@@ -315,7 +315,7 @@ public class TodoBrokerImpl implements TodoBroker {
         User user = userService.load(userUid);
         validateUserCanConfirm(user, todo);
 
-        if(todo.getAncestorGroup().getMembership(user) == null){
+        if(user.getMembership(todo.getAncestorGroup()) == null){
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ALTER_TODO);
         }
 
@@ -357,7 +357,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Todo todo = todoRepository.findOneByUid(todoUid);
 
         User user = userService.load(userUid);
-        if(todo.getAncestorGroup().getMembership(user) == null){
+        if(user.getMembership(todo.getAncestorGroup()) == null){
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ALTER_TODO);
         }
         TodoAssignment todoAssignment = validateUserCanRespondToTodo(user, todo);
@@ -578,7 +578,7 @@ public class TodoBrokerImpl implements TodoBroker {
         Set<Notification> notifications = new HashSet<>();
 
         Group group = assignment.getTodo().getAncestorGroup();
-        Membership membership = group.getMembership(assignment.getUser());
+        Membership membership = assignment.getUser().getMembership(group);
 
         final String responseTag = assignment.getTodo().getResponseTag();
         if (StringUtils.isEmpty(responseTag)) {

@@ -210,7 +210,7 @@ public class UssdGroupMgmtServiceImpl implements UssdGroupMgmtService {
 	public Request processPromptForAlias(String msisdn, String groupUid) throws URISyntaxException {
 		User user = userManager.findByInputNumber(msisdn);
 		Group group = groupBroker.load(groupUid);
-		Membership membership = group.getMembership(user);
+		Membership membership = user.getMembership(group);
 		String prompt = StringUtils.isEmpty(membership.getAlias()) ?
 				ussdSupport.getMessage(thisSection, "alias", promptKey, user) :
 				ussdSupport.getMessage(thisSection, "alias", promptKey + ".existing", membership.getAlias(), user);

@@ -71,7 +71,7 @@ public class UssdUserServiceTest extends UssdUnitTest {
 		this.ussdUserService.processUserDisplayName(testUserPhone);
 		this.ussdUserService.processUserDisplayName(namedUser.getPhoneNumber());
 
-		verify(userManagementServiceMock, times(2)).findByInputNumber(anyString());
+		verify(userManagementServiceMock, times(2)).findByInputNumber(nullable(String.class));
 		verifyNoMoreInteractions(groupBrokerMock);
 		verifyNoMoreInteractions(eventBrokerMock);
 	}

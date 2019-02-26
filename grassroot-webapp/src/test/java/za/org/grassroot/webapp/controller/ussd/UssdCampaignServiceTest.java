@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 
 public class UssdCampaignServiceTest extends UssdUnitTest {
@@ -120,7 +120,7 @@ public class UssdCampaignServiceTest extends UssdUnitTest {
 	public void testUserSetLanguageForCampaign() throws Exception {
 		CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, CampaignActionType.OPENING, "testing_123", Locale.ENGLISH, "First Test English Message",
 				UserInterfaceType.USSD, null);
-		when(userManagementServiceMock.findByInputNumber(anyString())).thenReturn(testUser);
+		when(userManagementServiceMock.findByInputNumber(nullable(String.class))).thenReturn(testUser);
 		when(campaignBrokerMock.getOpeningMessage(testCampaign.getUid(), new Locale(testLanguage),
 				UserInterfaceType.USSD, null)).thenReturn(testMsg);
 

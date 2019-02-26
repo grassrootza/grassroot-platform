@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
@@ -272,7 +274,7 @@ public class UserRestController {
     }
 
     private String temporaryTokenSend(String token, String destinationNumber, boolean resending) {
-        if (environment.acceptsProfiles("production")) {
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.PRODUCTION))) {
             if (token != null) {
                 // todo : wire up a message source for this
                 final String prefix = resending ? "Grassroot code (resent): " : "Grassroot code: ";

@@ -38,7 +38,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpec
     @Transactional
 	@Query(value = "SELECT e FROM Event e " +
 			"WHERE e.eventStartDateTime > ?1 " +
-			"AND e.class = 'MEETING' " +
+			"AND type(e) = Meeting " +
 			"AND e.canceled = FALSE " +
 			"AND (e.createdDateTime BETWEEN ?2 AND ?3) " +
 			"AND (SELECT count(el) FROM EventLog el WHERE el.eventLogType = za.org.grassroot.core.enums.EventLogType.RSVP_TOTAL_MESSAGE " +
@@ -48,7 +48,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpec
 
     @Query(value = "SELECT e FROM Event e " +
 		"WHERE e.isPublic = TRUE " +
-		"AND e.class = 'MEETING' " +
+		"AND type(e) = Meeting " +
 		"AND LOWER(e.name) LIKE LOWER (CONCAT('%', ?1, '%')) " +
         "AND e.ancestorGroup NOT IN(SELECT m.group FROM Membership m WHERE m.user = ?2)")
     List<Meeting> publicMeetingsUserIsNotPartOfWithsSearchTerm(String searchTerm, User user);

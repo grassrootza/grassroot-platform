@@ -72,7 +72,6 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
                 .startDateTimeInstant(Instant.ofEpochMilli(testDateTimeEpochMillis));
 
         when(jwtServiceMock.getUserIdFromJwtToken("testing")).thenReturn(sessionTestUser.getUid());
-        when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
         when(eventBrokerMock.createMeeting(helper, UserInterfaceType.REST_GENERIC)).thenReturn(dummyMeeting);
         mockMvc.perform(post(path + "/meeting/{parentType}/{parentUid}",
                 JpaEntityType.GROUP,

@@ -8,10 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -331,7 +333,7 @@ public class AuthenticationController {
     }
 
     private String temporaryTokenSend(String token, String numberOrEmail) {
-        if (environment.acceptsProfiles("production")) {
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.PRODUCTION))) {
             passwordTokenService.triggerOtp(userService.findByUsernameLoose(numberOrEmail));
             return "";
         } else {

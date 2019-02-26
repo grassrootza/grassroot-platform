@@ -15,6 +15,7 @@ import za.org.grassroot.core.dto.group.PublicGroupDTO;
 import za.org.grassroot.core.dto.task.PublicMeetingDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.*;
@@ -49,6 +50,7 @@ public class SearchController extends BaseRestController {
     private final GroupJoinRequestService groupJoinRequestService;
     private final GroupBroker groupBroker;
     private final CacheUtilService cacheUtilService;
+    private final MembershipRepository membershipRepository;
 
     @Autowired
     public SearchController(TaskBroker taskBroker,
@@ -60,7 +62,8 @@ public class SearchController extends BaseRestController {
                             GroupJoinRequestService groupJoinRequestService,
                             JwtService jwtService,
                             CacheUtilService cacheUtilService,
-                            UserManagementService userManagementService){
+                            UserManagementService userManagementService,
+                            MembershipRepository membershipRepository){
         super(jwtService, userManagementService);
         this.taskBroker = taskBroker;
         this.groupQueryBroker = groupQueryBroker;
@@ -70,6 +73,7 @@ public class SearchController extends BaseRestController {
         this.groupJoinRequestService = groupJoinRequestService;
         this.groupBroker = groupBroker;
         this.cacheUtilService = cacheUtilService;
+        this.membershipRepository = membershipRepository;
     }
 
     @RequestMapping(value = "/tasks/user", method = RequestMethod.GET)
@@ -101,14 +105,17 @@ public class SearchController extends BaseRestController {
                                                                  @RequestParam(value = "useLocation", required = false) boolean useLocation,
                                                                  HttpServletRequest request) {
         GroupLocationFilter filter = null;
+        String userUid = getUserIdFromRequest(request);
         if (useLocation) {
-            PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(getUserIdFromRequest(request), LocalDate.now());
+            PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(userUid, LocalDate.now());
             log.info("user location : " + lastUserLocation);
             filter = lastUserLocation != null ? new GroupLocationFilter(lastUserLocation.getLocation(), 10, false) : null;
         }
 
-        List<PublicGroupDTO> groupDTOs = groupQueryBroker.findPublicGroups(getUserIdFromRequest(request), searchTerm, filter, true)
-                .stream().map(PublicGroupDTO::new).collect(Collectors.toList());
+        final List<Group> groups = groupQueryBroker.findPublicGroups(userUid, searchTerm, filter, true);
+        List<PublicGroupDTO> groupDTOs = groups.stream()
+                .map(g -> new PublicGroupDTO(g, this.membershipRepository))
+                .collect(Collectors.toList());
         log.info("Groups found..........",groupDTOs);
         return ResponseEntity.ok(groupDTOs);
     }
@@ -144,8 +151,8 @@ public class SearchController extends BaseRestController {
 
         cacheUtilService.putJoinAttempt(getUserIdFromRequest(request), recentUserAttemptCount + 1);
 
-        Optional<GroupRefDTO> result = groupQueryBroker.findGroupFromJoinCode(joinCode).map(group ->
-            new GroupRefDTO(group.getUid(), group.getName(), group.getMemberships().size()));
+        final Optional<Group> groupOptional = groupQueryBroker.findGroupFromJoinCode(joinCode);
+        final Optional<GroupRefDTO> result = groupOptional.map(group -> new GroupRefDTO(group, this.membershipRepository));
 
         return result.isPresent() ? ResponseEntity.ok(result.get()) : ResponseEntity.ok().build();
     }

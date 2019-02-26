@@ -568,7 +568,7 @@ public class UssdTodoServiceTest extends UssdUnitTest {
         }
 
         verify(userManagementServiceMock, times(bloomVariations.size()))
-                .findByInputNumber(eq(testUserPhone), anyString());
+                .findByInputNumber(eq(testUserPhone), nullable(String.class));
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(todoRequestBrokerMock, times(bloomVariations.size()))
                 .load(dummyLogBook.getUid());

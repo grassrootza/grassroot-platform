@@ -20,7 +20,7 @@ import za.org.grassroot.webapp.controller.android1.VoteRestController;
 
 import java.util.Optional;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -81,8 +81,6 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(voteBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
         when(eventLogRepositoryMock.findOne(any(Specification.class))).thenReturn(Optional.of(eventLog));
-        when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(true);
-        when(eventLogBrokerMock.getResponseCountForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
 
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
 
@@ -97,7 +95,6 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
-        when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(false);
         mockMvc.perform(get(path + "/do/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode)
                 .param("response", "YES"))
                 .andExpect(status().is2xxSuccessful());

@@ -68,7 +68,6 @@ public class CampaignManagerController extends BaseRestController {
 
     private final UserManagementService userManager;
     private final GroupBroker groupBroker;
-    private final CacheManager cacheManager;
 
     private Cache campaignsCache;
 
@@ -80,11 +79,7 @@ public class CampaignManagerController extends BaseRestController {
         this.campaignStatsBroker = campaignStatsBroker;
         this.userManager = userManager;
         this.groupBroker = groupBroker;
-        this.cacheManager = cacheManager;
-    }
 
-    @PostConstruct
-    public void init() {
         log.info("Setting up campaign caches");
         campaignsCache = cacheManager.getCache("campaign_view_dtos");
     }
@@ -92,8 +87,9 @@ public class CampaignManagerController extends BaseRestController {
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     @ApiOperation(value = "List user's campaigns", notes = "Lists the campaigns a user has created")
     public ResponseEntity<List<CampaignViewDTO>> fetchCampaignsManagedByUser(HttpServletRequest request) {
-        List<CampaignViewDTO> dbCampaigns = campaignBroker
-                .getCampaignsManagedByUser(getUserIdFromRequest(request))
+        final String userUid = getUserIdFromRequest(request);
+        final List<Campaign> campaignsManagedByUser = campaignBroker.getCampaignsManagedByUser(userUid);
+        final List<CampaignViewDTO> dbCampaigns = campaignsManagedByUser
                 .stream().map(campaign -> getCampaign(campaign.getUid(), false))
                 .sorted(Comparator.comparing(CampaignViewDTO::getLastActivityEpochMilli, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
@@ -153,7 +149,8 @@ public class CampaignManagerController extends BaseRestController {
             masterGroupUid = createdGroup.getUid();
         }
 
-        Campaign campaign = campaignBroker.create(createCampaignRequest.getName(),
+        Campaign campaign = campaignBroker.create(
+                createCampaignRequest.getName(),
                 createCampaignRequest.getCode(),
                 createCampaignRequest.getDescription(),
                 userUid,
@@ -167,7 +164,8 @@ public class CampaignManagerController extends BaseRestController {
                 createCampaignRequest.getSmsLimit() == null ? 0 : createCampaignRequest.getSmsLimit(),
                 createCampaignRequest.getImageKey());
 
-        return ResponseEntity.ok(recacheCampaignAndReturnDTO(campaign, true));
+        final CampaignViewDTO dto = recacheCampaignAndReturnDTO(campaign, true);
+        return ResponseEntity.ok(dto);
     }
 
     @ExceptionHandler(CampaignCodeTakenException.class)

@@ -10,10 +10,28 @@ import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.*;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Version;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Created by luke on 2015/10/18. (and significantly overhauled / modified during 2016/10)
@@ -24,6 +42,8 @@ import java.util.*;
 @Entity
 @Table(name="paid_account") @Getter @Setter
 public class Account implements GrassrootEntity, Serializable {
+
+    private static final long DEFAULT_SPEND_LIMIT = 10000000;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -83,7 +103,23 @@ public class Account implements GrassrootEntity, Serializable {
 
     @Basic
     @Column(name="free_form_cost")
-    private int freeFormCost; // stored as cents
+    private int freeFormCost; // stored as cents, as are all the below
+
+    @Basic
+    @Column(name="ussd_avg_cost")
+    private int avgUssdCost;
+
+    @Basic
+    @Column(name="monthly_fees")
+    private long monthlyFlatFee;
+
+    @Basic
+    @Column(name="monthly_spending_limit")
+    private long monthlySpendingLimit;
+
+    @Basic
+    @Column(name="current_month_spend")
+    private long currentMonthSpend;
 
     @Basic
     @Column(name="charge_per_message")
@@ -141,6 +177,9 @@ public class Account implements GrassrootEntity, Serializable {
         this.disabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
 
         this.lastBillingDate = this.createdDateTime;
+
+        this.monthlySpendingLimit = DEFAULT_SPEND_LIMIT; // R100,000.00, i.e., basically no limit
+        this.currentMonthSpend = 0;
     }
 
     /*
@@ -193,18 +232,9 @@ public class Account implements GrassrootEntity, Serializable {
         return !StringUtils.isEmpty(geoDataSets);
     }
 
-    public List<String> sponsoredDataSets() {
-        return sponsorsDataSet() ? Arrays.asList(StringUtils.split(geoDataSets, ",")) : new ArrayList<>();
-    }
-
-    public void addSponsoredDataSet(String dataSet) {
-        if (dataSet.contains(","))
-            throw new IllegalArgumentException("Data set labels cannot contain commas");
-
-        if (StringUtils.isEmpty(geoDataSets))
-            dataSet = geoDataSets;
-        else
-            dataSet = geoDataSets + "," + dataSet;
+    public boolean hasBreachedSpendingLimit() {
+        return false; // until better tested
+        // return this.currentMonthSpend < this.monthlySpendingLimit;
     }
 
     @Override

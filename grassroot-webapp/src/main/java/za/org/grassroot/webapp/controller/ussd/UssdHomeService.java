@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import org.springframework.web.bind.annotation.RequestParam;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;

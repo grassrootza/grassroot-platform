@@ -532,9 +532,9 @@ public class UserRepositoryTest {
         Group testGroupFromDb = groupRepository.save(testGroup);
 
         assertThat(testGroupFromDb.getMemberships().size(), is(3));
-        assertTrue(testGroupFromDb.hasMember(testUser));
-        assertTrue(testGroupFromDb.hasMember(user2));
-        assertTrue(testGroupFromDb.hasMember(user3));
+        assertTrue(testUser.isMemberOf(testGroupFromDb));
+        assertTrue(user2.isMemberOf(testGroupFromDb));
+        assertTrue(user3.isMemberOf(testGroupFromDb));
 
         List<User> nonCreatorMembers = userRepository.findByGroupsPartOfAndIdNot(testGroupFromDb, testUser.getId());
 

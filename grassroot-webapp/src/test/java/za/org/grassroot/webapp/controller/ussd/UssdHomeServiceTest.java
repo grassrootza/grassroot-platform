@@ -68,7 +68,6 @@ public class UssdHomeServiceTest extends UssdUnitTest {
         testUser.setDisplayName("");
         testUser.setHasInitiatedSession(false);
         when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
-        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 
         this.ussdHomeService.processStartMenu(phoneForTests, null);
 
@@ -88,7 +87,6 @@ public class UssdHomeServiceTest extends UssdUnitTest {
         // testUser.setLastUssdMenu("/ussd/mtg/start"); // irrelevant if this is well formed or not, just testing if it asks
 
         when(userManagementServiceMock.loadOrCreateUser(phoneForTests, UserInterfaceType.USSD)).thenReturn(testUser);
-        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 
         this.ussdHomeService.processStartMenu(phoneForTests, null);
 

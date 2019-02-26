@@ -581,7 +581,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
 
-        Membership membership = group.getMembership(member);
+        Membership membership = member.getMembership(group);
         membership.addTopics(new HashSet<>(joinTopics));
 
         logger.info("okay, adding topics at join, passed {}, got {}", joinTopics, membership.getTopics());
@@ -592,7 +592,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         boolean wasAlreadyMember = false;
 
         Membership membership;
-        if (user.hasMembership(group)) {
+        if (user.isMemberOf(group)) {
             // means user was already part of group, so we will just add topics etc.
             membership = user.getMembership(group);
             wasAlreadyMember = true;
@@ -613,7 +613,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         // recursively add user to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            if (!user.hasMembership(parentGroup)) {
+            if (!user.isMemberOf(parentGroup)) {
                 Membership parentMembership = user.addMappedByMembership(parentGroup, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
                 parentMembership = this.membershipRepository.save(parentMembership);
 
@@ -909,7 +909,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
         meetings.forEach(m -> {
             Group meetingGroup = m.getAncestorGroup();
-            if (meetingGroup.equals(group) || !user.hasMembership(meetingGroup)) {
+            if (meetingGroup.equals(group) || !user.isMemberOf(meetingGroup)) {
                 boolean appliesToMember = m.isAllGroupMembersAssigned() || m.getAssignedMembers().contains(user);
                 if (appliesToMember) {
                     String message = messageAssemblingService.createEventInfoMessage(user, m);
@@ -965,6 +965,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     @Override
+    @Transactional
     public void removeMembersFromSubgroup(String userUid, String parentUid, String childUid, Set<String> memberUids) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         Group parent = groupRepository.findOneByUid(Objects.requireNonNull(parentUid));
@@ -984,8 +985,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         logger.info("Removing from subgroup {}, members {}", child.getName(), memberUids);
 
-        Set<Membership> memberships = userRepository.findByUidIn(memberUids)
-                .stream().map(child::getMembership).collect(Collectors.toSet());
+        Set<Membership> memberships = child.getMemberships().stream()
+                .filter(membership -> memberUids.contains(membership.getUser().getUid()))
+                .collect(Collectors.toSet());
 
         Set<ActionLog> actionLogs = removeMemberships(user, child, memberships);
         logActionLogsAfterCommit(actionLogs);
@@ -1001,7 +1003,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Group group = groupRepository.findOneByUid(groupUid);
         User user = userRepository.findOneByUid(userUid);
 
-        Membership membership = group.getMembership(user);
+        Membership membership = user.getMembership(group);
 
         if (membership.getRole().equals(GroupRole.ROLE_GROUP_ORGANIZER)) {
             if (membershipRepository.count(MembershipSpecifications.groupOrganizers(group)) == 1) {
@@ -1169,7 +1171,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
 
-        Membership membership = group.getMembership(member);
+        Membership membership = member.getMembership(group);
         membership.setAffiliations(affiliations);
         membership.setTopics(topics);
 
@@ -1261,7 +1263,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        Membership membership = group.getMembership(user);
+        Membership membership = user.getMembership(group);
         membership.setAlias(alias);
 
         logActionLogsAfterCommit(Collections.singleton(

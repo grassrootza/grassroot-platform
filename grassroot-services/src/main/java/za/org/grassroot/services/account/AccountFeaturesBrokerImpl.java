@@ -66,7 +66,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ApplicationEventPublisher eventPublisher;
 
-    private Map<String, String> configDefaults = new HashMap<>();
     private Map<String, String> configVariables = new HashMap<>();
 
     @Autowired
@@ -95,6 +94,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     @PostConstruct
     public void init() {
         log.info("Setting up account features, populating config variable map");
+        Map<String, String> configDefaults = new HashMap<>();
         configDefaults.put("group.size.limited", "false");
         configDefaults.put("group.joins.limited", "false");
         configDefaults.put("group.size.freemax", "300");
@@ -419,7 +419,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         log.debug("generating notifications for {} member", memberUids.size());
         Instant now = Instant.now().plus(templateStringIndex * WELCOME_MSG_INTERVAL, ChronoUnit.MILLIS);
         Set<Notification> notifications = userRepository.findByUidIn(memberUids).stream()
-                .map(user -> fromTemplate(templateEntity, templateStringIndex, group.getMembership(user), accountLog, now))
+                .map(user -> fromTemplate(templateEntity, templateStringIndex, user.getMembership(group), accountLog, now))
                 .collect(Collectors.toSet());
         log.debug("generated {} notifications", notifications.size());
         return notifications;

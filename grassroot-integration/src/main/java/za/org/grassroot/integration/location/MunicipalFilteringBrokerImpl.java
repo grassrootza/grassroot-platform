@@ -232,7 +232,7 @@ public class MunicipalFilteringBrokerImpl implements MunicipalFilteringBroker {
                 .map(user -> {
                     Municipality municipality = (Municipality) cache.get(user.getUid()).getObjectValue();
                     if(municipality.getId() == Integer.valueOf(municipalityIDs)) {
-                        return user.getMembership(groupUid).orElse(null);
+                        return user.getMembership(group);
                     } else {
                         return null;
                     }

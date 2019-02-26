@@ -153,7 +153,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
         if (event.getEventType().equals(EventType.MEETING) && isOpen) {
             return true;
         } else if (event.getEventType().equals(EventType.VOTE) && (isOpen)) {
-            Membership membership = event.getAncestorGroup().getMembership(user);
+            Membership membership = user.getMembership(event.getAncestorGroup());
             return membership != null && membership.getJoinTime().isBefore(event.getCreatedDateTime());
         }
         return false;

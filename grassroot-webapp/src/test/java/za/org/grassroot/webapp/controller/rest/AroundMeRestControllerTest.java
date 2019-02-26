@@ -15,8 +15,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
-import za.org.grassroot.core.domain.geo.TaskLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.core.domain.geo.TaskLocation;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
@@ -94,21 +94,9 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         List<ObjectLocation> objectLocationList = new ArrayList<>();
         objectLocationList.add(objectLocation);
 
-        when(jwtServiceMock.getUserIdFromJwtToken(anyString())).thenReturn(testUser.getUid());
+        when(jwtServiceMock.getUserIdFromJwtToken(nullable(String.class))).thenReturn(testUser.getUid());
 
         when(userManagementServiceMock.load(testUser.getUid())).thenReturn(testUser);
-
-        when(geoLocationBrokerMock
-                .fetchMeetingLocationsNearUser(testUser,null,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm))
-                .thenThrow(new InvalidParameterException("Invalid Location parameter"));
-
-        when(geoLocationBrokerMock
-                .fetchMeetingLocationsNearUser(testUser,testLocation,-5, GeographicSearchType.PUBLIC,testSearchTerm))
-                .thenThrow(new InvalidParameterException("Invalid Radius parameter"));
-
-        when(geoLocationBrokerMock
-                .fetchMeetingLocationsNearUser(testUser,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm))
-                .thenReturn(objectLocationList);
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                 .get(path + "/all")
@@ -131,7 +119,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     }
 
     @Test
-    public void getPublicGroupsNearUserShouldWork() throws Exception{
+    public void getPublicGroupsNearUserShouldWork() throws Exception {
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
 
         User testUser = new User(phoneForTests,testUserName, null);
@@ -143,19 +131,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         List<ObjectLocation> objectLocations = new ArrayList<>();
         objectLocations.add(objectLocation);
 
-        when(jwtServiceMock.getUserIdFromJwtToken(anyString())).thenReturn(testUser.getUid());
-
-        when(geoLocationBrokerMock
-                .fetchGroupsNearby(testUser.getUid(),null,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC))
-                .thenThrow(new InvalidParameterException("Invalid location parameter"));
-
-        when(geoLocationBrokerMock
-                .fetchGroupsNearby(testUser.getUid(),testLocation,-5,testFilterTerm,GeographicSearchType.PUBLIC))
-                .thenThrow(new InvalidParameterException("Invalid radius parameter"));
-
-        when(geoLocationBrokerMock
-                .fetchGroupsNearby(testUser.getUid(),testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC))
-                .thenReturn(objectLocations);
+        when(jwtServiceMock.getUserIdFromJwtToken(nullable(String.class))).thenReturn(testUser.getUid());
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                 .get(path + "/all/groups")
@@ -194,20 +170,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         List<LiveWireAlert> liveWireAlerts = new ArrayList<>();
         liveWireAlerts.add(liveWireAlert);
 
-        when(jwtServiceMock.getUserIdFromJwtToken(anyString())).thenReturn(testUser.getUid());
-
-        when(liveWireAlertBrokerMock
-                .fetchAlertsNearUser(testUser.getUid(),null,
-                        testRadiusMetres,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid location parameter"));
-
-        when(liveWireAlertBrokerMock
-                .fetchAlertsNearUser(testUser.getUid(),null,
-                        -5,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid radius parameter"));
-
-        when(liveWireAlertBrokerMock
-                .fetchAlertsNearUser(testUser.getUid(),testLocation,
-                        testRadiusMetres,GeographicSearchType.PUBLIC)).thenReturn(liveWireAlerts);
-
+        when(jwtServiceMock.getUserIdFromJwtToken(nullable(String.class))).thenReturn(testUser.getUid());
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                 .get(path + "/all/alerts")

@@ -50,7 +50,6 @@ public class USSDMeetingController {
 	public Request rsvpAndWelcome(@RequestParam(value = phoneNumber) String inputNumber,
 								  @RequestParam(value = entityUidParam) String meetingUid,
 								  @RequestParam(value = yesOrNoParam) String attending) throws URISyntaxException {
-
 		return ussdMeetingService.processRsvpAndWelcome(inputNumber, meetingUid, attending);
 	}
 

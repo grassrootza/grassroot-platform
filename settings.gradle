@@ -3,8 +3,3 @@ include ':grassroot-webapp'
 include ':grassroot-core'
 include ':grassroot-integration'
 include ':grassroot-services'
-
-project(':grassroot-webapp').projectDir = "$rootDir/grassroot-webapp" as File
-project(':grassroot-core').projectDir = "$rootDir/grassroot-core" as File
-project(':grassroot-integration').projectDir = "$rootDir/grassroot-integration" as File
-project(':grassroot-services').projectDir = "$rootDir/grassroot-services" as File

@@ -86,7 +86,6 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
             TaskMinimalDTO taskDetails = new TaskMinimalDTO(meeting, Instant.now());
 
             when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber(), UserInterfaceType.USSD)).thenReturn(user);
-            when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
             when(userResponseBrokerMock.checkForEntityForUserResponse(user.getUid(), true)).thenReturn(meeting);
             when(taskBrokerMock.fetchDescription(user.getUid(), meeting.getUid(), TaskType.MEETING)).thenReturn(taskDetails);
 
@@ -241,7 +240,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 //        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
 //                andExpect(status().isOk());
 //
-//        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(nullable(String.class), nullable(String.class));
 //        verifyNoMoreInteractions(userManagementServiceMock);
 //        verify(groupBrokerMock, times(2)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"),
 //                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
@@ -308,13 +307,13 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 //        User testUser = new User(testUserPhone, null, null);
 //        Group testGroup = new Group("gc1", testUser);
 //
-//        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
+//        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), nullable(String.class))).thenReturn(testUser);
 //        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 //
 //        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid())
 //                                .param("prior_input", "0801112345 080111234")).andExpect(status().isOk());
 //
-//        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(nullable(String.class), nullable(String.class));
 //        verifyNoMoreInteractions(userManagementServiceMock);
 //        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"),
 //                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
@@ -366,7 +365,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 //        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
 //                andExpect(status().isOk());
 //
-//        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(nullable(String.class), nullable(String.class));
 //        verifyNoMoreInteractions(userManagementServiceMock);
 //        verify(eventRequestBrokerMock, times(2)).load(dummyRequest.getUid());
 //        verify(eventBrokerMock, times(2)).getMostFrequentLocation(testGroup.getUid());
@@ -389,7 +388,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 //        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
 //                andExpect(status().isOk());
 //
-//        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
+//        verify(userManagementServiceMock, times(2)).findByInputNumber(nullable(String.class), nullable(String.class));
 //        verifyNoMoreInteractions(userManagementServiceMock);
 //        verify(eventRequestBrokerMock, times(1)).updateMeetingLocation(testUser.getUid(), requestUid, "JoziHub");
 //        verifyNoMoreInteractions(eventBrokerMock);
@@ -418,7 +417,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 //        mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
 //                param("prior_menu", "time").param("request", "Tomorrow 7am")).andExpect(status().isOk());
 //
-//        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(nullable(String.class), nullable(String.class));
 //        verifyNoMoreInteractions(userManagementServiceMock);
 //        verify(eventRequestBrokerMock, times(1)).updateEventDateTime(testUser.getUid(), requestUid, forTimestamp);
 //        verify(eventRequestBrokerMock, times(1)).load(requestUid);
@@ -543,7 +542,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 
         this.ussdMeetingService.processSendMessage(testUserPhone, requestUid);
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(nullable(String.class), nullable(String.class));
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventRequestBrokerMock, times(1)).finish(testUser.getUid(), requestUid, true);
         verifyNoMoreInteractions(eventBrokerMock);
@@ -562,7 +561,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 
         this.ussdMeetingService.processMeetingManage(testUserPhone, testMeeting.getUid());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(nullable(String.class));
         verifyNoMoreInteractions(userManagementServiceMock);
 
     }
@@ -588,7 +587,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 
         this.ussdMeetingService.processMeetingDetails(testUserPhone, testMeeting.getUid());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(nullable(String.class));
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventBrokerMock, times(1)).loadMeeting(testMeeting.getUid());
         verify(eventLogBrokerMock, times(1)).getResponseCountForEvent(testMeeting);
@@ -750,7 +749,6 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
-        when(learningServiceMock.parse("09:00")).thenReturn(LocalDateTime.of(LocalDate.now(), LocalTime.of(9, 0)));
 
         for (String[] actions : actionsAndInputs) {
             urlToSave = editingMtgMenuUrl("modify", testMeeting.getUid(), changeRequest.getUid(), actions[0])
@@ -801,7 +799,7 @@ public class UssdMeetingServiceTest extends UssdUnitTest {
 //        mockMvc.perform(get(path + "cancel").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid())).
 //                andExpect(status().isOk());
 //
-//        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
+//        verify(userManagementServiceMock, times(1)).findByInputNumber(nullable(String.class));
 //        // note: not verifying interaction times with other services, until have permissions / filters in place
 //    }
 

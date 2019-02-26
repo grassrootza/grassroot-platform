@@ -7,10 +7,18 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoType;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.authentication.JwtService;
@@ -75,7 +83,7 @@ public class TaskPreviewController extends BaseRestController {
             previewEvent.setDescription(description);
 
         if (previewEvent instanceof Vote && voteOptions != null && !voteOptions.isEmpty())
-            previewEvent.setVoteOptions(voteOptions);
+            ((Vote) previewEvent).setVoteOptions(voteOptions);
 
         TaskPreview preview = new TaskPreview();
 

@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
@@ -15,6 +16,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.webapp.interceptor.JwtAuthenticationFilter;
 
 import java.util.Arrays;
@@ -94,7 +96,7 @@ public class SecurityConfig {
                     .antMatchers(PUBLIC_ENDPOINTS)
                     .antMatchers(AUTH_ENDPOINTS);
 
-            if (!environment.acceptsProfiles("production"))
+            if (!environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.PRODUCTION)))
                 web.ignoring().antMatchers(DEV_ENDPOINTS);
         }
     }
@@ -114,7 +116,7 @@ public class SecurityConfig {
     }
 
     private String assembleUssdGatewayAccessString() {
-        if (environment.acceptsProfiles("localpg", "staging")) {
+        if (environment.acceptsProfiles(Profiles.of(GrassrootApplicationProfiles.LOCAL_PG, GrassrootApplicationProfiles.STAGING))) {
             log.info("Permitting all requests ...");
             return "permitAll";
         }

@@ -73,7 +73,7 @@ public class TaskFullDTO {
 
         Group ancestorGroup = task.getAncestorGroup();
         // just in case membership is gone (and useful for test) by time user pulls task
-        Membership creatorMembership = ancestorGroup.getMembership(task.getCreatedByUser());
+        Membership creatorMembership = task.getCreatedByUser().getMembership(ancestorGroup);
         this.createdByUserName = creatorMembership != null ? creatorMembership.getDisplayName() : task.getCreatedByUser().getName();
         this.createdByThisUser = task.getCreatedByUser().equals(user);
         this.ancestorGroupName = ancestorGroup.getName();
