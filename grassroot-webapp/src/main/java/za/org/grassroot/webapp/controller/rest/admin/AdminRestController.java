@@ -24,6 +24,7 @@ import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.authentication.CreateJwtTokenRequest;
 import za.org.grassroot.integration.authentication.JwtService;
@@ -69,6 +70,7 @@ public class AdminRestController extends BaseRestController{
 
     private MemberDataExportBroker memberDataExportBroker;
     private MunicipalFilteringBroker municipalFilteringBroker;
+    private final MembershipRepository membershipRepository;
 
     public AdminRestController(UserManagementService userManagementService,
                                JwtService jwtService,
@@ -77,7 +79,8 @@ public class AdminRestController extends BaseRestController{
                                GroupBroker groupBroker,
                                MessagingServiceBroker messagingServiceBroker,
                                PasswordTokenService passwordTokenService,
-                               AccountFeaturesBroker accountFeaturesBroker) {
+                               AccountFeaturesBroker accountFeaturesBroker,
+                               MembershipRepository membershipRepository) {
         super(jwtService,userManagementService);
         this.adminService = adminService;
         this.userManagementService = userManagementService;
@@ -87,6 +90,7 @@ public class AdminRestController extends BaseRestController{
         this.groupBroker = groupBroker;
         this.jwtService = jwtService;
         this.accountFeaturesBroker = accountFeaturesBroker;
+        this.membershipRepository = membershipRepository;
     }
 
     @Autowired(required = false) // as it depends on WhatsApp being active
@@ -152,7 +156,7 @@ public class AdminRestController extends BaseRestController{
         List<GroupAdminDTO> groupAdminDTOS = new ArrayList<>();
         if(!StringUtils.isEmpty(searchTerm)){
             List<Group> groups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
-            groups.forEach(group -> groupAdminDTOS.add(new GroupAdminDTO(group)));
+            groups.forEach(group -> groupAdminDTOS.add(new GroupAdminDTO(group, membershipRepository)));
             groupAdminDTOS.sort(Comparator.comparing(
                     (Function<GroupAdminDTO, Integer>) GroupRefDTO::getMemberCount).reversed());
         }

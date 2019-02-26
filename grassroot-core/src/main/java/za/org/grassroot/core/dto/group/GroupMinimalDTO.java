@@ -41,7 +41,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
     private Instant lastTaskOrChangeTime;
 
     public GroupMinimalDTO(Group group, Membership membership, MembershipRepository membershipRepository) {
-        super(group, group.getLastGroupChangeTime());
+        super(group, membershipRepository);
         this.description = group.getDescription();
         this.userRole = membership.getRole();
         this.lastTaskOrChangeTime = group.getLatestChangeOrTaskTime();
@@ -59,8 +59,6 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
                 this.nextEventType = event.getTaskType();
             }
         }
-
-        memberCount = membershipRepository.countByGroup(group);
     }
 
     @JsonIgnore

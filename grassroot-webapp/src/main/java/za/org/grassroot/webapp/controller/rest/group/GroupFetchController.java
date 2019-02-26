@@ -44,6 +44,7 @@ import za.org.grassroot.core.dto.group.MembershipRecordDTO;
 import za.org.grassroot.core.dto.membership.MembershipFullDTO;
 import za.org.grassroot.core.dto.membership.MembershipStdDTO;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.location.MunicipalFilteringBroker;
 import za.org.grassroot.integration.location.Municipality;
@@ -91,6 +92,7 @@ public class GroupFetchController extends BaseRestController {
 
     private final GroupFetchBroker groupFetchBroker;
 
+    private final MembershipRepository membershipRepository;
     private final MemberDataExportBroker memberDataExportBroker;
     private final MessageSourceAccessor messageSourceAccessor;
     private final GroupBroker groupBroker;
@@ -116,12 +118,14 @@ public class GroupFetchController extends BaseRestController {
     @Autowired
     public GroupFetchController(JwtService jwtService, UserManagementService userManagementService,
                                 GroupBroker groupBroker, GroupFetchBroker groupFetchBroker,
-                                MemberDataExportBroker memberDataExportBroker, MessageSourceAccessor messageSourceAccessor) {
+                                MemberDataExportBroker memberDataExportBroker, MessageSourceAccessor messageSourceAccessor,
+                                MembershipRepository membershipRepository) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.memberDataExportBroker = memberDataExportBroker;
         this.messageSourceAccessor = messageSourceAccessor;
         this.groupBroker = groupBroker;
+        this.membershipRepository = membershipRepository;
     }
 
     @Autowired(required = false)
@@ -201,7 +205,7 @@ public class GroupFetchController extends BaseRestController {
         log.info("Fetching minimal filtered groups for user Id : {}, with page number: {}", userId, pageNumber);
         Pageable pageable = pageNumber == null ? null : PageRequest.of(pageNumber, 10); // might make this a parameter in future
         Page<Group> groups = groupFetchBroker.fetchGroupFiltered(userId, requiredPermission, filterTerm, pageable);
-        Page<GroupRefDTO> groupDtos = groups.map(group -> new GroupRefDTO(group.getUid(), group.getName(), 0));
+        Page<GroupRefDTO> groupDtos = groups.map(group -> new GroupRefDTO(group, this.membershipRepository));
         return ResponseEntity.ok(groupDtos);
     }
 
@@ -209,7 +213,7 @@ public class GroupFetchController extends BaseRestController {
     public ResponseEntity<GroupRefDTO> fetchMinimalDetailsOnGroup(HttpServletRequest request, @PathVariable String groupUid) {
         // todo : may want to permissions check
         Group group = groupFetchBroker.fetchGroupByGroupUid(groupUid);
-        return ResponseEntity.ok(new GroupRefDTO(groupUid, group.getName(), group.getMemberships().size()));
+        return ResponseEntity.ok(new GroupRefDTO(group, this.membershipRepository));
     }
 
     @RequestMapping(value = "/full", method = RequestMethod.GET)

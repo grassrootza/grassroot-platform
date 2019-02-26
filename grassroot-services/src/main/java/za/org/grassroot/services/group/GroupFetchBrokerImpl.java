@@ -115,7 +115,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         final Set<Group> groups = this.groupRepository.findByUidIn(uidsToLookUp);
         final List<GroupTimeChangedDTO> groupTimeChangedDTOS = groups.stream()
-                .map(group -> new GroupTimeChangedDTO(group, group.getLastGroupChangeTime()))
+                .map(group -> new GroupTimeChangedDTO(group, membershipRepository))
                 .collect(Collectors.toList());
 
         return groupTimeChangedDTOS.stream()
@@ -176,7 +176,9 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         if (includeAllSubgroups) {
             final List<Group> subgroups = groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()));
-            final List<GroupMembersDTO> groupMembersDTOS = subgroups.stream().map(GroupMembersDTO::new).collect(Collectors.toList());
+            final List<GroupMembersDTO> groupMembersDTOS = subgroups.stream()
+                    .map(g -> new GroupMembersDTO(g, membershipRepository))
+                    .collect(Collectors.toList());
             groupFullDTO.setSubGroups(groupMembersDTOS);
         }
 
@@ -292,7 +294,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
         // note: for present, since this is minimal, not even getting member count
         return groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user).stream()
-                .map(group -> new GroupRefDTO(group.getUid(), group.getName(), 0)).collect(Collectors.toList());
+                .map(group -> new GroupRefDTO(group, this.membershipRepository))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -438,8 +441,9 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     }
 
     private List<GroupRefDTO> getSubgroups(Group group) {
-        return groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()))
-                .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName(), gr.getMemberships().size()))
+        final List<Group> groups = groupRepository.findAll(Specification.where(hasParent(group)).and(isActive()));
+        return groups.stream()
+                .map(gr -> new GroupRefDTO(gr, this.membershipRepository))
                 .collect(Collectors.toList());
     }
 

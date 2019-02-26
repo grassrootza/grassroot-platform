@@ -25,6 +25,7 @@ import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
@@ -60,6 +61,7 @@ public class AccountBrokerImpl implements AccountBroker {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
+    private final MembershipRepository membershipRepository;
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final PermissionBroker permissionBroker;
@@ -69,11 +71,12 @@ public class AccountBrokerImpl implements AccountBroker {
     private LocationInfoBroker locationInfoBroker;
 
     @Autowired
-    public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, GroupRepository groupRepository, PermissionBroker permissionBroker,
+    public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker,
                              LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.membershipRepository = membershipRepository;
         this.permissionBroker = permissionBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.eventPublisher = eventPublisher;
@@ -487,7 +490,7 @@ public class AccountBrokerImpl implements AccountBroker {
         if (group.getAccount() == null || !user.getAccountsAdministered().contains(group.getAccount()))
             throw new IllegalArgumentException("Error! Group is not on user's account");
 
-        return new GroupRefDTO(group.getUid(), group.getName(), group.getMembers().size());
+        return new GroupRefDTO(group, this.membershipRepository);
     }
 
     @Override
