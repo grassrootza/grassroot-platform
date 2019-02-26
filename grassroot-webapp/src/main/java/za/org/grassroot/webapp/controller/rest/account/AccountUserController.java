@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
-import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
@@ -31,7 +29,6 @@ import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.DataSetInfo;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignStatsBroker;
-import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
@@ -365,6 +362,17 @@ public class AccountUserController extends BaseRestController {
         User user = getUserFromRequest(request);
         accountBroker.renameAccount(user.getUid(), accountUid, accountName);
         Account account = accountBroker.loadAccount(accountUid);
+        return ResponseEntity.ok(new AccountWrapper(account, user));
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/settings/spending/limit", method = RequestMethod.POST)
+    public ResponseEntity<AccountWrapper> updateAccountSpendingLimit(@RequestParam String accountUid,
+                                                                     @RequestParam long newSpendingLimit,
+                                                                     HttpServletRequest request) {
+        final User user = getUserFromRequest(request);
+        accountBroker.updateAccountSpendingLimit(user.getUid(), accountUid, newSpendingLimit);
+        final Account account = accountBroker.loadAccount(accountUid);
         return ResponseEntity.ok(new AccountWrapper(account, user));
     }
 

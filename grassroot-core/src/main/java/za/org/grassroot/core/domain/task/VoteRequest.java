@@ -3,12 +3,14 @@ package za.org.grassroot.core.domain.task;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import java.util.List;
 
 @Entity
 @DiscriminatorValue("VOTE")
@@ -52,6 +54,12 @@ public class VoteRequest extends EventRequest<VoteContainer> {
 		request.tags = new String[0];
 		if (parent != null) request.setParent(parent);
 		return request;
+	}
+
+	public void addVoteOption(String option) {
+		List<String> currentOptions = getTagList();
+		currentOptions.add(option);
+		this.tags = StringArrayUtil.listToArrayRemoveDuplicates(currentOptions);
 	}
 
 	public VoteContainer getParent() {

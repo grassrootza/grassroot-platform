@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.notification.UserLanguageNotification;
 import za.org.grassroot.core.domain.notification.VoteResultsNotification;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -21,6 +23,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.VoteRepository;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
@@ -31,7 +34,15 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 import static za.org.grassroot.core.enums.EventLogType.CHANGE;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
@@ -95,7 +106,8 @@ public class VoteBrokerImpl implements VoteBroker {
 
         boolean startTimeChanged = !vote.getEventStartDateTime().equals(convertedClosingDateTime);
         if (startTimeChanged) {
-            validateVoteClosingTime(convertedClosingDateTime);
+            // removing this check because we are going to use this to close a vote without cancelling it
+            //  validateVoteClosingTime(convertedClosingDateTime);
             vote.setEventStartDateTime(convertedClosingDateTime);
             vote.updateScheduledReminderTime();
         }
@@ -157,6 +169,11 @@ public class VoteBrokerImpl implements VoteBroker {
     public void calculateAndSendVoteResults(String voteUid) {
         Objects.requireNonNull(voteUid);
         Vote vote = voteRepository.findOneByUid(voteUid);
+        if (vote.shouldStopNotifications()) {
+            logger.info("Vote is set to halt notifications, aborting");
+            return;
+        }
+
         logger.info("Sending vote results for {}", vote.getName());
         try {
             Map<String, Long> voteResults = StringArrayUtil.isAllEmptyOrNull(vote.getVoteOptions()) ?
@@ -217,6 +234,12 @@ public class VoteBrokerImpl implements VoteBroker {
                 throw e;
             }
         }
+    }
+
+    @Override
+    public Optional<Vote> getMassVoteOpenForGroup(final Group group) {
+        return voteRepository.findAll(EventSpecifications.isOpenMassVoteForGroup(group),
+                Sort.by(Sort.Direction.ASC, "eventStartDateTime")).stream().findFirst();
     }
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {

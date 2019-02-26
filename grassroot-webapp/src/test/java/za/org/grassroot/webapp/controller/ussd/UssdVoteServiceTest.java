@@ -110,7 +110,8 @@ public class UssdVoteServiceTest extends UssdUnitTest {
     @Test
     public void selectVoteForMultiOptionVoteShouldWork() throws Exception {
         VoteRequest voteRequest = VoteRequest.makeEmpty();
-        voteRequest.setVoteOptions(Arrays.asList("Option 1", "Option 2"));
+        voteRequest.addVoteOption("Option 1");
+        voteRequest.addVoteOption("Option 2");
         String urlToSave = "vote/multi_option/add?requestUid=" + voteRequest.getUid() + "&interrupted=1&priorInput=0";
         List<Group> validGroups = Arrays.asList(new Group("tg1", GroupPermissionTemplate.DEFAULT_GROUP, testUser), new Group("tg2", GroupPermissionTemplate.DEFAULT_GROUP, testUser));
 

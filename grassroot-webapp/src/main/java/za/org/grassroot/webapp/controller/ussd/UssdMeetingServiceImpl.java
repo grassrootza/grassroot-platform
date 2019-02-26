@@ -120,6 +120,8 @@ public class UssdMeetingServiceImpl implements UssdMeetingService {
 
 		if (!StringUtils.isEmpty(meeting.getDescription())) {
 			openingMenu.addMenuOption(meetingMenus + "description?mtgUid=" + meeting.getUid() + "&back=respond", ussdSupport.getMessage("home.generic.moreinfo", user));
+		} else {
+			openingMenu.addMenuOption(optionUri + "&confirmed=maybe", ussdSupport.getMessage("home.start.rsvp.options.maybe", user));
 		}
 
 		return openingMenu;
@@ -128,8 +130,8 @@ public class UssdMeetingServiceImpl implements UssdMeetingService {
 	@Override
 	@Transactional(readOnly = true)
 	public Request processRespondToMtg(String inputNumber, String mtgUid) throws URISyntaxException {
-		User user = userManager.findByInputNumber(inputNumber);
-		Meeting mtg = eventBroker.loadMeeting(mtgUid);
+		final User user = userManager.findByInputNumber(inputNumber);
+		final Meeting mtg = eventBroker.loadMeeting(mtgUid);
 		return ussdSupport.menuBuilder(assembleRsvpMenu(user, mtg));
 	}
 
@@ -161,9 +163,12 @@ public class UssdMeetingServiceImpl implements UssdMeetingService {
 		if ("yes".equals(attending)) {
 			eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
 			welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-yes"));
-		} else {
+		} else if ("no".equals(attending)) {
 			eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.NO);
 			welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-no"));
+		} else {
+			eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.MAYBE);
+			welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-maybe"));
 		}
 
 		ussdSupport.recordExperimentResult(user.getUid(), attending);

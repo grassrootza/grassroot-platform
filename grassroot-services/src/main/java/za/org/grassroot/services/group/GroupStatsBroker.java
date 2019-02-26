@@ -8,11 +8,11 @@ public interface GroupStatsBroker {
 
     Map<String, Integer> getMembershipGrowthStats(String groupUid, Integer year, @Nullable Integer month);
 
-    Map<String, Long> getProvincesStats(String groupUid);
+    Map<String, Integer> getProvincesStats(String groupUid);
 
-    Map<String, Long> getSourcesStats(String groupUid);
+    Map<String, Integer> getSourcesStats(String groupUid);
 
-    Map<String, Long> getOrganisationsStats(String groupUid);
+    Map<String, Integer> getOrganisationsStats(String groupUid);
 
     Map<String, Integer> getMemberDetailsStats(String groupUid);
 

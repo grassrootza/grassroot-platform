@@ -74,4 +74,15 @@ public interface AccountBroker {
 
     DataSetInfo fetchDataSetInfo(String userUid, String dataSetLabel, Instant start, Instant end);
 
+    @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
+    void updateAccountSpendingLimit(String userUid, String accountUid, long newAccountLimit);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void updateAccountUnitCosts(String userUid, String accountUid, int costPerUssdSession, int costPerSms);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void updateAccountMonthlyFlatFee(String userUid, String accountUid, long newFlatFee);
+
+    void calculateAccountSpendingThisMonth(String accountUid);
+
 }

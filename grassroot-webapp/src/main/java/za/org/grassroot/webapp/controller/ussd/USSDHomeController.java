@@ -48,9 +48,9 @@ public class USSDHomeController {
     @ResponseBody
     public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber,
                                   @RequestParam(required = false) String trailingDigits) throws URISyntaxException {
+        log.info("Triggering start force, trailing digits: {}", trailingDigits);
         return this.ussdHomeService.processForceStartMenu(inputNumber, trailingDigits);
     }
-
 
     /*
     Menus to process responses to votes and RSVPs,

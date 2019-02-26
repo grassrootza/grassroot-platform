@@ -63,7 +63,6 @@ public class USSDGroupController {
 	@ResponseBody
 	public Request groupMenu(@RequestParam(value = phoneNumber) String inputNumber,
 							 @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-
 		return ussdGroupService.processGroupMenu(inputNumber, groupUid);
 	}
 
@@ -94,7 +93,6 @@ public class USSDGroupController {
 									   @RequestParam(value = userInputParam, required = true) String groupName,
 									   @RequestParam(value = "interrupted", required = false) boolean interrupted,
 									   @RequestParam(value = groupUidParam, required = false) String groupUid) throws URISyntaxException {
-
 		return ussdGroupService.processCreateGroupWithName(inputNumber, groupName, interrupted, groupUid);
 	}
 

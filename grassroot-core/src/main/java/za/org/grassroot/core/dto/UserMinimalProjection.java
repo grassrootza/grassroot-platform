@@ -1,6 +1,7 @@
 package za.org.grassroot.core.dto;
 
 import lombok.Value;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.Province;
 
 import java.util.Locale;
@@ -17,6 +18,10 @@ public class UserMinimalProjection {
 
     public boolean hasName() {
         return (displayName != null && displayName.trim().length() > 0);
+    }
+
+    public static UserMinimalProjection extractFromUser(User user) {
+        return new UserMinimalProjection(user.getUid(), user.getDisplayName(), user.getLanguageCode(), user.getProvince());
     }
 
 }
