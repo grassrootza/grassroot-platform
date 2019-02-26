@@ -216,11 +216,6 @@ public abstract class AbstractEventEntity implements TagHolder {
 
 	public String[] getTags() { return tags; }
 
-	public void setVoteOptions(List<String> options) {
-		Objects.requireNonNull(options);
-		this.tags = StringArrayUtil.listToArray(options);
-	}
-
 	public void setTags(String[] tags) {
 		this.tags = tags;
 	}

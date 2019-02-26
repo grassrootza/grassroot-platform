@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventRequest;
 import za.org.grassroot.core.domain.task.Vote;
+import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.EventSpecialForm;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -37,6 +38,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 import java.util.Optional;
 
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
@@ -82,6 +84,11 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 
 	@Override
 	public USSDMenu assembleVoteMenu(User user, Vote vote) {
+		log.info("Processing vote: ", vote);
+
+		if (EventSpecialForm.MASS_VOTE.equals(vote.getSpecialForm()))
+			return processMassVoteOpening(vote, user);
+
 		final String[] promptFields = new String[]{vote.getAncestorGroup().getName(""),
 				vote.getAncestorGroup().getMembership(vote.getCreatedByUser()).getDisplayName(),
 				vote.getName()};
@@ -308,14 +315,88 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 	@Override
 	@Transactional
 	public Optional<USSDMenu> processPossibleMassVote(User user, Group group) {
-		return voteBroker.getMassVoteOpenForGroup(group).map(vote -> {
-			final String prompt = ussdSupport.getMessage("home.start.prompt.group.vote", new String[] { group.getName(), vote.getName() }, user);
-			final USSDMenu menu = assembleVoteMenu(user, vote); // handles option setting, etc.
-			menu.setPromptMessage(vote.getName()); // because this is better in this context than standard
-			log.info("Created a mass vote, here it is: {}", menu);
-			return menu;
-		});
+		return voteBroker.getMassVoteOpenForGroup(group).map(vote -> processMassVoteOpening(vote, user));
 	}
+
+	@Override
+	public Request processKnownMassVote(String inputNumber, String voteUid) throws URISyntaxException {
+		final User user = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
+		final Vote vote = voteBroker.load(voteUid);
+		return ussdSupport.menuBuilder(processMassVoteOpening(vote, user));
+	}
+
+	private USSDMenu processMassVoteOpening(final Vote vote, final User user) {
+		if (vote.hasAdditionalLanguagePrompts()) {
+			final USSDMenu langMenu = new USSDMenu(ussdSupport.getMessage("language.prompt.short", user));
+			final String voteUri = voteMenus + "mass/language?voteUid=" + vote.getUid() + "&language=";
+			vote.getPromptLanguages().forEach(locale ->
+					langMenu.addMenuOption(voteUri + locale.toString(),
+							ussdSupport.getMessage("language." + locale.getISO3Language(), user))
+			);
+			return langMenu;
+		} else  {
+			final USSDMenu menu = massVoteMenu(vote, UserMinimalProjection.extractFromUser(user), null); // handles option setting, etc.
+			log.info("Initiated a mass vote, here it is: {}", menu);
+			return menu;
+		}
+	}
+
+	private USSDMenu massVoteMenu(Vote vote, UserMinimalProjection user, Locale language) {
+		// for now, we are enforcing that multi-language prompts can only be yes or no
+		if (language != null || vote.getVoteOptions().isEmpty()) {
+			return massVoteYesNoMenu(vote, user, language);
+		} else {
+			return massVoteOptionsMenu(vote);
+		}
+	}
+
+	// todo : think about adding description back too
+	private USSDMenu massVoteYesNoMenu(Vote vote, UserMinimalProjection user, Locale language) {
+		final String prompt = vote.getLanguagePrompt(language).orElse(vote.getName());
+		final Locale lang = language == null ? Locale.ENGLISH : language;
+		final USSDMenu menu = new USSDMenu(prompt);
+		final String urlBase = voteMenus + "mass/record?voteUid=" + vote.getUid() +
+				(language != null ? "&language=" + language : "") + "&response=";
+		menu.addMenuOption(urlBase + "YES", ussdSupport.getMessage("options.yes", lang.toString()));
+		menu.addMenuOption(urlBase + "NO", ussdSupport.getMessage("options.no", lang.toString()));
+		if (!vote.shouldExcludeAbstention()) {
+			menu.addMenuOption(urlBase + "MAYBE", ussdSupport.getMessage("options.abstain", lang.toString()));
+		}
+		return menu;
+	}
+
+	private USSDMenu massVoteOptionsMenu(Vote vote) {
+		final USSDMenu menu = new USSDMenu(vote.getName());
+		final String urlBase = voteMenus + "mass/record?voteUid=" + vote.getUid() + "&response=";
+		vote.getVoteOptions().forEach(option -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(option), option));
+		return menu;
+	}
+
+	@Override
+	@Transactional
+	public Request processMassVoteLanguageSelection(String inputNumber, String voteUid, Locale language) throws URISyntaxException {
+		// todo : store menu in case interrupted
+		final UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
+		userManager.updateUserLanguage(user.getUid(), language, UserInterfaceType.USSD);
+		final Vote vote = voteBroker.load(voteUid);
+		return ussdSupport.menuBuilder(massVoteMenu(vote, user, language));
+	}
+
+	@Override
+	@Transactional
+	public Request processMassVoteResponse(String inputNumber, String voteUid, String response, Locale language) throws URISyntaxException {
+		final Vote vote = voteBroker.load(voteUid);
+		if (!vote.hasPostVotePrompt()) {
+			return processVoteAndWelcome(inputNumber, voteUid, response);
+		} else {
+			// todo : clear cache, etc
+			final UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
+			voteBroker.recordUserVote(user.getUid(), voteUid, response);
+			final String prompt = vote.getPostVotePrompt(language).orElse(ussdSupport.getMessage("vote.start.prompt.vote-recorded", user));
+			return ussdSupport.menuBuilder(new USSDMenu(prompt));
+		}
+	}
+
 
 	private void setStandardTime(String requestUid, VoteTime time, User user) {
 		ZonedDateTime proposedDateTime = null;
@@ -376,7 +457,9 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 		final String voteUri = voteMenus + "record?voteUid=" + vote.getUid() + "&response=";
 		menu.addMenuOption(voteUri + "YES", ussdSupport.getMessage(optionMsgKey + "yes", user));
 		menu.addMenuOption(voteUri + "NO", ussdSupport.getMessage(optionMsgKey + "no", user));
-		menu.addMenuOption(voteUri + "ABSTAIN", ussdSupport.getMessage(optionMsgKey + "abstain", user));
+		if (!vote.shouldExcludeAbstention()) {
+			menu.addMenuOption(voteUri + "ABSTAIN", ussdSupport.getMessage(optionMsgKey + "abstain", user));
+		}
 	}
 
 	private void addVoteOptions(Vote vote, USSDMenu menu) {

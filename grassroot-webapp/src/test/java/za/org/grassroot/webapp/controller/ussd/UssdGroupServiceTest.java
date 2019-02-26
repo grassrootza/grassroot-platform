@@ -123,7 +123,7 @@ public class UssdGroupServiceTest extends UssdUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).load(testGroup.getUid());
         verify(permissionBrokerMock, times(2)).isGroupPermissionAvailable(testUser, testGroup, p1);
-        verify(permissionBrokerMock, times(4)).isGroupPermissionAvailable(testUser, testGroup, p2);
+        verify(permissionBrokerMock, times(2)).isGroupPermissionAvailable(testUser, testGroup, p2);
     }
 
     @Test

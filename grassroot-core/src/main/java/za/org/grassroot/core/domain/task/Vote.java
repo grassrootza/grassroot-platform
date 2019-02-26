@@ -11,9 +11,12 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -21,10 +24,14 @@ import java.util.stream.Collectors;
 @DiscriminatorValue("VOTE")
 public class Vote extends Event<VoteContainer> {
 
+	// Could also add as columns, but these are very seldom used, the other event (meeting) doesn't need them, and they've changed often
 	private static final String RANDOMIZE_TAG = "RANDOMIZE";
+	private static final String EXCLUDE_ABSTAIN_TAG = "EXCLUDE_ABSTENTION_OPTION";
+	private static final String NO_NOTIFICATIONS_TAG = "SEND_NO_NOTIFICATIONS";
 
 	private static final String OPTION_PREFIX = "OPTION::";
 	private static final String LANGUAGE_PREFIX = "LANGUAGE::";
+	private static final String POST_MSG_PREFIX = "POSTVOTE::";
 
 	@ManyToOne
 	@JoinColumn(name = "parent_meeting_id")
@@ -47,6 +54,13 @@ public class Vote extends Event<VoteContainer> {
 		setParent(parent);
 	}
 
+	public void setVoteOptions(List<String> options) {
+		Objects.requireNonNull(options);
+		// first, remove all of the existing ones
+		this.getPrefixFilteredList(OPTION_PREFIX).forEach(oldOption -> this.removeTag(OPTION_PREFIX + oldOption));
+		this.addTags(options.stream().map(newOption -> OPTION_PREFIX + newOption).collect(Collectors.toList()));
+	}
+
 	public boolean hasOption(String option) {
 		if (getTags() == null)
 			return false;
@@ -55,7 +69,7 @@ public class Vote extends Event<VoteContainer> {
 	}
 
 	public List<String> getVoteOptions() {
-		List<String> options = getPrefixFilteredList(OPTION_PREFIX).map(s -> s.substring(OPTION_PREFIX.length())).collect(Collectors.toList());
+		List<String> options = getPrefixFilteredList(OPTION_PREFIX).collect(Collectors.toList());
 
 		if (shouldRandomize()) {
 			Collections.shuffle(options);
@@ -65,26 +79,83 @@ public class Vote extends Event<VoteContainer> {
 	}
 
 	public void setRandomize(boolean randomize) {
-		if (randomize) {
-			this.addTag(RANDOMIZE_TAG);
-		} else {
-			this.removeTag(RANDOMIZE_TAG);
-		}
+		this.toggleTagBasedFlag(randomize, RANDOMIZE_TAG);
 	}
 
 	private boolean shouldRandomize() {
 		return this.getTagList().contains(RANDOMIZE_TAG);
 	}
 
-	public void addLanguagePrompt(Locale language, String prompt) {
-		this.getLanguagePrompt(language).ifPresent(existing -> this.removeTag(LANGUAGE_PREFIX + "::" + language.toString() + "::" + existing));
-		this.addTag(LANGUAGE_PREFIX + "::" + language.toString() + "::" + prompt);
+	public void setExcludeAbstention(boolean excludeAbstention) {
+		toggleTagBasedFlag(excludeAbstention, EXCLUDE_ABSTAIN_TAG);
+	}
+
+	public boolean shouldExcludeAbstention() {
+		return this.getTagList().contains(EXCLUDE_ABSTAIN_TAG);
+	}
+
+	public void setStopNotifications(boolean stopNotifications) {
+		this.toggleTagBasedFlag(stopNotifications, NO_NOTIFICATIONS_TAG);
+	}
+
+	public boolean shouldStopNotifications() {
+		return this.getTagList().contains(NO_NOTIFICATIONS_TAG);
+	}
+
+	private void toggleTagBasedFlag(boolean turnOn, String tag) {
+		if (turnOn)
+			this.addTag(tag);
+		else
+			this.removeTag(tag);
+	}
+
+	// all of the following are for mass votes only, and allow for language handling etc
+	public boolean hasAdditionalLanguagePrompts() {
+		return this.getPrefixFilteredList(LANGUAGE_PREFIX).findFirst().isPresent();
+	}
+
+	public List<Locale> getPromptLanguages() {
+		return this.getPrefixFilteredList(LANGUAGE_PREFIX)
+				.map(s -> s.substring(0, s.indexOf("::")))
+				.map(Locale::new).collect(Collectors.toList());
 	}
 
 	public Optional<String> getLanguagePrompt(Locale language) {
-		return this.getPrefixFilteredList(LANGUAGE_PREFIX)
+		if (language == null)
+			return Optional.of(this.getName());
+		else
+			return this.getPrefixFilteredList(LANGUAGE_PREFIX)
 				.filter(s -> s.startsWith(language.toString()))
-				.findFirst().map(s -> s.substring(language.toString().length()));
+				.findFirst().map(s -> s.substring((language.toString() + "::").length()));
+	}
+
+	public void setLangaugePrompts(Map<Locale, String> languagePrompts) {
+		languagePrompts.forEach((locale, s) -> addLanguagePrompt(locale, s.trim()));
+	}
+
+	private void addLanguagePrompt(Locale language, String prompt) {
+		this.getLanguagePrompt(language).ifPresent(existing -> this.removeTag(LANGUAGE_PREFIX + language.toString() + "::" + existing));
+		this.addTag(LANGUAGE_PREFIX + language.toString() + "::" + prompt);
+	}
+
+	public boolean hasPostVotePrompt() {
+		return this.getPrefixFilteredList(POST_MSG_PREFIX).findFirst().isPresent();
+	}
+
+	public Optional<String> getPostVotePrompt(Locale language) {
+		return this.getPrefixFilteredList(POST_MSG_PREFIX)
+				.filter(s -> s.startsWith(language.toString()))
+				.findFirst().map(s -> s.substring((language.toString() + "::").length()));
+	}
+
+	public void setPostVotePrompts(Map<Locale, String> postVotePrompts) {
+		postVotePrompts.forEach(((locale, s) -> addPostVotePrompt(locale, s.trim())));
+	}
+
+	private void addPostVotePrompt(Locale language, String postVoteMsg) {
+		final Locale lang = language == null ? Locale.ENGLISH : language;
+		this.getPostVotePrompt(lang).ifPresent(existing -> this.removeTag(POST_MSG_PREFIX + lang.toString() + "::" + existing));
+		this.addTag(POST_MSG_PREFIX + lang.toString() + "::" + postVoteMsg);
 	}
 
 	@Override
@@ -124,5 +195,18 @@ public class Vote extends Event<VoteContainer> {
 		} else {
 			throw new UnsupportedOperationException("Unsupported parent: " + parent);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "Vote{" +
+				"id=" + id +
+				", name='" + name + '\'' +
+				", tags=" + Arrays.toString(tags) +
+				", createdDateTime=" + createdDateTime +
+				", eventStartDateTime=" + eventStartDateTime +
+				", createdByUser=" + createdByUser.getName() +
+				", parentGroup=" + parentGroup.getName() +
+				'}';
 	}
 }

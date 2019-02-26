@@ -12,14 +12,42 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.group.Group;
-import za.org.grassroot.core.domain.notification.*;
-import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.domain.notification.EventCancelledNotification;
+import za.org.grassroot.core.domain.notification.EventChangedNotification;
+import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.domain.notification.EventReminderNotification;
+import za.org.grassroot.core.domain.notification.MeetingRsvpTotalsNotification;
+import za.org.grassroot.core.domain.notification.MeetingThankYouNotification;
+import za.org.grassroot.core.domain.notification.UserLanguageNotification;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.EventReminderType;
+import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.domain.task.MeetingContainer;
+import za.org.grassroot.core.domain.task.Meeting_;
+import za.org.grassroot.core.domain.task.Vote;
+import za.org.grassroot.core.domain.task.VoteContainer;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.enums.*;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.MeetingRepository;
+import za.org.grassroot.core.repository.UidIdentifiableRepository;
+import za.org.grassroot.core.repository.VoteRepository;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -49,7 +77,14 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -183,8 +218,7 @@ public class EventBrokerImpl implements EventBroker {
 	private AfterTxCommitTask addToGraph(Meeting meeting) {
 		return () -> {
 			List<String> assignedUids = meeting.getMembers().stream().map(User::getUid).collect(Collectors.toList());
-			graphBroker.addTaskToGraph(meeting.getUid(), meeting.getTaskType(), assignedUids);
-			graphBroker.annotateTask(meeting.getUid(), meeting.getTaskType(), null, null, true);
+			addTaskToGraph(meeting.getUid(), TaskType.MEETING, assignedUids);
 		};
 	}
 
@@ -360,15 +394,7 @@ public class EventBrokerImpl implements EventBroker {
 		}
 
 		if (meetingChanged) {
-			LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-			EventLog eventLog = new EventLog(user, meeting, CHANGE, null, startTimeChanged);
-			bundle.addLog(eventLog);
-
-			Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
-			bundle.addNotifications(notifications);
-
-			logsAndNotificationsBroker.storeBundle(bundle);
+			constructChangedMtgNotifications(user, meeting, startTimeChanged);
 		}
 
 		return meetingChanged;
@@ -434,6 +460,10 @@ public class EventBrokerImpl implements EventBroker {
 			}
 		}
 
+		constructChangedMtgNotifications(user, meeting, startTimeChanged);
+	}
+
+	private void constructChangedMtgNotifications(User user, Meeting meeting, boolean startTimeChanged) {
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
 		EventLog eventLog = new EventLog(user, meeting, CHANGE, null, startTimeChanged);
@@ -463,6 +493,8 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(helper.getParentUid());
 		Objects.requireNonNull(helper.getParentType());
 		Objects.requireNonNull(helper.getName());
+
+		log.info("Creating vote from helper: {}", helper);
 
 		Instant convertedClosingDateTime = convertToSystemTime(helper.getEventStartDateTime(), getSAST());
         validateEventStartTime(convertedClosingDateTime);
@@ -498,15 +530,20 @@ public class EventBrokerImpl implements EventBroker {
 
 		List<String> options = helper.getOptions();
 		if (options != null && !options.isEmpty()) {
+			log.info("Seeting vote options: {}", helper.getOptions());
 			vote.setVoteOptions(options);
 		}
 
-		if (!EventSpecialForm.ORDINARY.equals(helper.getSpecialForm())) {
-			vote.setSpecialForm(helper.getSpecialForm());
+		vote.setSpecialForm(helper.getSpecialForm());
+		vote.setRandomize(helper.isRandomizeOptions());
+		vote.setExcludeAbstention(helper.isExcludeAbstain());
+
+		if (helper.getMultiLanguagePrompts() != null && !helper.getMultiLanguagePrompts().isEmpty()) {
+			vote.setLangaugePrompts(helper.getMultiLanguagePrompts());
 		}
 
-		if (helper.isRandomizeOptions()) {
-			vote.setRandomize(true);
+		if (helper.getPostVotePrompts() != null && !helper.getMultiLanguagePrompts().isEmpty()) {
+			vote.setPostVotePrompts(helper.getPostVotePrompts());
 		}
 
 		voteRepository.save(vote);
@@ -522,20 +559,33 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(user, vote, CREATED);
 		bundle.addLog(eventLog);
 
-		Set<Notification> notifications = constructEventInfoNotifications(vote, eventLog, vote.getMembers());
-		bundle.addNotifications(notifications);
+
+		if (helper.isSendNotifications()) {
+			Set<Notification> notifications = constructEventInfoNotifications(vote, eventLog, vote.getMembers());
+			bundle.addNotifications(notifications);
+		} else {
+			log.info("Excluding notifications for vote, flag: {}", helper.isSendNotifications());
+			vote.setStopNotifications(true);
+			vote.setScheduledReminderActive(false);
+		}
 
 		logsAndNotificationsBroker.storeBundle(bundle);
 
 		generateResponseTokens(vote);
 
 		if (graphBroker != null) {
-			List<String> assignedUids = vote.getMembers().stream().map(User::getUid).collect(Collectors.toList());
-			graphBroker.addTaskToGraph(vote.getUid(), vote.getTaskType(), assignedUids);
-			graphBroker.annotateTask(vote.getUid(), vote.getTaskType(), null, null, true);
+			final List<String> assignedUids = vote.getMembers().stream().map(User::getUid).collect(Collectors.toList());
+			addTaskToGraph(vote.getUid(), TaskType.VOTE, assignedUids);
 		}
 
+		log.info("Completed creating vote: {}", vote);
+
 		return vote;
+	}
+
+	private void addTaskToGraph(String taskUid, TaskType taskType, List<String> assignedUids) {
+		graphBroker.addTaskToGraph(taskUid, taskType, assignedUids);
+		graphBroker.annotateTask(taskUid, taskType, null, null, true);
 	}
 
 	@Override

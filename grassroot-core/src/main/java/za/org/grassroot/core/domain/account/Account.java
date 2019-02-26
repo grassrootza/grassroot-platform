@@ -233,7 +233,8 @@ public class Account implements GrassrootEntity, Serializable {
     }
 
     public boolean hasBreachedSpendingLimit() {
-        return this.currentMonthSpend > this.monthlySpendingLimit;
+        return false; // until better tested
+        // return this.currentMonthSpend < this.monthlySpendingLimit;
     }
 
     @Override

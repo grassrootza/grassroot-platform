@@ -8,6 +8,7 @@ import za.org.grassroot.webapp.enums.VoteTime;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
+import java.util.Locale;
 import java.util.Optional;
 
 public interface UssdVoteService {
@@ -40,4 +41,10 @@ public interface UssdVoteService {
 	Request processVoteSendDo(String inputNumber, String requestUid) throws URISyntaxException;
 
 	Optional<USSDMenu> processPossibleMassVote(User user, Group group);
+
+	Request processKnownMassVote(String inputNumber, String voteUid) throws URISyntaxException;
+
+	Request processMassVoteLanguageSelection(String inputNumber, String voteUid, Locale language) throws URISyntaxException;
+
+	Request processMassVoteResponse(String inputNumber, String voteUid, String response, Locale language) throws URISyntaxException;
 }

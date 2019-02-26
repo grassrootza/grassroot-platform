@@ -7,6 +7,8 @@ import za.org.grassroot.core.enums.EventSpecialForm;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 @Builder @Getter @Setter @ToString @EqualsAndHashCode
@@ -22,8 +24,13 @@ public class VoteHelper {
     private String taskImageKey;
     @Builder.Default private Set<String> assignMemberUids = Collections.emptySet();
     private List<String> options;
-    private EventSpecialForm specialForm;
     @Builder.Default private boolean randomizeOptions = false;
 
+    private EventSpecialForm specialForm;
+    @Builder.Default private boolean sendNotifications = true;
+    @Builder.Default private boolean excludeAbstain = false;
+
+    private Map<Locale, String> multiLanguagePrompts;
+    private Map<Locale, String> postVotePrompts;
 
 }

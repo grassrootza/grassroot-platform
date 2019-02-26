@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -105,7 +106,8 @@ public class VoteBrokerImpl implements VoteBroker {
 
         boolean startTimeChanged = !vote.getEventStartDateTime().equals(convertedClosingDateTime);
         if (startTimeChanged) {
-            validateVoteClosingTime(convertedClosingDateTime);
+            // removing this check because we are going to use this to close a vote without cancelling it
+            //  validateVoteClosingTime(convertedClosingDateTime);
             vote.setEventStartDateTime(convertedClosingDateTime);
             vote.updateScheduledReminderTime();
         }
@@ -167,6 +169,11 @@ public class VoteBrokerImpl implements VoteBroker {
     public void calculateAndSendVoteResults(String voteUid) {
         Objects.requireNonNull(voteUid);
         Vote vote = voteRepository.findOneByUid(voteUid);
+        if (vote.shouldStopNotifications()) {
+            logger.info("Vote is set to halt notifications, aborting");
+            return;
+        }
+
         logger.info("Sending vote results for {}", vote.getName());
         try {
             Map<String, Long> voteResults = StringArrayUtil.isAllEmptyOrNull(vote.getVoteOptions()) ?
@@ -231,7 +238,8 @@ public class VoteBrokerImpl implements VoteBroker {
 
     @Override
     public Optional<Vote> getMassVoteOpenForGroup(final Group group) {
-        return voteRepository.findOne(EventSpecifications.isOpenMassVoteForGroup(group));
+        return voteRepository.findAll(EventSpecifications.isOpenMassVoteForGroup(group),
+                Sort.by(Sort.Direction.ASC, "eventStartDateTime")).stream().findFirst();
     }
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {
