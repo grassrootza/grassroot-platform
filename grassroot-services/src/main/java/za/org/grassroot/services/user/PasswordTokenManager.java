@@ -142,7 +142,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         VerificationTokenCode checkForPrior = verificationTokenCodeRepository.findOne(
                 TokenSpecifications.forUserAndEntity(userUid, entityUid)).orElse(null);
 
-        log.info("prior token: {}", checkForPrior);
+        log.debug("prior token: {}", checkForPrior);
 
         Instant expiry = Instant.now().plus(ENTITY_RESPONSE_TOKEN_LIFE_DAYS, ChronoUnit.DAYS);
         if (checkForPrior != null && checkForPrior.getExpiryDateTime().isAfter(Instant.now())) {

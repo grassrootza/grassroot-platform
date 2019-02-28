@@ -46,5 +46,5 @@ public interface UssdVoteService {
 
 	Request processMassVoteLanguageSelection(String inputNumber, String voteUid, Locale language) throws URISyntaxException;
 
-	Request processMassVoteResponse(String inputNumber, String voteUid, String response, Locale language) throws URISyntaxException;
+	Request processMassVoteResponse(String inputNumber, String voteUid, String response, Locale language, Integer voteCount) throws URISyntaxException;
 }

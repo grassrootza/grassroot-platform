@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
@@ -59,6 +60,8 @@ public class VoteBrokerImpl implements VoteBroker {
 
     @Value("${grassroot.vote.option.maxlength:20}")
     private int MAX_OPTION_LENGTH;
+
+    private static final Sort SORT_DIRECTION = Sort.by(Sort.Direction.ASC, "eventStartDateTime");
 
     private static final String YES = "YES";
     private static final String NO = "NO";
@@ -238,8 +241,15 @@ public class VoteBrokerImpl implements VoteBroker {
 
     @Override
     public Optional<Vote> getMassVoteOpenForGroup(final Group group) {
-        return voteRepository.findAll(EventSpecifications.isOpenMassVoteForGroup(group),
-                Sort.by(Sort.Direction.ASC, "eventStartDateTime")).stream().findFirst();
+        return voteRepository.findAll(EventSpecifications.isOpenMassVoteForGroup(group), SORT_DIRECTION).stream().findFirst();
+    }
+
+    @Override
+    public Optional<Vote> getNextMassVoteForGroup(final Group group, int votePlaceInQueue) {
+        final int pageSize = Math.min(1, votePlaceInQueue - 1);
+        logger.info("Looking for subsequent mass vote, passed place: {}, floored: {}", votePlaceInQueue, pageSize);
+        final PageRequest pageRequest = PageRequest.of(1, pageSize, SORT_DIRECTION);
+        return voteRepository.findAll(EventSpecifications.isOpenMassVoteForGroup(group), pageRequest).stream().findFirst();
     }
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {

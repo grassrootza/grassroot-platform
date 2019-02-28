@@ -73,8 +73,9 @@ public class USSDVoteController {
     public Request massVoteRecordResponseAndContinue(@RequestParam(value = phoneNumber) String inputNumber,
                                                      @RequestParam String voteUid,
                                                      @RequestParam String response,
-                                                     @RequestParam(required = false) Locale language) throws URISyntaxException {
-        return ussdVoteService.processMassVoteResponse(inputNumber, voteUid, response, language);
+                                                     @RequestParam(required = false) Locale language,
+                                                     @RequestParam(required = false) Integer voteNumber) throws URISyntaxException {
+        return ussdVoteService.processMassVoteResponse(inputNumber, voteUid, response, language, voteNumber);
     }
 
     /*
