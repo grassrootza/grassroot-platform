@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.task;
+package za.org.grassroot.webapp.controller.rest.task.vote;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,8 +28,10 @@ public class VoteCreationRequest {
     Boolean randomizeOptions;
     String mediaFileUid;
     Set<String> assignedMemberUids;
+
     Map<Locale, String> multiLanguagePrompts;
     Map<Locale, String> postVotePrompts;
+    Map<Locale, List<String>> multiLanguageOptions;
 
     boolean sendNotifications = true;
     boolean excludeAbstain = false;
@@ -52,6 +54,7 @@ public class VoteCreationRequest {
                 .randomizeOptions(randomizeOptions != null && randomizeOptions)
                 .multiLanguagePrompts(multiLanguagePrompts)
                 .postVotePrompts(postVotePrompts)
+                .multiLanguageOptions(multiLanguageOptions)
                 .sendNotifications(sendNotifications)
                 .excludeAbstain(excludeAbstain)
                 .build();

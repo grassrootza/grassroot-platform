@@ -32,5 +32,6 @@ public class VoteHelper {
 
     private Map<Locale, String> multiLanguagePrompts;
     private Map<Locale, String> postVotePrompts;
+    private Map<Locale, List<String>> multiLanguageOptions;
 
 }

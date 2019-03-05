@@ -32,6 +32,7 @@ import za.org.grassroot.services.task.VoteHelper;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.controller.rest.task.vote.VoteCreationRequest;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;

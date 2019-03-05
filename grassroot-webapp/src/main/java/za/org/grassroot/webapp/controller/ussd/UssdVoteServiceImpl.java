@@ -38,6 +38,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -368,7 +369,14 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 		final Locale lang = language == null ? Locale.ENGLISH : language;
 		final USSDMenu menu = new USSDMenu(vote.getLanguagePrompt(lang).orElse(vote.getName()));
 		final String urlBase = voteMenus + "mass/record?voteUid=" + vote.getUid() + addLang(language) + "&response=";
-		vote.getVoteOptions().forEach(option -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(option), option));
+
+		// watch the ordering (if the vote options are randomized ...)
+		final List<String> baseOptions = vote.getVoteOptions();
+		final List<String> displayOptions = vote.hasMultiLangOptions() ? vote.getOptionsForLang(language, baseOptions) : baseOptions;
+
+		for (int i = 0; i < baseOptions.size(); i++) {
+			menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(baseOptions.get(i)), displayOptions.get(i));
+		}
 		return menu;
 	}
 

@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -174,6 +175,7 @@ public class VoteBrokerImpl implements VoteBroker {
         Vote vote = voteRepository.findOneByUid(voteUid);
         if (vote.shouldStopNotifications()) {
             logger.info("Vote is set to halt notifications, aborting");
+            eventLogRepository.save(new EventLog(null, vote, EventLogType.RESULT));
             return;
         }
 
@@ -250,6 +252,40 @@ public class VoteBrokerImpl implements VoteBroker {
         logger.info("Looking for subsequent mass vote, passed place: {}, floored: {}", votePlaceInQueue, pageSize);
         final PageRequest pageRequest = PageRequest.of(1, pageSize, SORT_DIRECTION);
         return voteRepository.findAll(EventSpecifications.isOpenMassVoteForGroup(group), pageRequest).stream().findFirst();
+    }
+
+    @Override
+    @Transactional
+    public void updateMassVotePrompts(String userUid, String voteUid, Map<Locale, String> updatedPrompts, Map<Locale, String> updatedPostVote) {
+        final User user = userService.load(userUid);
+        final Vote vote = voteRepository.findOneByUid(voteUid);
+        validateUserCanEdit(vote, user);
+
+        if (updatedPrompts != null && !updatedPrompts.isEmpty()) {
+            vote.setLangaugePrompts(updatedPrompts);
+        }
+
+        if (updatedPostVote != null && !updatedPostVote.isEmpty()) {
+            vote.setPostVotePrompts(updatedPostVote);
+        }
+
+        eventLogRepository.save(new EventLog(user, vote, CHANGE, "Altered opening and post vote prompts"));
+    }
+
+    @Override
+    @Transactional
+    public void updateMassVoteClearPostVote(String userUid, String voteUid) {
+        final User user = userService.load(userUid);
+        final Vote vote = voteRepository.findOneByUid(voteUid);
+        validateUserCanEdit(vote, user);
+
+        vote.removePostVotePrompts();
+        logger.info("Removed post vote prompts, now vote tags = {}", vote.getTagList());
+    }
+
+    private void validateUserCanEdit(Vote vote, User user) {
+        if (!vote.getCreatedByUser().equals(user))
+            throw new AccessDeniedException("Error! Only creating user can perform these edits");
     }
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {

@@ -4,6 +4,7 @@ import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Vote;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -26,5 +27,9 @@ public interface VoteBroker {
     Optional<Vote> getMassVoteOpenForGroup(Group group);
 
     Optional<Vote> getNextMassVoteForGroup(Group group, int votePlaceInQueue);
+
+    void updateMassVotePrompts(String userUid, String voteUid, Map<Locale, String> updatedPrompts, Map<Locale, String> updatedPostVote);
+
+    void updateMassVoteClearPostVote(String userUid, String voteUid);
 
 }

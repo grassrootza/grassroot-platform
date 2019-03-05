@@ -79,9 +79,11 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -546,6 +548,19 @@ public class EventBrokerImpl implements EventBroker {
 			vote.setPostVotePrompts(helper.getPostVotePrompts());
 		}
 
+		if (helper.getMultiLanguageOptions() != null && !helper.getMultiLanguagePrompts().isEmpty()) {
+			// if we didn't get any options at first, then set the English ones as default (note: make configurable / fall back in future
+			log.info("Setting multi language options, do we have a core / reference set yet?: {}", vote.getVoteOptions());
+			if (vote.getVoteOptions() == null || vote.getVoteOptions().isEmpty()) {
+				vote.setVoteOptions(helper.getMultiLanguageOptions().get(Locale.ENGLISH));
+			}
+
+			// NB : assumes inputs are order preserving (should not do this, but UI becomes a huge mess otherwise)
+			helper.getMultiLanguageOptions().forEach((lang, list) -> {
+				vote.addMultiLangOptions(lang, getOptionsMap(helper.getMultiLanguageOptions(), vote.getUnshuffledOptions(), lang));
+			});
+		}
+
 		voteRepository.save(vote);
 
 		if (!StringUtils.isEmpty(helper.getTaskImageKey())) {
@@ -581,6 +596,16 @@ public class EventBrokerImpl implements EventBroker {
 		log.info("Completed creating vote: {}", vote);
 
 		return vote;
+	}
+
+	private Map<String, String> getOptionsMap(Map<Locale, List<String>> allLanguageOptions, List<String> referenceOptions, Locale toLocale) {
+		Map<String, String> returnMap = new HashMap<>();
+		// NB: for the moment (as this is being done in a major rush, assumption is that they are ordered _identically_
+		final List<String> translations = allLanguageOptions.get(toLocale);
+		for (int idx = 0; idx < referenceOptions.size(); idx++) {
+			returnMap.put(referenceOptions.get(idx), translations.get(idx));
+		}
+		return returnMap;
 	}
 
 	private void addTaskToGraph(String taskUid, TaskType taskType, List<String> assignedUids) {
