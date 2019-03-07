@@ -399,9 +399,9 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 	public Request processMassVoteResponse(String inputNumber, String voteUid, String response, Locale language, Integer voteCount) throws URISyntaxException {
 		final Vote vote = voteBroker.load(voteUid);
 		final UserMinimalProjection user = userManager.findUserMinimalByMsisdn(inputNumber);
+		voteBroker.recordUserVote(user.getUid(), voteUid, response);
 		if (vote.hasPostVotePrompt()) {
 			// todo : clear cache, etc
-			voteBroker.recordUserVote(user.getUid(), voteUid, response);
 			final String prompt = vote.getPostVotePrompt(language).orElse(ussdSupport.getMessage("vote.start.prompt.vote-recorded", user));
 			return ussdSupport.menuBuilder(new USSDMenu(prompt));
 		} else {
