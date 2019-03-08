@@ -544,11 +544,11 @@ public class EventBrokerImpl implements EventBroker {
 			vote.setLangaugePrompts(helper.getMultiLanguagePrompts());
 		}
 
-		if (helper.getPostVotePrompts() != null && !helper.getMultiLanguagePrompts().isEmpty()) {
+		if (helper.getPostVotePrompts() != null && !helper.getPostVotePrompts().isEmpty()) {
 			vote.setPostVotePrompts(helper.getPostVotePrompts());
 		}
 
-		if (helper.getMultiLanguageOptions() != null && !helper.getMultiLanguagePrompts().isEmpty()) {
+		if (helper.getMultiLanguageOptions() != null && !helper.getMultiLanguageOptions().isEmpty()) {
 			// if we didn't get any options at first, then set the English ones as default (note: make configurable / fall back in future
 			log.info("Setting multi language options, do we have a core / reference set yet?: {}", vote.getVoteOptions());
 			if (vote.getVoteOptions() == null || vote.getVoteOptions().isEmpty()) {

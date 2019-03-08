@@ -65,7 +65,7 @@ public class TaskModifyController extends BaseRestController {
 
     @RequestMapping(value = "/vote/details/{voteUid}", method = RequestMethod.GET)
     public ResponseEntity fetchVoteAdditionalDetails(HttpServletRequest request, @PathVariable String voteUid) {
-        log.info("Fetching additional vote details for voet with uid: {}", voteUid);
+        log.info("Fetching additional vote details for vote with uid: {}", voteUid);
         final Vote vote = taskBroker.loadEntity(getUserIdFromRequest(request), voteUid, TaskType.VOTE, Vote.class);
         return ResponseEntity.ok(new VoteDetailsResponse(vote));
     }

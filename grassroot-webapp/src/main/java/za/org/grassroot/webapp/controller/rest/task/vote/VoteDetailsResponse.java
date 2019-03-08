@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.rest.task.vote;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventSpecialForm;
 
@@ -11,7 +12,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Getter @JsonInclude(JsonInclude.Include.NON_EMPTY)
+@Getter @JsonInclude(JsonInclude.Include.NON_EMPTY) @Slf4j
 public class VoteDetailsResponse {
 
     private EventSpecialForm specialForm;
@@ -26,8 +27,10 @@ public class VoteDetailsResponse {
         this.excludeAbstain = vote.shouldExcludeAbstention();
         this.multiLanguagePrompts = !vote.hasAdditionalLanguagePrompts() ? new HashMap<>() :
                 vote.getPromptLanguages().stream().collect(Collectors.toMap(lang -> lang, lang -> vote.getLanguagePrompt(lang).orElse(vote.getName())));
+        log.info("Does this have a prompt? : {}, and languages : {}", vote.hasPostVotePrompt(), vote.getPostVoteLanguages());
         this.postVotePrompts = !vote.hasPostVotePrompt() ? new HashMap<>() :
-                vote.getPromptLanguages().stream().collect(Collectors.toMap(lang -> lang, lang -> vote.getPostVotePrompt(lang).orElse("")));
+                vote.getPostVoteLanguages().stream().collect(Collectors.toMap(lang -> lang, lang -> vote.getPostVotePrompt(lang).orElse("")));
+        log.info("Retrieved post vote prompts: {}", this.postVotePrompts);
     }
 
 }

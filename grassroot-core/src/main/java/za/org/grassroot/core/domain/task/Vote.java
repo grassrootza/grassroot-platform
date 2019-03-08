@@ -149,10 +149,17 @@ public class Vote extends Event<VoteContainer> {
 		return this.getPrefixFilteredList(POST_MSG_PREFIX).findFirst().isPresent();
 	}
 
-	public Optional<String> getPostVotePrompt(Locale language) {
-		return this.getPrefixFilteredList(POST_MSG_PREFIX)
-				.filter(s -> s.startsWith(language.toString()))
-				.findFirst().map(s -> s.substring((language.toString() + "::").length()));
+    public List<Locale> getPostVoteLanguages() {
+        return this.getPrefixFilteredList(POST_MSG_PREFIX)
+                .map(s -> s.substring(0, s.indexOf("::")))
+                .map(Locale::new).collect(Collectors.toList());
+    }
+
+    public Optional<String> getPostVotePrompt(Locale language) {
+		final Locale lang = language == null ? Locale.ENGLISH : language;
+	    return this.getPrefixFilteredList(POST_MSG_PREFIX)
+				.filter(s -> s.startsWith(lang.toString()))
+				.findFirst().map(s -> s.substring((lang.toString() + "::").length()));
 	}
 
 	public void setPostVotePrompts(Map<Locale, String> postVotePrompts) {
