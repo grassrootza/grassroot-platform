@@ -281,7 +281,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         }
 
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(user.getUsername(), VerificationCodeType.LONG_AUTH);
-        log.info("passed code {}, found token for user: {}", token);
+        log.debug("Passed code {}, found token for user: {}", token);
         return token != null && code.equals(token.getCode()) && Instant.now().isBefore(token.getExpiryDateTime());
     }
 

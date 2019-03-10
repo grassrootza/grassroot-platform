@@ -151,7 +151,7 @@ public abstract class AbstractEventEntity implements TagHolder {
 	}
 
 	public LocalDateTime getEventDateTimeAtSAST() {
-		return eventStartDateTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime();
+		return eventStartDateTime == null ? null : eventStartDateTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime();
 	}
 
 	public void setEventStartDateTime(Instant eventStartDateTime) {

@@ -66,7 +66,7 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             Map<String, String> legacyVars = getLegacyTokenParams(request);
             log.debug("Legacy params: {}", legacyVars);
             if (isLegacyTokenValid(legacyVars)) {
-                log.info("Legacy token is valid, allowing request");
+                log.info("Legacy token is valid for {}, allowing request", legacyVars.get("phoneNumber"));
                 return true;
             }
             isTokenExpired = isLegacyTokenExpired(legacyVars);
