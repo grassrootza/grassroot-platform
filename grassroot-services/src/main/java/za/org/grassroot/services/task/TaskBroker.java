@@ -75,6 +75,8 @@ public interface TaskBroker {
      */
     List<TaskFullDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType);
 
+    TaskFullDTO fetchTaskOnly(String userUid, String taskUid, TaskType taskType);
+
     List<Membership> fetchMembersAssignedToTask(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders);
 
     @Transactional(readOnly = true)

@@ -100,7 +100,7 @@ public class TaskFetchController extends BaseRestController {
         String userUid = getUserIdFromRequest(request);
         log.info("Initiating full task fetch");
         long startTime = System.currentTimeMillis();
-		TaskFullDTO task = taskBroker.fetchSpecifiedTasks(userUid, Collections.singletonMap(taskUid, taskType), null).get(0);
+		TaskFullDTO task = taskBroker.fetchTaskOnly(userUid, taskUid, taskType);
 		log.info("Time to fetch full task: {} msecs", System.currentTimeMillis() - startTime);
 
 		long failedNotificationForEvent = 0;

@@ -453,6 +453,25 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     @Override
+    public TaskFullDTO fetchTaskOnly(String userUid, String taskUid, TaskType taskType) {
+        final Stopwatch stopwatch = Stopwatch.createStarted();
+        final User user = userRepository.findOneByUid(userUid);
+
+        final Task task = TaskType.TODO.equals(taskType) ? todoBroker.load(taskUid) : eventRepository.findOneByUid(taskUid);
+        final Instant changed = Instant.now(); // since we aren't sorting by this, it doesn't matter
+        log.info("Revised, time elapsed to initiate: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+        final TaskFullDTO taskDTO = new TaskFullDTO(task, user, changed, getUserResponse(task, user));
+        log.info("Revised, time to assemble DTO: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        if (TaskType.VOTE.equals(taskType)) {
+            taskDTO.setVoteResults(voteBroker.fetchVoteResults(userUid, taskUid, true));
+            log.info("And to assemble vote results, time: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        }
+
+        return taskDTO;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<Membership> fetchMembersAssignedToTask(String userUid, String taskUid, TaskType taskType, boolean onlyPositiveResponders) {
         User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));

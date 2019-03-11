@@ -156,12 +156,12 @@ public class GraphBrokerImpl implements GraphBroker {
 
     @Override
     public void annotateUser(String userUid, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations) {
-        log.info("annotating Grassroot graph user ... {}", userUid);
+        log.debug("annotating Grassroot graph user ... {}", userUid);
 
         if (setAllAnnotations) {
             User user = userRepository.findOneByUid(userUid);
             if (user == null) {
-                log.error("Error, user given to graph broker is null, userUid: {}.", userUid);
+                log.info("Error, user given to graph broker is null, userUid: {}.", userUid);
                 return;
             }
             properties = new HashMap<>();
@@ -176,7 +176,7 @@ public class GraphBrokerImpl implements GraphBroker {
 
     @Override
     public void annotateGroup(String groupUid, Map<String, String> properties, Set<String> tags, boolean setAllAnnotations) {
-        log.info("annotating Grassroot graph group ... {}", groupUid);
+        log.debug("annotating Grassroot graph group ... {}", groupUid);
 
         if (setAllAnnotations) {
             Group group = groupRepository.findOneByUid(groupUid);
@@ -339,13 +339,13 @@ public class GraphBrokerImpl implements GraphBroker {
 
     private void dispatchAction(IncomingGraphAction action, String actionDescription) {
         try {
-            log.info("dispatching message to URL: {}", sqsQueueUrl);
+            log.debug("dispatching message to URL: {}", sqsQueueUrl);
             SendMessageRequest request = new SendMessageRequest(sqsQueueUrl, objectMapper.writeValueAsString(action));
             if (isQueueFifo) {
                 request.setMessageGroupId("graphCrudActions");
             }
             sqs.sendMessage(request);
-            log.info("successfully dispatched {} to graph entity queue ...", actionDescription);
+            log.debug("successfully dispatched {} to graph entity queue ...", actionDescription);
         } catch (JsonProcessingException e) {
             log.error("error adding graph action to queue ... ", e);
         }

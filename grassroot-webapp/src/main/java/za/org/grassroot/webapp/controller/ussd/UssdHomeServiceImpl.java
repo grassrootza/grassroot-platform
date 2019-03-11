@@ -165,7 +165,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 
 	private USSDMenu directBasedOnTrailingDigits(final String trailingDigits, final User user) {
 		USSDMenu returnMenu;
-		log.info("Processing trailing digits ..." + trailingDigits);
+		log.debug("Processing trailing digits ..." + trailingDigits);
 		boolean sendWelcomeIfNew = false;
 		if (safetyCode.equals(trailingDigits)) {
 			returnMenu = ussdSafetyGroupService.assemblePanicButtonActivationMenu(user);
