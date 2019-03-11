@@ -10,7 +10,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.thymeleaf.util.MapUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.group.Group;
@@ -252,6 +254,24 @@ public class VoteBrokerImpl implements VoteBroker {
         logger.info("Looking for subsequent mass vote, passed place: {}, floored: {}", votePlaceInQueue, pageSize);
         final PageRequest pageRequest = PageRequest.of(1, pageSize, SORT_DIRECTION);
         return voteRepository.findAll(EventSpecifications.isOpenMassVoteForGroup(group), pageRequest).stream().findFirst();
+    }
+
+    @Override
+    @Transactional
+    public void updateVoteOptions(String userUid, String voteUid, List<String> voteOptions, Map<Locale, List<String>> multiLingualVoteOptions) {
+        final User user = userService.load(userUid);
+        final Vote vote = voteRepository.findOneByUid(voteUid);
+        validateUserCanEdit(vote, user);
+
+        if (!CollectionUtils.isEmpty(voteOptions)) {
+            vote.setVoteOptions(voteOptions);
+        }
+
+        if (!MapUtils.isEmpty(multiLingualVoteOptions)) {
+            vote.setMultiLangOptions(multiLingualVoteOptions);
+        }
+
+        eventLogRepository.save(new EventLog(user, vote, CHANGE, "Altered vote options"));
     }
 
     @Override

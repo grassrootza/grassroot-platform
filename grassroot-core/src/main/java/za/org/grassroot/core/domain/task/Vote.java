@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.task;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.springframework.util.CollectionUtils;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -22,6 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -65,7 +67,7 @@ public class Vote extends Event<VoteContainer> {
 		Objects.requireNonNull(options);
 		// first, remove all of the existing ones
 		this.getPrefixFilteredList(OPTION_PREFIX).forEach(oldOption -> this.removeTag(OPTION_PREFIX + oldOption));
-		this.addTags(options.stream().map(newOption -> OPTION_PREFIX + newOption).collect(Collectors.toList()));
+		this.addTags(options.stream().map(newOption -> OPTION_PREFIX + newOption).map(String::trim).collect(Collectors.toList()));
 	}
 
 	public boolean hasOption(String option) {
@@ -173,10 +175,33 @@ public class Vote extends Event<VoteContainer> {
 	}
 
 	public void removePostVotePrompts() {
-	    this.getPrefixFilteredList(POST_MSG_PREFIX).forEach(prompt -> this.removeTag(POST_MSG_PREFIX + prompt));
+	    this.removePrefixedTags(POST_MSG_PREFIX);
     }
 
-	public void addMultiLangOptions(Locale language, Map<String, String> translatedOptions) {
+    public void setMultiLangOptions(Map<Locale, List<String>> multiLangOptions) {
+		log.info("Setting multi language options, do we have a core / reference set yet?: {}", getVoteOptions());
+		if (CollectionUtils.isEmpty(getVoteOptions())) {
+			setVoteOptions(multiLangOptions.get(Locale.ENGLISH));
+		}
+
+		// clear these if they exist (if they don't, the method does nothing)
+		this.removePrefixedTags(LANG_OPTION_PREFIX);
+
+		// NB : assumes inputs are order preserving (maybe should not do this, but UI becomes a huge mess otherwise)
+		multiLangOptions.forEach((lang, list) -> addMultiLangOptions(lang, getOptionsMap(multiLangOptions, getUnshuffledOptions(), lang)));
+	}
+
+	private Map<String, String> getOptionsMap(Map<Locale, List<String>> allLanguageOptions, List<String> referenceOptions, Locale toLocale) {
+		Map<String, String> returnMap = new HashMap<>();
+		// NB: for the moment (as this is being done in a major rush, assumption is that they are ordered _identically_
+		final List<String> translations = allLanguageOptions.get(toLocale);
+		for (int idx = 0; idx < referenceOptions.size(); idx++) {
+			returnMap.put(referenceOptions.get(idx), translations.get(idx));
+		}
+		return returnMap;
+	}
+
+	private void addMultiLangOptions(Locale language, Map<String, String> translatedOptions) {
 		// this is going to get messy so store order and reference option
 		final String template = "${prefix}${language}::${refIndex}::${option}";
 		translatedOptions.forEach((orig, trans) -> {
@@ -197,6 +222,18 @@ public class Vote extends Event<VoteContainer> {
 		return this.getPrefixFilteredList(LANG_OPTION_PREFIX).findFirst().isPresent();
 	}
 
+	public Map<Locale, List<String>> getMultiLangOptions() {
+		if (!hasMultiLangOptions())
+			return new HashMap<>();
+
+		final Set<Locale> optionLanguages = this.getPrefixFilteredList(POST_MSG_PREFIX)
+				.map(s -> s.substring(0, s.indexOf("::")))
+				.map(Locale::new).collect(Collectors.toSet());
+		final List<String> unshuffledOptions = getUnshuffledOptions();
+
+		return optionLanguages.stream().collect(Collectors.toMap(lang -> lang, lang -> getOptionsForLang(lang, unshuffledOptions)));
+	}
+
 	public List<String> getOptionsForLang(Locale language, List<String> optionsInDesiredOrder) {
 		List<String> optionsWithIndex = this.getPrefixFilteredList(LANG_OPTION_PREFIX + language.toString() + "::")
 				.collect(Collectors.toList());
@@ -211,7 +248,7 @@ public class Vote extends Event<VoteContainer> {
 		SortedMap<Integer, String> sortedMap = optionsWithIndex.stream().collect(Collectors.toMap(
 				optionWithIndex -> {
 				    final int shuffledInt = shuffleMap.get(Integer.parseInt(optionWithIndex.substring(0, 1)));
-				    log.info("For option {}, returning key : {}", optionWithIndex, shuffledInt);
+				    log.debug("For option {}, returning key : {}", optionWithIndex, shuffledInt);
 				    return shuffledInt;
                 },
                 optionWithIndex -> optionWithIndex.substring("0::".length()),
@@ -223,7 +260,7 @@ public class Vote extends Event<VoteContainer> {
 	private Map<Integer, Integer> getOptionsReshuffleMap(List<String> possiblyShuffledOptions) {
 	    Map<Integer, Integer> returnMap = new HashMap<>();
 	    final List<String> unshuffledOptions = getUnshuffledOptions();
-	    log.info("Processing options, shuffled: {}, unshuffled: {}", possiblyShuffledOptions, unshuffledOptions);
+	    log.debug("Processing options, shuffled: {}, unshuffled: {}", possiblyShuffledOptions, unshuffledOptions);
 	    for (int i = 0; i < possiblyShuffledOptions.size(); i++) {
 	        final String thisOption = possiblyShuffledOptions.get(i);
             returnMap.put(unshuffledOptions.indexOf(thisOption), i);
