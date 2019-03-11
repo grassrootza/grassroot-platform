@@ -1,5 +1,6 @@
 package za.org.grassroot.services.task;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -410,6 +412,7 @@ public class TaskBrokerImpl implements TaskBroker {
     @Override
     @Transactional(readOnly = true)
     public List<TaskFullDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType) {
+        final Stopwatch stopwatch = Stopwatch.createStarted();
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(taskUidsAndTypes);
 
@@ -427,6 +430,7 @@ public class TaskBrokerImpl implements TaskBroker {
         Set<Event> events = eventRepository.findByUidIn(eventUids);
         Set<Todo> todos = genericRepository.findByUidIn(Todo.class, JpaEntityType.TODO, todoUids);
 
+        log.info("Completed getting base entities, time elapsed: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
         Stream<TaskTimeChangedDTO> taskStream;
         if (todoUids.isEmpty()) {
@@ -439,6 +443,7 @@ public class TaskBrokerImpl implements TaskBroker {
         }
 
         Map<String, Instant> uidTimeMap = taskStream.collect(taskTimeChangedCollector());
+        log.info("Now finished getting the time maps, time elapsed: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
         return Stream.concat(events.stream().map(e -> (Task) e), todos.stream().map(t -> (Task) t))
                 .distinct()
