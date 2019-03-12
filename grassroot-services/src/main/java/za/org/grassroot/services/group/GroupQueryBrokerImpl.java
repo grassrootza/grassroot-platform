@@ -170,7 +170,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         }
 
         GroupLog mostRecentLog = getMostRecentLog(group);
-        if (mostRecentLog.getCreatedDateTime().isAfter(changedSince)) {
+        if (mostRecentLog != null && mostRecentLog.getCreatedDateTime().isAfter(changedSince)) {
             return true;
         }
 

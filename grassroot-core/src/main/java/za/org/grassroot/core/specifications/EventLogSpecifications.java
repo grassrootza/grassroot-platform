@@ -55,6 +55,10 @@ public final class EventLogSpecifications {
                 cb.equal(root.get(EventLog_.eventLogType), EventLogType.VOTE_OPTION_RESPONSE));
     }
 
+    public static Specification<EventLog> isVoteOptionSelection(Vote vote, String option) {
+        return isResponseToVote(vote).and((root, query, cb) -> cb.equal(cb.upper(root.get(EventLog_.tag)), option.toUpperCase().trim()));
+    }
+
     public static Specification<EventLog> isResponseToAnEvent() {
         return (root, query, cb) -> cb.or(
                 cb.equal(root.get(EventLog_.eventLogType), EventLogType.VOTE_OPTION_RESPONSE),

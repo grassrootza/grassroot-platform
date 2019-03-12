@@ -645,7 +645,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     private GroupJoinMethod getJoinMethodFromInterface(UserInterfaceType interfaceType) {
-        logger.info("returning join method from interface: {}", interfaceType);
+        logger.debug("returning join method from interface: {}", interfaceType);
         switch (interfaceType) {
             case UNKNOWN:
                 return GroupJoinMethod.JOIN_CODE_OTHER;

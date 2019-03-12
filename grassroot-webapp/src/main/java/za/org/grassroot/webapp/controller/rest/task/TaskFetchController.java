@@ -98,7 +98,11 @@ public class TaskFetchController extends BaseRestController {
     @ApiOperation(value = "Full details on a single, specified task")
     public ResponseEntity<TaskFullDTO> fetchTask(@PathVariable TaskType taskType, @PathVariable String taskUid, HttpServletRequest request) {
         String userUid = getUserIdFromRequest(request);
-		TaskFullDTO task = taskBroker.fetchSpecifiedTasks(userUid, Collections.singletonMap(taskUid, taskType), null).get(0);
+        log.info("Initiating full task fetch");
+        long startTime = System.currentTimeMillis();
+		TaskFullDTO task = taskBroker.fetchTaskOnly(userUid, taskUid, taskType);
+		log.info("Time to fetch full task: {} msecs", System.currentTimeMillis() - startTime);
+
 		long failedNotificationForEvent = 0;
 
 		if(task.getType().equals(TaskType.TODO)) {

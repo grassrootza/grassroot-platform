@@ -337,7 +337,7 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 			return langMenu;
 		} else  {
 			final USSDMenu menu = massVoteMenu(vote, UserMinimalProjection.extractFromUser(user), Locale.ENGLISH); // handles option setting, etc.
-			log.info("Initiated a mass vote, here it is: {}", menu);
+			log.debug("Initiated a mass vote, here it is: {}", menu);
 			return menu;
 		}
 	}

@@ -107,7 +107,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Transactional
     public User loadOrCreateUser(String msisdn, UserInterfaceType channel) {
         final String phoneNumber = PhoneNumberUtil.convertPhoneNumber(msisdn);
-        log.info("Using phone number, formatted: {}", phoneNumber);
+        log.debug("Using phone number, formatted: {}", phoneNumber);
         User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         if (user == null) {
             log.info("Creating new user: msisdn={}", msisdn);
