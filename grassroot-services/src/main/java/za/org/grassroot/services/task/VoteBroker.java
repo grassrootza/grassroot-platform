@@ -35,4 +35,6 @@ public interface VoteBroker {
 
     void updateMassVoteClearPostVote(String userUid, String voteUid);
 
+    void updateMassVoteToggles(String userUid, String voteUid, Boolean randomizeOptions, Boolean preCloseVote);
+
 }

@@ -36,6 +36,7 @@ public class Vote extends Event<VoteContainer> {
 	private static final String RANDOMIZE_TAG = "RANDOMIZE";
 	private static final String EXCLUDE_ABSTAIN_TAG = "EXCLUDE_ABSTENTION_OPTION";
 	private static final String NO_NOTIFICATIONS_TAG = "SEND_NO_NOTIFICATIONS";
+	private static final String PRE_CLOSED_TAG = "VOTE_PRE_CLOSED";
 
 	private static final String OPTION_PREFIX = "OPTION::";
 	private static final String LANGUAGE_PREFIX = "LANGUAGE::";
@@ -91,7 +92,7 @@ public class Vote extends Event<VoteContainer> {
 		this.toggleTagBasedFlag(randomize, RANDOMIZE_TAG);
 	}
 
-	private boolean shouldRandomize() {
+	public boolean shouldRandomize() {
 		return this.getTagList().contains(RANDOMIZE_TAG);
 	}
 
@@ -109,6 +110,14 @@ public class Vote extends Event<VoteContainer> {
 
 	public boolean shouldStopNotifications() {
 		return this.getTagList().contains(NO_NOTIFICATIONS_TAG);
+	}
+
+	public void setPreClosed(boolean preClosed) {
+		this.toggleTagBasedFlag(preClosed, PRE_CLOSED_TAG);
+	}
+
+	public boolean isPreClosed() {
+		return this.getTagList().contains(PRE_CLOSED_TAG);
 	}
 
 	private void toggleTagBasedFlag(boolean turnOn, String tag) {

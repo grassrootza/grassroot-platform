@@ -12,7 +12,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
 import org.thymeleaf.util.MapUtils;
 import za.org.grassroot.core.domain.User;
@@ -232,13 +231,13 @@ public class VoteBrokerImpl implements VoteBroker {
         final Stopwatch stopwatch = Stopwatch.createStarted();
         User user = userService.load(Objects.requireNonNull(userUid));
         Vote vote = voteRepository.findOneByUid(Objects.requireNonNull(voteUid));
-        logger.info("Fetching vote results, for vote: {}, elapsed so far: {} msecs", vote.getName(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        logger.debug("Fetching vote results, for vote: {}, elapsed so far: {} msecs", vote.getName(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
         try {
             validateUserPartOfVote(user, vote, false);
             long sizeOfVote = vote.isAllGroupMembersAssigned() ? membershipRepository.countByGroup(vote.getAncestorGroup()) :
                     vote.getAssignedMembers().size();
-            logger.info("And now have group size, elapsed: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            logger.debug("And now have group size, elapsed: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
             Map<String, Long> resultMap = StringArrayUtil.isAllEmptyOrNull(vote.getVoteOptions()) ?
                     calculateYesNoResults(vote) : calculateMultiOptionResults(vote, vote.getVoteOptions());
             logger.info("Calculation done, elapsed: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -311,6 +310,28 @@ public class VoteBrokerImpl implements VoteBroker {
 
         vote.removePostVotePrompts();
         logger.info("Removed post vote prompts, now vote tags = {}", vote.getTagList());
+        eventLogRepository.save(new EventLog(user, vote, CHANGE, "Remove post vote prompts"));
+    }
+
+    @Override
+    @Transactional
+    public void updateMassVoteToggles(String userUid, String voteUid, Boolean randomizeOptions, Boolean preCloseVote) {
+        final User user = userService.load(userUid);
+        final Vote vote = voteRepository.findOneByUid(voteUid);
+        validateUserCanEdit(vote, user);
+
+        String logDescription = "Changed ";
+        if (randomizeOptions != null) {
+            vote.setRandomize(randomizeOptions);
+            logDescription += "randomize to " + randomizeOptions + " ";
+        }
+
+        if (preCloseVote != null) {
+            vote.setPreClosed(preCloseVote);
+            logDescription += "preclosed to " + preCloseVote;
+        }
+
+        eventLogRepository.save(new EventLog(user, vote, CHANGE, logDescription));
     }
 
     private void validateUserCanEdit(Vote vote, User user) {

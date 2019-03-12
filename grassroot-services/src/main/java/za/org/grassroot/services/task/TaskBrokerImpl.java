@@ -459,7 +459,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
         final Task task = TaskType.TODO.equals(taskType) ? todoBroker.load(taskUid) : eventRepository.findOneByUid(taskUid);
         final Instant changed = Instant.now(); // since we aren't sorting by this, it doesn't matter
-        log.info("Revised, time elapsed to initiate: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        log.debug("Revised, time elapsed to initiate: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
         final TaskFullDTO taskDTO = new TaskFullDTO(task, user, changed, getUserResponse(task, user));
         log.info("Revised, time to assemble DTO: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));

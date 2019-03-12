@@ -80,7 +80,7 @@ public class TaskModifyController extends BaseRestController {
     @RequestMapping(value = "/vote/details/{voteUid}", method = RequestMethod.POST)
     public ResponseEntity<TaskFullDTO> updateVoteAdditionalDetails(HttpServletRequest request, @PathVariable String voteUid,
                                                                    @RequestBody VoteUpdateRequest updateRequest) {
-        log.info("Received it! Update request: {}", updateRequest);
+        log.info("Received vote update request: {}", updateRequest);
         final String userUid = getUserIdFromRequest(request);
 
         if (updateRequest.getVoteClosingDateMillis() != null)
@@ -92,8 +92,10 @@ public class TaskModifyController extends BaseRestController {
         if (!CollectionUtils.isEmpty(updateRequest.getVoteOptions()) || !MapUtils.isEmpty(updateRequest.getMultiLingualOptions()))
             voteBroker.updateVoteOptions(userUid, voteUid, updateRequest.getVoteOptions(), updateRequest.getMultiLingualOptions());
 
-        final Map<String, TaskType> fetchMap = ImmutableMap.of(voteUid, TaskType.VOTE);
-        TaskFullDTO taskFullDTO = taskBroker.fetchSpecifiedTasks(userUid, fetchMap, TaskSortType.DEADLINE).get(0);
+        if (updateRequest.getRandomizeOptions() != null || updateRequest.getPreCloseVote() != null)
+            voteBroker.updateMassVoteToggles(userUid, voteUid, updateRequest.getRandomizeOptions(), updateRequest.getPreCloseVote());
+
+        TaskFullDTO taskFullDTO = taskBroker.fetchTaskOnly(userUid, voteUid, TaskType.VOTE);
         return ResponseEntity.ok(taskFullDTO);
     }
 

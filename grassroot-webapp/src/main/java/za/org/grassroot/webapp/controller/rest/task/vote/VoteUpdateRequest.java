@@ -15,5 +15,6 @@ public class VoteUpdateRequest {
     private Map<Locale, String> postVotePrompts;
     private Map<Locale, List<String>> multiLingualOptions;
     private Boolean randomizeOptions;
+    private Boolean preCloseVote;
 
 }

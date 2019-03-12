@@ -19,6 +19,9 @@ public class VoteDetailsResponse {
     private EventSpecialForm specialForm;
     private boolean sendNotifications;
     private boolean excludeAbstain;
+    private boolean randomizeOptions;
+    private boolean preClosed;
+
     private Map<Locale, String> multiLanguagePrompts;
     private Map<Locale, String> postVotePrompts;
     private Map<Locale, List<String>> multiLanguageOptions;
@@ -27,6 +30,9 @@ public class VoteDetailsResponse {
         this.specialForm = vote.getSpecialForm();
         this.sendNotifications = !vote.shouldStopNotifications();
         this.excludeAbstain = vote.shouldExcludeAbstention();
+        this.randomizeOptions = vote.shouldRandomize();
+        this.preClosed = vote.isPreClosed();
+
         this.multiLanguagePrompts = !vote.hasAdditionalLanguagePrompts() ? new HashMap<>() :
                 vote.getPromptLanguages().stream().collect(Collectors.toMap(lang -> lang, lang -> vote.getLanguagePrompt(lang).orElse(vote.getName())));
         log.info("Does this have a prompt? : {}, and languages : {}", vote.hasPostVotePrompt(), vote.getPostVoteLanguages());
