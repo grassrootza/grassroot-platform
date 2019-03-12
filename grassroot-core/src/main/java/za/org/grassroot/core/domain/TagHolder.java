@@ -54,6 +54,10 @@ public interface TagHolder {
                 Arrays.stream(getTags()).filter(s -> s.startsWith(prefix)).map(s -> s.substring(prefix.length()));
     }
 
+    default boolean hasPrefix(final String prefix) {
+        return getTags() != null && Arrays.stream(getTags()).anyMatch(s -> s.startsWith(prefix));
+    }
+
     default List<String> getTopics() {
         return getPrefixFilteredList(TOPIC_PREFIX).collect(Collectors.toList());
     }
@@ -76,5 +80,11 @@ public interface TagHolder {
 
     default void removeTopics(Collection<String> topics) {
         topics.forEach(topic -> removeTag(TOPIC_PREFIX + topic));
+    }
+
+    default void removePrefixedTags(final String prefix) {
+        if (hasPrefix(prefix)) {
+            getPrefixFilteredList(prefix).forEach(s -> removeTag(prefix + s));
+        }
     }
 }

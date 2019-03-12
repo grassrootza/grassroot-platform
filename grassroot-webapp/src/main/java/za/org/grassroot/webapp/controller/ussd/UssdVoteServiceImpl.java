@@ -327,7 +327,10 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 	}
 
 	private USSDMenu processMassVoteOpening(final Vote vote, final User user) {
-		if (vote.hasAdditionalLanguagePrompts()) {
+		if (vote.isPreClosed()) {
+			final String prompt = vote.getPostVotePrompt(Locale.ENGLISH).orElse(ussdSupport.getMessage("vote.start.prompt.vote-closed", user));
+			return new USSDMenu(prompt);
+		} else if (vote.hasAdditionalLanguagePrompts()) {
 			final USSDMenu langMenu = new USSDMenu(ussdSupport.getMessage("language.prompt.short", user));
 			final String voteUri = voteMenus + "mass/language?voteUid=" + vote.getUid() + "&language=";
 			vote.getPromptLanguages().forEach(locale ->

@@ -7,7 +7,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.thymeleaf.util.MapUtils;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.TaskType;
@@ -73,11 +80,22 @@ public class TaskModifyController extends BaseRestController {
     @RequestMapping(value = "/vote/details/{voteUid}", method = RequestMethod.POST)
     public ResponseEntity<TaskFullDTO> updateVoteAdditionalDetails(HttpServletRequest request, @PathVariable String voteUid,
                                                                    @RequestBody VoteUpdateRequest updateRequest) {
-        log.info("Received it! Update request: {}", updateRequest);
+        log.info("Received vote update request: {}", updateRequest);
         final String userUid = getUserIdFromRequest(request);
-        voteBroker.updateMassVotePrompts(userUid, voteUid, updateRequest.getMultiLanguagePrompts(), updateRequest.getPostVotePrompts());
-        final Map<String, TaskType> fetchMap = ImmutableMap.of(voteUid, TaskType.VOTE);
-        TaskFullDTO taskFullDTO = taskBroker.fetchSpecifiedTasks(userUid, fetchMap, TaskSortType.DEADLINE).get(0);
+
+        if (updateRequest.getVoteClosingDateMillis() != null)
+            taskBroker.changeTaskDate(userUid, voteUid, TaskType.VOTE, Instant.ofEpochMilli(updateRequest.getVoteClosingDateMillis()));
+
+        if (!MapUtils.isEmpty(updateRequest.getMultiLanguagePrompts()) || !MapUtils.isEmpty(updateRequest.getPostVotePrompts()))
+            voteBroker.updateMassVotePrompts(userUid, voteUid, updateRequest.getMultiLanguagePrompts(), updateRequest.getPostVotePrompts());
+
+        if (!CollectionUtils.isEmpty(updateRequest.getVoteOptions()) || !MapUtils.isEmpty(updateRequest.getMultiLingualOptions()))
+            voteBroker.updateVoteOptions(userUid, voteUid, updateRequest.getVoteOptions(), updateRequest.getMultiLingualOptions());
+
+        if (updateRequest.getRandomizeOptions() != null || updateRequest.getPreCloseVote() != null)
+            voteBroker.updateMassVoteToggles(userUid, voteUid, updateRequest.getRandomizeOptions(), updateRequest.getPreCloseVote());
+
+        TaskFullDTO taskFullDTO = taskBroker.fetchTaskOnly(userUid, voteUid, TaskType.VOTE);
         return ResponseEntity.ok(taskFullDTO);
     }
 
