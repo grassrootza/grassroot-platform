@@ -331,18 +331,23 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 			final String prompt = vote.getPostVotePrompt(Locale.ENGLISH).orElse(ussdSupport.getMessage("vote.start.prompt.vote-closed", user));
 			return new USSDMenu(prompt);
 		} else if (vote.hasAdditionalLanguagePrompts()) {
-			final USSDMenu langMenu = new USSDMenu(ussdSupport.getMessage("language.prompt.short", user));
-			final String voteUri = voteMenus + "mass/language?voteUid=" + vote.getUid() + "&language=";
-			vote.getPromptLanguages().forEach(locale ->
-					langMenu.addMenuOption(voteUri + locale.toString(),
-							ussdSupport.getMessage("language." + locale.getISO3Language(), user))
-			);
-			return langMenu;
+			return vote.getPromptLanguages().size() == 1 ? massVoteMenu(vote, UserMinimalProjection.extractFromUser(user),
+					vote.getPromptLanguages().get(0)) : massVoteLangSelection(vote, user);
 		} else  {
 			final USSDMenu menu = massVoteMenu(vote, UserMinimalProjection.extractFromUser(user), Locale.ENGLISH); // handles option setting, etc.
 			log.debug("Initiated a mass vote, here it is: {}", menu);
 			return menu;
 		}
+	}
+
+	private USSDMenu massVoteLangSelection(final Vote vote, final User user) {
+		final USSDMenu langMenu = new USSDMenu(ussdSupport.getMessage("language.prompt.short", user));
+		final String voteUri = voteMenus + "mass/language?voteUid=" + vote.getUid() + "&language=";
+		vote.getPromptLanguages().forEach(locale ->
+				langMenu.addMenuOption(voteUri + locale.toString(),
+						ussdSupport.getMessage("language." + locale.getISO3Language(), user))
+		);
+		return langMenu;
 	}
 
 	private USSDMenu massVoteMenu(Vote vote, UserMinimalProjection user, Locale language) {
@@ -376,6 +381,7 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 		// watch the ordering (if the vote options are randomized ...)
 		final List<String> baseOptions = vote.getVoteOptions();
 		final List<String> displayOptions = vote.hasMultiLangOptions() ? vote.getOptionsForLang(language, baseOptions) : baseOptions;
+		log.debug("Assembling options, are the multi language ones ones? : {}", vote.hasMultiLangOptions());
 
 		for (int i = 0; i < baseOptions.size(); i++) {
 			menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(baseOptions.get(i)), displayOptions.get(i));

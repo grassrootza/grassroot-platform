@@ -7,6 +7,6 @@ branch-defaults:
 global:
   application_name: gr
   default_ec2_keyname: gr-prod
-  default_platform: 64bit Amazon Linux 2018.03 v2.11.0 running Docker 18.03.1-ce
+  default_platform: 64bit Amazon Linux 2018.03 v2.12.9 running Docker 18.03.1-ce
   default_region: eu-west-1
   sc: git

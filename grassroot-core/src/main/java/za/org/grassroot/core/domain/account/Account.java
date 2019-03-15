@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.account;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import za.org.grassroot.core.domain.GrassrootEntity;
 import za.org.grassroot.core.domain.User;
@@ -40,7 +41,7 @@ import java.util.Set;
  */
 
 @Entity
-@Table(name="paid_account") @Getter @Setter
+@Table(name="paid_account") @Getter @Setter @Slf4j
 public class Account implements GrassrootEntity, Serializable {
 
     private static final long DEFAULT_SPEND_LIMIT = 10000000;
@@ -233,8 +234,9 @@ public class Account implements GrassrootEntity, Serializable {
     }
 
     public boolean hasBreachedSpendingLimit() {
+        log.info("Checking spending limit, current spend: {}, limit: {}", currentMonthSpend, monthlySpendingLimit);
         return false; // until better tested
-        // return this.currentMonthSpend < this.monthlySpendingLimit;
+//        return this.currentMonthSpend > this.monthlySpendingLimit;
     }
 
     @Override

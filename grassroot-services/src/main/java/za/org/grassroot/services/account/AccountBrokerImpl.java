@@ -562,6 +562,7 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         long groupNotifications = account.getPaidGroups().isEmpty() ? 0 :
                 countAllForGroups(account.getPaidGroups(), startTime, endTime);
+        log.info("Counted {} group log notification for the account {}", groupNotifications, account.getName());
 
         final String accountLogOnlyQueryText = countQueryOpening() +
                 "n.groupLog is null and n.eventLog is null and n.todoLog is null and n.campaignLog is null and " +
@@ -569,7 +570,7 @@ public class AccountBrokerImpl implements AccountBroker {
         TypedQuery<Long> countNonGroupsQuery = entityManager.createQuery(accountLogOnlyQueryText, Long.class)
                 .setParameter("start", startTime).setParameter("end", endTime).setParameter("account", account);
         long accountNotifications = countNonGroupsQuery.getSingleResult();
-        log.info("Counted {} notifications for the account {}", accountNotifications, account.getName());
+        log.info("Counted {} account log notifications for the account {}", accountNotifications, account.getName());
 
         return groupNotifications + accountNotifications;
     }

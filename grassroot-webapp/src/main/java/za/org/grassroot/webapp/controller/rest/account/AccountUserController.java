@@ -377,6 +377,14 @@ public class AccountUserController extends BaseRestController {
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/settings/spending/calc", method = RequestMethod.POST)
+    public ResponseEntity updateAccountSpent(HttpServletRequest request, @RequestParam String accountUid) {
+        accountBroker.calculateAccountSpendingThisMonth(accountUid);
+        return ResponseEntity.ok(new AccountWrapper(accountBroker.loadAccount(accountUid), getUserFromRequest(request)));
+    }
+
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/fetch/dataset/{datasetLabel}", method = RequestMethod.GET)
     public ResponseEntity<DataSetInfo> fetchDatasetInfo(@PathVariable String dataSetLabel,
                                                         @RequestParam(required = false) Long startTimeMillis,
