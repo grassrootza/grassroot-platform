@@ -190,6 +190,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         log.info("heavy group info fetch, for group {}, members: {}, subgroups: {}, m history: {}, took {} msecs",
                 group.getName(), includeAllMembers, includeAllSubgroups, includeMemberHistory, stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return groupFullDTO;
+
     }
 
     @Override
@@ -362,7 +363,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
-        log.info("filtering on, user name: {}, provinces: {}, taskTeams: {}", namePhoneOrEmail, provinces, taskTeamsUids);
+        log.info("filtering on, user name: {}, join date condition: {}, join date: {}, provinces: {}, taskTeams: {}",
+                namePhoneOrEmail, joinDateCondition, joinDate, provinces, taskTeamsUids);
         List<Membership> members = membershipRepository.findAll(
                 MembershipSpecifications.filterGroupMembership(group, provinces, noProvince, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail, languages)
         );

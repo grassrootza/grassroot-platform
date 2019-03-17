@@ -21,6 +21,7 @@ public class VoteDetailsResponse {
     private boolean excludeAbstain;
     private boolean randomizeOptions;
     private boolean preClosed;
+    private boolean noChangeVote;
 
     private Map<Locale, String> multiLanguagePrompts;
     private Map<Locale, String> postVotePrompts;
@@ -32,6 +33,7 @@ public class VoteDetailsResponse {
         this.excludeAbstain = vote.shouldExcludeAbstention();
         this.randomizeOptions = vote.shouldRandomize();
         this.preClosed = vote.isPreClosed();
+        this.noChangeVote = vote.isNoChangeVote();
 
         this.multiLanguagePrompts = !vote.hasAdditionalLanguagePrompts() ? new HashMap<>() :
                 vote.getPromptLanguages().stream().collect(Collectors.toMap(lang -> lang, lang -> vote.getLanguagePrompt(lang).orElse(vote.getName())));

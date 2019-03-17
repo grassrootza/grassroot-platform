@@ -234,7 +234,7 @@ public class Account implements GrassrootEntity, Serializable {
     }
 
     public boolean hasBreachedSpendingLimit() {
-        log.info("Checking spending limit, current spend: {}, limit: {}", currentMonthSpend, monthlySpendingLimit);
+        log.debug("Checking spending limit, current spend: {}, limit: {}", currentMonthSpend, monthlySpendingLimit);
         return false; // until better tested
 //        return this.currentMonthSpend > this.monthlySpendingLimit;
     }

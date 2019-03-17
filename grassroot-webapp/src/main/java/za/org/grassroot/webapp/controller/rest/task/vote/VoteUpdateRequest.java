@@ -16,5 +16,10 @@ public class VoteUpdateRequest {
     private Map<Locale, List<String>> multiLingualOptions;
     private Boolean randomizeOptions;
     private Boolean preCloseVote;
+    private Boolean noChangeVote;
+
+    public boolean togglesChanged() {
+        return randomizeOptions != null || preCloseVote != null || noChangeVote != null;
+    }
 
 }

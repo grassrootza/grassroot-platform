@@ -1005,7 +1005,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         Membership membership = user.getMembership(group);
 
-        if (membership.getRole().equals(GroupRole.ROLE_GROUP_ORGANIZER)) {
+        if (membership != null && membership.getRole().equals(GroupRole.ROLE_GROUP_ORGANIZER)) {
             if (membershipRepository.count(MembershipSpecifications.groupOrganizers(group)) == 1) {
                 throw new SoleOrganizerUnsubscribeException();
             }

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class MembershipSpecifications {
@@ -82,7 +83,7 @@ public class MembershipSpecifications {
                         restrictions.add( cb.between(root.get(Membership_.joinTime), joinDateInstant, joinDateInstant.plus(1, ChronoUnit.DAYS)));
                         break;
                     case BEFORE:
-                        restrictions.add( cb.lessThanOrEqualTo(root.get(Membership_.joinTime), joinDateInstant.plus(1, ChronoUnit.DAYS)));
+                        restrictions.add( cb.lessThanOrEqualTo(root.get(Membership_.joinTime), joinDateInstant));
                         break;
                     case AFTER:
                         restrictions.add( cb.greaterThanOrEqualTo(root.get(Membership_.joinTime), joinDateInstant));
@@ -113,7 +114,8 @@ public class MembershipSpecifications {
                 restrictions.add(root.get(Membership_.user).get(User_.languageCode).in(languages));
             }
 
-            log.info("have generated {} predicates", restrictions.size());
+            log.info("Have generated {} predicates, look like: {}", restrictions.size(),
+                    restrictions.stream().map(Predicate::toString).collect(Collectors.joining(", ")));
             return cb.and(restrictions.toArray(new Predicate[0]));
         };
 

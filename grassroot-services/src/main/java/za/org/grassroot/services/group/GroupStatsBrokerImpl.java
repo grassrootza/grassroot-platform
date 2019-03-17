@@ -5,6 +5,7 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
@@ -12,11 +13,11 @@ import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.time.Clock;
 import java.time.Instant;
@@ -45,6 +46,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     private final GroupLogRepository groupLogRepository;
     private final GroupRepository groupRepository;
     private final MembershipRepository membershipRepository;
+    private final UserRepository userRepository;
     private final CacheManager cacheManager;
 
     private final String ORGANISATION_TAG_PREFIX = "AFFILIATION";
@@ -53,10 +55,11 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
             GroupLogRepository groupLogRepository,
             GroupRepository groupRepository,
             MembershipRepository membershipRepository,
-            CacheManager cacheManager) {
+            UserRepository userRepository, CacheManager cacheManager) {
         this.groupLogRepository = groupLogRepository;
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
+        this.userRepository = userRepository;
         this.cacheManager = cacheManager;
     }
 
@@ -164,12 +167,13 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
             Cache cache = cacheManager.getCache("group_stats_provinces");
 
             // todo : convert this to calling users directly, this is what is killing the backend
-            final List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
-            Map<String, Integer> data = memberships.stream()
-                    .filter(m -> m.getUser().getProvince() != null)
-                    .collect(Collectors.groupingBy(m -> m.getUser().getProvince().name(), integerSum()));
+            final Group group = groupRepository.findOneByUid(groupUid);
+            final List<User> users = userRepository.findByGroupsPartOfAndIdNot(group, 0L);
+            Map<String, Integer> data = users.stream()
+                    .filter(u -> u.getProvince() != null)
+                    .collect(Collectors.groupingBy(u -> u.getProvince().name(), integerSum()));
 
-            int unknownProvinceCount = (int) memberships.stream().filter(m -> m.getUser().getProvince() == null).count();
+            int unknownProvinceCount = (int) users.stream().filter(u -> u.getProvince() == null).count();
             if (unknownProvinceCount > 0)
                 data.put("UNKNOWN", unknownProvinceCount);
 
@@ -241,27 +245,29 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
         if (resultFromCache != null)
             return resultFromCache;
 
-        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+        final Group group = groupRepository.findOneByUid(groupUid);
+        final List<User> users = userRepository.findByGroupsPartOfAndIdNot(group, 0L);
+        final int groupSize = membershipRepository.countByGroup(group);
 
         double hasEmail = 0;
         double hasPhoneNumber = 0;
         double hasProvince = 0;
         double hasOrganisation = 0;
 
-        for (Membership membership : memberships) {
-            hasEmail += membership.getUser().hasEmailAddress() ? 1 : 0;
-            hasPhoneNumber += membership.getUser().hasPhoneNumber() ? 1 : 0;
-            hasProvince += membership.getUser().getProvince() != null ? 1 : 0;
-            hasOrganisation += Arrays.stream(membership.getTags()).anyMatch(tag -> tag.startsWith(ORGANISATION_TAG_PREFIX)) ? 1 : 0;
+        for (User user : users) {
+            hasEmail += user.hasEmailAddress() ? 1 : 0;
+            hasPhoneNumber += user.hasPhoneNumber() ? 1 : 0;
+            hasProvince += user.getProvince() != null ? 1 : 0;
+//            hasOrganisation += Arrays.stream(membership.getTags()).anyMatch(tag -> tag.startsWith(ORGANISATION_TAG_PREFIX)) ? 1 : 0;
         }
 
 
         Map<String, Integer> results = new LinkedHashMap<>();
 
-        results.put("EMAIL", memberships.size() > 0 ? (int) ((hasEmail / memberships.size()) * 100) : 0);
-        results.put("PHONE", memberships.size() > 0 ? (int) ((hasPhoneNumber / memberships.size()) * 100) : 0);
-        results.put("PROVINCE", memberships.size() > 0 ? (int) ((hasProvince / memberships.size()) * 100) : 0);
-        results.put("ORGANISATION", memberships.size() > 0 ? (int) ((hasOrganisation / memberships.size()) * 100) : 0);
+        results.put("EMAIL", groupSize > 0 ? (int) ((hasEmail / groupSize) * 100) : 0);
+        results.put("PHONE", groupSize > 0 ? (int) ((hasPhoneNumber / groupSize) * 100) : 0);
+        results.put("PROVINCE", groupSize > 0 ? (int) ((hasProvince / groupSize) * 100) : 0);
+        results.put("ORGANISATION", groupSize > 0 ? (int) ((hasOrganisation / groupSize) * 100) : 0);
 
         cache.put(new Element(cacheKey, results));
 

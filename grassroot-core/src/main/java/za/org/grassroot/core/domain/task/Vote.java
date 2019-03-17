@@ -37,6 +37,7 @@ public class Vote extends Event<VoteContainer> {
 	private static final String EXCLUDE_ABSTAIN_TAG = "EXCLUDE_ABSTENTION_OPTION";
 	private static final String NO_NOTIFICATIONS_TAG = "SEND_NO_NOTIFICATIONS";
 	private static final String PRE_CLOSED_TAG = "VOTE_PRE_CLOSED";
+	private static final String NO_CHANGE_VOTE = "VOTE_NO_CHANGES";
 
 	private static final String OPTION_PREFIX = "OPTION::";
 	private static final String LANGUAGE_PREFIX = "LANGUAGE::";
@@ -119,6 +120,10 @@ public class Vote extends Event<VoteContainer> {
 	public boolean isPreClosed() {
 		return this.getTagList().contains(PRE_CLOSED_TAG);
 	}
+
+	public void setNoChangeVote(boolean noChangeVote) { this.toggleTagBasedFlag(noChangeVote, NO_CHANGE_VOTE); }
+
+	public boolean isNoChangeVote() { return this.getTagList().contains(NO_CHANGE_VOTE); }
 
 	private void toggleTagBasedFlag(boolean turnOn, String tag) {
 		if (turnOn)

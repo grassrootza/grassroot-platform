@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.rest.task;
 
-import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,6 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.VoteBroker;
-import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -30,7 +28,6 @@ import za.org.grassroot.webapp.controller.rest.task.vote.VoteUpdateRequest;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.util.Map;
 
 @Slf4j @RestController @Grassroot2RestController
 @Api("/v2/api/task/modify") @RequestMapping(value = "/v2/api/task/modify")
@@ -92,8 +89,9 @@ public class TaskModifyController extends BaseRestController {
         if (!CollectionUtils.isEmpty(updateRequest.getVoteOptions()) || !MapUtils.isEmpty(updateRequest.getMultiLingualOptions()))
             voteBroker.updateVoteOptions(userUid, voteUid, updateRequest.getVoteOptions(), updateRequest.getMultiLingualOptions());
 
-        if (updateRequest.getRandomizeOptions() != null || updateRequest.getPreCloseVote() != null)
-            voteBroker.updateMassVoteToggles(userUid, voteUid, updateRequest.getRandomizeOptions(), updateRequest.getPreCloseVote());
+        if (updateRequest.togglesChanged())
+            voteBroker.updateMassVoteToggles(userUid, voteUid, updateRequest.getRandomizeOptions(),
+                    updateRequest.getPreCloseVote(), updateRequest.getNoChangeVote());
 
         TaskFullDTO taskFullDTO = taskBroker.fetchTaskOnly(userUid, voteUid, TaskType.VOTE);
         return ResponseEntity.ok(taskFullDTO);

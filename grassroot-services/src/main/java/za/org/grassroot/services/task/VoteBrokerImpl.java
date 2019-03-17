@@ -315,7 +315,7 @@ public class VoteBrokerImpl implements VoteBroker {
 
     @Override
     @Transactional
-    public void updateMassVoteToggles(String userUid, String voteUid, Boolean randomizeOptions, Boolean preCloseVote) {
+    public void updateMassVoteToggles(String userUid, String voteUid, Boolean randomizeOptions, Boolean preCloseVote, Boolean noChangeVote) {
         final User user = userService.load(userUid);
         final Vote vote = voteRepository.findOneByUid(voteUid);
         validateUserCanEdit(vote, user);
@@ -331,7 +331,18 @@ public class VoteBrokerImpl implements VoteBroker {
             logDescription += "preclosed to " + preCloseVote;
         }
 
+        if (noChangeVote != null) {
+            vote.setNoChangeVote(noChangeVote);
+            logDescription += "no change vote to " + noChangeVote;
+        }
+
+        logger.info("Log description after toggles: {}", logDescription);
         eventLogRepository.save(new EventLog(user, vote, CHANGE, logDescription));
+    }
+
+    @Override
+    public boolean hasUserVoted(User user, Vote vote) {
+        return eventLogRepository.countByEventAndUserAndEventLogType(vote, user, EventLogType.VOTE_OPTION_RESPONSE) > 0;
     }
 
     private void validateUserCanEdit(Vote vote, User user) {

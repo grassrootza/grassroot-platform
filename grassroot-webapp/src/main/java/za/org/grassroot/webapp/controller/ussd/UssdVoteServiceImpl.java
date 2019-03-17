@@ -327,7 +327,8 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 	}
 
 	private USSDMenu processMassVoteOpening(final Vote vote, final User user) {
-		if (vote.isPreClosed()) {
+		log.debug("Mass vote opening menu, is vote no change? : {}", vote.isNoChangeVote());
+		if (vote.isPreClosed() || (vote.isNoChangeVote() && voteBroker.hasUserVoted(user, vote))) {
 			final String prompt = vote.getPostVotePrompt(Locale.ENGLISH).orElse(ussdSupport.getMessage("vote.start.prompt.vote-closed", user));
 			return new USSDMenu(prompt);
 		} else if (vote.hasAdditionalLanguagePrompts()) {

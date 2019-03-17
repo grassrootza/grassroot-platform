@@ -1,5 +1,6 @@
 package za.org.grassroot.services.task;
 
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.domain.task.Vote;
 
@@ -35,6 +36,8 @@ public interface VoteBroker {
 
     void updateMassVoteClearPostVote(String userUid, String voteUid);
 
-    void updateMassVoteToggles(String userUid, String voteUid, Boolean randomizeOptions, Boolean preCloseVote);
+    void updateMassVoteToggles(String userUid, String voteUid, Boolean randomizeOptions, Boolean preCloseVote, Boolean noChangeVote);
+
+    boolean hasUserVoted(User user, Vote vote);
 
 }
