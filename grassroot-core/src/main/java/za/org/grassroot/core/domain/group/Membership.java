@@ -35,8 +35,8 @@ public class Membership implements Serializable, TagHolder {
     @JoinColumn(name = "group_id", nullable = false)
     private Group group;
 
-//    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
-    @ManyToOne(optional = false)
+//    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
