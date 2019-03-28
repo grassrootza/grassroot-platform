@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.util.StringUtils;
 import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
@@ -352,7 +353,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                                                Integer joinDaysAgo,
                                                LocalDate joinDate,
                                                JoinDateCondition joinDateCondition,
-                                               String namePhoneOrEmail, Collection<String> languages) {
+                                               String namePhoneOrEmail, Collection<String> languages, GroupRole groupRole) {
 
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -366,7 +367,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         log.info("filtering on, user name: {}, join date condition: {}, join date: {}, provinces: {}, taskTeams: {}",
                 namePhoneOrEmail, joinDateCondition, joinDate, provinces, taskTeamsUids);
         List<Membership> members = membershipRepository.findAll(
-                MembershipSpecifications.filterGroupMembership(group, provinces, noProvince, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail, languages)
+                MembershipSpecifications.filterGroupMembership(group, provinces, noProvince, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail, languages, groupRole)
         );
 
         log.info("post-filtering, have {} members", members.size());

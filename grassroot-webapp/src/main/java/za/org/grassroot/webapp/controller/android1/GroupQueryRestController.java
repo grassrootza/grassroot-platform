@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import sun.security.ssl.Debug;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
@@ -28,6 +29,7 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.*;
+import za.org.grassroot.webapp.util.DebugProfileUtil;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
@@ -62,6 +64,7 @@ public class GroupQueryRestController extends GroupAbstractRestController {
             @PathVariable("code") String token,
             @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
 
+        log.info("Android v1 group list fetch, memory stats: " + DebugProfileUtil.memoryStats());
         User user = userManagementService.findByInputNumber(phoneNumber);
 
         Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
@@ -72,7 +75,8 @@ public class GroupQueryRestController extends GroupAbstractRestController {
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());
 
-        log.info("responding ... {} groups, with removed UIDs = {}", changedSinceData.getAddedAndUpdated().size(), changedSinceData.getRemovedUids());
+        log.info("Finished fetching groups, memory stats: " + DebugProfileUtil.memoryStats());
+        log.debug("Responding ... {} groups, with removed UIDs = {}", changedSinceData.getAddedAndUpdated().size(), changedSinceData.getRemovedUids());
 
         ChangedSinceData<GroupResponseWrapper> response = new ChangedSinceData<>(groupWrappers, changedSinceData.getRemovedUids());
         return new ResponseEntity<>(response, HttpStatus.OK);

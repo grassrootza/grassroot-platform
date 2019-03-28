@@ -61,6 +61,7 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.MemberActivityDTO;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.util.DebugProfileUtil;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -139,9 +140,9 @@ public class GroupFetchController extends BaseRestController {
                                                             @RequestParam(required = false) Boolean withSubgroups) {
         String userId = getUserIdFromRequest(request);
         boolean includeSubgroups = withSubgroups != null && withSubgroups;
-        log.debug("fetching groups for user with ID, {}, include subgroups : ", userId);
+        log.info("Fetching groups for user with ID, {}, include subgroups : {}, current heap size: {} mb", userId, includeSubgroups, DebugProfileUtil.currentHeapSizeMb());
         List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId, includeSubgroups);
-        log.info("found {} groups for user", groups.size());
+        log.info("Found {} groups for user, heap size now: {} mb, max available: {} mb", groups.size(), DebugProfileUtil.currentHeapSizeMb(), DebugProfileUtil.maxHeapSizeMb());
         return new ResponseEntity<>(groups, HttpStatus.OK);
     }
 
@@ -256,13 +257,14 @@ public class GroupFetchController extends BaseRestController {
                                                      @RequestParam (required = false) String namePhoneOrEmail,
                                                      @RequestParam (required = false) Collection<String> languages,
                                                      @RequestParam (required = false) Integer municipalityId,
+                                                     @RequestParam (required = false) GroupRole groupRole,
                                                      HttpServletRequest request) {
         log.info("filtering, name phone or email = {}", namePhoneOrEmail);
         log.info("Do we have municipality ID? {}",municipalityId);
 
         List<Membership> memberships = groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                 provinces, noProvince, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
-                joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages);
+                joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail, languages, groupRole);
 
         if (municipalFilteringBroker != null && municipalityId != null) {
             List<Membership> membershipsInMunicipality = municipalFilteringBroker.getMembersInMunicipality(groupUid,municipalityId + "");

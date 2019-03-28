@@ -4,6 +4,7 @@ package za.org.grassroot.services.group;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
@@ -74,6 +75,7 @@ public interface GroupFetchBroker {
                                         LocalDate joinDate,
                                         JoinDateCondition joinDaysAgoCondition,
                                         String namePhoneOrEmail,
-                                        Collection<String> languages);
+                                        Collection<String> languages,
+                                        GroupRole groupRole);
 
 }

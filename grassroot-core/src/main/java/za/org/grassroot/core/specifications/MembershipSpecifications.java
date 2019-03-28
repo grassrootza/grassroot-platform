@@ -47,7 +47,8 @@ public class MembershipSpecifications {
                                                                   LocalDate joinDate,
                                                                   JoinDateCondition joinDaysAgoCondition,
                                                                   String namePhoneOrEmail,
-                                                                  Collection<String> languages){
+                                                                  Collection<String> languages,
+                                                                  GroupRole groupRole){
 
         return (Root<Membership> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
 
@@ -69,6 +70,10 @@ public class MembershipSpecifications {
 
             if (joinMethods != null && !joinMethods.isEmpty()) {
                 restrictions.add(root.get(Membership_.joinMethod).in(joinMethods));
+            }
+
+            if (groupRole != null) {
+                restrictions.add(cb.equal(root.get(Membership_.role), groupRole));
             }
 
             LocalDate queriedJoinDate = joinDate;

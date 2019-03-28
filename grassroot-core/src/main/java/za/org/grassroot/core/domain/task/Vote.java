@@ -44,6 +44,8 @@ public class Vote extends Event<VoteContainer> {
 	private static final String POST_MSG_PREFIX = "POSTVOTE::";
 	private static final String LANG_OPTION_PREFIX = "LANG_OPTION::";
 
+	private static final String OPTION_MEMBER_TAGS = "TAG_OPTION::";
+
 	@ManyToOne
 	@JoinColumn(name = "parent_meeting_id")
 	protected Meeting parentMeeting;

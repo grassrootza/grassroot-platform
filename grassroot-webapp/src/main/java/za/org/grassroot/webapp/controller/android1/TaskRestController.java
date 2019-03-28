@@ -7,7 +7,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.dto.task.TaskDTO;
@@ -21,10 +25,15 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.MembershipResponseWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.util.DebugProfileUtil;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created by paballo on 2016/03/17.
@@ -59,8 +68,10 @@ public class TaskRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
 		Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
+		logger.info("Getting tasks for Android V1, memory: " + DebugProfileUtil.memoryStats());
 		try {
 			ChangedSinceData<TaskDTO> changedSinceData = taskBroker.fetchGroupTasks(user.getUid(), parentUid, changedSince);
+			logger.info("Finished getting tasks for Android v1, memory: " + DebugProfileUtil.memoryStats());
 			return new ResponseEntity<>(changedSinceData, HttpStatus.OK);
 		} catch (AccessDeniedException e) {
 			return new ResponseEntity<>(HttpStatus.FORBIDDEN);
