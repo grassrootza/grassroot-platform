@@ -140,9 +140,9 @@ public class GroupFetchController extends BaseRestController {
                                                             @RequestParam(required = false) Boolean withSubgroups) {
         String userId = getUserIdFromRequest(request);
         boolean includeSubgroups = withSubgroups != null && withSubgroups;
-        log.info("Fetching groups for user with ID, {}, include subgroups : {}, current heap size: {} mb", userId, includeSubgroups, DebugProfileUtil.currentHeapSizeMb());
+        log.info("Fetching groups for user with ID, {}, include subgroups : {}, memory stats: {}", userId, includeSubgroups, DebugProfileUtil.memoryStats());
         List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId, includeSubgroups);
-        log.info("Found {} groups for user, heap size now: {} mb, max available: {} mb", groups.size(), DebugProfileUtil.currentHeapSizeMb(), DebugProfileUtil.maxHeapSizeMb());
+        log.info("Found {} groups for user, heap size now: {} mb, new memory stats: {}", groups.size(), DebugProfileUtil.currentHeapSizeMb(), DebugProfileUtil.memoryStats());
         return new ResponseEntity<>(groups, HttpStatus.OK);
     }
 

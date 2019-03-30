@@ -132,4 +132,8 @@ public interface GroupBroker {
     void sendGroupJoinCodeNotification(String userUid, String groupUid);
 
     void sendAllGroupJoinCodesNotification(String userUid);
+
+    void testMembersFetch(long groupId);
+
+    void testMembersFetchViaJoinCode(String joinCode);
 }

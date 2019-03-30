@@ -6,11 +6,11 @@ public final class DebugProfileUtil {
         return Runtime.getRuntime().totalMemory() / (1024 * 1024);
     }
 
-    public static long maxHeapSizeMb() {
+    private static long maxHeapSizeMb() {
         return Runtime.getRuntime().maxMemory() / (1024 * 1024);
     }
 
-    public static long freeHeapSizeMb() {
+    private static long freeHeapSizeMb() {
         return Runtime.getRuntime().freeMemory() / (1024 * 1024);
     }
 

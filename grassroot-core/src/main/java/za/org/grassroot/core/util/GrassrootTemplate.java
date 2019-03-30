@@ -22,7 +22,8 @@ public interface GrassrootTemplate {
 
     default String mergeTemplate(User destination, String template) {
 
-        final String formatString = template
+        final String escapedTemplate = template.replaceAll("%", "%%");
+        final String formatString = escapedTemplate
                 .replace(NAME_FIELD_TEMPLATE, "%1$s")
                 .replace(CONTACT_FIELD_TEMPALTE, "%2$s")
                 .replace(DATE_FIELD_TEMPLATE, "%3$s")

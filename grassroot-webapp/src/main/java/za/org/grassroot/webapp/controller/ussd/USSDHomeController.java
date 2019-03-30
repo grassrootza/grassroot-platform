@@ -27,7 +27,7 @@ public class USSDHomeController {
 	public USSDHomeController(UssdHomeService ussdHomeService, UssdSupport ussdSupport) {
 		this.ussdHomeService = ussdHomeService;
 		this.ussdSupport = ussdSupport;
-	}
+    }
 
     /**
      * -------------------------------------------------------------

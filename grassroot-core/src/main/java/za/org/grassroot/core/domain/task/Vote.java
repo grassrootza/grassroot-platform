@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain.task;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.springframework.util.CollectionUtils;
 import za.org.grassroot.core.domain.JpaEntityType;
@@ -14,6 +15,7 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,13 +40,15 @@ public class Vote extends Event<VoteContainer> {
 	private static final String NO_NOTIFICATIONS_TAG = "SEND_NO_NOTIFICATIONS";
 	private static final String PRE_CLOSED_TAG = "VOTE_PRE_CLOSED";
 	private static final String NO_CHANGE_VOTE = "VOTE_NO_CHANGES";
+	private static final String VIEW_VOTES_ALLOWED = "VIEW_VOTES_ALLOWED";
 
 	private static final String OPTION_PREFIX = "OPTION::";
 	private static final String LANGUAGE_PREFIX = "LANGUAGE::";
 	private static final String POST_MSG_PREFIX = "POSTVOTE::";
 	private static final String LANG_OPTION_PREFIX = "LANG_OPTION::";
 
-	private static final String OPTION_MEMBER_TAGS = "TAG_OPTION::";
+	// this one include the format
+	private static final String OPTION_MEMBER_TAGS = "TAG_OPTION::{__option__}::{{__tag__}}";
 
 	@ManyToOne
 	@JoinColumn(name = "parent_meeting_id")
@@ -91,6 +95,25 @@ public class Vote extends Event<VoteContainer> {
 		return options;
 	}
 
+	public void addTagToOption(String option, String tag) {
+		if (!getVoteOptions().contains(option.trim())) {
+			log.error("Error, trying to set tag for non-existent option");
+		} else {
+			final String composedVoteTag = composeVoteTag(option, tag);
+			log.info("Adding this tag to vote: {}", composedVoteTag);
+			this.addTag(composedVoteTag);
+		}
+	}
+
+	public void removeTagFromOption(String option, String tag) {
+		final String composedTagToRemove = composeVoteTag(option, tag);
+		this.removeTag(composedTagToRemove);
+	}
+
+	private static String composeVoteTag(String option, String tag) {
+		return StringUtils.replaceEach(OPTION_MEMBER_TAGS, new String[]{ "{__option__}", "{__tag__}"}, new String[]{option, tag});
+	}
+
 	public void setRandomize(boolean randomize) {
 		this.toggleTagBasedFlag(randomize, RANDOMIZE_TAG);
 	}
@@ -126,6 +149,14 @@ public class Vote extends Event<VoteContainer> {
 	public void setNoChangeVote(boolean noChangeVote) { this.toggleTagBasedFlag(noChangeVote, NO_CHANGE_VOTE); }
 
 	public boolean isNoChangeVote() { return this.getTagList().contains(NO_CHANGE_VOTE); }
+
+	// this can only be set to true within the first 5 minutes of creating a vote
+	public void setViewVotesAllowed(boolean viewVotesAllowed) {
+		if (viewVotesAllowed && this.createdDateTime.isBefore(Instant.now().minus(5, ChronoUnit.MINUTES))) {
+			throw new IllegalArgumentException("Cannot set view votes allowed more than five minutes after creating vote");
+		}
+		this.toggleTagBasedFlag(viewVotesAllowed, VIEW_VOTES_ALLOWED);
+	}
 
 	private void toggleTagBasedFlag(boolean turnOn, String tag) {
 		if (turnOn)
@@ -259,7 +290,7 @@ public class Vote extends Event<VoteContainer> {
 
 		// in case it has been shuffled, we need to get a map of the shuffle
         final Map<Integer, Integer> shuffleMap = getOptionsReshuffleMap(optionsInDesiredOrder);
-        log.info("Resulting map: {}", shuffleMap);
+        log.debug("Resulting map: {}", shuffleMap);
 
 		SortedMap<Integer, String> sortedMap = optionsWithIndex.stream().collect(Collectors.toMap(
 				optionWithIndex -> {
