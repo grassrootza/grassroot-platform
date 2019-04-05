@@ -44,6 +44,7 @@ public class CampaignMessageDTO {
                 ", linkedActionType=" + linkedActionType +
                 ", messages=" + messages +
                 ", nextMsgIds=" + nextMsgIds +
+                ", channel=" + channel +
                 '}';
     }
 }

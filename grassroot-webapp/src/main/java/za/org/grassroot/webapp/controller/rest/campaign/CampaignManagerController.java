@@ -27,6 +27,7 @@ import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.domain.group.Group;
 import za.org.grassroot.core.dto.CampaignLogsDataCollection;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.CampaignMessageDTO;
@@ -44,7 +45,6 @@ import za.org.grassroot.webapp.model.rest.CampaignViewDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequest;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.time.Instant;
@@ -208,7 +208,9 @@ public class CampaignManagerController extends BaseRestController {
 
     @RequestMapping(value = "/messages/set/{campaignUid}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "add a set of messages to a campaign")
-    public ResponseEntity addCampaignMessages(HttpServletRequest request, @PathVariable String campaignUid,
+    public ResponseEntity addCampaignMessages(HttpServletRequest request,
+                                              @PathVariable String campaignUid,
+                                              @RequestParam(required = false) UserInterfaceType channel,
                                               @Valid @RequestBody Set<CampaignMessageDTO> campaignMessages,
                                               BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -216,7 +218,7 @@ public class CampaignManagerController extends BaseRestController {
         }
 
         log.info("campaign messages received: {}", campaignMessages);
-        Campaign updatedCampaign = campaignBroker.setCampaignMessages(getUserIdFromRequest(request), campaignUid, campaignMessages);
+        Campaign updatedCampaign = campaignBroker.setCampaignMessages(getUserIdFromRequest(request), campaignUid, campaignMessages, channel);
         return ResponseEntity.ok(recacheCampaignAndReturnDTO(updatedCampaign, true));
     }
 

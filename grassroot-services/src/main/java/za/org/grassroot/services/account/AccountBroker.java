@@ -85,4 +85,6 @@ public interface AccountBroker {
 
     void calculateAccountSpendingThisMonth(String accountUid);
 
+    void updateAllAccountSpendingThisMonth();
+
 }

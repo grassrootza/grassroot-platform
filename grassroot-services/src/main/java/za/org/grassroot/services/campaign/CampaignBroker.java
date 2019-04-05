@@ -82,7 +82,7 @@ public interface CampaignBroker {
 
     Campaign loadForModification(String userUid, String campaignUid);
 
-    Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages);
+    Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages, UserInterfaceType channel);
 
     Campaign updateMasterGroup(String campaignUid, String groupUid, String userUid);
 

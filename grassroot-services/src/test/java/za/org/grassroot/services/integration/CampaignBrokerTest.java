@@ -83,7 +83,7 @@ public class CampaignBrokerTest {
 
         // "Test message", Locale.ENGLISH, MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, testUser, null
         Campaign updatedCampaign = campaignBroker
-                .setCampaignMessages(testUser.getUid(), campaign.getUid(), Collections.singleton(messageDTO));
+                .setCampaignMessages(testUser.getUid(), campaign.getUid(), Collections.singleton(messageDTO), null);
         Assert.assertNotNull(updatedCampaign);
         Assert.assertEquals(updatedCampaign.getName(), "national campaign");
         Assert.assertEquals(updatedCampaign.getCampaignMessages().size(), 1);

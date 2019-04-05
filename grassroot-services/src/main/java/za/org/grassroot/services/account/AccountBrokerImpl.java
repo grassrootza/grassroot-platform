@@ -7,6 +7,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -736,6 +737,18 @@ public class AccountBrokerImpl implements AccountBroker {
                 account.getName(), baseFee, ussdSpend, smsSpend, totalSpent);
 
         account.setCurrentMonthSpend(totalSpent);
+    }
+
+    @Override
+    @Transactional
+    @Scheduled(cron = "0 30 2 * * *") // runs at 2:30am UTC every day
+    public void updateAllAccountSpendingThisMonth() {
+        log.info("Would have calculated account spending this month");
+        List<Account> activeAccounts = loadAllAccounts(true);
+        activeAccounts.forEach(account -> {
+            log.info("Scheduled job, about to calculate costs for: {}", account.getName());
+            calculateAccountSpendingThisMonth(account.getUid());
+        });
     }
 
     private long countNotificationsForDataSet(String dataSetLabel, Instant start, Instant end) {

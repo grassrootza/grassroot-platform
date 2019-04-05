@@ -447,7 +447,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages) {
+    public Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages, UserInterfaceType channel) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(campaignUid);
         Objects.requireNonNull(campaignMessages);
@@ -457,7 +457,15 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         validateUserCanModifyCampaign(user, campaign);
 
-        campaign.setCampaignMessages(transformMessageDTOs(campaignMessages, campaign, user));
+        Set<CampaignMessage> updatedMsgSet = transformMessageDTOs(campaignMessages, campaign, user);
+        if (channel != null) {
+            Set<CampaignMessage> unalteredMsgs = campaign.getCampaignMessages().stream()
+                    .filter(msg -> !channel.equals(msg.getChannel())).collect(Collectors.toSet());
+            log.info("Found unaltered messages: ", unalteredMsgs);
+            updatedMsgSet.addAll(unalteredMsgs);
+        }
+
+        campaign.setCampaignMessages(updatedMsgSet);
 
         Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_MESSAGES_SET, campaign, null, null);
@@ -466,28 +474,28 @@ public class CampaignBrokerImpl implements CampaignBroker {
         return updatedCampaign;
     }
 
-    private Set<CampaignMessage> transformMessageDTOs(Set<CampaignMessageDTO> campaignMessages, Campaign campaign, User user) {
+    private Set<CampaignMessage> transformMessageDTOs(Set<CampaignMessageDTO> newCampaignMessages, Campaign campaign, User user) {
         // step one: find and map all the existing messages, if they exist
         Map<String, CampaignMessage> existingMessages = campaign.getCampaignMessages().stream()
                 .collect(Collectors.toMap(cm -> cm.getMessageGroupId() + LOCALE_SEP + cm.getLocale(), cm -> cm));
-        log.info("campaign already has: {}", existingMessages);
+        log.info("Campaign already has messages: {}", existingMessages);
 
         // step two: explode each of the message DTOs into their separate locale-based messages, mapped by incoming ID and lang
         Map<String, CampaignMessage> explodedMessages = new LinkedHashMap<>();
-        campaignMessages.forEach(cm -> explodedMessages.putAll(cm.getMessages().stream().collect(Collectors.toMap(
+        newCampaignMessages.forEach(cm -> explodedMessages.putAll(cm.getMessages().stream().collect(Collectors.toMap(
                 msg -> cm.getMessageId() + LOCALE_SEP + msg.getLanguage(),
                 msg -> updateExistingOrCreateNew(user, campaign, cm, msg, existingMessages)))));
 
-        log.info("exploded message set: {}", explodedMessages);
-        log.info("campaign messages look like: {}", campaignMessages);
-        Map<String, CampaignMessageDTO> mappedMessages = campaignMessages.stream().collect(Collectors.toMap(
+        log.debug("exploded message set: {}", explodedMessages);
+        log.debug("campaign messages look like: {}", newCampaignMessages);
+        Map<String, CampaignMessageDTO> mappedMessages = newCampaignMessages.stream().collect(Collectors.toMap(
                 CampaignMessageDTO::getMessageId, cm -> cm));
 
         // step two: go through each message, and wire up where to go next (better than earlier iterations, but can be cleaned)
-        campaignMessages.forEach(cdto ->
+        newCampaignMessages.forEach(cdto ->
                 cdto.getLanguages().forEach(lang -> {
                     CampaignMessage cm = explodedMessages.get(cdto.getMessageId() + LOCALE_SEP + lang);
-                    log.info("wiring up message: {}", cm);
+                    log.debug("wiring up message: {}", cm);
                     cdto.getNextMsgIds().forEach(nextMsgId -> {
                         CampaignMessage nextMsg = explodedMessages.get(nextMsgId + LOCALE_SEP + lang);
                         log.info("for next msg {}, found CM: {}", nextMsgId + LOCALE_SEP + lang, nextMsg);
@@ -537,7 +545,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
                                                       MessageLanguagePair msg, Map<String, CampaignMessage> existingMsgs) {
         boolean newMessage = existingMsgs.isEmpty()
                 || !existingMsgs.containsKey(cm.getMessageId() + LOCALE_SEP + msg.getLanguage());
-        log.info("does message with this key: {}, exist? {}", cm.getMessageId(), !newMessage);
+        log.debug("does message with this key: {}, exist? {}", cm.getMessageId(), !newMessage);
 
         if (newMessage) {
             return new CampaignMessage(user, campaign, cm.getLinkedActionType(), cm.getMessageId(),
@@ -774,7 +782,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         campaign.setCampaignType(newType);
 
         if (revisedMessages != null && !revisedMessages.isEmpty()) {
-            setCampaignMessages(userUid, campaignUid, revisedMessages);
+            setCampaignMessages(userUid, campaignUid, revisedMessages, null);
         }
 
         persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_TYPE_CHANGED, campaign, null,
