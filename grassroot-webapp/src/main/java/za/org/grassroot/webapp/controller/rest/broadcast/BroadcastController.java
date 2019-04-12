@@ -198,7 +198,7 @@ public class BroadcastController extends BaseRestController {
                                                              @RequestParam String message,
                                                              @RequestParam(required = false) Boolean sendToAll) {
         User user = getUserFromRequest(request);
-        if (user.getPrimaryAccount() == null || !user.getPrimaryAccount().isBillPerMessage()) {
+        if (user.getPrimaryAccount() == null || !user.getPrimaryAccount().isPerMessageBilling()) {
             throw new AccessDeniedException("Task broadcasts are only allowed for paid accounts");
         }
 

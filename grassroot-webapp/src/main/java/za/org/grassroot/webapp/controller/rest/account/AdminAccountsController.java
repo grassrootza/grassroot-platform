@@ -90,8 +90,13 @@ public class AdminAccountsController extends BaseRestController {
 
     @RequestMapping(value = "/update/costs/units", method = RequestMethod.POST)
     public ResponseEntity updateAccountUnitCosts(HttpServletRequest request, @RequestParam String accountUid,
-                                                 @RequestParam int avgUssdCost, @RequestParam int perSmsCost) {
-        accountBroker.updateAccountUnitCosts(getUserIdFromRequest(request), accountUid, avgUssdCost, perSmsCost);
+                                                 @RequestParam(required = false) Integer costPerUSSD,
+                                                 @RequestParam(required = false) Integer costPerMessage,
+                                                 @RequestParam(required = false) Integer monthlyCost) {
+        if (costPerUSSD != null || costPerMessage != null)
+            accountBroker.updateAccountUnitCosts(getUserIdFromRequest(request), accountUid, costPerUSSD, costPerMessage);
+        if (monthlyCost != null)
+            accountBroker.updateAccountMonthlyFlatFee(getUserIdFromRequest(request), accountUid, monthlyCost * 100);
         return ResponseEntity.ok(wrapAccount(request, accountUid));
     }
 

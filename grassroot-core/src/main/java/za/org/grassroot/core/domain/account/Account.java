@@ -124,7 +124,7 @@ public class Account implements GrassrootEntity, Serializable {
 
     @Basic
     @Column(name="charge_per_message")
-    private boolean billPerMessage;
+    private boolean perMessageBilling;
 
     @Basic
     @Column(name="payment_reference")
@@ -235,8 +235,8 @@ public class Account implements GrassrootEntity, Serializable {
 
     public boolean hasBreachedSpendingLimit() {
         log.debug("Checking spending limit, current spend: {}, limit: {}", currentMonthSpend, monthlySpendingLimit);
-        return false; // until better tested
-//        return this.currentMonthSpend > this.monthlySpendingLimit;
+//        return false; // until better tested
+        return this.currentMonthSpend > this.monthlySpendingLimit;
     }
 
     @Override

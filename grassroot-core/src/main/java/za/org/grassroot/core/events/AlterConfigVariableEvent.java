@@ -1,9 +1,10 @@
 package za.org.grassroot.core.events;
 
 import lombok.Getter;
+import lombok.ToString;
 import org.springframework.context.ApplicationEvent;
 
-@Getter
+@Getter @ToString
 public class AlterConfigVariableEvent extends ApplicationEvent {
 
     private String key;

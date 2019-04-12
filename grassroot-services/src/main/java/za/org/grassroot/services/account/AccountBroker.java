@@ -78,7 +78,7 @@ public interface AccountBroker {
     void updateAccountSpendingLimit(String userUid, String accountUid, long newAccountLimit);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void updateAccountUnitCosts(String userUid, String accountUid, int costPerUssdSession, int costPerSms);
+    void updateAccountUnitCosts(String userUid, String accountUid, Integer costPerUssdSession, Integer costPerSms);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateAccountMonthlyFlatFee(String userUid, String accountUid, long newFlatFee);

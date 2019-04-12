@@ -3,11 +3,10 @@ package za.org.grassroot.services.account;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationListener;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
+import za.org.grassroot.ConfigVariableListener;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -19,7 +18,6 @@ import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.events.AlterConfigVariableEvent;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
@@ -46,7 +44,7 @@ import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAs
  * Created by luke on 2016/10/25.
  */
 @Service @Slf4j
-public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, ApplicationListener<AlterConfigVariableEvent> {
+public class AccountFeaturesBrokerImpl extends ConfigVariableListener implements AccountFeaturesBroker {
 
     private static final int LARGE_EVENT_LIMIT = 99;
     private static final long WELCOME_MSG_INTERVAL = 60 * 1000; // 1 minute
@@ -61,18 +59,16 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
     private final AccountRepository accountRepository;
     private final BroadcastRepository templateRepository;
     private final MessageAssemblingService messageAssemblingService;
-    private final ConfigRepository configRepository;
 
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private ApplicationEventPublisher eventPublisher;
-
-    private Map<String, String> configVariables = new HashMap<>();
 
     @Autowired
     public AccountFeaturesBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, TodoRepository todoRepository,
                                      EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
                                      BroadcastRepository templateRepository, MessageAssemblingService messageAssemblingService,
                                      LogsAndNotificationsBroker logsAndNotificationsBroker, ConfigRepository configRepository) {
+        super(configRepository);
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
@@ -83,7 +79,6 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         this.templateRepository = templateRepository;
         this.messageAssemblingService = messageAssemblingService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.configRepository = configRepository;
     }
 
     @Autowired
@@ -101,29 +96,8 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
         configDefaults.put("tasks.monthly.free", "4");
         configDefaults.put("tasks.limit.threshold", "10");
         configDefaults.put("welcome.messages.on", "false");
-
-        configDefaults.forEach((key, defaultValue) -> configVariables.put(key, convertKeyToValue(key, defaultValue)));
+        setDefaults(configDefaults);
         log.info("Populated account features config variable map : {}", configVariables);
-    }
-
-    private String convertKeyToValue(String key, String defaultValue) {
-        return configRepository.findOneByKey(key).map(ConfigVariable::getValue).orElse(defaultValue);
-    }
-
-    @Override
-    public void onApplicationEvent(AlterConfigVariableEvent event) {
-        log.info("Received notice of some change in config variables: ", event);
-        if (!StringUtils.isEmpty(event.getKey())) {
-            configRepository.findOneByKey(event.getKey()).ifPresent(this::updateConfig);
-        }
-    }
-
-    private void updateConfig(ConfigVariable configVariable) {
-        log.info("Updating config for account limits ...");
-
-        if(configVariables.containsKey(configVariable.getKey())){
-            configVariables.put(configVariable.getKey(), configVariable.getValue());
-        }
     }
 
     private int getConfigVarIntegerSafe(String configKey, int defaultValue) {
@@ -243,7 +217,7 @@ public class AccountFeaturesBrokerImpl implements AccountFeaturesBroker, Applica
 
         log.info("going to check for paid group on account = {}, for group = {}", account.getName(), group.getName());
 
-        if (!account.isBillPerMessage()) {
+        if (!account.isPerMessageBilling()) {
             throw new AccountLimitExceededException();
         }
 

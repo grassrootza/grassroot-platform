@@ -260,6 +260,7 @@ public class AdminRestController extends BaseRestController{
     public ResponseEntity updateConfigVar(@RequestParam String key,
                                           @RequestParam String value,
                                           @RequestParam String description) {
+        log.info("Updating config var {} to value {}", key, value);
         adminService.updateConfigVariable(key, value,description);
         return ResponseEntity.ok().build();
     }

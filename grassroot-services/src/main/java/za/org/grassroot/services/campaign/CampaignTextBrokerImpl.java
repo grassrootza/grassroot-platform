@@ -70,7 +70,7 @@ public class CampaignTextBrokerImpl implements CampaignTextBroker {
         log.info("setting a campaign welcome message ...");
 
         Account account = campaign.getAccount();
-        if (account == null || !account.isBillPerMessage()) {
+        if (account == null || !account.isPerMessageBilling()) {
             throw new AccountLimitExceededException();
         }
 

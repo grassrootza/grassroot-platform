@@ -692,24 +692,30 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void updateAccountUnitCosts(String userUid, String accountUid, int costPerUssdSession, int costPerSms) {
+    public void updateAccountUnitCosts(String userUid, String accountUid, Integer costPerUssdSession, Integer costPerSms) {
         final User user = userRepository.findOneByUid(userUid);
         permissionBroker.validateSystemRole(user, StandardRole.ROLE_SYSTEM_ADMIN);
         final Account account = accountRepository.findOneByUid(accountUid);
         final String fromRecord = "From " + account.getAvgUssdCost() + "c per USSD and " + account.getFreeFormCost() + "c per SMS ";
-        account.setAvgUssdCost(costPerUssdSession);
-        account.setFreeFormCost(costPerUssdSession);
+        if (costPerUssdSession != null) {
+            account.setAvgUssdCost(costPerUssdSession);
+        }
+        if (costPerSms != null) {
+            account.setFreeFormCost(costPerSms);
+        }
         createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
             .accountLogType(AccountLogType.AVG_COST_CHANGED)
             .description(fromRecord + "to " + costPerUssdSession + "c per USSD and " + costPerSms + "c per SMS").build());
     }
 
     @Override
+    @Transactional
     public void updateAccountMonthlyFlatFee(String userUid, String accountUid, long newFlatFee) {
         final User user = userRepository.findOneByUid(userUid);
         permissionBroker.validateSystemRole(user, StandardRole.ROLE_SYSTEM_ADMIN);
         final Account account = accountRepository.findOneByUid(accountUid);
         final long oldFee = account.getMonthlyFlatFee();
+        log.info("Updating account flat fee from {} to {}", oldFee, newFlatFee);
         account.setMonthlyFlatFee(newFlatFee);
         createAndStoreSingleAccountLog(new AccountLog.Builder(account).user(user)
             .accountLogType(AccountLogType.MONTHLY_FEE_CHANGED)
@@ -743,7 +749,7 @@ public class AccountBrokerImpl implements AccountBroker {
     @Transactional
     @Scheduled(cron = "0 30 2 * * *") // runs at 2:30am UTC every day
     public void updateAllAccountSpendingThisMonth() {
-        log.info("Would have calculated account spending this month");
+        log.info("Initiating daily calculation of per-account spending this month");
         List<Account> activeAccounts = loadAllAccounts(true);
         activeAccounts.forEach(account -> {
             log.info("Scheduled job, about to calculate costs for: {}", account.getName());
@@ -803,7 +809,8 @@ public class AccountBrokerImpl implements AccountBroker {
     private String countQueryOpening() {
         return "select count(n) from Notification n " +
                 "where n.createdDateTime between :start and :end and " +
-                "n.status in ('DELIVERED', 'READ') and ";
+                "n.status in ('DELIVERED', 'READ') and " +
+                "n.deliveryChannel in ('SMS', 'SHORT_MESSAGE') and ";
     }
 
     private long countSessionsForDatasets(Collection<String> dataSets, Instant start, Instant end) {

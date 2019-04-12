@@ -131,7 +131,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 Broadcast.PROVINCE_FIELD_TEMPLATE, Broadcast.DATE_FIELD_TEMPLATE));
 
         if (account != null && account.isEnabled() && !account.hasBreachedSpendingLimit()) {
-            builder.isSmsAllowed(true).smsCostCents(25);
+            builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
         } else {
             builder.isSmsAllowed(false);
         }

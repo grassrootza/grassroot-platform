@@ -475,6 +475,9 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/members/location",method = RequestMethod.GET)
     @ApiOperation(value = "Loads the municipalities for users that have location in a group")
     public ResponseEntity<UserMunicipalitiesResponse> loadUsersWithLocation(@RequestParam String groupUid){
+        if (municipalFilteringBroker == null)
+            return ResponseEntity.ok(new UserMunicipalitiesResponse());
+
         Group group = groupBroker.load(groupUid);
         Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
         UserMunicipalitiesResponse userMunicipalitiesResponse = municipalFilteringBroker.getMunicipalitiesForUsersWithLocationFromCache(memberUids);
@@ -484,7 +487,8 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/users/location/timeStamp", method = RequestMethod.GET)
     @ApiOperation(value = "Fetching the number of users who have coordinates with a specific time stamp period ")
     public ResponseEntity<Long> countByTimestampGreaterThan(@RequestParam boolean countAll){
-        return ResponseEntity.ok(municipalFilteringBroker.countUserLocationLogs(countAll, true));
+        long count = municipalFilteringBroker == null ? 0 : municipalFilteringBroker.countUserLocationLogs(countAll, true);
+        return ResponseEntity.ok(count);
     }
 
 }
