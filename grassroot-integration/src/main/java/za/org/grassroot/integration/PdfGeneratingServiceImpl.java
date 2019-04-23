@@ -54,6 +54,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     @PostConstruct
     private void init() {
         this.folderPath = environment.getProperty("grassroot.templates.folder.path");
+        logger.info("looking for flyer in path: {}", this.folderPath);
     }
 
     @Override

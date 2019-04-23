@@ -85,7 +85,7 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 
 	@Override
 	public USSDMenu assembleVoteMenu(User user, Vote vote) {
-		log.info("Processing vote: ", vote);
+//		log.info("Processing vote: ", vote);
 
 		if (EventSpecialForm.MASS_VOTE.equals(vote.getSpecialForm()))
 			return processMassVoteOpening(vote, user);
@@ -107,6 +107,9 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 			openingMenu.addMenuOption(voteMenus + "description?voteUid=" + vote.getUid() + "&back=respond",
 					ussdSupport.getMessage("home.generic.moreinfo", user));
 		}
+
+		openingMenu.setLinkedEntity(vote);
+		log.info("Finished vote assembly, does menu have vote: {}", openingMenu.getLinkedEntity());
 
 		return openingMenu;
 	}
@@ -328,17 +331,19 @@ public class UssdVoteServiceImpl implements UssdVoteService {
 
 	private USSDMenu processMassVoteOpening(final Vote vote, final User user) {
 		log.debug("Mass vote opening menu, is vote no change? : {}", vote.isNoChangeVote());
+		USSDMenu menu;
 		if (vote.isPreClosed() || (vote.isNoChangeVote() && voteBroker.hasUserVoted(user, vote))) {
 			final String prompt = vote.getPostVotePrompt(Locale.ENGLISH).orElse(ussdSupport.getMessage("vote.start.prompt.vote-closed", user));
-			return new USSDMenu(prompt);
+			menu = new USSDMenu(prompt);
 		} else if (vote.hasAdditionalLanguagePrompts()) {
-			return vote.getPromptLanguages().size() == 1 ? massVoteMenu(vote, UserMinimalProjection.extractFromUser(user),
+			menu = vote.getPromptLanguages().size() == 1 ? massVoteMenu(vote, UserMinimalProjection.extractFromUser(user),
 					vote.getPromptLanguages().get(0)) : massVoteLangSelection(vote, user);
 		} else  {
-			final USSDMenu menu = massVoteMenu(vote, UserMinimalProjection.extractFromUser(user), Locale.ENGLISH); // handles option setting, etc.
+			menu = massVoteMenu(vote, UserMinimalProjection.extractFromUser(user), Locale.ENGLISH); // handles option setting, etc.
 			log.debug("Initiated a mass vote, here it is: {}", menu);
-			return menu;
 		}
+		menu.setLinkedEntity(vote);
+		return menu;
 	}
 
 	private USSDMenu massVoteLangSelection(final Vote vote, final User user) {

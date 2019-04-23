@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.StandardRole;
+import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
@@ -93,16 +94,25 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Async
     @Override
     @Transactional
-    public void recordUserSession(String userUid, UserInterfaceType interfaceType) {
+    public void recordUserSession(String userUid, UserInterfaceType interfaceType, UidIdentifiable linkedEntity) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(interfaceType);
-        if (!cacheUtilService.checkSessionStatus(userUid, interfaceType)) {
-            log.debug("New session for user, recording in logs ... should be off main thread. User ID: {}, channel: {}", userUid, interfaceType);
-            cacheUtilService.setSessionOpen(userUid, interfaceType);
-            userLogRepository.save(new UserLog(userUid, UserLogType.USER_SESSION, "", interfaceType));
-        } else {
+
+        final boolean recentSession = cacheUtilService.checkSessionStatus(userUid, interfaceType);
+        final boolean isUssd = UserInterfaceType.USSD.equals(interfaceType);
+
+        if (!isUssd && recentSession) {
             log.info("Cache return positive ... not recording a new session");
+            return;
         }
+
+        log.info("Recording new session, have a linked entity? : {}", linkedEntity != null);
+        final String description = linkedEntity != null ? linkedEntity.getUid() : recentSession ? "INTERRUPTED_USSD" : "";
+
+        log.debug("New session for user, recording in logs ... should be off main thread. User ID: {}, channel: {}", userUid, interfaceType);
+
+        cacheUtilService.setSessionOpen(userUid, interfaceType);
+        userLogRepository.save(new UserLog(userUid, UserLogType.USER_SESSION, description, interfaceType));
     }
 
     @Override

@@ -22,7 +22,9 @@ import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -45,6 +47,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -563,7 +567,7 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         long groupNotifications = account.getPaidGroups().isEmpty() ? 0 :
                 countAllForGroups(account.getPaidGroups(), startTime, endTime);
-        log.info("Counted {} group log notification for the account {}", groupNotifications, account.getName());
+        log.info("Counted {} group notification for the account {}", groupNotifications, account.getName());
 
         final String accountLogOnlyQueryText = countQueryOpening() +
                 "n.groupLog is null and n.eventLog is null and n.todoLog is null and n.campaignLog is null and " +
@@ -571,7 +575,7 @@ public class AccountBrokerImpl implements AccountBroker {
         TypedQuery<Long> countNonGroupsQuery = entityManager.createQuery(accountLogOnlyQueryText, Long.class)
                 .setParameter("start", startTime).setParameter("end", endTime).setParameter("account", account);
         long accountNotifications = countNonGroupsQuery.getSingleResult();
-        log.info("Counted {} account log notifications for the account {}", accountNotifications, account.getName());
+        log.info("Counted {} account notifications for the account {}", accountNotifications, account.getName());
 
         return groupNotifications + accountNotifications;
     }
@@ -587,12 +591,12 @@ public class AccountBrokerImpl implements AccountBroker {
     public long countChargedUssdSessionsForAccount(String accountUid, Instant startTime, Instant endTime) {
         Account account = accountRepository.findOneByUid(accountUid);
 
-        final String countQuery = "select count(distinct ul) from UserLog ul " +
+        final String countCampaignQuery = "select count(distinct ul) from UserLog ul " +
                 "where ul.creationTime between :start and :end and " +
                 "ul.userLogType = :logType and ul.description in " +
                 "(select c.uid from Campaign c where c.account = :account)";
 
-        TypedQuery<Long> campaignSessionCount = entityManager.createQuery(countQuery, Long.class)
+        TypedQuery<Long> campaignSessionCount = entityManager.createQuery(countCampaignQuery, Long.class)
             .setParameter("start", startTime).setParameter("end", endTime).setParameter("account", account)
             .setParameter("logType", UserLogType.CAMPAIGN_ENGAGED);
 
@@ -601,6 +605,39 @@ public class AccountBrokerImpl implements AccountBroker {
 
         if (locationInfoBroker != null && account.sponsorsDataSet()) {
             countSessions += countDataSetSessionsForAccount(accountUid, startTime, endTime);
+        }
+
+
+        final Set<Group> accountGroups = account.getPaidGroups();
+
+        if (accountGroups != null && !accountGroups.isEmpty()) {
+            final List<String> eventUids = entityManager.createQuery("select e.uid from Event e where e.ancestorGroup in :paidGroups", String.class)
+                    .setParameter("paidGroups", accountGroups).getResultList();
+            final List<String> todoUids = entityManager.createQuery("select t.uid from Todo t where t.ancestorGroup in :paidGroups", String.class)
+                    .setParameter("paidGroups", accountGroups).getResultList();
+
+            final List<String> taskUids = new ArrayList<>(eventUids);
+            taskUids.addAll(todoUids);
+
+            final String linkedEntityQuery = "select count(distinct ul) from UserLog ul " +
+                    "where ul.creationTime between :start and :end and " +
+                    "ul.userLogType = :logType and ul.userInterface = :channel and " +
+                    "(ul.description in (select g.uid from Group g where g in :paidGroups) " +
+                    (taskUids.isEmpty() ? ")" : "or ul.description in :taskUids)");
+
+            TypedQuery<Long> userLogUssdEventSessions = entityManager.createQuery(linkedEntityQuery, Long.class)
+                    .setParameter("start", startTime).setParameter("end", endTime)
+                    .setParameter("logType", UserLogType.USER_SESSION)
+                    .setParameter("channel", UserInterfaceType.USSD)
+                    .setParameter("paidGroups", accountGroups);
+
+            if (!taskUids.isEmpty())
+                    userLogUssdEventSessions.setParameter("taskUids", taskUids);
+
+            final long countOfGroupSessions = userLogUssdEventSessions.getSingleResult();
+
+            log.info("Counted {} group join, and task responses for account", countOfGroupSessions);
+            countSessions = countSessions + countOfGroupSessions;
         }
 
         return countSessions;
@@ -791,7 +828,7 @@ public class AccountBrokerImpl implements AccountBroker {
         long campaignLogCount = executeGroupsCountQuery("(n.campaignLog in (select cl from CampaignLog cl where cl.campaign.masterGroup in :groups))",
                 start, end, groups);
 
-        log.debug("In {} msecs, for {} groups, counted {} from group logs, {} from event logs, {} from todo logs, {} from campaign logs",
+        log.info("In {} msecs, for {} groups, counted {} from group logs, {} from event logs, {} from todo logs, {} from campaign logs",
                 System.currentTimeMillis() - startTime, groups.size(), groupLogCount, eventLogCount, todoLogCount, campaignLogCount);
 
         return groupLogCount + eventLogCount + todoLogCount + campaignLogCount;

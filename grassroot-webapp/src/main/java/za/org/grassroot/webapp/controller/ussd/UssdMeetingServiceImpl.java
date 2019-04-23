@@ -124,6 +124,8 @@ public class UssdMeetingServiceImpl implements UssdMeetingService {
 			openingMenu.addMenuOption(optionUri + "&confirmed=maybe", ussdSupport.getMessage("home.start.rsvp.options.maybe", user));
 		}
 
+		openingMenu.setLinkedEntity(meeting);
+
 		return openingMenu;
 	}
 

@@ -78,27 +78,32 @@ public class UssdTodoServiceImpl implements UssdTodoService {
 	@Override
 	public USSDMenu respondToTodo(User user, Todo todo) {
 		log.info("Generating response menu for entity: {}", todo);
+		USSDMenu menu;
 		switch (todo.getType()) {
 			case INFORMATION_REQUIRED:
 				final String infoPrompt = messageAssembler.getMessage("todo.info.prompt",
 						new String[]{todo.getCreatorAlias(), todo.getMessage()}, user);
-				return new USSDMenu(infoPrompt, REL_PATH + "/respond/info?todoUid=" + todo.getUid());
+				menu = new USSDMenu(infoPrompt, REL_PATH + "/respond/info?todoUid=" + todo.getUid());
+				break;
 			case VOLUNTEERS_NEEDED:
 				final String volunteerPrompt = messageAssembler.getMessage("todo.volunteer.prompt",
 						new String[]{todo.getCreatorAlias(), todo.getMessage()}, user);
 				log.info("volunteer todo assembled, prompt: {}", volunteerPrompt);
-				return new USSDMenu(volunteerPrompt, ussdSupport.optionsYesNo(user, "todo/respond/volunteer?todoUid=" + todo.getUid()));
+				menu = new USSDMenu(volunteerPrompt, ussdSupport.optionsYesNo(user, "todo/respond/volunteer?todoUid=" + todo.getUid()));
+				break;
 			case VALIDATION_REQUIRED:
 				final String confirmationPrompt = messageAssembler.getMessage("todo.validate.prompt",
 						new String[]{todo.getCreatorAlias(), todo.getMessage()}, user);
-				USSDMenu menu = new USSDMenu(confirmationPrompt);
+				menu = new USSDMenu(confirmationPrompt);
 				menu.addMenuOptions(ussdSupport.optionsYesNo(user, "todo/respond/validate?todoUid=" + todo.getUid()));
 				menu.addMenuOption(REL_PATH + "/respond/validate?todoUid=" + todo.getUid() + "&" + UssdSupport.yesOrNoParam + "=unsure",
 						messageAssembler.getMessage("todo.validate.option.unsure", user));
-				return menu;
+				break;
 			default:
 				throw new TodoTypeMismatchException();
 		}
+		menu.setLinkedEntity(todo);
+		return menu;
 	}
 
 	@Override

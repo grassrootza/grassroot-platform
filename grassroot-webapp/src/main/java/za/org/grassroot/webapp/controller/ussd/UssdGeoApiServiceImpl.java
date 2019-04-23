@@ -17,6 +17,7 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.DebugProfileUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
@@ -52,7 +53,7 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 		long startTime = System.currentTimeMillis();
 		USSDMenu menu;
 		List<Locale> availableLocales = locationInfoBroker.getAvailableLocalesForDataSet(dataSetLabel);
-		log.info("checking if need language for geo api, user language code = ", user.getLanguageCode());
+		log.debug("checking if need language for geo api, user language code = ", user.getLanguageCode());
 		if (!StringUtils.isEmpty(user.getLanguageCode()) && !availableLocales.contains(new Locale(user.getLanguageCode()))) {
 			menu = infoSetMenu(dataSetLabel, user, true);
 		} else {
@@ -60,6 +61,7 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 		}
 		log.info("GeoAPI opening menu took {} msecs, now recording use", System.currentTimeMillis() - startTime);
 		userLogger.recordUserLog(user.getUid(), UserLogType.GEO_APIS_CALLED, dataSetLabel, UserInterfaceType.USSD);
+		log.info("Memory stats at present: {}", DebugProfileUtil.memoryStats());
 		return menu;
 	}
 
@@ -105,16 +107,18 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 		USSDMenu menu = new USSDMenu(messageAssembler.getMessage("service.prompt." + dataSet
 				+ (skippedLanguage ? ".open" : ""), user));
 		Map<String, String> infoSets = locationInfoBroker.getAvailableInfoAndLowestLevelForDataSet(dataSet);
-		log.info("info sets retrieved: {}", infoSets);
+		log.info("Geo dataset info sets retrieved: {}", infoSets);
 
 		infoSets.forEach((key, value) -> {
-			log.info("adding option, key: {}, value: {}", key, value);
+			log.debug("adding option, key: {}, value: {}", key, value);
 			String msg = messageAssembler.getMessage(dataSet + ".service.options." + key, user);
 			String url = REL_PATH + "/location/" + value.toLowerCase() + "/" + dataSet + "/" + key;
-			log.info("adding msg: {}, url: {}", msg, url);
+			log.debug("adding msg: {}, url: {}", msg, url);
 			menu.addMenuOption(url, msg);
-			log.info("menu options: {}", menu.getMenuOptions());
+			log.info("Geo data set menu options: {}", menu.getMenuOptions());
 		});
+
+		log.info("Completed info set menu, memory stats: {}", DebugProfileUtil.memoryStats());
 		return menu;
 	}
 
@@ -189,6 +193,7 @@ public class UssdGeoApiServiceImpl implements UssdGeoApiService {
 		final String prompt = messageAssembler.getMessage(dataSet + ".sent.prompt",
 				new String[]{String.valueOf(records.size())}, user);
 		locationInfoBroker.assembleAndSendRecordMessage(dataSet, infoTag, province, user.getUid());
+		log.info("Completed dataset run, memory stats: {}", DebugProfileUtil.memoryStats());
 		return new USSDMenu(prompt); // todo : include option to send safety alert if they are on? (and v/versa)
 	}
 }

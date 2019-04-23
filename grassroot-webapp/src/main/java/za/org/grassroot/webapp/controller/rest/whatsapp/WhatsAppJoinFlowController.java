@@ -111,7 +111,7 @@ public class WhatsAppJoinFlowController extends BaseController {
     public ResponseEntity fetchUserId(String msisdn) {
         log.debug("South African number? : {}", PhoneNumberUtil.isPhoneNumberSouthAfrican(msisdn));
         User user = userManagementService.loadOrCreateUser("+" + msisdn, UserInterfaceType.WHATSAPP);
-        userLogger.recordUserSession(user.getUid(), UserInterfaceType.WHATSAPP);
+        userLogger.recordUserSession(user.getUid(), UserInterfaceType.WHATSAPP, null);
         return ResponseEntity.ok(user.getUid());
     }
 

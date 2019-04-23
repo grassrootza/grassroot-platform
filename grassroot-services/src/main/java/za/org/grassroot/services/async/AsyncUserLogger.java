@@ -1,5 +1,6 @@
 package za.org.grassroot.services.async;
 
+import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.LocationSource;
@@ -31,8 +32,9 @@ public interface AsyncUserLogger {
      * Records a user logging on to the system, to be used for reporting & analysis
      * @param userUid The uid of the user that has initiated the session
      * @param interfaceType The interface used; must be non-null
+     * @param linkedEntity A linked entity if, for example, this session is associated to a group join or event or similar
      */
-    void recordUserSession(String userUid, UserInterfaceType interfaceType);
+    void recordUserSession(String userUid, UserInterfaceType interfaceType, UidIdentifiable linkedEntity);
 
     /**
      * Records where a user is; only used when explicitly asking user for location

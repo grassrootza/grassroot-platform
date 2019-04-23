@@ -22,9 +22,9 @@ dependencies {
     compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.17'
     compile group: 'com.itextpdf', name: 'itext7-core', version: '7.0.2'
 
-    compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.240'
-    compile group: 'com.amazonaws', name: 'aws-java-sdk-dynamodb', version: '1.11.240'
-    compile group: 'com.amazonaws', name: 'aws-java-sdk-sqs', version: '1.11.328'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.538'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-dynamodb', version: '1.11.538'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-sqs', version: '1.11.538'
 
     compile 'com.optimizely.ab:core-api:1.7.0'
     compile 'com.optimizely.ab:core-httpclient-impl:1.7.0'

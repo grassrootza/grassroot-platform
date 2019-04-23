@@ -219,7 +219,6 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     public Map<String, String> getAvailableInfoAndLowestLevelForDataSet(String dataSetLabel) {
         List<String> infoSets = getFromDynamo(dataSetLabel, "info_set_geo_level", true);
         return infoSets.stream().map(s -> s.replaceAll("([0-9]_)", ""))
-                .peek(s -> log.info("replaced string: {}", s))
                 .collect(Collectors.toMap(
                         s -> s.substring(0, s.indexOf("_")), s -> s.substring(s.indexOf("_") + 1, s.length())));
     }
@@ -537,9 +536,9 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                 .withPrimaryKey("data_set_label", dataSetLabel)
                 .withProjectionExpression(field);
         try {
-            log.info("trying to read the data set info with key {}, field {}", dataSetLabel, field);
+            log.debug("trying to read the data set info with key {}, field {}", dataSetLabel, field);
             Item outcome = geoApiTable.getItem(spec);
-            log.info("got the outcome, looks like: {}", outcome);
+            log.debug("got the outcome, looks like: {}", outcome);
             return outcome;
         } catch (AmazonServiceException e) {
             log.error("Error!", e);

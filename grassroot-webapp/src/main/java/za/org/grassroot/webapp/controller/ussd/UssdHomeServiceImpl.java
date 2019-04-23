@@ -144,12 +144,13 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 			return ussdSupport.menuBuilder(ussdMenu);
 		} else {
 			final User sessionUser = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
-			userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
 
+			// todo : need to return some kind of entity here, maybe stash it in the USSDMenu entity
 			final USSDMenu openingMenu = trailingDigits.isPresent() ?
 					handleTrailingDigits(trailingDigits.get(), inputNumber, sessionUser) :
 					checkForResponseOrDefault(sessionUser);
 
+			userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD, openingMenu.getLinkedEntity());
 			log.info("Generating home menu, time taken: {} msecs", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 			return ussdSupport.menuBuilder(openingMenu, true);
 		}
@@ -263,13 +264,16 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		log.info("fired off ... continue ...");
 		Set<Locale> supportedCampaignLanguages = campaignBroker.getCampaignLanguages(campaign.getUid());
 		userLogger.recordUserLog(user.getUid(), UserLogType.CAMPAIGN_ENGAGED, campaign.getUid(), UserInterfaceType.USSD);
+		USSDMenu menu;
 		if (supportedCampaignLanguages.size() == 1) {
-			return assembleCampaignResponse(campaign, supportedCampaignLanguages.iterator().next());
+			menu = assembleCampaignResponse(campaign, supportedCampaignLanguages.iterator().next());
 		} else if (!StringUtils.isEmpty(user.getLanguageCode()) && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))) {
-			return assembleCampaignResponse(campaign, user.getLocale());
+			menu = assembleCampaignResponse(campaign, user.getLocale());
 		} else {
-			return assembleCampaignResponseForSupportedLanguage(campaign, user);
+			menu = assembleCampaignResponseForSupportedLanguage(campaign, user);
 		}
+		menu.setLinkedEntity(campaign);
+		return menu;
 	}
 
 	private USSDMenu assembleCampaignResponse(Campaign campaign, Locale userLocale) {
@@ -376,7 +380,9 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 				} else {
 					String promptStart = group.hasName() ? ussdSupport.getMessage(HOME, startMenu, ussdSupport.promptKey + ".group.token.named", group.getGroupName(), user) :
 							ussdSupport.getMessage(HOME, startMenu, ussdSupport.promptKey + ".group.token.unnamed", user);
-					return ussdSupport.setUserProfile(user, promptStart);
+					USSDMenu menu = ussdSupport.setUserProfile(user, promptStart);
+					menu.setLinkedEntity(group);
+					return menu;
 				}
 			}
 		} else {
@@ -395,6 +401,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		final String urlBase = "group/join/topics?groupUid=" + group.getUid() + "&topic=";
 		USSDMenu menu = new USSDMenu(prompt);
 		group.getJoinTopics().forEach(topic -> menu.addMenuOption(urlBase + USSDUrlUtil.encodeParameter(topic), topic));
+		menu.setLinkedEntity(group);
 		return menu;
 	}
 

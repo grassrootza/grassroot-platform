@@ -1,5 +1,9 @@
 package za.org.grassroot.webapp.controller.ussd.menus;
 
+import lombok.Getter;
+import lombok.Setter;
+import za.org.grassroot.core.domain.UidIdentifiable;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -11,10 +15,12 @@ import java.util.Map;
  */
 public class USSDMenu {
 
-    protected String promptMessage;
-    protected boolean isFreeText;
+    private String promptMessage;
+    private boolean isFreeText;
 
-    protected LinkedHashMap<String, String> menuOptions; // key is URL and value is description text
+    private LinkedHashMap<String, String> menuOptions; // key is URL and value is description text
+
+    @Getter @Setter private UidIdentifiable linkedEntity;
 
     // most common and basic constructor, initialized options string and defaults to a menu (not free text)
     public USSDMenu(String promptMessage) {
