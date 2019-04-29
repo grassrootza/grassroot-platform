@@ -9,7 +9,10 @@ import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.controller.ussd.UssdSupport.phoneNumber;
@@ -26,6 +29,17 @@ public class USSDGeoApiController {
 	@Autowired
 	public USSDGeoApiController(UssdGeoApiService ussdGeoApiService) {
 		this.ussdGeoApiService = ussdGeoApiService;
+	}
+
+
+	/*
+	TESTING METHO
+	 */
+	@RequestMapping(value = "/test/{dataSet}", method = RequestMethod.GET)
+	public Request testForLeak(@PathVariable String dataSet) throws URISyntaxException {
+		final List<String> testNumbers = IntStream.range(1000, 9999)
+				.mapToObj(num -> "2780307" + num).collect(Collectors.toList());
+		return ussdGeoApiService.processOpeningMenu(dataSet, testNumbers.get(0), false);
 	}
 
 	// for mapping USSD code directly to this

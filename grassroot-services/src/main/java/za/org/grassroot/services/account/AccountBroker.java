@@ -67,6 +67,9 @@ public interface AccountBroker {
     List<Account> loadAllAccounts(boolean enabledOnly);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    Map<String, Long> calculateAllChargesToAccounts(Instant start, Instant end);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     Map<String, String> loadDisabledAccountMap();
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
