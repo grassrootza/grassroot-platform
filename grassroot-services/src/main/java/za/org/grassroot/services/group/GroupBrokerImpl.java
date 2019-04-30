@@ -730,6 +730,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             }
 
             final User member = findOrConstructMemberToAdd(membershipInfo, existingEmails, existingPhoneNumbers);
+            if (member == null) {
+                logger.info("Got a null member, not sure why, info: {}", membershipInfo);
+                continue;
+            }
+
             // if newly created, add to set of them
             if (member.getId() == null) {
                 newlyCreatedUsers.add(member);
@@ -815,6 +820,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             member = new User(msisdn.orElse(null), membershipInfo.getDisplayName(), emailAddress.orElse(null));
             member.setFirstName(membershipInfo.getFirstName());
             member.setLastName(membershipInfo.getSurname());
+        }
+
+        if (member == null) {
+            logger.error("Constructed null member from set, must be error with existing email or phone sets");
+            return null;
         }
 
         if (!member.isHasInitiatedSession()) {
