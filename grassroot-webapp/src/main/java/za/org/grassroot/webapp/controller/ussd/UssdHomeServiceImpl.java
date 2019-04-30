@@ -139,6 +139,8 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		final Optional<String> trailingDigits = parseTrailingDigits(enteredUSSD);
 		log.debug("Initiating USSD, trailing digits present: {}", trailingDigits.isPresent());
 
+		cacheManager.printCacheStats();
+
 		if (!trailingDigits.isPresent() && userInterrupted(inputNumber)) {
 			USSDMenu ussdMenu = interruptedPrompt(inputNumber, null);
 			return ussdSupport.menuBuilder(ussdMenu);
