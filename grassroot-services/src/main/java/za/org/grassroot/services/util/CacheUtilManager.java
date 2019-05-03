@@ -8,6 +8,7 @@ import net.sf.ehcache.Element;
 import net.sf.ehcache.management.CacheStatistics;
 import net.sf.ehcache.statistics.StatisticsGateway;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
@@ -248,6 +249,7 @@ public class CacheUtilManager implements CacheUtilService {
     }
 
     @Override
+    @Scheduled(fixedRate = 600000) // every ten minutes
     public void printCacheStats() {
         final List<String> cacheNames = Arrays.asList("public_activity_logs", "user_session", "user_join_group",
                 "user_language", "userUSSDMenu", "userRSVP", "user_msisdn_minimal", "userSafetyEvents");

@@ -139,7 +139,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		final Optional<String> trailingDigits = parseTrailingDigits(enteredUSSD);
 		log.debug("Initiating USSD, trailing digits present: {}", trailingDigits.isPresent());
 
-		cacheManager.printCacheStats();
+		// cacheManager.printCacheStats();
 
 		if (!trailingDigits.isPresent() && userInterrupted(inputNumber)) {
 			USSDMenu ussdMenu = interruptedPrompt(inputNumber, null);
@@ -147,7 +147,6 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		} else {
 			final User sessionUser = userManager.loadOrCreateUser(inputNumber, UserInterfaceType.USSD);
 
-			// todo : need to return some kind of entity here, maybe stash it in the USSDMenu entity
 			final USSDMenu openingMenu = trailingDigits.isPresent() ?
 					handleTrailingDigits(trailingDigits.get(), inputNumber, sessionUser) :
 					checkForResponseOrDefault(sessionUser);
