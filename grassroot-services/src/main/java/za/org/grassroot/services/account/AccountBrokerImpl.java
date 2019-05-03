@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -654,12 +655,32 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Account> loadAllAccounts(boolean enabledOnly) {
         Sort sort = new Sort(Sort.Direction.ASC, "accountName");
         List<Account> accounts = !enabledOnly ? accountRepository.findAll(sort) :
                 accountRepository.findAll(isEnabled(), sort);
         log.info("Retrieved {} accounts, for enabled = {}", accounts.size(), enabledOnly);
         return accounts;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> calculateAllChargesToAccounts(final Instant start, final Instant end) {
+        Map<String, Long> counts = new HashMap<>();
+        final List<Account> accounts = accountRepository.findAll(isEnabled());
+
+        long countSms = 0;
+        long countUssd = 0;
+        for (Account account : accounts) {
+            countUssd += countChargedUssdSessionsForAccount(account.getUid(), start, end) * account.getAvgUssdCost();
+            countSms += countAccountNotifications(account.getUid(), start, end) * account.getFreeFormCost();
+        }
+
+        counts.put("USSD", countUssd);
+        counts.put("SMS", countSms);
+
+        return counts;
     }
 
     @Override
