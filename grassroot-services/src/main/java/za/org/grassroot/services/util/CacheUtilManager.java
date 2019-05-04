@@ -5,7 +5,10 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheException;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
+import net.sf.ehcache.management.CacheStatistics;
+import net.sf.ehcache.statistics.StatisticsGateway;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
@@ -14,6 +17,7 @@ import za.org.grassroot.core.dto.UserMinimalProjection;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -242,6 +246,17 @@ public class CacheUtilManager implements CacheUtilService {
         } catch (CacheException e) {
             log.error("Error putting element in cache");
         }
+    }
+
+    @Override
+    @Scheduled(fixedRate = 600000) // every ten minutes
+    public void printCacheStats() {
+        final List<String> cacheNames = Arrays.asList("public_activity_logs", "user_session", "user_join_group",
+                "user_language", "userUSSDMenu", "userRSVP", "user_msisdn_minimal", "userSafetyEvents");
+        cacheNames.forEach(cacheName -> {
+            StatisticsGateway statistics = cacheManager.getCache("public_activity_logs").getStatistics();
+            log.info("For cache {}, memory use: {}", cacheName, statistics.getLocalHeapSizeInBytes() / (1024 * 1024));
+        });
     }
 
     private String formSessionKey(String userUid, UserInterfaceType interfaceType) {

@@ -4,7 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -27,6 +31,91 @@ public class USSDGeoApiController {
 	public USSDGeoApiController(UssdGeoApiService ussdGeoApiService) {
 		this.ussdGeoApiService = ussdGeoApiService;
 	}
+
+	/**
+	 * TEST METHODS --------------------------------------------------------------
+     * Observation: seems like a possible leak here, if GC does not kick in. Heap free declines steadily when doing
+     * relatively large batches, but not clear why GC would not fix (so might not be here after all). But several
+     * rounds (so, roughly ~ 1,000 requests over a period of a few minutes) of the multi thread test in a row
+     * does drop the free heap, but then GC seems to be fine kicking in, so this is probably not the candidate
+	 */
+
+//	final String dataSet = "IZWE_LAMI_CONS";
+//
+//	@RequestMapping(value = "startSingleThreadTest")
+//	public void startSingleThreadTest() throws URISyntaxException {
+//		Stopwatch stopwatch = Stopwatch.createStarted();
+//		for (int i = 0; i < 10; i++) {
+//			System.out.println("### -------------- Iteration nr." + i);
+//			Stopwatch txStopwatch = Stopwatch.createStarted();
+//			this.ussdGeoApiService.processOpeningMenu(dataSet, "27813074085", false);
+//			System.out.println("### TX lasted ms: " + txStopwatch.elapsed(TimeUnit.MILLISECONDS));
+//		}
+//		log.info("### Complete startMembersTest lasted ms: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+//	}
+//
+//	@RequestMapping(value = "startSingleNumberTest")
+//	public void startSingleNumberTest(@RequestParam(value = phoneNumber) String inputNumber) throws InterruptedException, ExecutionException, URISyntaxException {
+//		Stopwatch stopwatch = Stopwatch.createStarted();
+//		openingMenu(dataSet, inputNumber, false);
+//		log.info("### TX outer lasted ms: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+//	}
+//
+//	@RequestMapping(value = "startMultiThreadTest")
+//	public void startMultiThreadTest() throws InterruptedException, ExecutionException {
+//		final List<Callable<Void>> callables = constructTestCallables(200);
+//		log.info("### Starting start test");
+//
+//		Stopwatch stopwatch = Stopwatch.createStarted();
+///*
+//        List<Future<Void>> futures = startTestExecutors.invokeAll(callables);
+//        for (Future<Void> future : futures) {
+//            future.get();
+//        }
+//*/
+//		for (Callable<Void> callable : callables) {
+//			try {
+//				callable.call();
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}
+//		log.info("### Lasted secs: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+//	}
+//
+//	private final ExecutorService startTestExecutors = Executors.newFixedThreadPool(1);
+//
+//	private List<Callable<Void>> constructTestCallables(int amount ) {
+//		// amount cannot be larger than 900
+//
+//		final Random random = new Random(System.currentTimeMillis());
+//		final long startNumber = 100000 + random.nextInt(900000);
+//
+//		final List<Callable<Void>> callables = new ArrayList<>();
+//		for (long i = 0; i < amount; i++) {
+//			final long iFinal = i;
+//			final Callable<Void> callable = () -> {
+//				final String msisdn = "27" + startNumber + (100L + iFinal);
+//				log.info("### Start test msisdn = " + msisdn);
+//				try {
+//
+//					Stopwatch stopwatch = Stopwatch.createStarted();
+//					openingMenu(dataSet, msisdn, false);
+//					log.info("### TX outer = " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+//				}
+//				catch (URISyntaxException e) {
+//					log.error("Error for number " + msisdn + ": " + e.getMessage(), e);
+//				}
+//				return null;
+//			};
+//			callables.add(callable);
+//		}
+//		return callables;
+//	}
+
+	/*
+	RETURNING TO OTHER METHODS
+	 */
 
 	// for mapping USSD code directly to this
 	@RequestMapping(value = "/opening/{dataSet}", method = RequestMethod.GET)

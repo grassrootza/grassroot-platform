@@ -55,4 +55,6 @@ public interface CacheUtilService {
 
     void putCachedPublicActivity(PublicActivityType activityType, List<PublicActivityLog> activityLogs);
 
+    void printCacheStats();
+
 }

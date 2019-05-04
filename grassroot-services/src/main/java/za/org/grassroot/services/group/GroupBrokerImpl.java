@@ -730,6 +730,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             }
 
             final User member = findOrConstructMemberToAdd(membershipInfo, existingEmails, existingPhoneNumbers);
+            if (member == null) {
+                logger.info("Got a null member, not sure why, info: {}", membershipInfo);
+                continue;
+            }
+
             // if newly created, add to set of them
             if (member.getId() == null) {
                 newlyCreatedUsers.add(member);
@@ -808,13 +813,20 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         User member;
         if (msisdn.isPresent() && existingPhoneNumbers.contains(msisdn.get())) {
             member = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn.get());
+            logger.info("Msisdn present, {}, member not null ? : {}", msisdn.get(), member != null);
         } else if (emailAddress.isPresent() && existingEmails.contains(emailAddress.get())) {
             member = userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress.get());
+            logger.info("Email present, {}, member not null ? : {}", emailAddress.get(), member != null);
         } else {
             logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msisdn, emailAddress);
             member = new User(msisdn.orElse(null), membershipInfo.getDisplayName(), emailAddress.orElse(null));
             member.setFirstName(membershipInfo.getFirstName());
             member.setLastName(membershipInfo.getSurname());
+        }
+
+        if (member == null) {
+            logger.error("Constructed null member from set, must be error with existing email or phone sets");
+            return null;
         }
 
         if (!member.isHasInitiatedSession()) {
