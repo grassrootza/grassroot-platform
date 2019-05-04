@@ -508,7 +508,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             msisdn = null;
         }
         User user = msisdn == null || !userExist(msisdn) ?
-                userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress) :
+                userRepository.findByEmailAddressIgnoreCaseAndEmailAddressNotNull(emailAddress) :
                 userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn);
         if (user == null) throw new NoSuchUserException("No user with number " + inputNumber + " or email address " + emailAddress);
         return user;
@@ -530,7 +530,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             if (PhoneNumberUtil.testInputNumber(userName)) {
                 user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(userName));
             } else if (EmailValidator.getInstance().isValid(userName)) {
-                user = userRepository.findByEmailAddressAndEmailAddressNotNull(userName);
+                user = userRepository.findByEmailAddressIgnoreCaseAndEmailAddressNotNull(userName);
             }
         }
         return user;
@@ -545,7 +545,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public boolean emailTaken(String userUid, String email) {
-        User user = userRepository.findByEmailAddressAndEmailAddressNotNull(email);
+        User user = userRepository.findByEmailAddressIgnoreCaseAndEmailAddressNotNull(email);
         return user != null && !user.getUid().equals(userUid);
     }
 

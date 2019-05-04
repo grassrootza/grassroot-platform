@@ -533,7 +533,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 joiningUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn);
 
             if (joiningUser == null && !StringUtils.isEmpty(email))
-                joiningUser = userRepository.findByEmailAddressAndEmailAddressNotNull(email);
+                joiningUser = userRepository.findByEmailAddressIgnoreCaseAndEmailAddressNotNull(email);
 
             userExists = joiningUser != null;
             if (!userExists) {
@@ -815,7 +815,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             member = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn.get());
             logger.info("Msisdn present, {}, member not null ? : {}", msisdn.get(), member != null);
         } else if (emailAddress.isPresent() && existingEmails.contains(emailAddress.get())) {
-            member = userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress.get());
+            member = userRepository.findByEmailAddressIgnoreCaseAndEmailAddressNotNull(emailAddress.get());
             logger.info("Email present, {}, member not null ? : {}", emailAddress.get(), member != null);
         } else {
             logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msisdn, emailAddress);

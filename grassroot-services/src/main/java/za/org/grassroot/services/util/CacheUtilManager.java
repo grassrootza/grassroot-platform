@@ -255,7 +255,8 @@ public class CacheUtilManager implements CacheUtilService {
                 "user_language", "userUSSDMenu", "userRSVP", "user_msisdn_minimal", "userSafetyEvents");
         cacheNames.forEach(cacheName -> {
             StatisticsGateway statistics = cacheManager.getCache("public_activity_logs").getStatistics();
-            log.info("For cache {}, memory use: {}", cacheName, statistics.getLocalHeapSizeInBytes() / (1024 * 1024));
+            log.info("For cache {}, current size is {}, and memory use: {} mb", cacheName,
+                    statistics.getSize(), statistics.getLocalHeapSizeInBytes() / (1024 * 1024));
         });
     }
 
