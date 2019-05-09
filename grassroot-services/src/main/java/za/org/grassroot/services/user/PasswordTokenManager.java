@@ -216,7 +216,7 @@ public class PasswordTokenManager implements PasswordTokenService {
             user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(username);
         }
         if (user == null && EmailValidator.getInstance().isValid(username)) {
-            user = userRepository.findByEmailAddressAndEmailAddressNotNull(username);
+            user = userRepository.findByEmailAddressIgnoreCaseAndEmailAddressNotNull(username);
         }
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
             throw new UsernamePasswordLoginFailedException();

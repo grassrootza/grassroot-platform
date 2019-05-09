@@ -24,7 +24,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     // first is in reality not necessary as phone number is not null, but need to distinguish from above
     UserMinimalProjection findFirstByPhoneNumberAndPhoneNumberNotNull(String phoneNumber);
 
-    User findByEmailAddressAndEmailAddressNotNull(String emailAddress);
+    User findByEmailAddressIgnoreCaseAndEmailAddressNotNull(String emailAddress);
 
     User findOneByUid(String uid);
 

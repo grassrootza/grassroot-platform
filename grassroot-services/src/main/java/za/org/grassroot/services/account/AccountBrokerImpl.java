@@ -674,6 +674,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         long countSms = 0;
         long countUssd = 0;
+
         long costSms = 0;
         long costUssd = 0;
 
