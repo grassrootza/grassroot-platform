@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -99,6 +100,11 @@ public class DateTimeUtil {
         } else {
             return instantToRestrict;
         }
+    }
+
+    public static Instant startOfMonth(ZoneOffset zoneToUse) {
+        ZoneOffset zone = zoneToUse != null ? zoneToUse : ZoneOffset.UTC;
+        return LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay().toInstant(zone);
     }
 
     /*

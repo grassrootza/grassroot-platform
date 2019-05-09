@@ -28,8 +28,23 @@ import za.org.grassroot.core.domain.notification.NotificationStatus;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TaskLog;
 import za.org.grassroot.core.domain.task.TodoLog;
-import za.org.grassroot.core.enums.*;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.ActionLogType;
+import za.org.grassroot.core.enums.CampaignLogType;
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.LiveWireLogType;
+import za.org.grassroot.core.enums.TodoLogType;
+import za.org.grassroot.core.repository.AccountLogRepository;
+import za.org.grassroot.core.repository.BroadcastNotificationRepository;
+import za.org.grassroot.core.repository.CampaignLogRepository;
+import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.repository.GroupLogRepository;
+import za.org.grassroot.core.repository.LiveWireLogRepository;
+import za.org.grassroot.core.repository.NotificationRepository;
+import za.org.grassroot.core.repository.TodoLogRepository;
+import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.NotificationSpecifications;
@@ -39,7 +54,15 @@ import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.services.util.PublicActivityType.*;
@@ -234,6 +257,12 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	@Override
 	public void removeCampaignLog(User user, Campaign campaign, CampaignLogType logType) {
 		campaignLogRepository.deleteAllByCampaignAndUserAndCampaignLogType(campaign, user, logType);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public long countUserLogs(Specification<UserLog> userLogSpecification) {
+		return userLogRepository.count(userLogSpecification);
 	}
 
 	private void updateCacheSingle(ActionLog actionLog) {

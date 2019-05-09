@@ -76,6 +76,11 @@ public final class NotificationSpecifications {
         };
     }
 
+    public static Specification<Notification> sentOrBetter() {
+        List<NotificationStatus> sentOrBetterStatuses = Arrays.asList(NotificationStatus.SENT, NotificationStatus.DELIVERED, NotificationStatus.READ);
+        return (root, query, criteriaBuilder) -> root.get(Notification_.status).in(sentOrBetterStatuses);
+    }
+
     public static Specification<Notification> sentOrBetterSince(Instant time) {
         List<NotificationStatus> sentOrBetterStatuses = Arrays.asList(NotificationStatus.SENT, NotificationStatus.DELIVERED, NotificationStatus.READ);
         Specification<Notification> sentOrBetter = (root, query, cb) -> root.get(Notification_.status).in(sentOrBetterStatuses);
