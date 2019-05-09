@@ -12,8 +12,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.Account_;
@@ -22,7 +24,8 @@ import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.ActionLogType;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
@@ -31,6 +34,8 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
+import za.org.grassroot.core.specifications.UserLogSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
@@ -43,12 +48,9 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -672,13 +674,33 @@ public class AccountBrokerImpl implements AccountBroker {
 
         long countSms = 0;
         long countUssd = 0;
+
+        long costSms = 0;
+        long costUssd = 0;
+
         for (Account account : accounts) {
-            countUssd += countChargedUssdSessionsForAccount(account.getUid(), start, end) * account.getAvgUssdCost();
-            countSms += countAccountNotifications(account.getUid(), start, end) * account.getFreeFormCost();
+            final long ussdVol = countChargedUssdSessionsForAccount(account.getUid(), start, end);
+            final long smsVol = countAccountNotifications(account.getUid(), start, end);
+            countUssd += ussdVol;
+            countSms += smsVol;
+            costUssd += ussdVol * account.getAvgUssdCost();
+            costSms +=  smsVol * account.getFreeFormCost();
         }
 
-        counts.put("USSD", countUssd);
-        counts.put("SMS", countSms);
+        counts.put("USSD_COUNT", countUssd);
+        counts.put("SMS_COUNT", countSms);
+        counts.put("USSD_CHARGE", costUssd);
+        counts.put("SMS_CHARGE", costSms);
+
+        Specification<Notification> totalCount = NotificationSpecifications.createdTimeBetween(start, end)
+                .and(NotificationSpecifications.sentOrBetter())
+                .and(NotificationSpecifications.forDeliveryChannel(DeliveryRoute.SMS));
+        counts.put("SYSTEM_SMS_COUNT", logsAndNotificationsBroker.countNotifications(totalCount));
+
+        Specification<UserLog> userLogSpecification = UserLogSpecifications.creationTimeBetween(start, end)
+                .and(UserLogSpecifications.usingInterface(UserInterfaceType.USSD))
+                .and(UserLogSpecifications.ofType(UserLogType.USER_SESSION));
+        counts.put("SYSTEM_USSD_COUNT", logsAndNotificationsBroker.countUserLogs(userLogSpecification));
 
         return counts;
     }
@@ -786,7 +808,7 @@ public class AccountBrokerImpl implements AccountBroker {
         final Account account = accountRepository.findOneByUid(accountUid);
 
         final ZoneOffset zoneToUse = ZoneOffset.UTC;
-        final Instant start = LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay().toInstant(zoneToUse);
+        final Instant start = DateTimeUtil.startOfMonth(zoneToUse);
         final Instant end = LocalDateTime.now().toInstant(zoneToUse);
 
         final long baseFee = account.getMonthlyFlatFee();

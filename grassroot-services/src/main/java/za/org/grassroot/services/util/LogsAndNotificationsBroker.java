@@ -5,6 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.group.Membership;
@@ -39,5 +40,7 @@ public interface LogsAndNotificationsBroker {
 	Page<Notification> lastNotificationsSentToUser(User user, Integer numberToRetrieve, Instant sinceTime);
 
 	void removeCampaignLog(User user, Campaign campaign, CampaignLogType logType);
+
+	long countUserLogs(Specification<UserLog> userLogSpecification);
 
 }
