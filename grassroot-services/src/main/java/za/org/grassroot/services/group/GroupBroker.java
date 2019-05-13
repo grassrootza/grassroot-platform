@@ -4,7 +4,11 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.group.*;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinCode;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
@@ -12,7 +16,11 @@ import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 public interface GroupBroker {
 
@@ -133,7 +141,4 @@ public interface GroupBroker {
 
     void sendAllGroupJoinCodesNotification(String userUid);
 
-    void testMembersFetch(long groupId);
-
-    void testMembersFetchViaJoinCode(String joinCode);
 }
