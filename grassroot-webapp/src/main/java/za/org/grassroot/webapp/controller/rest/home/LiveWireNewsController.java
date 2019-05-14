@@ -8,12 +8,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
@@ -23,20 +23,24 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 public class LiveWireNewsController {
 
     private final LiveWireAlertBroker liveWireAlertBroker;
+    private final MembershipRepository membershipRepository;
 
     @Autowired
-    public LiveWireNewsController(LiveWireAlertBroker liveWireAlertBroker) {
+    public LiveWireNewsController(LiveWireAlertBroker liveWireAlertBroker, MembershipRepository membershipRepository) {
         this.liveWireAlertBroker = liveWireAlertBroker;
+        this.membershipRepository = membershipRepository;
     }
 
     @RequestMapping(value = "/list/headlines", method = RequestMethod.GET)
     public Page<PublicLiveWireDTO> fetchLiveWireNewsHeadlines(Pageable pageable) {
-        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, false, false));
+        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert,
+                false, false, membershipRepository));
     }
 
     @RequestMapping(value = "/list/full", method = RequestMethod.GET)
     public Page<PublicLiveWireDTO> fetchLiveWireNewsArticles(Pageable pageable) {
-        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, true, false));
+        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert,
+                true, false, membershipRepository));
     }
 
     @RequestMapping(value = "/page/number",method = RequestMethod.GET)

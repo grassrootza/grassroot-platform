@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.core.repository.MembershipRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,7 +35,9 @@ public class PublicLiveWireDTO {
     private GeoLocation location;
     private LocationSource locationSource;
 
-    public PublicLiveWireDTO(LiveWireAlert alert, boolean includeFullDetails, boolean includeSubOnlyDetails) {
+    // as in a few other places, inelegant, but otherwise the group.getMembers kills memory, etc.
+    public PublicLiveWireDTO(LiveWireAlert alert, boolean includeFullDetails, boolean includeSubOnlyDetails,
+                             MembershipRepository membershipRepository) {
 
         this.headline = alert.getHeadline();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
@@ -56,14 +59,14 @@ public class PublicLiveWireDTO {
             if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
                 Group group = alert.getGroup();
                 this.entityName = group.getName();
-                this.entitySize = group.getMembers().size();
+                this.entitySize = membershipRepository.countByGroup(group);
                 this.activityCount = group.getDescendantEvents().size() + group.getDescendantTodos().size();
             } else {
                 Meeting meeting = alert.getMeeting();
                 Group group = alert.getMeeting().getAncestorGroup();
                 this.entityName = meeting.getName();
                 this.entitySize = meeting.isAllGroupMembersAssigned() || meeting.getAllMembers() == null ?
-                        meeting.getAncestorGroup().getMemberships().size() : meeting.getAllMembers().size();
+                        membershipRepository.countByGroup(meeting.getAncestorGroup()) : meeting.getAllMembers().size();
                 this.activityCount = group.getDescendantEvents().size() + group.getDescendantTodos().size();
             }
         }

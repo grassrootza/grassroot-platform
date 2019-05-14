@@ -1,6 +1,5 @@
 package za.org.grassroot.services.group;
 
-import com.google.common.base.Stopwatch;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -1729,27 +1727,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         if (!(numberOfMembersLeft > numberOfMembersAdding)) {
             throw new GroupSizeLimitExceededException();
         }
-    }
-
-    @Override
-    @Transactional()
-    public void testMembersFetch(long groupId) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        final Group group = this.groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Not found group udner ID: " + groupId));
-//        System.out.println("Fetch by ID lasted " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-
-        stopwatch.reset();
-        stopwatch.start();
-        group.getMembers().iterator().hasNext();
-        System.out.println("### Fetch members lasted " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-    }
-
-    @Override
-    @Transactional()
-    public void testMembersFetchViaJoinCode(String joinCode) {
-        final Group group = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode)).orElseThrow(() -> new RuntimeException("Not found group under join code : " + joinCode));
-        boolean hasNext = group.getMembers().iterator().hasNext();
-        System.out.println("### hasNext = " + hasNext);
     }
 
 

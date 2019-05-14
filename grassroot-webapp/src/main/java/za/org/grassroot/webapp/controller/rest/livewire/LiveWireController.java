@@ -18,6 +18,7 @@ import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.integration.authentication.JwtService;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.group.GroupBroker;
@@ -47,6 +48,7 @@ public class LiveWireController extends BaseRestController{
     private final LiveWireAlertBroker liveWireAlertBroker;
     private final DataSubscriberBroker subscriberBroker;
 
+    private MembershipRepository membershipRepository; // for the alerts, in future may refactor to be more elegant
 
     @Autowired
     public LiveWireController(UserManagementService userManagementService,
@@ -65,10 +67,16 @@ public class LiveWireController extends BaseRestController{
         this.subscriberBroker = subscriberBroker;
     }
 
+    @Autowired
+    public void setMembershipRepository(MembershipRepository membershipRepository) {
+        this.membershipRepository = membershipRepository;
+    }
+
     @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
     @RequestMapping(value = "/list/subscriber", method = RequestMethod.GET)
     public Page<PublicLiveWireDTO> fetchLiveWireAlertsForSubscribers(Pageable pageable) {
-        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert -> new PublicLiveWireDTO(alert, true, true));
+        return liveWireAlertBroker.fetchReleasedAlerts(pageable).map(alert ->
+                new PublicLiveWireDTO(alert, true, true, membershipRepository));
     }
 
     @PreAuthorize("hasRole('ROLE_FULL_USER')")
