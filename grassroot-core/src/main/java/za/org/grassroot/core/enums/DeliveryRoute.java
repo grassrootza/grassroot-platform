@@ -15,6 +15,7 @@ public enum DeliveryRoute {
     SMS, // forces SMS itself
     WHATSAPP, // so that it is in
     ANDROID_APP, // i.e., push notifications within the Grassroot App
+    LONG_SMS, // i.e., sent through gateway that accepts extra long messages
     EMAIL_GRASSROOT, // though note we will have to work out how to put in place threshold limits for broadcasts if no MailChimp
     EMAIL_USERACCOUNT, // if they want the email to come from the address they have on file
     EMAIL_3RDPARTY, // if the email will come from eg a MailChimp account

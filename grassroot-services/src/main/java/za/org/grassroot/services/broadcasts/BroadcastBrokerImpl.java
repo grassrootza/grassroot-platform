@@ -1,6 +1,7 @@
 package za.org.grassroot.services.broadcasts;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
@@ -13,7 +14,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Notification;
@@ -530,11 +530,12 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         }
     }
 
-    // for counting / auditing purposes
+    // for counting / auditing purposes, hence also trim it so we don't get huge text blobs gumming up an already big table
     private Set<Notification> recordEmailNotifications(Broadcast broadcast, Set<User> recipients, EmailBroadcast emailBc, ActionLog actionLog, boolean deliveryCompleted) {
         boolean isCampaign = broadcast.getCampaign() != null;
         return recipients.stream().map(user -> {
-            Notification n = isCampaign ? new CampaignBroadcastNotification(user, emailBc.getContent(), broadcast, broadcast.getEmailDeliveryRoute(), (CampaignLog) actionLog) :
+            final String trimmedMsg = StringUtils.abbreviate(emailBc.getContent(), 255);
+            Notification n = isCampaign ? new CampaignBroadcastNotification(user, trimmedMsg, broadcast, broadcast.getEmailDeliveryRoute(), (CampaignLog) actionLog) :
                     new GroupBroadcastNotification(user, emailBc.getContent(), broadcast, broadcast.getEmailDeliveryRoute(), (GroupLog) actionLog);
             n.setSendAttempts(1);
             n.setStatus(deliveryCompleted ? NotificationStatus.DELIVERED : NotificationStatus.DELIVERY_FAILED);
@@ -638,9 +639,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             log.info("now generating {} notifications", shortMessageUsers.size());
             Set<Notification> shortMessageNotifications = new HashSet<>();
             shortMessageUsers.forEach(u -> {
+                DeliveryRoute route = u.getMessagingPreference() == DeliveryRoute.SMS ? DeliveryRoute.LONG_SMS : u.getMessagingPreference();
                 GroupBroadcastNotification notification = new GroupBroadcastNotification(u,
-                        bc.getShortMsgIncludingMerge(u), bc,
-                        u.getMessagingPreference(), groupLog);
+                        bc.getShortMsgIncludingMerge(u), bc, route, groupLog);
                 notification.setUseOnlyFreeChannels(bc.isOnlyUseFreeChannels());
                 shortMessageNotifications.add(notification);
             });

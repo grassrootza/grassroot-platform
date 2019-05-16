@@ -152,9 +152,6 @@ public abstract class Notification implements Serializable {
 		this.message = Objects.requireNonNull(message);
 		this.readReceiptFetchAttempts = 0;
 
-		if (this.message.length() > 255)
-			this.message = message.substring(0, 255);
-
 		this.priority = DEFAULT_PRIORITY;
 		this.deliveryChannel = target.getMessagingPreference();
 
