@@ -874,8 +874,10 @@ public class AccountBrokerImpl implements AccountBroker {
         log.info("In {} msecs, for {} groups, counted {} from group logs, {} from event logs, {} from todo logs, {} from campaign logs",
                 System.currentTimeMillis() - startTime, groups.size(), groupLogCount, eventLogCount, todoLogCount, campaignLogCount);
 
-        return groupLogCount + eventLogCount + todoLogCount + campaignLogCount;
+        long longBroadcastCount = countLongGroupMessages(groups, start, end);
+        log.info("And adding {} additional messages, from long broadcasts", longBroadcastCount);
 
+        return groupLogCount + eventLogCount + todoLogCount + campaignLogCount + longBroadcastCount;
     }
 
     private long executeGroupsCountQuery(String querySuffix, Instant start, Instant end, Set<Group> groups) {
@@ -891,6 +893,20 @@ public class AccountBrokerImpl implements AccountBroker {
                 "where n.createdDateTime between :start and :end and " +
                 "n.status in ('DELIVERED', 'READ') and " +
                 "n.deliveryChannel in ('SMS', 'SHORT_MESSAGE') and ";
+    }
+
+    private long countLongGroupMessages(Set<Group> groups, Instant start, Instant end) {
+        // NB: the maths here is intentional, because messages under 160 chars already counted in the general count
+        // hence this just picks up those which are over and above
+        final String countQuery = "select sum(length(n.message) / 160) from Notification n where " +
+                "n.createdDateTime between :start and :end and n.status in ('DELIVERED', 'READ') and " +
+                "n.deliveryChannel in ('SMS', 'SHORT_MESSAGE', 'LONG_SMS', 'ANDROID_APP') and " +
+                "(n.groupLog in (select gl from GroupLog gl where gl.group in :groups))";
+        final long countOfAdditional = entityManager.createQuery(countQuery, Long.class)
+                .setParameter("start", start).setParameter("end", end).setParameter("groups", groups)
+                .getSingleResult();
+        log.info("Completed count of longer SMSs, count: {}", countOfAdditional);
+        return countOfAdditional;
     }
 
     private long countSessionsForDatasets(Collection<String> dataSets, Instant start, Instant end) {
