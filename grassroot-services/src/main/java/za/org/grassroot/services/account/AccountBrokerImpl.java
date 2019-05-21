@@ -898,15 +898,21 @@ public class AccountBrokerImpl implements AccountBroker {
     private long countLongGroupMessages(Set<Group> groups, Instant start, Instant end) {
         // NB: the maths here is intentional, because messages under 160 chars already counted in the general count
         // hence this just picks up those which are over and above
+        log.info("Counting long messages for start: {}, end: {}, groups: {}", start, end, groups);
         final String countQuery = "select sum(length(n.message) / 160) from Notification n where " +
                 "n.createdDateTime between :start and :end and n.status in ('DELIVERED', 'READ') and " +
                 "n.deliveryChannel in ('SMS', 'SHORT_MESSAGE', 'LONG_SMS', 'ANDROID_APP') and " +
                 "(n.groupLog in (select gl from GroupLog gl where gl.group in :groups))";
-        final long countOfAdditional = entityManager.createQuery(countQuery, Long.class)
-                .setParameter("start", start).setParameter("end", end).setParameter("groups", groups)
-                .getSingleResult();
-        log.info("Completed count of longer SMSs, count: {}", countOfAdditional);
-        return countOfAdditional;
+        try {
+            TypedQuery<Long> countLongMsgQuery = entityManager.createQuery(countQuery, Long.class)
+                    .setParameter("start", start).setParameter("end", end).setParameter("groups", groups);
+            final long countOfAdditional = countLongMsgQuery != null ? countLongMsgQuery.getSingleResult() : 0;
+            log.info("Completed count of longer SMSs, count: {}", countOfAdditional);
+            return countOfAdditional;
+        } catch (NullPointerException e) {
+            log.info("Count long messages, strange null pointer thrown, something on joins, message: {}", e.getMessage());
+            return 0;
+        }
     }
 
     private long countSessionsForDatasets(Collection<String> dataSets, Instant start, Instant end) {
