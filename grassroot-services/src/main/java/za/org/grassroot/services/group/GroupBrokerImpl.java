@@ -811,12 +811,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         User member;
         if (msisdn.isPresent() && existingPhoneNumbers.contains(msisdn.get())) {
             member = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn.get());
-            logger.info("Msisdn present, {}, member not null ? : {}", msisdn.get(), member != null);
+            logger.debug("Msisdn present, {}, member not null ? : {}", msisdn.get(), member != null);
         } else if (emailAddress.isPresent() && existingEmails.contains(emailAddress.get())) {
             member = userRepository.findByEmailAddressIgnoreCaseAndEmailAddressNotNull(emailAddress.get());
-            logger.info("Email present, {}, member not null ? : {}", emailAddress.get(), member != null);
+            logger.debug("Email present, {}, member not null ? : {}", emailAddress.get(), member != null);
         } else {
-            logger.info("Adding a new user, via group creation, with phone number: {}, email: {}", msisdn, emailAddress);
+            logger.debug("Adding a new user, via group creation, with phone number: {}, email: {}", msisdn, emailAddress);
             member = new User(msisdn.orElse(null), membershipInfo.getDisplayName(), emailAddress.orElse(null));
             member.setFirstName(membershipInfo.getFirstName());
             member.setLastName(membershipInfo.getSurname());
