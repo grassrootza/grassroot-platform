@@ -801,13 +801,27 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         Specification<Broadcast> isScheduled = (root, query, cb) -> cb.equal(root.get("broadcastSchedule"), BroadcastSchedule.FUTURE);
         Specification<Broadcast> scheduledTimePast = (root, query, cb) -> cb.lessThan(root.get("scheduledSendTime"), Instant.now());
         Specification<Broadcast> notSent = (root, query, cb) -> cb.isNull(root.get("sentTime"));
-        List<Broadcast> scheduledBroadcasts = broadcastRepository.findAll(Specification.where(isScheduled)
+        Specification<Broadcast> notCancelled = (root, query, cb) -> cb.isTrue(root.get("active"));
+        List<Broadcast> scheduledBroadcasts = broadcastRepository.findAll(Specification.where(notCancelled).and(isScheduled)
                 .and(scheduledTimePast).and(notSent));
         log.info("found {} broadcasts to send", scheduledBroadcasts.size());
         // avoiding send for now, juuuust in case ...
         if (!scheduledBroadcasts.isEmpty()) {
             scheduledBroadcasts.forEach(this::sendScheduledBroadcast);
         }
+    }
+
+    @Override
+    @Transactional
+    public void cancelScheduledBroadcast(String userUid, String broadcastUid) {
+        log.info("Cancelling broadcast ...");
+        Broadcast broadcast = broadcastRepository.findOneByUid((broadcastUid));
+        User user = userRepository.findOneByUid(userUid);
+        
+        broadcast.setActive(false);
+        broadcast.setScheduledSendTime(Instant.now());
+        broadcast.setBroadcastSchedule(BroadcastSchedule.IMMEDIATE);
+        log.info("Broadcast cancelled");
     }
 
     private BroadcastDTO assembleDto(Broadcast broadcast, User fetchingUser) {

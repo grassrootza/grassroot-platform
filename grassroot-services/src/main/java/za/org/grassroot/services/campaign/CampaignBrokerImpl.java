@@ -692,6 +692,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         groupBroker.addMemberViaCampaign(user, masterGroup, campaign.getCampaignCode());
         CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP, campaign, channel, null);
+        // createAndStoreCampaignLog(campaignLog);
         persistCampaignLog(campaignLog);
         campaignStatsBroker.clearCampaignStatsCache(campaignUid);
 
@@ -870,9 +871,10 @@ public class CampaignBrokerImpl implements CampaignBroker {
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
-    private void persistCampaignLog(CampaignLog accountLog) {
-        AfterTxCommitTask task = () -> createAndStoreCampaignLog(accountLog);
-        eventPublisher.publishEvent(task);
+    private void persistCampaignLog(CampaignLog campaignLog) {
+        // AfterTxCommitTask task = () -> createAndStoreCampaignLog(campaignLog);
+        // eventPublisher.publishEvent(task);
+        createAndStoreCampaignLog(campaignLog);
     }
 
     private void validateUserCanModifyCampaign(User user, Campaign campaign) {

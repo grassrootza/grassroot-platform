@@ -35,5 +35,7 @@ public interface BroadcastBroker {
 
     // needs to be in interface so picked up by entities, todo : find why not called anymore
     void sendScheduledBroadcasts();
+    
+    void cancelScheduledBroadcast(String userUid, String broadcastUid);
 
 }

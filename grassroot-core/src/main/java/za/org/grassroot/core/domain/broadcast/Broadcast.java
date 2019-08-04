@@ -78,17 +78,17 @@ public class Broadcast implements GrassrootEntity, TagHolder, GrassrootTemplate 
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "broadcast_schedule", length = 50, nullable = false)
-    private BroadcastSchedule broadcastSchedule;
+    @Setter private BroadcastSchedule broadcastSchedule;
 
     @Column(name = "scheduled_send_time")
-    private Instant scheduledSendTime;
+    @Setter private Instant scheduledSendTime;
 
     @Column(name = "sent_time")
     @Setter private Instant sentTime;
 
     @Basic
     @Column(name = "active")
-    @Setter private boolean active;
+    @Setter @Builder.Default private boolean active = true;
 
     /*
     Section: the meat of it: contents, and some options

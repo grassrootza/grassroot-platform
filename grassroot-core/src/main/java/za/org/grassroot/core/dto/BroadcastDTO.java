@@ -52,6 +52,8 @@ public class BroadcastDTO {
     private JoinDateCondition joinDateCondition;
     private LocalDate joinDate;
 
+    private boolean active;
+
     public BroadcastDTO(Broadcast broadcast, boolean createdByUser, boolean succeeded) {
         // set things up
         this.broadcastUid = broadcast.getUid();
@@ -70,6 +72,8 @@ public class BroadcastDTO {
         this.emailContent = broadcast.getEmailContent();
         this.fbPost = broadcast.getFacebookPost();
         this.twitterPost = broadcast.getTwitterPost();
+
+        this.active = broadcast.isActive();
 
         this.hasFilter = broadcast.hasFilter();
 

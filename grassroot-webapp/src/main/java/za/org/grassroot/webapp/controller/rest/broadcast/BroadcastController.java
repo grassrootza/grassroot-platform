@@ -218,6 +218,15 @@ public class BroadcastController extends BaseRestController {
         return ResponseEntity.ok(broadcastBroker.fetchBroadcast(resentUid, userUid));
     }
 
+    @RequestMapping(value = "/cancel/{broadcastUid}", method = RequestMethod.POST)
+    public ResponseEntity<BroadcastDTO> cancelBroadcast(HttpServletRequest request, @PathVariable String broadcastUid) {
+        log.info("Received instruction to cancel broadcast: ", broadcastUid);
+        validateBroadcastPermission(request, broadcastUid, Permission.GROUP_PERMISSION_SEND_BROADCAST);
+        final String userUid = getUserIdFromRequest(request);
+        broadcastBroker.cancelScheduledBroadcast(userUid, broadcastUid);
+        return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid, userUid));
+    }
+
     @RequestMapping(value = "/cost-this-month", method = RequestMethod.GET)
     public ResponseEntity<Long> getAccountCostThisMonth(HttpServletRequest request) {
         User user = getUserFromRequest(request);
