@@ -8,6 +8,7 @@ import za.org.grassroot.core.dto.membership.MembershipInfo;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.Instant;
 
 /**
  * Created by luke on 2016/02/04.
@@ -45,5 +46,8 @@ public interface AdminService {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<ConfigVariable> getAllConfigVariables();
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void broadcastMessageToActiveGroupOrganizers(String adminUserUid, String message, Instant lastActiveThreshold, boolean dryRun);
 
 }
