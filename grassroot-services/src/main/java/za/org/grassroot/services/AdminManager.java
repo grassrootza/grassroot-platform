@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.ConfigVariable;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.StandardRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
@@ -20,6 +21,7 @@ import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.GroupLog_;
 import za.org.grassroot.core.domain.group.Group_;
 import za.org.grassroot.core.domain.group.Membership;
+import za.org.grassroot.core.domain.notification.SystemInfoNotification;
 import za.org.grassroot.core.dto.membership.MembershipInfo;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -29,11 +31,14 @@ import za.org.grassroot.core.events.RemoveConfigVariableEvent;
 import za.org.grassroot.core.repository.ConfigRepository;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -59,18 +64,22 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     private final GroupLogRepository groupLogRepository;
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MembershipRepository membershipRepository;
 
     private ConfigRepository configRepository;
+    private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
-    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
+    public AdminManager(UserRepository userRepository, GroupRepository groupRepository, GroupBroker groupBroker, GroupLogRepository groupLogRepository, 
+                        UserLogRepository userLogRepository, MembershipRepository membershipRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.groupBroker = groupBroker;
         this.groupLogRepository = groupLogRepository;
         this.userLogRepository = userLogRepository;
+        this.membershipRepository = membershipRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -82,6 +91,11 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     @Autowired
     public void setConfigRepository(ConfigRepository configRepository) {
         this.configRepository = configRepository;
+    }
+
+    @Autowired
+    public void setLogsAndNotificationsBroker(LogsAndNotificationsBroker logsAndNotificationsBroker) {
+        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
     }
 
     /**
@@ -247,6 +261,33 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
         logger.info("found {} groups that can recycle their join code", numberOfGroups);
         // then we'll invalidate and notify user (but first, let's see how many)
         return numberOfGroups;
+    }
+
+    // note: also going to need logs and notification, but this is roughly the way.
+    @Override
+    @Transactional
+    public void broadcastMessageToActiveGroupOrganizers(String adminUserUid, String message, Instant lastActiveThreshold, boolean dryRun) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Initiating large scale broadcast");
+        validateAdminRole(adminUserUid);
+        Specification<Group> stillActive = (root, query, cb) -> cb.isTrue(root.get(Group_.active));
+        Specification<Group> activeSinceTime = (root, query, cb) -> cb.or(
+            cb.greaterThan(root.get(Group_.lastTaskCreationTime), lastActiveThreshold), 
+            cb.greaterThan(root.get(Group_.lastGroupChangeTime), lastActiveThreshold));
+        List<Group> activeGroups = groupRepository.findAll(stillActive.and(activeSinceTime));
+        List<Membership> groupOrganizerMemberships = membershipRepository.findByGroupInAndGroupRole(activeGroups, GroupRole.ROLE_GROUP_ORGANIZER);
+        Set<User> organizerUsers = groupOrganizerMemberships.stream().map(Membership::getUser).collect(Collectors.toSet());
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        organizerUsers.forEach((user) -> {
+            UserLog userLog = new UserLog(user.getUid(), UserLogType.NOTIFIED_LANGUAGES, "Sent message to all group organizers", null);
+            SystemInfoNotification notification = new SystemInfoNotification(user, message, userLog);
+            bundle.addLog(userLog);
+            bundle.addNotification(notification);
+        });
+        logger.info("Would be about to send {} notifications, took {} msecs", organizerUsers.size(), System.currentTimeMillis() - startTime);
+        if (!dryRun) {
+            logsAndNotificationsBroker.storeBundle(bundle);
+        }
     }
 
     private void validateAdminRole(String adminUserUid) {

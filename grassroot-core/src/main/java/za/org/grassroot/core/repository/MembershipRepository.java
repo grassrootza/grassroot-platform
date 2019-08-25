@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.group.Membership;
 
 import java.util.Collection;
@@ -31,4 +32,6 @@ public interface MembershipRepository extends JpaRepository<Membership, Long>, J
 
     @Query("select distinct tags from za.org.grassroot.core.domain.group.Membership where tags is not null and group = ?1")
     Set<String[]> findDistinctMembershipTagsByGroup(Group group);
+
+    List<Membership> findByGroupInAndGroupRole(Collection<Group> groups, GroupRole groupRole);
 }
