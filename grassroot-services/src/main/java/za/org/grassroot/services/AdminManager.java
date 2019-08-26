@@ -266,20 +266,20 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
     // note: also going to need logs and notification, but this is roughly the way.
     @Override
     @Transactional
-    public void broadcastMessageToActiveGroupOrganizers(String adminUserUid, String message, Instant lastActiveThreshold, boolean dryRun) {
+    public int broadcastMessageToActiveGroupOrganizers(String adminUserUid, String message, Instant lastActiveThreshold, boolean dryRun) {
         long startTime = System.currentTimeMillis();
-        logger.info("Initiating large scale broadcast");
+        logger.info("Initiating large scale broadcast, with message: ", message);
         validateAdminRole(adminUserUid);
         Specification<Group> stillActive = (root, query, cb) -> cb.isTrue(root.get(Group_.active));
         Specification<Group> activeSinceTime = (root, query, cb) -> cb.or(
             cb.greaterThan(root.get(Group_.lastTaskCreationTime), lastActiveThreshold), 
             cb.greaterThan(root.get(Group_.lastGroupChangeTime), lastActiveThreshold));
         List<Group> activeGroups = groupRepository.findAll(stillActive.and(activeSinceTime));
-        List<Membership> groupOrganizerMemberships = membershipRepository.findByGroupInAndGroupRole(activeGroups, GroupRole.ROLE_GROUP_ORGANIZER);
+        List<Membership> groupOrganizerMemberships = membershipRepository.findByGroupInAndRole(activeGroups, GroupRole.ROLE_GROUP_ORGANIZER);
         Set<User> organizerUsers = groupOrganizerMemberships.stream().map(Membership::getUser).collect(Collectors.toSet());
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         organizerUsers.forEach((user) -> {
-            UserLog userLog = new UserLog(user.getUid(), UserLogType.NOTIFIED_LANGUAGES, "Sent message to all group organizers", null);
+            UserLog userLog = new UserLog(user.getUid(), UserLogType.NOTIFIED_LANGUAGES, "Sent message to all group organizers", UserInterfaceType.SYSTEM);
             SystemInfoNotification notification = new SystemInfoNotification(user, message, userLog);
             bundle.addLog(userLog);
             bundle.addNotification(notification);
@@ -287,7 +287,14 @@ public class AdminManager implements AdminService, ApplicationEventPublisherAwar
         logger.info("Would be about to send {} notifications, took {} msecs", organizerUsers.size(), System.currentTimeMillis() - startTime);
         if (!dryRun) {
             logsAndNotificationsBroker.storeBundle(bundle);
+        } else {
+            logger.info("Dry run, so sending only to user admin");
+            User thisUser = userRepository.findOneByUid(adminUserUid);
+            UserLog adminLog = new UserLog(adminUserUid, UserLogType.NOTIFIED_LANGUAGES, "Sent dry run message to user", UserInterfaceType.SYSTEM);
+            SystemInfoNotification notification = new SystemInfoNotification(thisUser, message, adminLog);
+            logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(adminLog), Collections.singleton(notification)));
         }
+        return bundle.getNotifications().size();
     }
 
     private void validateAdminRole(String adminUserUid) {

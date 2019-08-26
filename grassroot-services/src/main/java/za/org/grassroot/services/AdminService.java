@@ -48,6 +48,6 @@ public interface AdminService {
     List<ConfigVariable> getAllConfigVariables();
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    void broadcastMessageToActiveGroupOrganizers(String adminUserUid, String message, Instant lastActiveThreshold, boolean dryRun);
+    int broadcastMessageToActiveGroupOrganizers(String adminUserUid, String message, Instant lastActiveThreshold, boolean dryRun);
 
 }
