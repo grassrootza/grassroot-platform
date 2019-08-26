@@ -33,5 +33,5 @@ public interface MembershipRepository extends JpaRepository<Membership, Long>, J
     @Query("select distinct tags from za.org.grassroot.core.domain.group.Membership where tags is not null and group = ?1")
     Set<String[]> findDistinctMembershipTagsByGroup(Group group);
 
-    List<Membership> findByGroupInAndGroupRole(Collection<Group> groups, GroupRole groupRole);
+    List<Membership> findByGroupInAndRole(Collection<Group> groups, GroupRole groupRole);
 }

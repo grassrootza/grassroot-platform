@@ -43,6 +43,9 @@ import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 
 import javax.servlet.http.HttpServletRequest;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -306,6 +309,15 @@ public class AdminRestController extends BaseRestController{
         log.info("Updating user municipalities cache, page size: {}", pageSize);
         municipalFilteringBroker.fetchMunicipalitiesForUsersWithLocations(pageSize);
         return ResponseEntity.ok(RestMessage.UPDATED);
+    }
+
+    // Sending out a notification to all group organizers (with various parameters)
+    @RequestMapping(value = "/message/organizers", method = RequestMethod.POST)
+    public ResponseEntity sendMessageToGroupOrganizers(@RequestParam String message, HttpServletRequest request) {
+        final String adminUserUid = getUserIdFromRequest(request);
+        final Instant lastActiveThreshold = Instant.now().minus(180, ChronoUnit.DAYS);
+        final int countOfUsers = adminService.broadcastMessageToActiveGroupOrganizers(adminUserUid, message, lastActiveThreshold, true);
+        return ResponseEntity.ok(countOfUsers);
     }
 
 }
