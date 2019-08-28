@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.notification;
 
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 
 import javax.persistence.DiscriminatorValue;
@@ -17,6 +18,7 @@ public class SystemInfoNotification extends UserNotification {
 
     public SystemInfoNotification(User target, String message, UserLog userLog) {
         super(target, message, userLog);
+        this.deliveryChannel = DeliveryRoute.LONG_SMS;
     }
 
     @Override
