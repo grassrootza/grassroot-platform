@@ -313,7 +313,7 @@ public class AdminRestController extends BaseRestController{
 
     // Sending out a notification to all group organizers (with various parameters)
     @RequestMapping(value = "/message/organizers", method = RequestMethod.POST)
-    public ResponseEntity sendMessageToGroupOrganizers(@RequestParam String message, @RequestParam Boolean notDryRun, HttpServletRequest request) {
+    public ResponseEntity sendMessageToGroupOrganizers(@RequestParam String message, @RequestParam(required = false) Boolean notDryRun, HttpServletRequest request) {
         final String adminUserUid = getUserIdFromRequest(request);
         final Instant lastActiveThreshold = Instant.now().minus(180, ChronoUnit.DAYS);
         final boolean dryRun = notDryRun == null || !notDryRun;
