@@ -139,6 +139,10 @@ public class UssdSupport {
 				languageOptions(userMenus + "language-do?language="));
 	}
 
+	public USSDMenu noFreeUseMenu(User user) {
+		return new USSDMenu("Sorry, no more free use", optionsHomeExit(user, false));
+	}
+
 	/*
 	Method for experiment tracking
 	 */
