@@ -19,6 +19,8 @@ public interface AccountFeaturesBroker {
     // duplicates in normal broker but we sometimes need this in users, and better than a whole extra dependency in client or breaking ID/entity pattern
     Account load(String accountUid);
 
+    boolean canGroupHaveTasks(String groupUid);
+
     int numberMembersLeftForGroup(Group group, GroupJoinMethod joinMethod);
 
     int numberTodosLeftForGroup(String groupUid);

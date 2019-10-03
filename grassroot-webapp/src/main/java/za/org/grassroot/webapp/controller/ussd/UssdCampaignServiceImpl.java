@@ -201,6 +201,11 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 		}
 		return menu;
 	}
+	
+	// removing town prompt
+	// } else if (!addressBroker.hasAddressOrLocation(user.getUid())) {
+	// final String prompt = ussdSupport.getMessage("campaign.joined.town", user);
+	// menu = new USSDMenu(prompt, userMenus + "town/select");
 
 	private USSDMenu processFinalOptionsMenu(Campaign campaign, UserMinimalProjection user, String promptStart, Locale locale) {
 		USSDMenu menu;
@@ -214,9 +219,6 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 		} else if (campaign.isOutboundTextEnabled() && campaign.outboundBudgetLeft() > 0
 				&& !campaignBroker.hasUserShared(campaign.getUid(), user.getUid())) {
 			menu = buildSharingMenu(campaign.getUid(), locale);
-		} else if (!addressBroker.hasAddressOrLocation(user.getUid())) {
-			final String prompt = ussdSupport.getMessage("campaign.joined.town", user);
-			menu = new USSDMenu(prompt, userMenus + "town/select");
 		} else {
 			menu = genericPositiveExit(campaign.getUid(), user, locale);
 		}
