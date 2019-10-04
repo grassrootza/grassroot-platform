@@ -140,7 +140,7 @@ public class UssdSupport {
 	}
 
 	public USSDMenu noFreeUseMenu(User user) {
-		return new USSDMenu("Sorry, no more free use", optionsHomeExit(user, false));
+		return new USSDMenu("We are sorry, but due to budgets, free use is not available for this", optionsHomeExit(user, false));
 	}
 
 	/*

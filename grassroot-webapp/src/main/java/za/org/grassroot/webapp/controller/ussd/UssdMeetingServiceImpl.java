@@ -266,6 +266,7 @@ public class UssdMeetingServiceImpl implements UssdMeetingService {
 		log.info("event request uid: {}", passedRequestUid);
 		String mtgGroupUid = groupUid != null ? groupUid :
 				((MeetingRequest) eventRequestBroker.load(passedRequestUid)).getParent().getUid();
+		
 		final boolean canGroupCallMeetings = accountFeaturesBroker.canGroupHaveTasks(groupUid);
 		if (!canGroupCallMeetings) {
 			return ussdSupport.menuBuilder(ussdSupport.noFreeUseMenu(sessionUser));
