@@ -184,6 +184,11 @@ public class EventBrokerImpl implements EventBroker {
 			return (Meeting) possibleDuplicate;
 		}
 
+		if (JpaEntityType.GROUP.equals(parent.getJpaEntityType()) && !accountFeaturesBroker.canGroupHaveTasks(parent.getUid())) {
+			log.info("Somehow got to create meeting for group that cannot call tasks");
+			throw new AccountLimitExceededException();
+		}
+
 		checkForEventLimit(helper.getParentUid());
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
 

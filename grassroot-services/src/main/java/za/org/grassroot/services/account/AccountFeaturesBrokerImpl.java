@@ -96,6 +96,7 @@ public class AccountFeaturesBrokerImpl extends ConfigVariableListener implements
         configDefaults.put("tasks.monthly.free", "4");
         configDefaults.put("tasks.limit.threshold", "10");
         configDefaults.put("welcome.messages.on", "false");
+        configDefaults.put("tasks.free.enabled", "true");
         setDefaults(configDefaults);
         log.info("Populated account features config variable map : {}", configVariables);
     }
@@ -129,6 +130,15 @@ public class AccountFeaturesBrokerImpl extends ConfigVariableListener implements
     @Override
     public Account load(String accountUid) {
         return accountRepository.findOneByUid(accountUid);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canGroupHaveTasks(String groupUid) {
+        final Group group = groupRepository.findOneByUid(groupUid);
+        final boolean freeUseAllowed = Boolean.parseBoolean(configVariables.getOrDefault("tasks.free.enabled", "true"));
+        log.info("Is free use allowed? : {}, from config var: {}", freeUseAllowed, configVariables.get("tasks.free.enabled"));
+        return freeUseAllowed || group.robustIsPaidFor();
     }
 
     @Override

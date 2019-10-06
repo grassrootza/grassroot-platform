@@ -139,6 +139,10 @@ public class UssdSupport {
 				languageOptions(userMenus + "language-do?language="));
 	}
 
+	public USSDMenu noFreeUseMenu(User user) {
+		return new USSDMenu("We are sorry, but due to budgets, free use is not available for this", optionsHomeExit(user, false));
+	}
+
 	/*
 	Method for experiment tracking
 	 */

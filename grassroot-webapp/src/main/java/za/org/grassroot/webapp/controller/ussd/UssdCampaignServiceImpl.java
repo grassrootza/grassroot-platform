@@ -201,6 +201,11 @@ public class UssdCampaignServiceImpl implements UssdCampaignService {
 		}
 		return menu;
 	}
+	
+	// removing town prompt
+	// } else if (!addressBroker.hasAddressOrLocation(user.getUid())) {
+	// final String prompt = ussdSupport.getMessage("campaign.joined.town", user);
+	// menu = new USSDMenu(prompt, userMenus + "town/select");
 
 	// removed town stuff
 	// } else if (!addressBroker.hasAddressOrLocation(user.getUid())) {
