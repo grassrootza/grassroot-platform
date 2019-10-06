@@ -166,6 +166,10 @@ public class AccountFeaturesBrokerImpl extends ConfigVariableListener implements
     @Override
     @Transactional(readOnly = true)
     public int numberTodosLeftForGroup(String groupUid) {
+        if (!canGroupHaveTasks(groupUid)) {
+            return 0;
+        }
+
         Group group = groupRepository.findOneByUid(groupUid);
 
         int eventMonthlyLimitThreshold = Integer.parseInt(configVariables.getOrDefault("tasks.limit.threshold","10"), 10);
