@@ -125,6 +125,10 @@ public class TodoBrokerImpl implements TodoBroker {
                 return possibleDuplicate.getUid();
             }
 
+            if (!accountFeaturesBroker.canGroupHaveTasks(parent.getUid())) {
+                throw new AccountLimitExceededException();
+            }
+
             if (accountFeaturesBroker.numberTodosLeftForGroup(parent.getUid()) < 0) {
                 throw new AccountLimitExceededException();
             }

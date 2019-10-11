@@ -137,7 +137,7 @@ public class AccountFeaturesBrokerImpl extends ConfigVariableListener implements
     public boolean canGroupHaveTasks(String groupUid) {
         final Group group = groupRepository.findOneByUid(groupUid);
         final boolean freeUseAllowed = Boolean.parseBoolean(configVariables.getOrDefault("tasks.free.enabled", "true"));
-        log.info("Is free use allowed? : {}, from config var: {}", freeUseAllowed, configVariables.get("tasks.free.enabled"));
+        log.info("Is free use allowed? : {}, from config var: {}, is group paid for? :", freeUseAllowed, configVariables.get("tasks.free.enabled"), group.robustIsPaidFor());
         return freeUseAllowed || group.robustIsPaidFor();
     }
 
