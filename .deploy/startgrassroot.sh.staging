@@ -4,7 +4,7 @@
 . /usr/src/grassroot/environment/environment-variables
 
 # SET HOSTNAME ACCORDINGLY TO BE UNIQUE WITHIN PAPERTRAIL
-wget http://s3.amazonaws.com/ec2metadata/ec2-metadata
+wget https://s3.amazonaws.com/ec2metadata/ec2-metadata
 chmod 777 ec2-metadata
 INSTANCE_ID=$(./ec2-metadata -i | cut -b 14-)
 HOSTNAME=gr-$PROFILE-$INSTANCE_ID-<BUILDID>

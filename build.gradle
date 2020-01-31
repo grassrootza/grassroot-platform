@@ -22,8 +22,8 @@ subprojects {
 
 	repositories {
         mavenLocal()
-        maven { url "http://repo.maven.apache.org/maven2" }
-        maven { url "http://optimizely.bintray.com/optimizely" }
+        maven { url "https://repo.maven.apache.org/maven2" }
+        maven { url "https://optimizely.bintray.com/optimizely" }
         maven { url "https://dl.bintray.com/grassrootza/grassroot-graph" }
 	}
 
