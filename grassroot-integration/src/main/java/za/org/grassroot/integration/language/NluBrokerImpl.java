@@ -1,7 +1,5 @@
 package za.org.grassroot.integration.language;
 
-import com.google.cloud.speech.v1.*;
-import com.google.protobuf.ByteString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -67,58 +65,6 @@ public class NluBrokerImpl implements NluBroker {
             return response.getBody().getResult();
         } catch (RestClientException e) {
             log.error("Error calling NLU service", e);
-            return null;
-        }
-    }
-
-    @Override
-    public List<ConvertedSpeech> speechToText(MultipartFile file, String encoding, int sampleRate) {
-        try {
-            if (!googleApiKeyPresent) {
-                log.error("Error! Attempt to call speech to text without API credentials");
-            }
-
-            ByteString rawSpeech = ByteString.copyFrom(file.getBytes());
-
-            log.info("credentials present, converting speech to text via Google Cloud ... ");
-
-            SpeechClient speech = SpeechClient.create();
-            RecognitionConfig config = RecognitionConfig.newBuilder()
-                    .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16) // todo : convert from string (or otherwise obtain from client)
-                    .setSampleRateHertz(sampleRate)
-                    .setLanguageCode("en-ZA")
-                    .build();
-            RecognitionAudio audio = RecognitionAudio.newBuilder()
-                    .setContent(rawSpeech)
-                    .build();
-
-            log.info("built call entities, initiating call to API ...");
-            RecognizeResponse response = speech.recognize(config, audio);
-            List<SpeechRecognitionResult> results = response.getResultsList();
-
-            log.info("got results, look like : {}", results);
-            return results.stream()
-                    .map(result -> new ConvertedSpeech(
-                            result.getAlternatives(0).getTranscript(),
-                            result.getAlternatives(0).getConfidence()
-                    )).collect(Collectors.toList());
-        } catch (IOException e) {
-            log.error("IO exception copying file to audio", e);
-            return null;
-        }
-    }
-
-    @Override
-    public NluParseResult speechToIntent(MultipartFile file, String encoding, int sampleRate) {
-        List<ConvertedSpeech> speechList = speechToText(file, encoding, sampleRate);
-        if (speechList != null) {
-            final String fullTranscript = speechList.stream()
-                    .map(ConvertedSpeech::getSpeech)
-                    .collect(Collectors.joining(" "));
-            log.info("full transcript of returned results: {}", fullTranscript);
-            return parseText(fullTranscript, null);
-        } else {
-            log.error("Error! Could not convert file to audio");
             return null;
         }
     }

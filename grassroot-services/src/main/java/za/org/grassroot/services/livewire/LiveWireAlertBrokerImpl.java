@@ -132,6 +132,12 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     @Override
+    public boolean isLiveWireOpen() {
+        Optional<ConfigVariable> enabledConfigVar = configRepository.findOneByKey("livewire.enabled");
+        return enabledConfigVar.map(var -> Boolean.parseBoolean(var.getValue())).orElse(false);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public LiveWireAlert load(String alertUid) {
         Objects.requireNonNull(alertUid);

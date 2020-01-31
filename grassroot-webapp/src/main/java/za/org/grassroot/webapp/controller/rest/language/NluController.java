@@ -49,15 +49,4 @@ public class NluController {
         return ResponseEntity.ok(result);
     }
 
-    @RequestMapping(value = "/speech", method = RequestMethod.POST)
-    @ApiOperation(value = "Convert speech to text, optionally parsing for entities")
-    public ResponseEntity parseSpeech(@RequestParam(required = false) String encoding,
-                                      @RequestParam int sampleRate,
-                                      @RequestParam MultipartFile file,
-                                      @RequestParam boolean parseForIntent) {
-        return parseForIntent ?
-                ResponseEntity.ok(nluBroker.speechToIntent(file, encoding, sampleRate)) :
-                ResponseEntity.ok(nluBroker.speechToText(file, encoding, sampleRate));
-    }
-
 }

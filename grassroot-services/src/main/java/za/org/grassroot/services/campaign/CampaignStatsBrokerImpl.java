@@ -23,7 +23,6 @@ import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 
-import javax.annotation.Nullable;
 import javax.persistence.criteria.Join;
 import java.math.BigInteger;
 import java.time.Clock;
@@ -135,7 +134,7 @@ public class CampaignStatsBrokerImpl implements CampaignStatsBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<String, Integer> getCampaignMembershipStats(String campaignUid, Integer year, @Nullable Integer month) {
+    public Map<String, Integer> getCampaignMembershipStats(String campaignUid, Integer year, Integer month) {
         Cache cache = getStatsCache(GROWTH_CACHE);
 
         final String cacheKey = campaignUid + "-" + year + "-" + month;

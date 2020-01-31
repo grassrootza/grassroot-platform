@@ -540,14 +540,6 @@ public class UssdSafetyGroupServiceImpl implements UssdSafetyGroupService {
 		USSDMenu menu = new USSDMenu(ussdSupport.getMessage(thisSection, startMenu, promptKey + ".hasgroup", new String[]{group.getGroupName(),
 				safetyTriggerString}, user));
 
-		if (!locationServicesBroker.hasUserGivenLocationPermission(user.getUid())) {
-			menu.addMenuOption(safetyMenus + "location/request",
-					ussdSupport.getMessage(thisSection, startMenu, optionsKey + "track", user));
-		} else {
-			menu.addMenuOption(safetyMenus + "location/current",
-					ussdSupport.getMessage(thisSection, startMenu, optionsKey + "location", user));
-		}
-
 		if (addressBroker.hasAddress(user.getUid())) {
 			menu.addMenuOption(safetyMenus + viewAddress, ussdSupport.getMessage(thisSection, startMenu, optionsKey + viewAddress, user));
 		} else {

@@ -21,6 +21,8 @@ import java.util.List;
  */
 public interface LiveWireAlertBroker {
 
+    boolean isLiveWireOpen();
+
     LiveWireAlert load(String alertUid);
 
     boolean canUserCreateAlert(String userUid);

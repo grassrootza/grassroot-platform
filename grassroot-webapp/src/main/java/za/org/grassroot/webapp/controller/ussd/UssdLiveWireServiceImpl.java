@@ -67,6 +67,11 @@ public class UssdLiveWireServiceImpl implements UssdLiveWireService {
 
 		USSDMenu menu;
 
+		if (!liveWireAlertBroker.isLiveWireOpen()) {
+			String closedPrompt = "Unfortunately, due to budget constraints, Grassroot LiveWire is not running at present";
+			return new USSDMenu(closedPrompt);
+		}
+
 		if (liveWireAlertBroker.isUserBlocked(user.getUid())) {
 			log.info("User is blocked from issuing LiveWire alerts ---------->>>>>>>>>>>>>>>>>");
 			menu = new USSDMenu(ussdSupport.getMessage(LIVEWIRE, startMenu, "prompt.blocked", user));

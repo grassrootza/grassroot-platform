@@ -34,6 +34,4 @@ dependencies {
     compile group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.0.7'
     compile group: 'org.apache.pdfbox', name: 'pdfbox-tools', version: '2.0.7'
 
-    compile 'com.google.cloud:google-cloud-speech:0.26.0-alpha'
-
 }

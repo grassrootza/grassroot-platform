@@ -51,50 +51,51 @@ public class USSDSafetyGroupController {
 	}
 
     /*
-    SECTION: Request and grant permission to track location
+	SECTION: Request and grant permission to track location
+	note : switching off due to removal of LBS
      */
 
-	@RequestMapping(value = safetyGroupPath + "location/request")
-	@ResponseBody
-	public Request requestLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
-		return ussdSafetyGroupService.processRequestLocationTracking(msisdn);
-	}
+	// @RequestMapping(value = safetyGroupPath + "location/request")
+	// @ResponseBody
+	// public Request requestLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
+	// 	return ussdSafetyGroupService.processRequestLocationTracking(msisdn);
+	// }
 
-	@RequestMapping(value = safetyGroupPath + "location/request/allowed")
-	@ResponseBody
-	public Request approveLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
-		return ussdSafetyGroupService.processApproveLocationTracking(msisdn);
-	}
+	// @RequestMapping(value = safetyGroupPath + "location/request/allowed")
+	// @ResponseBody
+	// public Request approveLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
+	// 	return ussdSafetyGroupService.processApproveLocationTracking(msisdn);
+	// }
 
-	@RequestMapping(value = safetyGroupPath + "location/revoke")
-	@ResponseBody
-	public Request revokeLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
-		return ussdSafetyGroupService.processRevokeLocationTracking(msisdn);
-	}
+	// @RequestMapping(value = safetyGroupPath + "location/revoke")
+	// @ResponseBody
+	// public Request revokeLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
+	// 	return ussdSafetyGroupService.processRevokeLocationTracking(msisdn);
+	// }
 
-	@RequestMapping(value = safetyGroupPath + "location/current")
-	public Request checkCurrentLocation(@RequestParam String msisdn) throws URISyntaxException {
-		return ussdSafetyGroupService.processCheckCurrentLocation(msisdn);
-	}
+	// @RequestMapping(value = safetyGroupPath + "location/current")
+	// public Request checkCurrentLocation(@RequestParam String msisdn) throws URISyntaxException {
+	// 	return ussdSafetyGroupService.processCheckCurrentLocation(msisdn);
+	// }
 
-	@RequestMapping(value = safetyGroupPath + "location/current/confirm")
-	public Request respondToCurrentLocation(@RequestParam String msisdn, @RequestParam String addressUid,
-											@RequestParam double latitude, @RequestParam double longitude) throws URISyntaxException {
-		return ussdSafetyGroupService.processRespondToCurrentLocation(msisdn, addressUid, latitude, longitude);
-	}
+	// @RequestMapping(value = safetyGroupPath + "location/current/confirm")
+	// public Request respondToCurrentLocation(@RequestParam String msisdn, @RequestParam String addressUid,
+	// 										@RequestParam double latitude, @RequestParam double longitude) throws URISyntaxException {
+	// 	return ussdSafetyGroupService.processRespondToCurrentLocation(msisdn, addressUid, latitude, longitude);
+	// }
 
-	@RequestMapping(value = safetyGroupPath + "location/current/change")
-	public Request changeCurrentLocation(@RequestParam String msisdn, @RequestParam String addressUid,
-										 @RequestParam double latitude, @RequestParam double longitude) throws URISyntaxException {
-		return ussdSafetyGroupService.processChangeCurrentLocation(msisdn, addressUid, latitude, longitude);
-	}
+	// @RequestMapping(value = safetyGroupPath + "location/current/change")
+	// public Request changeCurrentLocation(@RequestParam String msisdn, @RequestParam String addressUid,
+	// 									 @RequestParam double latitude, @RequestParam double longitude) throws URISyntaxException {
+	// 	return ussdSafetyGroupService.processChangeCurrentLocation(msisdn, addressUid, latitude, longitude);
+	// }
 
-	@RequestMapping(value = safetyGroupPath + "location/current/describe")
-	public Request describeCurrentLocation(@RequestParam String msisdn, @RequestParam String addressUid,
-										   @RequestParam double latitude, @RequestParam double longitude,
-										   @RequestParam String request) throws URISyntaxException {
-		return ussdSafetyGroupService.processDescribeCurrentLocation(msisdn, addressUid, latitude, longitude, request);
-	}
+	// @RequestMapping(value = safetyGroupPath + "location/current/describe")
+	// public Request describeCurrentLocation(@RequestParam String msisdn, @RequestParam String addressUid,
+	// 									   @RequestParam double latitude, @RequestParam double longitude,
+	// 									   @RequestParam String request) throws URISyntaxException {
+	// 	return ussdSafetyGroupService.processDescribeCurrentLocation(msisdn, addressUid, latitude, longitude, request);
+	// }
 
     /*
     SECTION: Creating a safety group

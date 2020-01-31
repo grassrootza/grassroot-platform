@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp;
 
-import com.google.api.client.http.HttpMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -82,7 +81,7 @@ public class SecurityConfig {
                 .and()
                 .addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class)
                 .authorizeRequests()
-                .antMatchers(HttpMethods.OPTIONS, "/v2/**").permitAll()
+                .antMatchers(HttpMethod.OPTIONS, "/v2/**").permitAll()
                     .antMatchers(PUBLIC_ENDPOINTS).permitAll()
                     .antMatchers(AUTH_ENDPOINTS).permitAll();
         }

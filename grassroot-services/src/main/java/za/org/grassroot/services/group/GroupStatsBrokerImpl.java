@@ -18,7 +18,6 @@ import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
-import javax.annotation.Nullable;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -71,7 +70,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     }
 
     @Override
-    public Map<String, Integer> getMembershipGrowthStats(String groupUid, @Nullable Integer year, @Nullable Integer month) {
+    public Map<String, Integer> getMembershipGrowthStats(String groupUid, Integer year, Integer month) {
         final String cacheName = "group_stats_member_count";
         final String cacheKey = groupUid + "-" + year + "-" + month;
         return checkCache(cacheName, cacheKey).orElse(calculateMembershipGrowthStats(groupUid, year, month, cacheKey));

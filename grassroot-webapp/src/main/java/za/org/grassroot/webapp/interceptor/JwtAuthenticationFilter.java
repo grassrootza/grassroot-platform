@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.interceptor;
 
-import com.google.api.client.http.HttpMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,7 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         log.debug("request method: {}", request.getMethod());
-        if (HttpMethods.OPTIONS.equals(request.getMethod())) { // to handle CORS
+        if ("OPTIONS".equals(request.getMethod())) { // to handle CORS
             filterChain.doFilter(request, response);
             return;
         }

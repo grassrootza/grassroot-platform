@@ -3,7 +3,6 @@ package za.org.grassroot.services.campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.dto.CampaignLogsDataCollection;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,7 @@ public interface CampaignStatsBroker {
 
     CampaignLogsDataCollection getCampaignLogData(String campaignUid);
 
-    Map<String, Integer> getCampaignMembershipStats(String campaignUid, @Nullable Integer year, @Nullable Integer month);
+    Map<String, Integer> getCampaignMembershipStats(String campaignUid, Integer year, Integer month);
 
     Map<String, Long> getCampaignConversionStats(String campaignUid);
 
