@@ -70,8 +70,6 @@ jobs:
         - restore_cache:
             keys:
               - v2-built-jar-{{ .Branch }}-{{ .Revision }}
-        - setup_remote_docker:
-            docker_layer_caching: true
         - *fetch-aws-cli
         - run:
             name: Build image and deploy to Docker Hub
@@ -103,8 +101,6 @@ jobs:
         - restore_cache:
             keys:
               - v2-built-jar-{{ .Branch }}-{{ .Revision }}
-        - setup_remote_docker:
-            docker_layer_caching: true
         - *fetch-aws-cli
         - run:
             name: Build image and deploy to Docker Hub
