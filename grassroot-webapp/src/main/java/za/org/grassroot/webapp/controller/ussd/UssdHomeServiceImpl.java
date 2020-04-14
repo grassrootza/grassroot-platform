@@ -169,7 +169,9 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		USSDMenu returnMenu;
 		log.debug("Processing trailing digits ..." + trailingDigits);
 		boolean sendWelcomeIfNew = false;
-		if (safetyCode.equals(trailingDigits)) {
+		if ("99999".equals(trailingDigits)) {
+			return new USSDMenu("Welcome! This campaign has now paused. We will broadcast when it resumes.");
+		} else if (safetyCode.equals(trailingDigits)) {
 			returnMenu = ussdSafetyGroupService.assemblePanicButtonActivationMenu(user);
 		} else if (livewireSuffix.equals(trailingDigits)) {
 			returnMenu = ussdLiveWireService.assembleLiveWireOpening(user, 0);
@@ -259,7 +261,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user) {
 		log.info("fire off SMS in background, if exists ...");
 		campaignTextBroker.checkForAndTriggerCampaignText(campaign.getUid(), user.getUid(), null, UserInterfaceType.USSD);
-		log.info("initiated firing off ... continue ...");
+		log.info("initiated firing off ... continue ..., campaign tag list: ", campaign.getTagList());
 		if (campaign.getTagList().contains("PAUSED")) {
 			return new USSDMenu("Welcome! This campaign has now paused. We will broadcast when it resumes.");
 		}
