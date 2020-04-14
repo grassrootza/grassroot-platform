@@ -67,8 +67,8 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	@Value("${grassroot.ussd.livewire.suffix:411}")
 	private String livewireSuffix = "411";
 
-	@Value("${grassroot.ussd.sendlink.suffix:123}")
-	private String sendMeLink = "123";
+	// @Value("${grassroot.ussd.sendlink.suffix:123}")
+	// private String sendMeLink = "123";
 
 	@Value("${grassroot.geo.apis.enabled:false}")
 	private boolean geoApisEnabled = false;
@@ -174,9 +174,6 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		} else if (livewireSuffix.equals(trailingDigits)) {
 			returnMenu = ussdLiveWireService.assembleLiveWireOpening(user, 0);
 			sendWelcomeIfNew = true;
-		} else if (sendMeLink.equals(trailingDigits)) {
-			returnMenu = assembleSendMeAndroidLinkMenu(user);
-			sendWelcomeIfNew = true;
 		} else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
 			returnMenu = ussdGeoApiService.openingMenu(ussdSupport.convert(user), geoApiSuffixes.get(trailingDigits));
 		} else {
@@ -245,11 +242,11 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	/*
  Section of helper methods for opening menu response handling
   */
-	private USSDMenu assembleSendMeAndroidLinkMenu(User user) {
-		userManager.sendAndroidLinkSms(user.getUid());
-		String message = ussdSupport.getMessage(thisSection, "link.android", ussdSupport.promptKey, user);
-		return new USSDMenu(message, ussdSupport.optionsHomeExit(user, false));
-	}
+	// private USSDMenu assembleSendMeAndroidLinkMenu(User user) {
+	// 	userManager.sendAndroidLinkSms(user.getUid());
+	// 	String message = ussdSupport.getMessage(thisSection, "link.android", ussdSupport.promptKey, user);
+	// 	return new USSDMenu(message, ussdSupport.optionsHomeExit(user, false));
+	// }
 
 	private USSDMenu getActiveCampaignForTrailingCode(String trailingDigits, User user) {
 		Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits, user.getUid(), true, UserInterfaceType.USSD);
@@ -262,7 +259,11 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user) {
 		log.info("fire off SMS in background, if exists ...");
 		campaignTextBroker.checkForAndTriggerCampaignText(campaign.getUid(), user.getUid(), null, UserInterfaceType.USSD);
-		log.info("fired off ... continue ...");
+		log.info("initiated firing off ... continue ...");
+		if (campaign.getTagList().contains("PAUSED")) {
+			return new USSDMenu("Welcome! This campaign has now paused. We will broadcast when it resumes.");
+		}
+
 		Set<Locale> supportedCampaignLanguages = campaignBroker.getCampaignLanguages(campaign.getUid());
 		userLogger.recordUserLog(user.getUid(), UserLogType.CAMPAIGN_ENGAGED, campaign.getUid(), UserInterfaceType.USSD);
 		USSDMenu menu;
