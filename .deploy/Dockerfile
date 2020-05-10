@@ -1,10 +1,13 @@
 ## PULL UBUNTU IMAGE WITH OPENJDK 8 SETUP
-FROM tomcat:8-alpine
+FROM openjdk:8
 WORKDIR /usr/src/grassroot
 
 # SETUP SUPERVISORD TO RUN JAVA AS A PROCESS + OTHER FANCY THINGS SUPERVISORD PROVIDES
-RUN apk add --no-cache supervisor vim nano curl
-COPY .deploy/supervisord.conf /etc/supervisord.conf
+RUN apt-get update && apt-get install supervisor vim nano -y
+COPY supervisord.conf /etc/supervisord.conf
+COPY entrypoint.sh /usr/local/bin/
+RUN ln -s /usr/local/bin/entrypoint.sh /
+#ENTRYPOINT ["entrypoint.sh"]
 
 # DEFINE ENVIRONMENT VARIABLES
 ENV GRADLE_USER_HOME=/usr/src/grassroot/.gradle
@@ -13,7 +16,7 @@ ENV GRADLE_USER_HOME=/usr/src/grassroot/.gradle
 RUN mkdir -p /usr/src/grassroot/environment && mkdir -p /usr/src/grassroot/log && mkdir -p /usr/src/grassroot/templates/pdf
 
 # COPY ALL SOURCE CODE, ALTERNATIVELY WE COULD BE COPYING JUST THE JAR FILES (TO REVIEW LATER)
-COPY . /usr/src/grassroot
+COPY ./ /usr/src/grassroot
 
 # BUT NO NEED TO BUILD IT AGAIN (ASSUMES FAT JAR WAS BUILT PRIOR)
 # RUN /usr/src/grassroot/build-jar.sh

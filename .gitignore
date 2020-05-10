@@ -8,6 +8,8 @@ environment/*
 /.clean
 /build-jar.sh
 /test.sh
+supervisord.log
+supervisord.pid
 
 # localhost deployment scripts #
 /startgrassroot.sh

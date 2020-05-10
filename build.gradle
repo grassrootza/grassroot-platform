@@ -69,5 +69,6 @@ subprojects {
 
       compile 'org.springframework.boot:spring-boot-starter'
       testCompile 'org.springframework.boot:spring-boot-starter-test'
+      implementation 'org.hibernate:hibernate-core:5.4.2.Final'
     }
 }

@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: grassroot
       POSTGRES_USER: grassroot
       POSTGRES_PASSWORD: verylongpassword
+    ports:
+      - 5432:5432/tcp
   adminer:
     image: adminer
     restart: always
@@ -14,14 +16,14 @@ services:
       - 8081:8080
   grassroot:
     build:
-      context: ./
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: /Users/akanim/development/nfranchise/grassroot/be/grassroot-platform/.deploy/Dockerfile.localdeploy
     depends_on:
       - db
     restart: always
     ports:
       - 8080:8080
     volumes:
-      - "./:/usr/src/grassroot/"
-      - "<ENVPATH>:/usr/src/grassroot/environment"
-      # - "./log:/usr/src/grassroot/log"
+      - "/Users/akanim/development/nfranchise/grassroot/be/grassroot-platform:/usr/src/grassroot"
+      - "/Users/akanim/development/nfranchise/grassroot/environment:/usr/src/grassroot/environment"
+      - "./log:/usr/src/grassroot/log"
