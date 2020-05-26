@@ -371,10 +371,12 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		final Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(token);
 		if (searchResult.isPresent()) {
 			final Group group = searchResult.get();
-			log.debug("adding user via join code ... {}", token);
-			boolean groupLimitReached = accountFeaturesBroker.numberMembersLeftForGroup(group, GroupJoinMethod.USSD_JOIN_CODE) == 0;
+			log.debug("Would add user via join code ... {}", token);
+			boolean groupLimitReached = true; // also hard disabling this until can bring back config properly
+			// boolean groupLimitReached = accountFeaturesBroker.numberMembersLeftForGroup(group, GroupJoinMethod.USSD_JOIN_CODE) == 0;
 			if (groupLimitReached) {
-				return notifyGroupLimitReached(user, group);
+				return new USSDMenu("Due to abuse, this service is now temporarily disabled");
+				// return notifyGroupLimitReached(user, group);
 			} else {
 				final Membership membership = groupBroker.addMemberViaJoinCode(user, group, token, UserInterfaceType.USSD);
 				final Optional<USSDMenu> massVoteMenu = ussdVoteService.processPossibleMassVote(user, group);
