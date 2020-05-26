@@ -106,10 +106,11 @@ public class UssdSafetyGroupServiceImpl implements UssdSafetyGroupService {
 	@Override
 	@Transactional
 	public Request processManageSafetyGroup(String msisdn) throws URISyntaxException {
-		User user = userManager.findByInputNumber(msisdn);
-		USSDMenu menu = user.hasSafetyGroup() ? createOpeningMenuHasGroup(user) : createOpeningMenuNoGroup(user);
-		menu.addMenuOption(startMenu + "_force", ussdSupport.getMessage(optionsKey + "back.main", user));
-		return ussdSupport.menuBuilder(menu);
+		return ussdSupport.menuBuilder(new USSDMenu("Unfortunately, due to abuse of this service, it has now been disabled"));
+		// User user = userManager.findByInputNumber(msisdn);
+		// USSDMenu menu = user.hasSafetyGroup() ? createOpeningMenuHasGroup(user) : createOpeningMenuNoGroup(user);
+		// menu.addMenuOption(startMenu + "_force", ussdSupport.getMessage(optionsKey + "back.main", user));
+		// return ussdSupport.menuBuilder(menu);
 	}
 
 	@Override

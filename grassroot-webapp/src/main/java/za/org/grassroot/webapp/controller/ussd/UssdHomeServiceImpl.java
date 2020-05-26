@@ -172,7 +172,8 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 		if ("99999".equals(trailingDigits)) {
 			return new USSDMenu("Welcome! This campaign has now paused. We will broadcast when it resumes.");
 		} else if (safetyCode.equals(trailingDigits)) {
-			returnMenu = ussdSafetyGroupService.assemblePanicButtonActivationMenu(user);
+			return new USSDMenu("Unfortunately, due to abuse of this service, it has now been disabled");
+			// returnMenu = ussdSafetyGroupService.assemblePanicButtonActivationMenu(user);
 		} else if (livewireSuffix.equals(trailingDigits)) {
 			returnMenu = ussdLiveWireService.assembleLiveWireOpening(user, 0);
 			sendWelcomeIfNew = true;
@@ -261,7 +262,7 @@ public class UssdHomeServiceImpl implements UssdHomeService {
 	private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user) {
 		log.info("fire off SMS in background, if exists ...");
 		campaignTextBroker.checkForAndTriggerCampaignText(campaign.getUid(), user.getUid(), null, UserInterfaceType.USSD);
-		log.info("initiated firing off ... continue ..., campaign tag list: ", campaign.getTagList());
+		log.info("initiated firing off ... continue ..., campaign tag list: {}", campaign.getTagList());
 		if (campaign.getTagList().contains("PAUSED")) {
 			return new USSDMenu("Welcome! This campaign has now paused. We will broadcast when it resumes.");
 		}
