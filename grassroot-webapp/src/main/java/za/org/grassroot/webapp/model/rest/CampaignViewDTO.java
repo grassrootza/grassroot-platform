@@ -113,7 +113,11 @@ public class CampaignViewDTO {
             }
 
             this.outboundSmsEnabled = campaign.isOutboundTextEnabled();
-            this.outboundSmsLimit = campaign.getOutboundBudget() / campaign.getAccount().getFreeFormCost();
+            try {
+                this.outboundSmsLimit = campaign.getOutboundBudget() / campaign.getAccount().getFreeFormCost();
+            } catch (ArithmeticException arithmeticException) {
+                log.debug("exception : {}", arithmeticException.getMessage());
+            }
             this.outboundSmsSpent = campaign.getOutboundSpent();
             this.outboundSmsUnitCost = campaign.getAccount().getFreeFormCost();
             log.debug("campaign with sms unit cost: {}", this.outboundSmsUnitCost);
