@@ -1,4 +1,5 @@
-version: '2'
+version: '3.8'
+
 services:
   db:
     image: postgres
@@ -8,22 +9,52 @@ services:
       POSTGRES_USER: grassroot
       POSTGRES_PASSWORD: verylongpassword
     ports:
-      - 5432:5432/tcp
+      - 5432:5432
+    volumes:
+      - /Volumes/Macintosh HD - extra/docker-volumes/grassroot:/var/lib/postgresql/data:delegated
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 1G
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
   adminer:
     image: adminer
     restart: always
     ports:
       - 8081:8080
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
   grassroot:
     build:
       context: .
       dockerfile: /Users/akanim/development/nfranchise/grassroot/be/grassroot-platform/.deploy/Dockerfile.localdeploy
-    depends_on:
+    container_name: gr-server
+    links:
       - db
-    restart: always
+      - adminer
+    restart: unless-stopped
     ports:
       - 8080:8080
     volumes:
       - "/Users/akanim/development/nfranchise/grassroot/be/grassroot-platform:/usr/src/grassroot"
       - "/Users/akanim/development/nfranchise/grassroot/environment:/usr/src/grassroot/environment"
       - "./log:/usr/src/grassroot/log"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 3G
+        reservations:
+          cpus: '0.25'
+          memory: 128M
