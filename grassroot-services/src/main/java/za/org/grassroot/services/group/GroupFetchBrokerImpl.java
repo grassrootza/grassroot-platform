@@ -66,7 +66,7 @@ import static za.org.grassroot.core.specifications.GroupSpecifications.isActive;
 public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
     // todo: make configurable
-    private static final int MAX_DTO_MEMBERS = 1000;
+    private static final int MAX_DTO_MEMBERS = 100;
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
