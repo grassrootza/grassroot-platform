@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.group.Group;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecificationExecutor<Group> {
@@ -118,5 +119,13 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
     @Query("SELECT count(*) from Group g " +
             "where size(g.memberships) > :limit")
     int countGroupsWhereSizeAboveLimit(@Param(value = "limit") int limit);
+
+    @Query("select u.province, count(m.id) from Membership m " +
+            "inner join m.user u " +
+            "inner join m.group g " +
+            "where g.uid = :guid " +
+            "group by u.province")
+    List<Object[]> getGroupProvinceStats(@Param(value = "guid") String guid);
+
 
 }
