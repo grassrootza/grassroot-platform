@@ -123,9 +123,13 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
     @Query("select u.province, count(m.id) from Membership m " +
             "inner join m.user u " +
             "inner join m.group g " +
-            "where g.uid = :guid " +
+            "where g.uid = :groupUid " +
             "group by u.province")
-    List<Object[]> getGroupProvinceStats(@Param(value = "guid") String guid);
+    List<Object[]> getGroupProvinceStats(@Param(value = "groupUid") String groupUid);
 
-
+    @Query("select m.joinMethod, count(m.id) from Membership m " +
+            "inner join m.group g " +
+            "where g.uid = :groupUid " +
+            "group by m.joinMethod")
+    List<Object[]> getGroupSourcesStats(@Param(value= "groupUid") String groupUid);
 }

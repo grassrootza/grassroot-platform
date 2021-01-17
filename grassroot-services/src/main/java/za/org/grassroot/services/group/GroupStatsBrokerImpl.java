@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -171,7 +172,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
                                     ((Province)province[0]).name(),
                                     Optional.ofNullable(Math.toIntExact((Long)province[1])).orElse(0)),
                             HashMap::putAll);
-            Cache cache = cacheManager.getCache("group_stats_provinces");
+            Cache cache = cacheManager.getCache(cacheName);
             cache.put(new Element(groupUid, data));
             return data;
         });
@@ -180,31 +181,24 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     @Override
     public Map<String, Integer> getSourcesStats(String groupUid) {
         final String cacheName = "group_stats_sources";
-        return checkCache(cacheName, groupUid)
-                .orElse(assembleMemberStats(groupUid, cacheName, m -> m.getJoinMethod() != null, m -> m.getJoinMethod() == null,
-                        m -> m.getJoinMethod().name()));
+        return checkCache(cacheName, groupUid).orElseGet(() -> {
+            List<Object[]> sourceStats = groupRepository.getGroupSourcesStats(groupUid);
+            Map<String, Integer> data = sourceStats.stream()
+                    .map(objects -> {
+                        return new Object[]{Optional.ofNullable(objects[0]).orElse(""),
+                                Optional.ofNullable(objects[1]).orElse(0L)};
+                    })
+                    .collect(HashMap::new, (hashMap, source) ->
+                            hashMap.put((source[0] instanceof String) ?
+                                    "UNKNOWN" :
+                                    ((GroupJoinMethod)source[0]).name(),
+                                    Optional.ofNullable(Math.toIntExact((Long)source[1])).orElse(0)),
+                            HashMap::putAll);
+            Cache cache = cacheManager.getCache(cacheName);
+            cache.put(new Element(groupUid, data));
+            return data;
+        });
     }
-
-    private Map<String, Integer> assembleMemberStats(String groupUid, String cacheName,
-                                               Predicate<? super Membership> includePredicate,
-                                               Predicate<? super Membership> unknownPredicate,
-                                               Function<? super Membership, String> groupByName) {
-        Cache cache = cacheManager.getCache(cacheName);
-
-        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
-
-        Map<String, Integer> data = memberships.stream()
-                .filter(includePredicate)
-                .collect(Collectors.groupingBy(groupByName, integerSum()));
-
-        int unknownSourceCount = (int) memberships.stream().filter(unknownPredicate).count();
-        if (unknownSourceCount > 0)
-            data.put("UNKNOWN", unknownSourceCount);
-
-        cache.put(new Element(groupUid, data));
-        return data;
-    }
-
 
     @Override
     public Map<String, Integer> getOrganisationsStats(String groupUid) {
