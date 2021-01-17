@@ -839,6 +839,39 @@ public class GroupRepositoryTest {
         assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get("unspecified")).get());
     }
 
+    @Test
+    public void testGroupMemberSourcesStats() {
+        User createdByUser = new User("0993234439", null, null);
+        User groupUser1 = new User("0993234451", null, null);
+        User groupUser2 = new User("0993234452", null, null);
+        User groupUser3 = new User("0993234453", null, null);
+        User groupUser4 = new User("0993234454", null, null);
+        User groupUser5 = new User("0993234455", null, null);
+        userRepository.save(createdByUser);
+        userRepository.save(groupUser1);
+        userRepository.save(groupUser2);
+        userRepository.save(groupUser3);
+        userRepository.save(groupUser4);
+        userRepository.save(groupUser5);
+        Group group = new Group("test", GroupPermissionTemplate.DEFAULT_GROUP, createdByUser);
+        group.addMember(createdByUser, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_AT_CREATION, null);
+        group.addMember(groupUser1, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(groupUser2, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.USSD_JOIN_CODE, null);
+        group.addMember(groupUser3, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.USSD_JOIN_CODE, null);
+        group.addMember(groupUser4, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.URL_JOIN_WORD, null);
+        group.addMember(groupUser5, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_SYS_ADMIN, null);
+        groupRepository.save(group);
+        List<Object[]> groupStats = groupRepository.getGroupSourcesStats(group.getUid());
+        assertEquals(5, groupStats.size());
+        Map<String, Long> data = groupStats.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(source ->
+                        Objects.isNull(source[0])? "unspecified": ((GroupJoinMethod)source[0]).name(), source -> (Long)source[1]));
+        assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get(GroupJoinMethod.ADDED_AT_CREATION.name())).get());
+        assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get(GroupJoinMethod.ADDED_BY_OTHER_MEMBER.name())).get());
+        assertEquals(Optional.of(2L).get(), Optional.ofNullable(data.get(GroupJoinMethod.USSD_JOIN_CODE.name())).get());
+        assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get(GroupJoinMethod.ADDED_BY_SYS_ADMIN.name())).get());
+    }
+
 }
 
 
