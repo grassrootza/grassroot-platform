@@ -32,7 +32,7 @@ jobs:
 
     test:
       docker:
-        - image: circleci/openjdk:8
+        - image: cimg/openjdk:8.0.275
       steps:
         - checkout
         - restore_cache:
