@@ -1,5 +1,6 @@
 package za.org.grassroot.services.group;
 
+import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
@@ -7,9 +8,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
 import za.org.grassroot.core.domain.group.GroupLog;
 import za.org.grassroot.core.domain.group.Membership;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
@@ -23,20 +26,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 
-@Service
+@Service @Slf4j
 public class GroupStatsBrokerImpl implements GroupStatsBroker {
 
     private final static ZoneId ZONE_OFFSET = Clock.systemDefaultZone().getZone();
@@ -163,53 +160,45 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     public Map<String, Integer> getProvincesStats(String groupUid) {
         final String cacheName = "group_stats_provinces";
         return checkCache(cacheName, groupUid).orElseGet(() -> {
-            Cache cache = cacheManager.getCache("group_stats_provinces");
-
-            // todo : convert this to calling users directly, this is what is killing the backend
-            final Group group = groupRepository.findOneByUid(groupUid);
-            final List<User> users = userRepository.findByGroupsPartOfAndIdNot(group, 0L);
-            Map<String, Integer> data = users.stream()
-                    .filter(u -> u.getProvince() != null)
-                    .collect(Collectors.groupingBy(u -> u.getProvince().name(), integerSum()));
-
-            int unknownProvinceCount = (int) users.stream().filter(u -> u.getProvince() == null).count();
-            if (unknownProvinceCount > 0)
-                data.put("UNKNOWN", unknownProvinceCount);
-
+            List<Object[]> provinceStats = groupRepository.getGroupProvinceStats(groupUid);
+            Map<String, Integer> data = provinceStats.stream()
+                    .map(objects -> {
+                        return new Object[]{Optional.ofNullable(objects[0]).orElse(""),
+                                Optional.ofNullable(objects[1]).orElse(0L)};
+                    })
+                    .collect(HashMap::new, (hashMap,province)->
+                            hashMap.put((province[0] instanceof String) ?
+                                    "UNKNOWN" :
+                                    ((Province)province[0]).name(),
+                                    Optional.ofNullable(Math.toIntExact((Long)province[1])).orElse(0)),
+                            HashMap::putAll);
+            Cache cache = cacheManager.getCache(cacheName);
             cache.put(new Element(groupUid, data));
             return data;
         });
-
     }
 
     @Override
     public Map<String, Integer> getSourcesStats(String groupUid) {
         final String cacheName = "group_stats_sources";
-        return checkCache(cacheName, groupUid)
-                .orElse(assembleMemberStats(groupUid, cacheName, m -> m.getJoinMethod() != null, m -> m.getJoinMethod() == null,
-                        m -> m.getJoinMethod().name()));
+        return checkCache(cacheName, groupUid).orElseGet(() -> {
+            List<Object[]> sourceStats = groupRepository.getGroupSourcesStats(groupUid);
+            Map<String, Integer> data = sourceStats.stream()
+                    .map(objects -> {
+                        return new Object[]{Optional.ofNullable(objects[0]).orElse(""),
+                                Optional.ofNullable(objects[1]).orElse(0L)};
+                    })
+                    .collect(HashMap::new, (hashMap, source) ->
+                            hashMap.put((source[0] instanceof String) ?
+                                    "UNKNOWN" :
+                                    ((GroupJoinMethod)source[0]).name(),
+                                    Optional.ofNullable(Math.toIntExact((Long)source[1])).orElse(0)),
+                            HashMap::putAll);
+            Cache cache = cacheManager.getCache(cacheName);
+            cache.put(new Element(groupUid, data));
+            return data;
+        });
     }
-
-    private Map<String, Integer> assembleMemberStats(String groupUid, String cacheName,
-                                               Predicate<? super Membership> includePredicate,
-                                               Predicate<? super Membership> unknownPredicate,
-                                               Function<? super Membership, String> groupByName) {
-        Cache cache = cacheManager.getCache(cacheName);
-
-        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
-
-        Map<String, Integer> data = memberships.stream()
-                .filter(includePredicate)
-                .collect(Collectors.groupingBy(groupByName, integerSum()));
-
-        int unknownSourceCount = (int) memberships.stream().filter(unknownPredicate).count();
-        if (unknownSourceCount > 0)
-            data.put("UNKNOWN", unknownSourceCount);
-
-        cache.put(new Element(groupUid, data));
-        return data;
-    }
-
 
     @Override
     public Map<String, Integer> getOrganisationsStats(String groupUid) {

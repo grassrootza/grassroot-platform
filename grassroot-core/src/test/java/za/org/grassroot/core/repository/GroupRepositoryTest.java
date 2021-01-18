@@ -20,14 +20,13 @@ import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.Province;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -800,6 +799,77 @@ public class GroupRepositoryTest {
 
         List<Group> groups3 = groupRepository.findByTasksMoreThan(0);
         assertTrue(groups3.isEmpty());
+    }
+
+    @Test
+    public void testGroupMemberProvinceStats() {
+        User createdByUser = new User("0993234439", null, null);
+        User groupUser1 = new User("0993234451", null, null);
+        User groupUser2 = new User("0993234452", null, null);
+        User groupUser3 = new User("0993234453", null, null);
+        User groupUser4 = new User("0993234454", null, null);
+        User groupUser5 = new User("0993234455", null, null);
+        createdByUser.setProvince(Province.ZA_MP);
+        groupUser1.setProvince(Province.ZA_MP);
+        groupUser2.setProvince(Province.ZA_MP);
+        groupUser3.setProvince(Province.ZA_LP);
+        groupUser4.setProvince(Province.ZA_GP);
+        userRepository.save(createdByUser);
+        userRepository.save(groupUser1);
+        userRepository.save(groupUser2);
+        userRepository.save(groupUser3);
+        userRepository.save(groupUser4);
+        userRepository.save(groupUser5);
+        Group group = new Group("test", GroupPermissionTemplate.DEFAULT_GROUP, createdByUser);
+        group.addMember(createdByUser, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_AT_CREATION, null);
+        group.addMember(groupUser1, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(groupUser2, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(groupUser3, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(groupUser4, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(groupUser5, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        groupRepository.save(group);
+        List<Object[]> groupStats = groupRepository.getGroupProvinceStats(group.getUid());
+        assertEquals(4, groupStats.size());
+        Map<String, Long> data = groupStats.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(province ->
+                        Objects.isNull(province[0])? "unspecified": ((Province)province[0]).name(), province -> (Long)province[1]));
+        assertEquals(Optional.of(3L).get(), Optional.ofNullable(data.get(Province.ZA_MP.name())).get());
+        assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get(Province.ZA_GP.name())).get());
+        assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get(Province.ZA_LP.name())).get());
+        assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get("unspecified")).get());
+    }
+
+    @Test
+    public void testGroupMemberSourcesStats() {
+        User createdByUser = new User("0993234439", null, null);
+        User groupUser1 = new User("0993234451", null, null);
+        User groupUser2 = new User("0993234452", null, null);
+        User groupUser3 = new User("0993234453", null, null);
+        User groupUser4 = new User("0993234454", null, null);
+        User groupUser5 = new User("0993234455", null, null);
+        userRepository.save(createdByUser);
+        userRepository.save(groupUser1);
+        userRepository.save(groupUser2);
+        userRepository.save(groupUser3);
+        userRepository.save(groupUser4);
+        userRepository.save(groupUser5);
+        Group group = new Group("test", GroupPermissionTemplate.DEFAULT_GROUP, createdByUser);
+        group.addMember(createdByUser, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_AT_CREATION, null);
+        group.addMember(groupUser1, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group.addMember(groupUser2, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.USSD_JOIN_CODE, null);
+        group.addMember(groupUser3, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.USSD_JOIN_CODE, null);
+        group.addMember(groupUser4, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.URL_JOIN_WORD, null);
+        group.addMember(groupUser5, GroupRole.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_SYS_ADMIN, null);
+        groupRepository.save(group);
+        List<Object[]> groupStats = groupRepository.getGroupSourcesStats(group.getUid());
+        assertEquals(5, groupStats.size());
+        Map<String, Long> data = groupStats.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(source ->
+                        Objects.isNull(source[0])? "unspecified": ((GroupJoinMethod)source[0]).name(), source -> (Long)source[1]));
+        assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get(GroupJoinMethod.ADDED_AT_CREATION.name())).get());
+        assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get(GroupJoinMethod.ADDED_BY_OTHER_MEMBER.name())).get());
+        assertEquals(Optional.of(2L).get(), Optional.ofNullable(data.get(GroupJoinMethod.USSD_JOIN_CODE.name())).get());
+        assertEquals(Optional.of(1L).get(), Optional.ofNullable(data.get(GroupJoinMethod.ADDED_BY_SYS_ADMIN.name())).get());
     }
 
 }
