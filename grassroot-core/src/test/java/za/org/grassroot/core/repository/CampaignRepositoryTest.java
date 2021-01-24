@@ -11,18 +11,24 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
+import za.org.grassroot.core.domain.GroupRole;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.core.domain.group.Group;
+import za.org.grassroot.core.domain.group.GroupJoinMethod;
+import za.org.grassroot.core.domain.group.GroupPermissionTemplate;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+
 
 @Slf4j @RunWith(SpringRunner.class) @DataJpaTest
 @ContextConfiguration(classes = TestContextConfiguration.class)
@@ -36,6 +42,9 @@ public class CampaignRepositoryTest {
 
     @Autowired
     private CampaignRepository campaignRepository;
+
+    @Autowired
+    private GroupRepository groupRepository;
 
     @Test
     public void testCreateCampaign(){
@@ -88,4 +97,81 @@ public class CampaignRepositoryTest {
         Assert.assertNotNull(camp);
     }
 
+    @Test
+    public void testFindCampaignsForUser_ShouldReturnAllCampaignsCreatedByUser() {
+        User creatingUser = userRepository.save(new User("33425", null, null));
+        User nonCreatingUser = userRepository.save(new User("33426", null, null));
+        Account account = accountRepository.save(new Account(creatingUser, "test", AccountType.ENTERPRISE, creatingUser));
+        Campaign campaign1 = new Campaign("campaign 1", "001", "campaign one", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account);
+        Campaign campaign2 = new Campaign("campaign 2", "002", "campaign two", nonCreatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account);
+        Campaign campaign3 = new Campaign("campaign 3", "003", "campaign three", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account);
+        campaignRepository.saveAll(Arrays.asList(new Campaign[]{campaign1, campaign2, campaign3}));
+        List<Campaign> campaignsManagedByUser = campaignRepository.findCampaignsManagedByUser(creatingUser.getId());
+        Assert.assertEquals(2, campaignsManagedByUser.size());
+    }
+
+    @Test
+    public void testFindCampaignsForUser_ShouldReturnAllCampaignsCreatedByUserAcrossMultipleAccounts() {
+        User creatingUser = userRepository.save(new User("33425", null, null));
+        User nonCreatingUser = userRepository.save(new User("33426", null, null));
+        User accountOwningUser1 = userRepository.save(new User("33427", null, null));
+        User accountOwningUser2 = userRepository.save(new User("33428", null, null));
+        User accountOwningUser3 = userRepository.save(new User("33429", null, null));
+        Account account1 = accountRepository.save(new Account(accountOwningUser1, "test", AccountType.ENTERPRISE, accountOwningUser1));
+        Account account2 = accountRepository.save(new Account(accountOwningUser2, "test", AccountType.ENTERPRISE, accountOwningUser1));
+        Account account3 = accountRepository.save(new Account(accountOwningUser3, "test", AccountType.ENTERPRISE, accountOwningUser1));
+        Account account4 = accountRepository.save(new Account(accountOwningUser3, "test", AccountType.ENTERPRISE, accountOwningUser1));
+        Campaign campaign1 = new Campaign("campaign 1", "001", "campaign one", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account1);
+        Campaign campaign2 = new Campaign("campaign 2", "002", "campaign two", nonCreatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account2);
+        Campaign campaign3 = new Campaign("campaign 3", "003", "campaign three", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account3);
+        Campaign campaign4 = new Campaign("campaign 4", "004", "campaign four", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account4);
+        Campaign campaign5 = new Campaign("campaign 5", "005", "campaign five", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account4);
+        campaignRepository.saveAll(Arrays.asList(new Campaign[]{campaign1, campaign2, campaign3, campaign4, campaign5}));
+        List<Campaign> campaignsManagedByUser = campaignRepository.findCampaignsManagedByUser(creatingUser.getId());
+        Assert.assertEquals(4, campaignsManagedByUser.size());
+    }
+
+    @Test
+    public void testFindCampaignsForUser_ShouldReturnAllCampaignsWhereUserIsAnOrganisingMember() {
+        User creatingUser = userRepository.save(new User("33425", null, null));
+        User organisingMember = userRepository.save(new User("33426", null, null));
+        Account account = accountRepository.save(new Account(creatingUser, "test", AccountType.ENTERPRISE, creatingUser));
+        Group groupOrganisedByUser1 = new Group("test", GroupPermissionTemplate.DEFAULT_GROUP, creatingUser);
+        groupOrganisedByUser1.addMember(organisingMember, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_SYS_ADMIN, null);
+        Group groupOrganisedByUser2 = new Group("test", GroupPermissionTemplate.DEFAULT_GROUP, creatingUser);
+        groupOrganisedByUser2.addMember(organisingMember, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_SYS_ADMIN, null);
+        groupRepository.save(groupOrganisedByUser1);
+        groupRepository.save(groupOrganisedByUser2);
+        Campaign campaign1 = new Campaign("campaign 1", "001", "campaign one", creatingUser, Instant.now(), Instant.now().plus(1, ChronoUnit.DAYS),CampaignType.PETITION, "", account);
+        campaign1.setMasterGroup(groupOrganisedByUser1);
+        Campaign campaign2 = new Campaign("campaign 2", "002", "campaign two", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account);
+        campaign2.setMasterGroup(groupOrganisedByUser2);
+        Campaign campaign3 = new Campaign("campaign 3", "003", "campaign three", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account);
+        campaignRepository.saveAll(Arrays.asList(new Campaign[]{campaign1, campaign2, campaign3}));
+
+        List<Campaign> campaignsManagedByUser = campaignRepository.findCampaignsManagedByUser(organisingMember.getId());
+        Assert.assertEquals(2, campaignsManagedByUser.size());
+    }
+
+    @Test
+    public void testFindCampaignsForUser_ShouldReturnCampaignsSortedByCreationDateAscending() {
+        User creatingUser = userRepository.save(new User("33425", null, null));
+        User organisingMember = userRepository.save(new User("33426", null, null));
+        Account account = accountRepository.save(new Account(creatingUser, "test", AccountType.ENTERPRISE, creatingUser));
+        Group groupOrganisedByUser1 = new Group("test", GroupPermissionTemplate.DEFAULT_GROUP, creatingUser);
+        groupOrganisedByUser1.addMember(organisingMember, GroupRole.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_SYS_ADMIN, null);
+        groupRepository.save(groupOrganisedByUser1);
+        Campaign campaign1 = new Campaign("campaign 1", "001", "campaign one", creatingUser, Instant.now(), Instant.now().plus(1, ChronoUnit.DAYS),CampaignType.PETITION, "", account);
+        campaign1.setCreatedDateTime(Instant.now());
+        Campaign campaign2 = new Campaign("campaign 2", "002", "campaign two", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account);
+        campaign2.setCreatedDateTime(Instant.now().plus(2, ChronoUnit.DAYS));
+        Campaign campaign3 = new Campaign("campaign 3", "003", "campaign three", creatingUser, Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS), CampaignType.PETITION,"",account);
+        campaign3.setCreatedDateTime(Instant.now().minus(1, ChronoUnit.DAYS));
+        campaignRepository.saveAll(Arrays.asList(new Campaign[]{campaign1, campaign2, campaign3}));
+
+        List<Campaign> campaignsManagedByUser = campaignRepository.findCampaignsManagedByUser(creatingUser.getId());
+        Assert.assertEquals("003", campaignsManagedByUser.get(0).getCampaignCode());
+        Assert.assertEquals("001", campaignsManagedByUser.get(1).getCampaignCode());
+        Assert.assertEquals("002", campaignsManagedByUser.get(2).getCampaignCode());
+    }
 }

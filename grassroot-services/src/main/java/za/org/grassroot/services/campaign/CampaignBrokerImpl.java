@@ -53,16 +53,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
@@ -206,9 +197,9 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Objects.requireNonNull(userUid);
         User user = userManager.load(userUid);
         long startTime = System.currentTimeMillis();
-        List<Campaign> campaigns = fetchCampaignsUserCanManage(user);
-        log.info("time to execute cmapaign fetch: {} msecs", System.currentTimeMillis() - startTime);
-        return campaigns;
+        List<Campaign> campaignsOrganised = campaignRepository.findCampaignsManagedByUser(user.getId());
+        log.info("time to execute cmapaigns {} fetch: {} msecs", campaignsOrganised, System.currentTimeMillis() - startTime);
+        return campaignsOrganised;
     }
 
     @Override
