@@ -3,6 +3,9 @@ package za.org.grassroot.services.group;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.xssf.usermodel.*;
+import org.hibernate.Session;
+import org.postgresql.copy.CopyManager;
+import org.postgresql.core.BaseConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
@@ -34,9 +37,14 @@ import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.campaign.CampaignStatsBroker;
 import za.org.grassroot.services.task.TodoBroker;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -71,9 +79,12 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
     private final UserLogRepository userLogRepository;
 
+    private final EntityManager entityManager;
+
+
     @Autowired
     public MemberDataExportBrokerImpl(UserRepository userRepository, MembershipRepository membershipRepository, GroupBroker groupBroker, TodoBroker todoBroker,
-                                      PermissionBroker permissionBroker, MessagingServiceBroker messageBroker,UserLogRepository userLogRepository) {
+                                      PermissionBroker permissionBroker, MessagingServiceBroker messageBroker,UserLogRepository userLogRepository, EntityManager entityManager) {
         this.userRepository = userRepository;
         this.membershipRepository = membershipRepository;
         this.groupBroker = groupBroker;
@@ -81,6 +92,7 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         this.permissionBroker = permissionBroker;
         this.messageBroker = messageBroker;
         this.userLogRepository = userLogRepository;
+        this.entityManager = entityManager;
     }
 
     @Autowired
@@ -95,16 +107,36 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public XSSFWorkbook exportGroup(String groupUid, String userUid) {
-
+    public Optional<File> exportGroup(String groupUid, String userUid) {
         Group group = groupBroker.load(groupUid);
         User exporter = userRepository.findOneByUid(userUid);
 
         permissionBroker.validateGroupPermission(exporter, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        return fetchGroupMembership(group);
+    }
 
-        List<Membership> memberships = group.getMemberships().stream()
-                .sorted(Comparator.comparing(Membership::getDisplayName)).collect(Collectors.toList());
-        return exportGroupMembers(memberships);
+    private Optional<File> fetchGroupMembership(Group group) {
+        Session session = entityManager.unwrap(Session.class);
+        session.doWork(connection -> {
+            try {
+                writeToCSV(connection, group);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        return Optional.of(new File("/home/campaign_group.csv"));
+    }
+
+    private void writeToCSV(Connection connection, Group group) throws SQLException, IOException {
+        final CopyManager manager = new CopyManager(connection.unwrap(BaseConnection.class));
+        try(FileWriter fw = new FileWriter(new File("/home", "campaign_group.csv"))) {
+            manager.copyOut(String.format("COPY (SELECT up.display_name, up.phone_number, up.province, gum.user_join_method, gum.join_time\n" +
+                    "FROM group_user_membership gum\n" +
+                    "LEFT JOIN user_profile up ON gum.user_id = up.id\n" +
+                    "WHERE gum.group_id = %d) TO STDOUT DELIMITER ';' CSV HEADER", group.getId()), fw);
+        } catch (final IOException exception) {
+            exception.printStackTrace();
+        }
     }
 
     //Class for exporting the EXCEL file for subscribed whatsapp users.
