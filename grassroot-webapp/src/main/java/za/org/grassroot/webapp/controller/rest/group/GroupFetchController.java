@@ -66,20 +66,15 @@ import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookCSVToDownload;
 import static za.org.grassroot.webapp.util.RestUtil.convertWorkbookToDownload;
 
 @RestController
@@ -327,9 +322,9 @@ public class GroupFetchController extends BaseRestController {
     @ApiOperation(value = "Download an Excel sheet of group members")
     public ResponseEntity<byte[]> exportGroup(@PathVariable String groupUid, HttpServletRequest request) {
         String userUid = getUserIdFromRequest(request);
-        String fileName = "group_members.xlsx";
-        XSSFWorkbook xls = memberDataExportBroker.exportGroup(groupUid, userUid);
-        return convertWorkbookToDownload(fileName, xls);
+        String fileName = "group_members.csv";
+        Optional<File> file = memberDataExportBroker.exportGroup(groupUid, userUid);
+        return convertWorkbookCSVToDownload(fileName, file.get());
     }
 
     @ExceptionHandler(value = FileCreationException.class)
