@@ -5,13 +5,15 @@ import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.dto.group.GroupLogDTO;
 
+import java.io.File;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface MemberDataExportBroker {
 
-    XSSFWorkbook exportGroup(String groupUid, String userUid);
+    Optional<File> exportGroup(String groupUid, String userUid);
 
     XSSFWorkbook exportGroupErrorReport(String groupUid, String userUid);
 

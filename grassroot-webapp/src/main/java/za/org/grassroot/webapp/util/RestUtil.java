@@ -18,7 +18,9 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,6 +51,23 @@ public class RestUtil {
             return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
         } catch (IOException e) {
             log.error("IO Exception generating spreadsheet!", e);
+            throw new FileCreationException();
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+    }
+
+    public static ResponseEntity<byte[]> convertWorkbookCSVToDownload(String fileName, File csvFile) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("application/csv"));
+            headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+            headers.add("Cache-Control", "no-cache");
+            headers.add("Pragma", "no-cache");
+            headers.add("Expires", "0");
+            return new ResponseEntity<>(Files.readAllBytes(csvFile.toPath()), headers, HttpStatus.OK);
+        } catch (IOException e) {
+            log.error("IO Exception generating csv!", e);
             throw new FileCreationException();
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
