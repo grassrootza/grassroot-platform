@@ -178,7 +178,7 @@ public class JwtServiceImpl implements JwtService {
         String userId = null;
         String systemRoles = null;
         try {
-            Jwt<Header, Claims> jwt = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parseClaimsJwt(oldToken);
+            Jwt<Header, Claims> jwt = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parseClaimsJws(oldToken);
             userId = jwt.getBody().get(USER_UID_KEY, String.class);
             systemRoles = jwt.getBody().get(SYSTEM_ROLE_KEY, String.class);
             isTokenStillValid = true;
