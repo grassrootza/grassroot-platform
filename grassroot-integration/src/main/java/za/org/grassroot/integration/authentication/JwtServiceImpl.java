@@ -170,33 +170,6 @@ public class JwtServiceImpl implements JwtService {
                 .parseClaimsJws(token).getBody();
     }
 
-    @Override
-    public String refreshToken(String oldToken, JwtType jwtType, Long shortExpiryMillis) {
-        boolean isTokenStillValid = false;
-        Date expirationTime = null;
-        String newToken = null;
-        String userId = null;
-        String systemRoles = null;
-        try {
-            Jwt<Header, Claims> jwt = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parseClaimsJws(oldToken);
-            userId = jwt.getBody().get(USER_UID_KEY, String.class);
-            systemRoles = jwt.getBody().get(SYSTEM_ROLE_KEY, String.class);
-            isTokenStillValid = true;
-        }
-        catch (ExpiredJwtException e) {
-            logger.error("Token validation failed. The token is expired.", e);
-            expirationTime = e.getClaims().getExpiration();
-        }
-        if (isTokenStillValid || expirationTime != null
-                && expirationTime.toInstant().plus(jwtTokenExpiryGracePeriodInMilliseconds, ChronoUnit.MILLIS).isAfter(new Date().toInstant())) {
-            CreateJwtTokenRequest cjtRequest = new CreateJwtTokenRequest(jwtType, shortExpiryMillis, userId, systemRoles);
-
-            newToken = createJwt(cjtRequest);
-        }
-
-        return newToken;
-    }
-
     private PublicCredentials refreshPublicCredentials() {
         keyIdentifier = environment.getProperty("grassroot.publickey.identifier", UUID.randomUUID().toString());
         logger.debug("created KUID for main platform: {}", keyIdentifier);
